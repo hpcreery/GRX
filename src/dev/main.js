@@ -7,7 +7,8 @@ import { OrbitControls } from '../three/examples/jsm/controls/OrbitControls.js'
 //import { TrackballControls } from './jsm/controls/TrackballControls.js';
 import { CSS3DRenderer, CSS3DObject } from '../three/examples/jsm/renderers/CSS3DRenderer.js'
 import Stats from '../three/examples/jsm/libs/stats.module.js'
-;(function go() {
+
+export default function GerberThree() {
   var camera, scene, cssScene, renderer, cssRenderer
   var clock, controls, stats
 
@@ -56,6 +57,8 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
     document.body.appendChild(cssRenderer.domElement)
 
     cssScene = new THREE.Scene()
+
+    // FRONT
     var element = document.getElementById('front-pcb')
     console.log(element)
     // var element = document.createElement('div');
@@ -67,7 +70,6 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
     // element.style.margin = "0px";
     var div = new CSS3DObject(element)
     div.position.x = 0
-    //div.x = -1
     div.position.y = 25
     div.position.z = 1
     cssScene.add(div)
@@ -116,4 +118,4 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
 
     requestAnimationFrame(animate)
   }
-})()
+}

@@ -7,7 +7,7 @@ import Renderer from './components/Renderer'
 const fs = window.require('fs')
 const pcbStackup = require('pcb-stackup')
 //require('./components/ThreeRenderer')
-require('./dev/main')
+//require('./dev/main')
 
 class App extends Component {
   constructor(props) {
@@ -18,7 +18,7 @@ class App extends Component {
 
   render() {
     console.log('Rendering App')
-    return <div className='renderwrapper'>{/* <Renderer /> */}</div>
+    return <div className='renderwrapper'><Renderer /></div>
   }
 }
 
