@@ -50,6 +50,8 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
     cssRenderer = new CSS3DRenderer()
     cssRenderer.setSize(window.innerWidth, window.innerHeight)
     cssRenderer.domElement.style.position = 'absolute'
+    cssRenderer.domElement.style.height = '100%'
+    cssRenderer.domElement.style.width = '100%'
     cssRenderer.domElement.style.top = 0
     document.body.appendChild(cssRenderer.domElement)
 
@@ -88,6 +90,18 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
 
     controls = new OrbitControls(camera, cssRenderer.domElement)
   }
+
+  window.addEventListener( 'resize', onWindowResize, false );
+
+  function onWindowResize() {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+  }
+
   controls.update()
 
   function animate() {
