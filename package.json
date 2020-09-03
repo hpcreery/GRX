@@ -1,0 +1,34 @@
+{
+	"name": "electron-with-create-react-app",
+	"version": "0.1.0",
+	"private": true,
+	"devDependencies": {
+		"electron": "^7.2.4",
+		"electron-devtools-installer": "^3.0.0",
+		"electron-react-devtools": "^0.5.3",
+		"foreman": "^3.0.1",
+		"react-scripts": "0.8.5"
+	},
+	"dependencies": {
+		"antd": "^4.4.0",
+		"electron-packager": "^14.2.1",
+		"pcb-stackup": "^4.2.1",
+		"react": "^16.1.1",
+		"react-dom": "^16.1.1",
+		"react-scripts": "0.8.5",
+		"three": "^0.120.0"
+	},
+	"homepage": "./",
+	"main": "src/electron.js",
+	"scripts": {
+		"start": "nf start",
+		"dev": "node src/electron-wait-react",
+		"start-react": "react-scripts start",
+		"start-electron": "electron .",
+		"pack": "build --dir",
+		"build": "react-scripts build",
+		"build_osx": "electron-packager . App --platform=darwin --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for OSX'",
+		"build_linux": "electron-packager . App --platform=linux  --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for LINUX'",
+		"build_win": "electron-packager . App --platform=win32  --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for WIN'"
+	}
+}
