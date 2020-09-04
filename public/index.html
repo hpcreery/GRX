@@ -17,13 +17,26 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="front-pcb">
-      <object id="front-data" style="pointer-events: none;" data="top.svg" type="image/svg+xml"></object>
+    <div id="render-container">
+      <div id="front-pcb">
+        <object
+          id="front-data"
+          style="pointer-events: none;"
+          data="top.svg"
+          type="image/svg+xml"
+        ></object>
+      </div>
+
+      <div id="back-pcb">
+        <object
+          id="back-data"
+          style="pointer-events: none;"
+          data="bottom.svg"
+          type="image/svg+xml"
+        ></object>
+      </div>
     </div>
 
-    <div id="back-pcb">
-      <object id="back-data" style="pointer-events: none;" data="bottom.svg" type="image/svg+xml"></object>
-    </div>
     <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.

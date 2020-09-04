@@ -1,12 +1,6 @@
 @import '~antd/dist/antd.dark.css';
 
-/* #back-pcb {
-  transform: scale(-1, 1);
-} */
 
-#back-data {
-  transform: scale(-1, 1);
-}
 
 body {
   margin: 0;
@@ -20,8 +14,32 @@ canvas {
   width: 100vw;
 }
 
-.renderwrapper {
+.elements {
   padding: 50px;
+  position: absolute;
+  z-index: 10000;
+}
+
+#render-container {
+  position: relative;
+  height: 100%;
+  width:100%;
+}
+
+#root {
+  position: absolute;
+}
+
+
+
+/* CSS below is for CSS controlled 3d spin of an SVG*/
+
+/* #back-pcb {
+  transform: scale(-1, 1);
+} */
+
+#back-data {
+  transform: scale(-1, 1);
 }
 
 .flip-card {

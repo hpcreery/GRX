@@ -1,6 +1,8 @@
 // React
 import React, { Component } from 'react';
-import { Spin, Switch, Alert } from 'antd';
+
+// ANT DESIGN UI
+import { Spin, Switch, Alert, Button, Card } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 
 // THREE
@@ -12,7 +14,10 @@ import {
 } from '../three/examples/jsm/renderers/CSS3DRenderer.js';
 import Stats from '../three/examples/jsm/libs/stats.module.js';
 
+// NODE
 const fs = window.require('fs');
+
+// TRACESPACE
 const pcbStackup = require('pcb-stackup');
 
 class Renderer extends Component {
@@ -101,6 +106,8 @@ class Renderer extends Component {
   setupScene = () => {
     console.log('init');
 
+    var rendercontainer = document.getElementById('render-container');
+
     // Create Camera and set positions
     this.camera = new THREE.PerspectiveCamera(
       75,
@@ -112,21 +119,17 @@ class Renderer extends Component {
     this.camera.lookAt(new THREE.Vector3(0, 0, 0));
 
     // Create Scene
-    //this.scene = new THREE.Scene();
     this.cssScene = new THREE.Scene();
 
     // Create Renderer
     this.cssRenderer = new CSS3DRenderer();
     this.cssRenderer.setSize(window.innerWidth, window.innerHeight);
-    this.cssRenderer.domElement.style.position = 'absolute';
-    this.cssRenderer.domElement.style.height = '100%';
-    this.cssRenderer.domElement.style.width = '100%';
-    this.cssRenderer.domElement.style.top = 0;
-    document.body.appendChild(this.cssRenderer.domElement);
+    rendercontainer.appendChild(this.cssRenderer.domElement);
 
-
+    // Outer Method to add objects to dom
     this.addObjectsFromDom();
 
+    // Use orbit controls on renderer
     this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement);
 
     // Other Three objects
@@ -145,9 +148,7 @@ class Renderer extends Component {
   animationHandler = () => {
     //var elapsed = this.clock.getElapsedTime()
     //var delta = this.clock.getDelta()
-
-    //controls.update()
-
+    // controls.update()
     // renderer.render(scene, camera)
     this.cssRenderer.render(this.cssScene, this.camera);
     this.stats.update();
@@ -163,7 +164,9 @@ class Renderer extends Component {
     console.log('Rendering Renderer');
     return (
       <div>
-        <button>Hello</button>
+        <Card title="test">
+          <Button onClick={() => console.log('clicked')}>Hello</Button>
+        </Card>
       </div>
       // <div className='flip-card'>
       //   <div className='flip-card-inner'>

@@ -18,7 +18,7 @@ class App extends Component {
 
   render() {
     console.log('Rendering App')
-    return <div className='renderwrapper'><Renderer /></div>
+    return <div className='elements'><Renderer /></div>
   }
 }
 
