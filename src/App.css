@@ -15,9 +15,16 @@ canvas {
 }
 
 .elements {
-  padding: 50px;
+  padding: 10px;
   position: absolute;
   z-index: 10000;
+  height: 100vh
+}
+
+.sidebar {
+  opacity: 90%;
+  height: 100%;
+  width: 200px
 }
 
 #render-container {
@@ -34,6 +41,10 @@ canvas {
   position: absolute;
   right: 0;
   left: auto !important;
+  padding: 10px;
+}
+
+.ant-card-body {
   padding: 10px;
 }
 

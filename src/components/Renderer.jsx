@@ -14,33 +14,48 @@ import {
 } from '../three/examples/jsm/renderers/CSS3DRenderer.js';
 import Stats from '../three/examples/jsm/libs/stats.module.js';
 
-// NODE
+// Node
+const { remote, app } = window.require('electron');
 const fs = window.require('fs');
+const path = window.require('path');
+const { promisify } = window.require('util');
+const writeFile = promisify(fs.writeFile);
+
 
 // TRACESPACE
 const pcbStackup = require('pcb-stackup');
+
+// Other Constants
+const GERBERS_DIR = 0// = path.join(remote.app.getAppPath(), '/public/test');
+const TOP_OUT = 0// = path.join(remote.app.getAppPath(), 'example_top.svg');
+const BOTTOM_OUT = 0// = path.join(remote.app.getAppPath(), 'example_bot.svg');
 
 class Renderer extends Component {
   constructor(props) {
     super(props);
     this.state = { rendered: null };
+    //this.gerbeRender();
+    // this.renderStackup()
+    //   .then(this.writeStackup)
+    //   .then(() => console.log(`Wrote:\n  ${TOP_OUT}\n  ${BOTTOM_OUT}`))
+    //   .catch((error) => console.error('Error rendering stackup', error));
   }
 
   // Pure CSS
   gerbeRender = () => {
     console.log('Initialting Method gerberRender()');
     const fileNames = [
-      '././public/ArduinoGerbers/UNO.GTL',
-      '././public/ArduinoGerbers/UNO.GTS',
-      '././public/ArduinoGerbers/UNO.GTO',
-      '././public/ArduinoGerbers/UNO.GTP',
-      '././public/ArduinoGerbers/UNO.GBL',
-      '././public/ArduinoGerbers/UNO.GBS',
-      '././public/ArduinoGerbers/UNO.GBO',
-      '././public/ArduinoGerbers/UNO.GBP',
-      '././public/ArduinoGerbers/UNO.GML',
-      '././public/ArduinoGerbers/UNO.dri',
-      '././public/ArduinoGerbers/UNO.brd',
+      './public/ArduinoGerbers/UNO.GTL',
+      './public/ArduinoGerbers/UNO.GTS',
+      './public/ArduinoGerbers/UNO.GTO',
+      './public/ArduinoGerbers/UNO.GTP',
+      './public/ArduinoGerbers/UNO.GBL',
+      './public/ArduinoGerbers/UNO.GBS',
+      './public/ArduinoGerbers/UNO.GBO',
+      './public/ArduinoGerbers/UNO.GBP',
+      './public/ArduinoGerbers/UNO.GML',
+      './public/ArduinoGerbers/UNO.dri',
+      './public/ArduinoGerbers/UNO.brd',
     ];
 
     const layers = fileNames.map((filename) => ({
@@ -55,6 +70,7 @@ class Renderer extends Component {
       this.toplayer = stackup.top.svg;
       this.botlayer = stackup.bottom.svg;
       this.setState({ rendered: true });
+      document.body.appendChild(this.toplayer);
     });
   };
 
@@ -70,6 +86,33 @@ class Renderer extends Component {
   botreturner = () => {
     return this.state.rendered ? this.botlayer : '<span>LOADING</span>';
   };
+
+  GERBER_FILENAMES = [
+    '1dr.gbr',
+    '2dr.gbr',
+    'bot.gbr',
+    'top.gbr',
+    'smt.gbr',
+    'smb.gbr',
+    'sst.gbr',
+  ];
+
+  renderStackup() {
+    const layers = this.GERBER_FILENAMES.map((filename) => ({
+      filename,
+      gerber: fs.createReadStream(path.join(GERBERS_DIR, filename)),
+    }));
+
+    return pcbStackup(layers);
+  }
+
+  writeStackup(stackup) {
+    console.log(stackup);
+    return Promise.all([
+      writeFile(TOP_OUT, stackup.top.svg),
+      writeFile(BOTTOM_OUT, stackup.bottom.svg),
+    ]);
+  }
 
   // Three=.js
 
@@ -94,7 +137,7 @@ class Renderer extends Component {
   };
 
   setupScene = () => {
-    root = document.getElementById('root')
+    root = document.getElementById('root');
 
     console.log('init');
 
@@ -127,9 +170,9 @@ class Renderer extends Component {
     // Other Three objects
     this.clock = new THREE.Clock();
     this.stats = new Stats();
-    this.stats.domElement.classList.add('stats')
+    this.stats.domElement.classList.add('stats');
     root.appendChild(this.stats.dom);
-    this.setState({rendered: true})
+    this.setState({ rendered: true });
   };
 
   onWindowResize = () => {
@@ -149,21 +192,19 @@ class Renderer extends Component {
     requestAnimationFrame(this.animationHandler);
   };
 
-
   // componentDidMount() {
   //   //this.gerbeRender()
   // }
 
   render() {
     console.log('Rendering Renderer');
-    return (<div></div>)
-      // <div className='flip-card'>
-      //   <div className='flip-card-inner'>
-      //     <div className='flip-card-front' dangerouslySetInnerHTML={{ __html: this.topreturner() }}></div>
-      //     <div className='flip-card-back' dangerouslySetInnerHTML={{ __html: this.botreturner() }}></div>
-      //   </div>
-      // </div>
-    
+    return <div></div>;
+    // <div className='flip-card'>
+    //   <div className='flip-card-inner'>
+    //     <div className='flip-card-front' dangerouslySetInnerHTML={{ __html: this.topreturner() }}></div>
+    //     <div className='flip-card-back' dangerouslySetInnerHTML={{ __html: this.botreturner() }}></div>
+    //   </div>
+    // </div>
   }
 
   componentDidMount() {
@@ -171,6 +212,7 @@ class Renderer extends Component {
     this.animationHandler();
     window.addEventListener('resize', this.onWindowResize, false);
     this.controls.update();
+    //this.gerbeRender()
   }
 }
 

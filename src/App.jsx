@@ -21,9 +21,9 @@ class App extends Component {
     return (
       <div className="elements">
         <Renderer />
-        {/* <Card title="test">
+        <Card title="test" className="sidebar">
           <Button onClick={() => console.log('clicked')}>Hello</Button>
-        </Card> */}
+        </Card>
       </div>
     )
   }
