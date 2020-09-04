@@ -25,6 +25,8 @@ class Renderer extends Component {
     super(props);
     this.state = { rendered: null };
   }
+
+  // Pure CSS
   gerbeRender = () => {
     console.log('Initialting Method gerberRender()');
     const fileNames = [
@@ -69,17 +71,12 @@ class Renderer extends Component {
     return this.state.rendered ? this.botlayer : '<span>LOADING</span>';
   };
 
+  // Three=.js
+
   addObjectsFromDom = () => {
     // FRONT
     var element = document.getElementById('front-pcb');
     console.log(element);
-    // var element = document.createElement('div');
-    // element.innerHTML = 'text';
-    // element.style.background = "#0094ff";
-    // element.style.color = "white";
-    // element.style.padding = "2px";
-    // element.style.border = "0px";
-    // element.style.margin = "0px";
     var div = new CSS3DObject(element);
     div.position.x = 0;
     div.position.y = 25;
@@ -89,13 +86,6 @@ class Renderer extends Component {
     // BACK
     var element = document.getElementById('back-pcb');
     console.log(element);
-    // var element = document.createElement('div');
-    // element.innerHTML = 'text';
-    // element.style.background = "#0094ff";
-    // element.style.color = "white";
-    // element.style.padding = "2px";
-    // element.style.border = "0px";
-    // element.style.margin = "0px";
     var div = new CSS3DObject(element);
     div.position.x = 0;
     div.position.y = 25;
@@ -104,6 +94,8 @@ class Renderer extends Component {
   };
 
   setupScene = () => {
+    root = document.getElementById('root')
+
     console.log('init');
 
     var rendercontainer = document.getElementById('render-container');
@@ -135,14 +127,15 @@ class Renderer extends Component {
     // Other Three objects
     this.clock = new THREE.Clock();
     this.stats = new Stats();
-    document.body.appendChild(this.stats.dom);
+    this.stats.domElement.classList.add('stats')
+    root.appendChild(this.stats.dom);
+    this.setState({rendered: true})
   };
 
   onWindowResize = () => {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.cssRenderer.setSize(window.innerWidth, window.innerHeight);
   };
 
   animationHandler = () => {
@@ -156,25 +149,21 @@ class Renderer extends Component {
     requestAnimationFrame(this.animationHandler);
   };
 
+
   // componentDidMount() {
   //   //this.gerbeRender()
   // }
 
   render() {
     console.log('Rendering Renderer');
-    return (
-      <div>
-        <Card title="test">
-          <Button onClick={() => console.log('clicked')}>Hello</Button>
-        </Card>
-      </div>
+    return (<div></div>)
       // <div className='flip-card'>
       //   <div className='flip-card-inner'>
       //     <div className='flip-card-front' dangerouslySetInnerHTML={{ __html: this.topreturner() }}></div>
       //     <div className='flip-card-back' dangerouslySetInnerHTML={{ __html: this.botreturner() }}></div>
       //   </div>
       // </div>
-    );
+    
   }
 
   componentDidMount() {

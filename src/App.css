@@ -23,13 +23,19 @@ canvas {
 #render-container {
   position: relative;
   height: 100%;
-  width:100%;
+  width: 100%;
 }
 
 #root {
   position: absolute;
 }
 
+.stats {
+  position: absolute;
+  right: 0;
+  left: auto !important;
+  padding: 10px;
+}
 
 
 /* CSS below is for CSS controlled 3d spin of an SVG*/
