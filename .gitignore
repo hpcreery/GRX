@@ -13,5 +13,5 @@ coverage
 .DS_Store
 .env
 npm-debug.log
-package-loack.json
+package-lock.json
 .idea

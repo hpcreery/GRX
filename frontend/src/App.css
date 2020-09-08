@@ -1,7 +1,5 @@
 @import '~antd/dist/antd.dark.css';
 
-
-
 body {
   margin: 0;
   height: 100vh;
@@ -18,13 +16,13 @@ canvas {
   padding: 10px;
   position: absolute;
   z-index: 10000;
-  height: 100vh
+  height: 100vh;
 }
 
 .sidebar {
   opacity: 90%;
   height: 100%;
-  width: 200px
+  width: 200px;
 }
 
 #render-container {
@@ -47,7 +45,6 @@ canvas {
 .ant-card-body {
   padding: 10px;
 }
-
 
 /* CSS below is for CSS controlled 3d spin of an SVG*/
 
