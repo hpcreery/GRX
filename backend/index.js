@@ -12,6 +12,6 @@ app.use(cors())
 // import routes.js for URL routing. Passes 'app' object
 require('./src/routes')(app)
 
-// TODO: Dont start the server unless mongoDB is present
+// Start
 app.listen(config.port)
 console.log(`Server Started on port ${config.port}`)

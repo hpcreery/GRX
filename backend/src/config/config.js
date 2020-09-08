@@ -1,3 +1,6 @@
+const dotenv = require('dotenv')
+dotenv.config()
+
 module.exports = {
   port: 8081,
   mongodb: {
@@ -15,6 +18,51 @@ module.exports = {
   },
 
   dir: {
-    pages: process.env.DIR_PUBLIC || process.cwd() + '/public',
+    odbdatabase: process.env.ODBDATABASE || process.cwd() + '/public/jobs',
+    artwork: process.env.ARTWORK || process.cwd() + '/public/artwork',
+    odb2gbr: process.env.ODB2GBR || process.cwd() + '/public/etc',
   },
+
+  stackup: [
+    {
+      name: 'top',
+      side: 'top',
+      type: 'copper',
+    },
+    {
+      name: 'art02',
+      side: 'inner',
+      type: 'copper',
+    },
+    {
+      name: 'art03',
+      side: 'inner',
+      type: 'copper',
+    },
+    {
+      name: 'bot',
+      side: 'bot',
+      type: 'copper',
+    },
+    {
+      name: 'smt',
+      side: 'top',
+      type: 'soldermask',
+    },
+    {
+      name: 'smb',
+      side: 'bot',
+      type: 'soldermask',
+    },
+    {
+      name: 'sst',
+      side: 'top',
+      type: 'silkscreen',
+    },
+    {
+      name: 'ssb',
+      side: 'bot',
+      type: 'silkscreen',
+    },
+  ],
 }

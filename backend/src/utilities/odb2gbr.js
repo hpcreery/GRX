@@ -1,20 +1,22 @@
-// Node
+// NODE
 const fs = require('fs')
 const path = require('path')
 const process = require('process')
 const util = require('util')
 const { execSync, exec, spawn, spawnSync } = require('child_process')
-const dotenv = require('dotenv')
-dotenv.config()
 
-const converterpath = process.env.ODB2GBR //process.env.ODB2GBR ? process.env.ODB2GBR : or process.cwd() // for current directory
-console.log('ODB2GBR is here: ', converterpath)
+// CONFIG
+const { dir } = require('../config/config')
+
+const converter = dir.odb2gbr
+const odbdatabase = dir.odbdatabase
+
 console.log('ODB2GBR: extracting gerber from ODB++')
 
 module.exports = {
-  testModule(req, res) {
-    console.log('ODB2GBR test:', req.query)
-    res.status(200).send(req.query)
+  moduleInfo(req, res) {
+    console.log('ODB2GBR info query:', req.query)
+    res.status(200).send({ Query: req.query, Database: odbdatabase, Converter: converter })
   },
 
   getGerberData(req, res) {

@@ -1,0 +1,66 @@
+(------------------------------------------------------------)
+(                                                            )
+(                    LOG FILE                                )
+(                                                            )
+(        Drawing    : #Taaaaaa00361.tmp                      )
+(        Date/Time  : Thu Sep 16 15:11:10 2004               )
+(                                                            )
+(------------------------------------------------------------)
+
+
+
+     NCDRILL  PARAMETERS
+     -------------------
+
+ FORMAT   		2.4
+ MACHINE-OFFSET		x:0.000000	y:0.000000
+ FEEDRATE		1
+ COORDINATES		ABSOLUTE
+ OUTPUT-UNITS		ENGLISH
+ TOOL-ORDER		INCREASING
+ REPEAT-CODES		YES
+ SUPPRESS-LEAD-ZEROES	NO
+ SUPPRESS-TRAIL-ZEROES	NO
+ SUPPRESS-EQUAL		NO
+ TOOL-SELECT		NO
+ DIP-PATTERN		NO
+ HEADER			none
+ LEADER			12
+ CODE			ASCII
+ LENGTH			9999
+ UNIT-LENGTH		FEET
+ SEPARATE		NO
+ SCALE			1.000000
+
+
+
+
+
+     'ncdrill1.tap' created for holes connecting TOP and BOTTOM 
+     ---------------------------------------------
+
+     Num     Size         Plating   Quantity
+      1.     10.0          PLATED        545
+      2.     36.0          PLATED         10
+      3.     40.0          PLATED         45
+      4.     48.0          PLATED         92
+      5.     50.0          PLATED         16
+      6.     71.0          PLATED          4
+      7.     85.0          PLATED         22
+      8.    140.0      NON_PLATED          9
+     ---- total holes:                   743
+
+     ---- total head travel:                52.24 ft. (15.92 m) 
+
+     ---- approx. length of paper tape:     86.0 feet  /  26.2 meters 
+
+
+
+**********Screen Output**********
+
+ Extracting drill data from database.
+ Sorting drill data.
+ Creating file ncdrill1.tap for holes connecting TOP and BOTTOM 
+Empty variable definition
+Parse error in file C:\pcbenv\env, line 12
+

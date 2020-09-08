@@ -12,11 +12,13 @@ module.exports = (app) => {
 
   // ############  GBR2SVG  ############
 
-  app.get('/gbr2svg/test', gbr2svg.testModule)
+  app.get('/gbr2svg/info', gbr2svg.moduleInfo)
+
+  app.get('/gbr2svg/getSVG', gbr2svg.getSVG)
 
   // ############  ODB2GBR  ############
 
-  app.get('/odb2gbr/test', odb2gbr.testModule)
+  app.get('/odb2gbr/info', odb2gbr.moduleInfo)
 
   // ############  OTHER  ############
 
