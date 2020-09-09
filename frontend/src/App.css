@@ -15,7 +15,7 @@ canvas {
 .elements {
   padding: 10px;
   position: absolute;
-  z-index: 10000;
+  z-index: 1000;
   height: 100vh;
 }
 
@@ -42,8 +42,19 @@ canvas {
   padding: 10px;
 }
 
+/* Custom Ant Design modfyers */
+
 .ant-card-body {
-  padding: 10px;
+  padding: 0px;
+}
+
+.ant-tabs-tab {
+  align-content: center;
+  margin: 0 10px 0 0px
+}
+
+.ant-tabs-content-holder {
+  padding: 10px
 }
 
 /* CSS below is for CSS controlled 3d spin of an SVG*/
@@ -52,7 +63,7 @@ canvas {
   transform: scale(-1, 1);
 } */
 
-#back-data {
+#back-pcb > svg, #back-pcb > object {
   transform: scale(-1, 1);
 }
 

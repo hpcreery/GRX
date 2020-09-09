@@ -9,6 +9,8 @@ const pcbStackup = require('pcb-stackup')
 //require('./components/ThreeRenderer')
 //require('./dev/main')
 
+var parser = new DOMParser();
+
 class App extends Component {
   constructor(props) {
     super(props)
@@ -16,13 +18,14 @@ class App extends Component {
     //three()
   }
 
+
   render() {
     console.log('Rendering App')
     return (
       <div className='elements'>
         <Renderer />
         {/* <Card title='test' className='sidebar'>
-          <Button onClick={() => console.log('clicked')}>Hello</Button>
+          <Button onClick={() => this.testFetch()}>Hello</Button>
         </Card> */}
       </div>
     )

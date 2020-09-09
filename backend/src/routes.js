@@ -1,5 +1,6 @@
 const odb2gbr = require('./utilities/odb2gbr')
 const gbr2svg = require('./utilities/gbr2svg')
+const odbinfo = require('./controllers/odbinfo')
 
 const express = require('express')
 
@@ -19,6 +20,12 @@ module.exports = (app) => {
   // ############  ODB2GBR  ############
 
   app.get('/odb2gbr/info', odb2gbr.moduleInfo)
+
+  // ############  ODBINFO  ############
+
+  app.get('/odbinfo/info', odbinfo.moduleInfo)
+
+  app.get('/odbinfo/getJobList', odbinfo.getJobList)
 
   // ############  OTHER  ############
 
