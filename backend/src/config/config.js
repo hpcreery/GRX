@@ -19,6 +19,7 @@ module.exports = {
 
   dir: {
     odbdatabase: process.env.ODBDATABASE || process.cwd() + '/public/jobs',
+    odbgerboutdir: '/output/gerber',
     example: process.env.EXAMPLE || process.cwd() + '/public/artwork',
     artwork: process.env.ARTWORK || process.cwd() + '/public/artwork',
     odb2gbr: process.env.ODB2GBR || process.cwd() + '/public/etc',

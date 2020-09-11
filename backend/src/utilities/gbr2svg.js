@@ -38,6 +38,19 @@ layerConverter = async (dir) => {
   return svg;
 };
 
+gerberNamesFilter = (directory) => {
+  let files = fs.readdirSync(directory);
+  let gerbernames = files.filter((file) => {
+    var stats = fs.statSync(path.join(directory, file));
+    if (stats.isFile()) {
+      return true;
+    } else {
+      return false;
+    }
+  });
+  return gerbernames;
+};
+
 module.exports = {
   moduleInfo(req, res) {
     console.log('GBR2SVG info query:', req.query);
@@ -111,30 +124,19 @@ module.exports = {
       res.status(400).send('Need "job" object in Query');
       return;
     }
-    let files = fs.readdirSync(path.join(dir.odbdatabase, req.query.job));
-    let gerbernames = files.filter((file) => {
-      var stats = fs.statSync(path.join(dir.odbdatabase, req.query.job, file));
-      if (stats.isFile()) {
-        return true;
-      } else {
-        return false;
-      }
-    });
-
+    let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir);
+    gerbernames = gerberNamesFilter(directory);
     console.log('GERBERS:', gerbernames);
-
     try {
-    var convertedGerbers = await Promise.all(
-      gerbernames.map(async (gerbername) => {
-        return {
-          Layer: gerbername,
-          SVG: await layerConverter(
-            path.join(dir.odbdatabase, req.query.job, gerbername)
-          ),
-        };
-      })
-    );
-    console.log(convertedGerbers);
+      var convertedGerbers = await Promise.all(
+        gerbernames.map(async (gerbername) => {
+          return {
+            Layer: gerbername,
+            SVG: await layerConverter(path.join(directory, gerbername)),
+          };
+        })
+      );
+      console.log(convertedGerbers);
     } catch (err) {
       console.log('Error converting layers');
       res.status(500).send('Internal Error converting gerber to SVG:', err);
@@ -149,15 +151,8 @@ module.exports = {
       res.status(400).send('Need "job" object in Query');
       return;
     }
-    let files = fs.readdirSync(path.join(dir.odbdatabase, req.query.job));
-    let gerbers = files.filter((file) => {
-      var stats = fs.statSync(path.join(dir.odbdatabase, req.query.job, file));
-      if (stats.isFile()) {
-        return true;
-      } else {
-        return false;
-      }
-    });
+    let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir);
+    gerbernames = gerberNamesFilter(directory);
     gerberType = (name) => {
       try {
         return stackup.find((layer) => name.includes(layer.name)).type;
@@ -172,12 +167,12 @@ module.exports = {
         console.log('Irregular Gerber', name);
       }
     };
-    var layers = gerbers.map((filename) => ({
+    var layers = gerbernames.map((filename) => ({
       filename,
       type: gerberType(filename),
       side: gerberSide(filename),
       gerber: fs.createReadStream(
-        path.join(dir.odbdatabase, req.query.job, filename)
+        path.join(directory, filename)
       ),
     }));
     try {
@@ -186,7 +181,7 @@ module.exports = {
       res.status(500).send('Internal Error converting gerber to SVG:', err);
     }
 
-    console.log('STACKUP:', svgstackup);
+    //console.log('STACKUP:', svgstackup);
     //console.log(stackup.bottom.svg) // logs "<svg ... </svg>"
     //console.log(stackup.bottom.svg) // logs "<svg ... </svg>"
     toplayer = svgstackup.top.svg;
@@ -194,7 +189,7 @@ module.exports = {
 
     res.status(200).send({
       Query: req.query,
-      Gerbers: gerbers,
+      Gerbers: gerbernames,
       TopLayer: toplayer,
       BotLayer: botlayer,
     });

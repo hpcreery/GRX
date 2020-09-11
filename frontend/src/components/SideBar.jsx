@@ -51,6 +51,19 @@ class SideBar extends Component {
     return data;
   };
 
+  replaceFinished = async (job) => {
+    console.log(event)
+    console.log(job)
+    let response = await fetch(backendurl + `/gbr2svg/getFinishedArtwork?job=${job}`);
+    let data = await response.json();
+    console.log(data);
+    //this.changeDOMSVG('front-data', data.BotLayer)
+    //this.changeDOMSVG('back-data', data.TopLayer)
+    this.changeDOMSVG('front-pcb', data.TopLayer);
+    this.changeDOMSVG('back-pcb', data.BotLayer);
+    return data;
+  }
+
   changeDOMSVG = (side, data) => {
     this.removeDOMSVG(side);
     var object = document.getElementById(side);
@@ -81,14 +94,16 @@ class SideBar extends Component {
   hideSidebar = () => {
     this.setState({ sidebarhidden: true, sidebar: 'sidebar-hidden' });
   };
+
   showSidebar = () => {
     this.setState({ sidebarhidden: false, sidebar: 'sidebar' });
   };
+
   render() {
     return (
-      <div className='sidebarcontainer'>
+      <div className="sidebarcontainer">
         <Button
-          type='link'
+          type="link"
           className="togglesidebar"
           hidden={this.state.sidebarhidden}
           onClick={() => this.hideSidebar()}
@@ -96,7 +111,7 @@ class SideBar extends Component {
           HIDE
         </Button>
         <Button
-        type='link'
+          type="link"
           className="togglesidebar"
           hidden={!this.state.sidebarhidden}
           onClick={() => this.showSidebar()}
@@ -117,16 +132,21 @@ class SideBar extends Component {
                 onSearch={(value) => this.getJobList(value)}
                 style={{ width: 178 }}
               />
-              <div className='sidebarlist'>
-              <List
-                size="small"
-                header={<div>Job List</div>}
-                //bordered
-                dataSource={this.state.jobList}
-                renderItem={(item) => <List.Item>{item}</List.Item>}
-              />
+              <div className="sidebarlist">
+                <List
+                  size="small"
+                  header={<div>Job List</div>}
+                  //bordered
+                  dataSource={this.state.jobList}
+                  renderItem={(item) => (
+                    <List.Item style={{ padding: '5px 5px' }}>
+                      <Button type="link" style={{ width: '100%' }} onClick={(test) => this.replaceFinished(test)}>
+                        {item}
+                      </Button>
+                    </List.Item>
+                  )}
+                />
               </div>
-
             </TabPane>
             <TabPane tab="Layers" key="2">
               <List

@@ -76,9 +76,10 @@ canvas {
 }
 
 .sidebarlist {
-  height: calc(100% - 20px);
-  overflow: visible;
-  pointer-events: all;
+ height: 100%;
+ position: relative;
+/*  overflow: visible;
+  pointer-events: all; */
 }
 
 /* .sidebarlist::-webkit-scrollbar {
@@ -126,6 +127,7 @@ canvas {
 
 .ant-tabs-content-holder {
   padding: 10px;
+  height: 100%;
 }
 
 .ant-tabs-content {
@@ -133,6 +135,14 @@ canvas {
   /* overflow: auto; */
 }
 
+.ant-tabs-tabpane {
+  height: 100%;
+  overflow: scroll;
+}
+
+.ant-tabs-tabpane::-webkit-scrollbar {
+  display: none;
+}
 
 
 /* CSS below is for CSS controlled 3d spin of an SVG*/
