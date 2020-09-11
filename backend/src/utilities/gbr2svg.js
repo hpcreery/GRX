@@ -8,6 +8,7 @@ const { execSync, exec, spawn, spawnSync } = require('child_process');
 // MODULES
 const pcbStackup = require('pcb-stackup');
 const gerberToSVG = require('gerber-to-svg');
+const whatsThatGerber = require('../sourced/whats-that-gerber/index');
 
 // CONFIG
 const { dir, stackup } = require('../config/config');
@@ -54,7 +55,7 @@ gerberNamesFilter = (directory) => {
 module.exports = {
   moduleInfo(req, res) {
     console.log('GBR2SVG info query:', req.query);
-    res.status(200).send({ Query: req.query });
+    res.status(200).send({ query: req.query });
   },
 
   // req = { job: XXX }
@@ -73,24 +74,18 @@ module.exports = {
         return false;
       }
     });
-    gerberType = (name) => {
-      try {
-        return stackup.find((layer) => name.includes(layer.name)).type;
-      } catch (err) {
-        console.log('Irregular Gerber', name);
-      }
-    };
-    gerberSide = (name) => {
-      try {
-        return stackup.find((layer) => name.includes(layer.name)).side;
-      } catch (err) {
-        console.log('Irregular Gerber', name);
-      }
-    };
+
+    try{
+      var gerbertypes = await whatsThatGerber(gerbernames);
+      console.log(gerbertypes);
+    } catch(err) {
+      console.log(err)
+    }
+
     var layers = gerbers.map((filename) => ({
       filename,
-      type: gerberType(filename),
-      side: gerberSide(filename),
+      type: gerbertypes[filename].type,
+      side: gerbertypes[filename].side,
       gerber: fs.createReadStream(
         path.join(dir.example, req.query.job, filename)
       ),
@@ -108,31 +103,42 @@ module.exports = {
     // botlayer = svgstackup.bottom.svg;
 
     res.status(200).send({
-      Query: req.query,
-      Gerbers: gerbers,
-      TopLayer: svgstackup.top.svg,
-      BotLayer: svgstackup.bottom.svg,
+      query: req.query,
+      gerbers: gerbers,
+      toplayer: svgstackup.top.svg,
+      botlayer: svgstackup.bottom.svg,
     });
     return;
   },
 
   doesSVGExist(req, res) {},
 
-  async getAllLayers(req, res) {
+  async getLayerArtwork(req, res) {
     console.log('QUERY PARAMS:', req.query);
     if (!req.query.job) {
       res.status(400).send('Need "job" object in Query');
       return;
     }
-    let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir);
+    let directory = path.join(
+      dir.odbdatabase,
+      req.query.job,
+      dir.odbgerboutdir
+    );
     gerbernames = gerberNamesFilter(directory);
-    console.log('GERBERS:', gerbernames);
+    try{
+      var gerbertypes = await whatsThatGerber(gerbernames);
+      console.log(gerbertypes);
+    } catch(err) {
+      console.log(err)
+    }
     try {
       var convertedGerbers = await Promise.all(
         gerbernames.map(async (gerbername) => {
           return {
-            Layer: gerbername,
-            SVG: await layerConverter(path.join(directory, gerbername)),
+            layer: gerbername,
+            type: gerbertypes[gerbername].type,
+            side: gerbertypes[gerbername].side,
+            svg: await layerConverter(path.join(directory, gerbername)),
           };
         })
       );
@@ -151,29 +157,25 @@ module.exports = {
       res.status(400).send('Need "job" object in Query');
       return;
     }
-    let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir);
+    let directory = path.join(
+      dir.odbdatabase,
+      req.query.job,
+      dir.odbgerboutdir
+    );
     gerbernames = gerberNamesFilter(directory);
-    gerberType = (name) => {
-      try {
-        return stackup.find((layer) => name.includes(layer.name)).type;
-      } catch (err) {
-        console.log('Irregular Gerber', name);
-      }
-    };
-    gerberSide = (name) => {
-      try {
-        return stackup.find((layer) => name.includes(layer.name)).side;
-      } catch (err) {
-        console.log('Irregular Gerber', name);
-      }
-    };
+
+    try{
+      var gerbertypes = await whatsThatGerber(gerbernames);
+      console.log(gerbertypes);
+    } catch(err) {
+      console.log(err)
+    }
+
     var layers = gerbernames.map((filename) => ({
       filename,
-      type: gerberType(filename),
-      side: gerberSide(filename),
-      gerber: fs.createReadStream(
-        path.join(directory, filename)
-      ),
+      type: gerbertypes[filename].type,
+      side: gerbertypes[filename].side,
+      gerber: fs.createReadStream(path.join(directory, filename)),
     }));
     try {
       var svgstackup = await pcbStackup(layers, { useOutline: true });
@@ -188,10 +190,10 @@ module.exports = {
     botlayer = svgstackup.bottom.svg;
 
     res.status(200).send({
-      Query: req.query,
-      Gerbers: gerbernames,
-      TopLayer: toplayer,
-      BotLayer: botlayer,
+      query: req.query,
+      gerbers: gerbernames,
+      toplayer: toplayer,
+      botlayer: botlayer,
     });
   },
 

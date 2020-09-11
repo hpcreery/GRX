@@ -46,23 +46,26 @@ class SideBar extends Component {
     console.log(data);
     //this.changeDOMSVG('front-data', data.BotLayer)
     //this.changeDOMSVG('back-data', data.TopLayer)
-    this.changeDOMSVG('front-pcb', data.TopLayer);
-    this.changeDOMSVG('back-pcb', data.BotLayer);
+    this.changeDOMSVG('front-pcb', data.toplayer);
+    this.changeDOMSVG('back-pcb', data.botlayer);
     return data;
   };
 
-  replaceFinished = async (job) => {
-    console.log(event)
-    console.log(job)
-    let response = await fetch(backendurl + `/gbr2svg/getFinishedArtwork?job=${job}`);
+  replaceFinishedArtwork = async (job) => {
+    console.log('Getting Finished Artowrk for', job);
+    let response = await fetch(
+      backendurl + `/gbr2svg/getFinishedArtwork?job=${job}`
+    );
     let data = await response.json();
     console.log(data);
     //this.changeDOMSVG('front-data', data.BotLayer)
     //this.changeDOMSVG('back-data', data.TopLayer)
-    this.changeDOMSVG('front-pcb', data.TopLayer);
-    this.changeDOMSVG('back-pcb', data.BotLayer);
+    this.changeDOMSVG('front-pcb', data.toplayer);
+    this.changeDOMSVG('back-pcb', data.botlayer);
     return data;
-  }
+  };
+
+  
 
   changeDOMSVG = (side, data) => {
     this.removeDOMSVG(side);
@@ -138,10 +141,16 @@ class SideBar extends Component {
                   header={<div>Job List</div>}
                   //bordered
                   dataSource={this.state.jobList}
-                  renderItem={(item) => (
+                  renderItem={(jobname) => (
                     <List.Item style={{ padding: '5px 5px' }}>
-                      <Button type="link" style={{ width: '100%' }} onClick={(test) => this.replaceFinished(test)}>
-                        {item}
+                      <Button
+                        type="link"
+                        style={{ width: '100%' }}
+                        onClick={() =>
+                          this.replaceFinishedArtwork(jobname)
+                        }
+                      >
+                        {jobname}
                       </Button>
                     </List.Item>
                   )}

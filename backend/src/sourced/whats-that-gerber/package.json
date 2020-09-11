@@ -1,0 +1,76 @@
+{
+  "_from": "whats-that-gerber@^4.2.0",
+  "_id": "whats-that-gerber@4.2.0",
+  "_inBundle": false,
+  "_integrity": "sha512-uPzjOvMd73hwGjigzGau6D4Qz+eJyHnkcdbAKuPMGmZabR+WjJDYHbHfM8jDvz9soJI86V8/nGeqIjGXSGNSBQ==",
+  "_location": "/whats-that-gerber",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "whats-that-gerber@^4.2.0",
+    "name": "whats-that-gerber",
+    "escapedName": "whats-that-gerber",
+    "rawSpec": "^4.2.0",
+    "saveSpec": null,
+    "fetchSpec": "^4.2.0"
+  },
+  "_requiredBy": [
+    "/",
+    "/pcb-stackup",
+    "/pcb-stackup-core"
+  ],
+  "_resolved": "https://registry.npmjs.org/whats-that-gerber/-/whats-that-gerber-4.2.0.tgz",
+  "_shasum": "77cbe3c1ea40cb5abd4bb3c760f01e7558e32dca",
+  "_spec": "whats-that-gerber@^4.2.0",
+  "_where": "C:\\Users\\huntercreery\\Documents\\Projects\\JS\\GRX\\backend",
+  "bugs": {
+    "url": "https://github.com/tracespace/tracespace/issues"
+  },
+  "bundleDependencies": false,
+  "contributors": [
+    {
+      "name": "Mike Cousins",
+      "email": "mike@cousins.io",
+      "url": "http://cousins.io"
+    },
+    {
+      "name": "Kaspar Emanuel",
+      "email": "kaspar@monostable.co.uk",
+      "url": "http://monostable.co.uk"
+    },
+    {
+      "name": "David Freitag",
+      "email": "dvdfreitag@gmail.com"
+    }
+  ],
+  "dependencies": {
+    "xtend": "^4.0.2"
+  },
+  "deprecated": false,
+  "description": "Identify Gerber and drill files by filenamee",
+  "gitHead": "4304c118ad28283ef15184b9b5dc0e28a0a5630d",
+  "homepage": "https://github.com/tracespace/tracespace#readme",
+  "keywords": [
+    "pcb",
+    "gerber",
+    "excellon",
+    "circuit",
+    "hardware",
+    "electronics"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "whats-that-gerber",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tracespace/tracespace.git",
+    "directory": "packages/whats-that-gerber"
+  },
+  "scripts": {
+    "build": "cross-env NODE_ENV=production webpack",
+    "serve": "node ../../scripts/serve"
+  },
+  "types": "index.d.ts",
+  "version": "4.2.0"
+}

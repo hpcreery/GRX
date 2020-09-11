@@ -65,6 +65,7 @@ class Renderer extends Component {
       this.camera.position.z = 700;
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement);
       this.controls.enableRotate = true;
+      this.controls.enableZoom = true;
     } else if (type === 'orthographic') {
       this.camera = new THREE.OrthographicCamera(
         window.innerWidth / -2,
@@ -77,6 +78,7 @@ class Renderer extends Component {
       this.camera.position.z = 700;
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement);
       this.controls.enableRotate = false;
+      this.controls.enableZoom = false;
     } else {
       console.log('unkown camera type:', type);
     }
