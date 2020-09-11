@@ -31,11 +31,17 @@ const { backendurl } = require('../config/config');
 class SideBar extends Component {
   constructor(props) {
     super(props);
-    this.state = { rendered: null, jobList: [], jobLayers: [] };
+    this.state = {
+      rendered: null,
+      jobList: [],
+      jobLayers: [],
+      sidebarhidden: false,
+      sidebar: 'sidebar',
+    };
   }
 
   testFetch = async () => {
-    let response = await fetch(backendurl + '/gbr2svg/getSVG?job=ARDU');
+    let response = await fetch(backendurl + '/gbr2svg/getExampleSVG?job=ARDU');
     let data = await response.json();
     console.log(data);
     //this.changeDOMSVG('front-data', data.BotLayer)
@@ -72,10 +78,33 @@ class SideBar extends Component {
     return jobList;
   };
 
+  hideSidebar = () => {
+    this.setState({ sidebarhidden: true, sidebar: 'sidebar-hidden' });
+  };
+  showSidebar = () => {
+    this.setState({ sidebarhidden: false, sidebar: 'sidebar' });
+  };
   render() {
     return (
-      <div className="sidebar">
-        <Card title="GRX Gerber Renderer" className="sidebar">
+      <div className='sidebarcontainer'>
+        <Button
+          type='link'
+          className="togglesidebar"
+          hidden={this.state.sidebarhidden}
+          onClick={() => this.hideSidebar()}
+        >
+          HIDE
+        </Button>
+        <Button
+        type='link'
+          className="togglesidebar"
+          hidden={!this.state.sidebarhidden}
+          onClick={() => this.showSidebar()}
+        >
+          SHOW
+        </Button>
+
+        <Card title="GRX Gerber Renderer" className={this.state.sidebar}>
           <Tabs
             size="small"
             defaultActiveKey="1"
@@ -88,6 +117,7 @@ class SideBar extends Component {
                 onSearch={(value) => this.getJobList(value)}
                 style={{ width: 178 }}
               />
+              <div className='sidebarlist'>
               <List
                 size="small"
                 header={<div>Job List</div>}
@@ -95,9 +125,11 @@ class SideBar extends Component {
                 dataSource={this.state.jobList}
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               />
+              </div>
+
             </TabPane>
             <TabPane tab="Layers" key="2">
-            <List
+              <List
                 size="small"
                 header={<div>Steps</div>}
                 //bordered

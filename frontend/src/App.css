@@ -2,13 +2,13 @@
 
 body {
   margin: 0;
-  height: 100vh;
+  /* height: 100vh; */
   width: 100vw;
 }
 
 canvas {
   display: block;
-  height: 100vh;
+  /* height: 100vh; */
   width: 100vw;
 }
 
@@ -17,12 +17,29 @@ canvas {
   position: absolute;
   z-index: 1000;
   height: 100vh;
+  width: 100vw;
+  pointer-events: none;
+}
+
+.sidebarcontainer {
+  height: 100%;
+  width: 200px;
 }
 
 .sidebar {
   opacity: 97%;
   height: 100%;
   width: 200px;
+  transition: 1s ease;
+  pointer-events: all;
+}
+
+.sidebar-hidden {
+  opacity: 0%;
+  height: 100%;
+  width: 200px;
+  transition: 1s ease;
+  pointer-events: none;
 }
 
 #render-container {
@@ -43,10 +60,40 @@ canvas {
 }
 
 .icon-attribute {
+  right: 0;
   position: absolute;
   bottom: 0px;
   padding: 7px;
   z-index: 1000;
+}
+
+.togglesidebar {
+  bottom: 15px;
+  opacity: 100%;
+  position: absolute;
+  z-index: 1001;
+  pointer-events: all;
+}
+
+.sidebarlist {
+  height: calc(100% - 20px);
+  overflow: visible;
+  pointer-events: all;
+}
+
+/* .sidebarlist::-webkit-scrollbar {
+  display: none;
+} */
+
+
+
+@keyframes movesidebar {
+  from {
+    left: -30%;
+  }
+  to {
+    left: 100%;
+  }
 }
 
 /* Custom Ant Design modfyers */
@@ -57,8 +104,11 @@ canvas {
 }
 
 .ant-card-body {
+  height: calc(100% - 100px);
   padding: 0px;
+
 }
+
 
 .ant-tabs {
   height: 100%;
@@ -76,8 +126,14 @@ canvas {
 
 .ant-tabs-content-holder {
   padding: 10px;
-  height: 100%;
 }
+
+.ant-tabs-content {
+  height: 100%;
+  /* overflow: auto; */
+}
+
+
 
 /* CSS below is for CSS controlled 3d spin of an SVG*/
 

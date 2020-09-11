@@ -14,6 +14,7 @@
     "axios": "^0.20.0",
     "electron-packager": "^14.2.1",
     "express": "^4.17.1",
+    "gerber-to-svg": "^4.2.1",
     "pcb-stackup": "^4.2.1",
     "react": "^16.1.1",
     "react-dom": "^16.1.1",

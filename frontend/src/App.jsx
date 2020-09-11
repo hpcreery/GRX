@@ -14,14 +14,24 @@ var parser = new DOMParser();
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
-    //three()
+    this.state = {windowheight: window.innerHeight};
   }
+
+  componentDidMount() {
+    this.elements = document.getElementById("elements")
+    window.addEventListener('resize', this.onWindowResize);
+  }
+
+  onWindowResize = () => {
+    //console.log(this.elements)
+    this.setState({windowheight: window.innerHeight})
+    //this.elements.style.height = `${window.innerHeight}`
+  };
 
   render() {
     console.log('Rendering App');
     return (
-      <div className="elements">
+      <div className="elements" style={{height: this.state.windowheight}} id="elements">
         <Renderer />
         {/* <Card title='test' className='sidebar'>
           <Button onClick={() => this.testFetch()}>Hello</Button>

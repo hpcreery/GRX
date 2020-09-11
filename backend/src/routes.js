@@ -15,7 +15,11 @@ module.exports = (app) => {
 
   app.get('/gbr2svg/info', gbr2svg.moduleInfo)
 
-  app.get('/gbr2svg/getSVG', gbr2svg.getSVG)
+  app.get('/gbr2svg/getExampleSVG', gbr2svg.getExampleSVG)
+
+  app.get('/gbr2svg/getFinishedArtwork', gbr2svg.getFinishedArtwork)
+
+  app.get('/gbr2svg/getAllLayers', gbr2svg.getAllLayers)
 
   // ############  ODB2GBR  ############
 
