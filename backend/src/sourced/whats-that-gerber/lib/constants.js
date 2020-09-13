@@ -29,4 +29,5 @@ module.exports = {
   _CAD_ORCAD: 'orcad',
   _CAD_DIPTRACE: 'diptrace',
   _CAD_GENESIS: 'genesis',
+  _CAD_ACCEL: 'accel',
 }

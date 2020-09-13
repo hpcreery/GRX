@@ -5,6 +5,9 @@ node_modules
 
 # testing
 coverage
+**/jobs
+**/rawgerbers
+**/artwork/
 
 # production
 ./build

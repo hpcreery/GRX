@@ -15,7 +15,7 @@ module.exports = (app) => {
 
   app.get('/gbr2svg/info', gbr2svg.moduleInfo)
 
-  app.get('/gbr2svg/getExampleSVG', gbr2svg.getExampleSVG)
+  // app.get('/gbr2svg/getExampleSVG', gbr2svg.getExampleSVG) depreciated
 
   app.get('/gbr2svg/getFinishedArtwork', gbr2svg.getFinishedArtwork)
 
