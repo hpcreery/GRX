@@ -3,12 +3,13 @@ import React, { useState } from 'react'
 import { Slider } from 'antd'
 
 const QualitySlider = () => {
-  root = document.documentElement
+  //root = document.documentElement
+  var rendercontainer = document.getElementById('render-container')
 
-  const [quality, setQuality] = useState(getComputedStyle(root).getPropertyValue('--svg-scale'))
+  const [quality, setQuality] = useState(getComputedStyle(rendercontainer).getPropertyValue('--svg-scale'))
 
   const handleChange = (value) => {
-    root.style.setProperty('--svg-scale', value)
+    rendercontainer.style.setProperty('--svg-scale', value)
     setQuality(value)
   }
 

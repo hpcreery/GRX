@@ -1,8 +1,8 @@
 @import '~antd/dist/antd.dark.css';
 
-:root {
+/* :root {
   --svg-scale: 1;
-}
+} */
 
 body {
   margin: 0;
@@ -17,6 +17,7 @@ canvas {
 }
 
 #render-container {
+  --svg-scale: 1;
   position: relative;
   height: 100%;
   width: 100%;
@@ -116,7 +117,7 @@ canvas {
 /* Custom Ant Design modfyers */
 
 .ant-btn-link {
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .ant-card-head {

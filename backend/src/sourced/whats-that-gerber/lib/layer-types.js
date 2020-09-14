@@ -170,7 +170,7 @@ module.exports = [
       { ext: 'internalplane\\d+\\.ger', cad: c._CAD_EAGLE_OSHPARK },
       { match: /in(?:ner)?\d+[._]cu/, cad: c._CAD_KICAD },
       { match: /inner/, cad: c._CAD_DIPTRACE },
-      { match: /l\\d+[s,p,m]/, cad: c._CAD_GENESIS },
+      { match: /l\d+[s,p,m]/, cad: c._CAD_GENESIS },
     ],
   },
   {
@@ -210,9 +210,9 @@ module.exports = [
       { match: /fab/, cad: c._CAD_GEDA_PCB },
       { match: /npth/, cad: c._CAD_KICAD },
       { match: '/drill/', cad: c._CAD_EAGLE_PCBNG },
-      { match: /\\ddr/, cad: c._CAD_GENESIS },
-      { match: /bv_\\d+-\\d+/, cad: c._CAD_GENESIS },
-      { match: /pv_\\d+-\\d+/, cad: c._CAD_GENESIS },
+      { match: /\ddr/, cad: c._CAD_GENESIS },
+      { match: /bv_\d+-\d+/, cad: c._CAD_GENESIS },
+      { match: /pv_\d+-\d+/, cad: c._CAD_GENESIS },
     ],
   },
   {
