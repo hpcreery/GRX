@@ -2,7 +2,23 @@
 import React, { Component } from 'react'
 
 // ANT DESIGN UI
-import { Spin, Switch, Alert, Button, Card, Select, Tabs, Row, Col, List, Input, Slider, message } from 'antd'
+import {
+  Spin,
+  Switch,
+  Alert,
+  Button,
+  Card,
+  Select,
+  Tabs,
+  Row,
+  Col,
+  List,
+  Input,
+  Slider,
+  Radio,
+  Checkbox,
+  message,
+} from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
 // ANT DESIGN CONSTANTS
@@ -16,6 +32,7 @@ const pcbStackup = require('pcb-stackup')
 // CUSTOM
 //import FetchArtwork from './functional/FetchArtwork'
 import QualitySlider from './functional/QualitySlider'
+import LayerListItem from './functional/LayerListItem'
 
 // BACKEND
 const { backendurl } = require('../config/config')
@@ -24,9 +41,10 @@ class SideBar extends Component {
   constructor(props) {
     super(props)
     this.state = {
+      job: null,
+      layers: [],
       rendered: null,
       jobList: [],
-      jobLayers: [],
       sidebarhidden: false,
       sidebar: 'sidebar',
     }
@@ -142,7 +160,11 @@ class SideBar extends Component {
                   dataSource={this.state.jobList}
                   renderItem={(jobname) => (
                     <List.Item style={{ padding: '5px 5px' }}>
-                      <Button type='link' style={{ width: '100%' }} onClick={() => this.replaceArtwork(jobname)}>
+                      <Button
+                        type='link'
+                        style={{ width: '100%', height: '27px' }}
+                        onClick={() => this.replaceArtwork(jobname)}
+                      >
                         {jobname}
                       </Button>
                     </List.Item>
@@ -153,16 +175,20 @@ class SideBar extends Component {
             <TabPane tab='Layers' key='2'>
               <List
                 size='small'
-                header={<div>Steps</div>}
+                header={<div>Layers</div>}
                 //bordered
-                dataSource={this.state.jobLayers}
-                renderItem={(item) => <List.Item>{item}</List.Item>}
+                dataSource={this.state.layers}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '8px 8px' }}>
+                    <LayerListItem layer={item} />
+                  </List.Item>
+                )}
               />
               <List
                 size='small'
-                header={<div>Layers</div>}
+                header={<div>Steps</div>}
                 //bordered
-                dataSource={this.state.jobLayers}
+                dataSource={this.state.layerList}
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               />
             </TabPane>
@@ -190,7 +216,7 @@ class SideBar extends Component {
                   <QualitySlider />
                 </Col>
               </Row>
-              <Row>
+              {/* <Row>
                 <Col span={4} style={{ padding: '5px' }}>
                   <FormatPainterOutlined />
                 </Col>
@@ -198,7 +224,7 @@ class SideBar extends Component {
                   <Button onClick={() => this.testFetch()}>Get Sample</Button>
                   <Button onClick={() => this.getJobList('')}>Get Jobs</Button>
                 </Col>
-              </Row>
+              </Row> */}
             </TabPane>
           </Tabs>
         </Card>
@@ -208,6 +234,27 @@ class SideBar extends Component {
 
   componentDidMount() {
     this.getJobList('')
+  }
+
+  componentDidUpdate() {
+    console.log('updated')
+  }
+
+  static getDerivedStateFromProps(props, state) {
+    var newState = {}
+    if (props.job !== state.job) {
+      console.log('New Job')
+      newState.job = props.job
+    }
+    if (props.layers !== state.layers) {
+      //var layerlist = props.layers.map((object) => object.name)
+      //console.log('New Layers')
+      newState.layers = props.layers
+      //state.layerList = layerlist
+    }
+    console.log(state)
+    console.log(newState)
+    return newState
   }
 }
 

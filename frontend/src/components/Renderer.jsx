@@ -26,7 +26,7 @@ const pcbStackup = require('pcb-stackup')
 class Renderer extends Component {
   constructor(props) {
     super(props)
-    this.state = { rendered: null, Job: null, CSS3DObjects: [] }
+    this.state = { rendered: null, job: null, CSS3DObjects: [] }
     this.root = document.documentElement
   }
 
@@ -38,7 +38,7 @@ class Renderer extends Component {
     var element = document.getElementById('front')
     console.log(element)
     this.frontPCBObject = new CSS3DObject(element)
-    this.frontPCBObject.name = 'front-pcb'
+    this.frontPCBObject.name = 'front'
     this.frontPCBObject.position.x = 0
     this.frontPCBObject.position.y = 25
     this.frontPCBObject.position.z = 1
@@ -48,7 +48,7 @@ class Renderer extends Component {
     var element = document.getElementById('back')
     console.log(element)
     this.backPCBObject = new CSS3DObject(element)
-    this.backPCBObject.name = 'back-pcb'
+    this.backPCBObject.name = 'back'
     this.backPCBObject.position.x = 0
     this.backPCBObject.position.y = 25
     this.backPCBObject.position.z = 0.5
@@ -68,7 +68,7 @@ class Renderer extends Component {
       console.log(layer)
       this.addLayer(layer, true)
     })
-    this.setState({ CSS3DObjects: this.cssScene.children, Job: job })
+    this.setState({ CSS3DObjects: this.cssScene.children, job: job })
   }
 
   // High Level Absraction Methods
@@ -170,12 +170,12 @@ class Renderer extends Component {
     }
   }
 
-  customZoom = (delta) => {
-    var cssprop = getComputedStyle(this.root).getPropertyValue('--svg-scale')
-    this.root.style.setProperty('--svg-scale', parseInt(cssprop) / 10 + delta)
-    console.log(cssprop)
-    console.log(delta)
-  }
+  // customZoom = (delta) => {
+  //   var cssprop = getComputedStyle(this.root).getPropertyValue('--svg-scale')
+  //   this.root.style.setProperty('--svg-scale', parseInt(cssprop) / 10 + delta)
+  //   console.log(cssprop)
+  //   console.log(delta)
+  // }
 
   setupScene = () => {
     var root = document.getElementById('root')
@@ -256,6 +256,8 @@ class Renderer extends Component {
     return (
       <div style={{ height: '100%' }}>
         <SideBar
+          job={this.state.job}
+          layers={this.state.CSS3DObjects}
           cameraSelector={(...props) => this.cameraSelector(...props)}
           setJob={(...props) => this.setJob(...props)}
           addLayer={(layer) => this.addLayer(layer)}

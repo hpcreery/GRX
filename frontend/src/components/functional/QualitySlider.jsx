@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 
 import { Slider } from 'antd'
 
-function QualitySlider() {
+const QualitySlider = () => {
   root = document.documentElement
 
   const [quality, setQuality] = useState(getComputedStyle(root).getPropertyValue('--svg-scale'))
 
-  function handleChange(value) {
+  const handleChange = (value) => {
     root.style.setProperty('--svg-scale', value)
     setQuality(value)
   }

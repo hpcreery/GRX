@@ -17,6 +17,7 @@
     "gerber-to-svg": "^4.2.1",
     "pcb-stackup": "^4.2.1",
     "react": "^16.1.1",
+    "react-color": "^2.18.1",
     "react-dom": "^16.1.1",
     "react-scripts": "0.8.5",
     "three": "^0.120.0"
