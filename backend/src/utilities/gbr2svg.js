@@ -81,7 +81,7 @@ module.exports = {
       var convertedGerbers = await Promise.all(
         gerbernames.map(async (gerbername) => {
           return {
-            layer: gerbername,
+            name: gerbername,
             type: gerbertypes[gerbername].type,
             side: gerbertypes[gerbername].side,
             svg: await layerConverter(path.join(directory, gerbername)),
@@ -128,13 +128,13 @@ module.exports = {
     var botlayer = svgstackup.bottom.svg
     convertedGerbers = [
       {
-        layer: 'front',
+        name: 'front',
         type: 'finished',
         side: 'top',
         svg: toplayer,
       },
       {
-        layer: 'back',
+        name: 'back',
         type: 'finished',
         side: 'bottom',
         svg: botlayer,

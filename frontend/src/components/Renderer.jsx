@@ -26,7 +26,8 @@ const pcbStackup = require('pcb-stackup')
 class Renderer extends Component {
   constructor(props) {
     super(props)
-    this.state = { rendered: null, CSS3DObjects: [] }
+    this.state = { rendered: null, Job: null, CSS3DObjects: [] }
+    this.root = document.documentElement
   }
 
   CSS3DObjects = []
@@ -34,7 +35,7 @@ class Renderer extends Component {
   // Three.js
   addInitSVGFromDom = () => {
     // FRONT
-    var element = document.getElementById('front-pcb')
+    var element = document.getElementById('front')
     console.log(element)
     this.frontPCBObject = new CSS3DObject(element)
     this.frontPCBObject.name = 'front-pcb'
@@ -44,7 +45,7 @@ class Renderer extends Component {
     this.cssScene.add(this.frontPCBObject)
 
     // BACK
-    var element = document.getElementById('back-pcb')
+    var element = document.getElementById('back')
     console.log(element)
     this.backPCBObject = new CSS3DObject(element)
     this.backPCBObject.name = 'back-pcb'
@@ -56,15 +57,31 @@ class Renderer extends Component {
     this.setState({ CSS3DObjects: [this.frontPCBObject, this.backPCBObject] })
   }
 
+  // Higher Level Abstraction Methods
+  setJob = (job, layerartwork, finishedartwork) => {
+    this.removeAllCSS3DObjects()
+    layerartwork.forEach((layer) => {
+      console.log(layer)
+      this.addLayer(layer, false)
+    })
+    finishedartwork.forEach((layer) => {
+      console.log(layer)
+      this.addLayer(layer, true)
+    })
+    this.setState({ CSS3DObjects: this.cssScene.children, Job: job })
+  }
+
   // High Level Absraction Methods
-  addLayer = (layer) => {
+  addLayer = (layer, visible) => {
+    console.log(layer)
     // layer = {name: '', type: '', side: '', svg: ''}
     var svgElement = document.createElement('div')
     svgElement.id = layer.name
+    //svgElement.style.visibility = visible
     svgElement.setAttribute('data-type', layer.type)
     svgElement.setAttribute('data-side', layer.side)
     svgElement.innerHTML = layer.svg
-    this.addSVGObject(svgElement)
+    this.addSVGObject(svgElement, visible)
   }
 
   removeLayer = (layer) => {
@@ -72,12 +89,40 @@ class Renderer extends Component {
   }
 
   // Low Level Abstraction Methods
-  addSVGObject = (SVGObject) => {
+  addSVGObject = (SVGObject, visible) => {
     console.log('Adding SVG Object ', SVGObject)
     var newCSS3DObject = new CSS3DObject(SVGObject)
     newCSS3DObject.name = SVGObject.id
+    newCSS3DObject.visible = visible
+    if (newCSS3DObject.name === 'back') {
+      newCSS3DObject.position.z = -0.5
+    } else if (newCSS3DObject.name === 'front') {
+      newCSS3DObject.position.z = 0.5
+    }
     this.cssScene.add(newCSS3DObject)
+    //this.setState({ CSS3DObjects: this.cssScene.children })
+  }
+
+  removeCSS3DObject = (name) => {
+    this.cssScene.remove(this.state.CSS3DObjects.find((x) => x.name === name))
     this.setState({ CSS3DObjects: this.cssScene.children })
+  }
+
+  removeAllCSS3DObjects = () => {
+    for (var i = this.state.CSS3DObjects.length - 1; i >= 0; i--) {
+      this.cssScene.remove(this.state.CSS3DObjects[i])
+    }
+    this.setState({ CSS3DObjects: this.cssScene.children })
+  }
+
+  updateCSSObjects = () => {
+    var children = this.cssScene.children
+    children.forEach((child) => {
+      this.cssScene.remove(child)
+    })
+    this.state.CSS3DObjects.forEach((object) => {
+      this.cssScene.add(object)
+    })
   }
 
   // addSVGObjects = (SVGObjects) => {
@@ -98,29 +143,6 @@ class Renderer extends Component {
   //   this.setState({ CSS3DObjects: this.cssScene.children })
   // }
 
-  removeCSS3DObject = (name) => {
-    this.cssScene.remove(this.state.CSS3DObjects.find((x) => x.name === name))
-    this.setState({ CSS3DObjects: this.cssScene.children })
-  }
-
-  removeAllCSS3DObjects = () => {
-    this.state.CSS3DObjects.forEach((child) => {
-      console.log('removing', child)
-      this.cssScene.remove(child)
-    })
-    this.setState({ CSS3DObjects: this.cssScene.children })
-  }
-
-  updateCSSObjects = () => {
-    var children = this.cssScene.children
-    children.forEach((child) => {
-      this.cssScene.remove(child)
-    })
-    this.state.CSS3DObjects.forEach((object) => {
-      this.cssScene.add(object)
-    })
-  }
-
   // Camera type switcher
   cameraSelector = (type) => {
     console.log(type)
@@ -129,7 +151,7 @@ class Renderer extends Component {
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = true
-      this.controls.enableZoom = true
+      //this.controls.enableZoom = true
     } else if (type === 'orthographic') {
       this.camera = new THREE.OrthographicCamera(
         window.innerWidth / -2,
@@ -142,10 +164,17 @@ class Renderer extends Component {
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = false
-      this.controls.enableZoom = false
+      //this.controls.enableZoom = false
     } else {
       console.log('unkown camera type:', type)
     }
+  }
+
+  customZoom = (delta) => {
+    var cssprop = getComputedStyle(this.root).getPropertyValue('--svg-scale')
+    this.root.style.setProperty('--svg-scale', parseInt(cssprop) / 10 + delta)
+    console.log(cssprop)
+    console.log(delta)
   }
 
   setupScene = () => {
@@ -170,6 +199,7 @@ class Renderer extends Component {
 
     // Create Scene
     this.cssScene = new THREE.Scene()
+    //this.cssScene.scale.set(0.1, 0.1, 0.1) // due to scaling svgs by 10x
 
     // Create Renderer
     this.cssRenderer = new CSS3DRenderer()
@@ -182,9 +212,18 @@ class Renderer extends Component {
     // Outer Method to add objects to dom
     this.addInitSVGFromDom()
 
+    //rendercontainer.onwheel = (event) => this.customZoom(event.wheelDelta) // Depreciated => zooming is vert slow | planning to replace with quality slider
+
     // Use orbit controls on renderer
     this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
+    this.controls.minZoom = 0
+    this.controls.maxZoom = 700
     //this.controls.enableRotate = false;
+    //this.controls.enableZoom = false
+    //this.controls.zoomSpeed = 0.001
+    //this.controls.dispatchEvent({ type: 'movement', message: 'moving' })
+    //this.controls.addEventListener('movement', (event) => console.log(event))
+    //this.controls.addEventListener('change', (event) => console.log(event))
 
     // Other Three objects
     this.clock = new THREE.Clock()
@@ -213,10 +252,12 @@ class Renderer extends Component {
 
   render() {
     console.log('Rendering Renderer')
+    //console.log(this.state)
     return (
       <div style={{ height: '100%' }}>
         <SideBar
           cameraSelector={(...props) => this.cameraSelector(...props)}
+          setJob={(...props) => this.setJob(...props)}
           addLayer={(layer) => this.addLayer(layer)}
           removeLayer={(layer) => this.removeLayer(layer)}
           clear={() => this.removeAllCSS3DObjects()}

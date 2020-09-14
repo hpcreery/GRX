@@ -2,8 +2,8 @@
 import React, { Component } from 'react'
 
 // ANT DESIGN UI
-import { Spin, Switch, Alert, Button, Card, Select, Tabs, Row, Col, List, Input, message } from 'antd'
-import { LoadingOutlined, VideoCameraOutlined } from '@ant-design/icons'
+import { Spin, Switch, Alert, Button, Card, Select, Tabs, Row, Col, List, Input, Slider, message } from 'antd'
+import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
 // ANT DESIGN CONSTANTS
 const { Option, OptGroup } = Select
@@ -12,6 +12,10 @@ const { Search } = Input
 
 // TRACESPACE
 const pcbStackup = require('pcb-stackup')
+
+// CUSTOM
+//import FetchArtwork from './functional/FetchArtwork'
+import QualitySlider from './functional/QualitySlider'
 
 // BACKEND
 const { backendurl } = require('../config/config')
@@ -51,16 +55,26 @@ class SideBar extends Component {
     return
   }
 
-  replaceFinishedArtwork = async (job) => {
+  replaceArtwork = async (job) => {
+    //this.props.clear()
     console.log('Getting Finished Artowrk for', job)
-    let response = await fetch(backendurl + `/gbr2svg/getFinishedArtwork?job=${job}`)
-    let data = await response.json()
-    console.log(data)
+
+    let finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
+    let layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
+    //let data = await response.json()
+    console.log(finisheddata)
+    console.log(layerdata)
+    this.props.setJob(job, layerdata, finisheddata)
     //this.changeDOMSVG('front-data', data.BotLayer)
     //this.changeDOMSVG('back-data', data.TopLayer)
-    this.changeDOMSVG('front-pcb', data.toplayer)
-    this.changeDOMSVG('back-pcb', data.botlayer)
-    return data
+    //this.changeDOMSVG('front-pcb', data.toplayer)
+    //this.changeDOMSVG('back-pcb', data.botlayer)
+    // data.forEach((layer) => {
+    //   console.log(layer)
+    //   this.props.addLayer(layer)
+    // })
+
+    return
   }
 
   changeDOMSVG = (side, data) => {
@@ -128,11 +142,7 @@ class SideBar extends Component {
                   dataSource={this.state.jobList}
                   renderItem={(jobname) => (
                     <List.Item style={{ padding: '5px 5px' }}>
-                      <Button
-                        type='link'
-                        style={{ width: '100%' }}
-                        onClick={() => this.replaceFinishedArtwork(jobname)}
-                      >
+                      <Button type='link' style={{ width: '100%' }} onClick={() => this.replaceArtwork(jobname)}>
                         {jobname}
                       </Button>
                     </List.Item>
@@ -170,6 +180,21 @@ class SideBar extends Component {
                     <Option value='perspective'>Perspective</Option>
                     <Option value='orthographic'>Orthographic</Option>
                   </Select>
+                </Col>
+              </Row>
+              <Row>
+                <Col span={4} style={{ padding: '5px' }}>
+                  <FormatPainterOutlined />
+                </Col>
+                <Col span={20}>
+                  <QualitySlider />
+                </Col>
+              </Row>
+              <Row>
+                <Col span={4} style={{ padding: '5px' }}>
+                  <FormatPainterOutlined />
+                </Col>
+                <Col span={20}>
                   <Button onClick={() => this.testFetch()}>Get Sample</Button>
                   <Button onClick={() => this.getJobList('')}>Get Jobs</Button>
                 </Col>

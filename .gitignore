@@ -7,7 +7,7 @@ node_modules
 coverage
 **/jobs
 **/rawgerbers
-**/artwork/
+**/artwork
 
 # production
 ./build

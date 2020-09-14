@@ -1,5 +1,9 @@
 @import '~antd/dist/antd.dark.css';
 
+:root {
+  --svg-scale: 1;
+}
+
 body {
   margin: 0;
   /* height: 100vh; */
@@ -10,6 +14,26 @@ canvas {
   display: block;
   /* height: 100vh; */
   width: 100vw;
+}
+
+#render-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+#svg-container > #front > object,
+#svg-container > #front > svg {
+  transform: scale(var(--svg-scale), var(--svg-scale));
+}
+
+#svg-container > div > svg {
+  transform: scale(var(--svg-scale));
+}
+
+#svg-container > #back > object,
+#svg-container > #back > svg {
+  transform: scale(calc(var(--svg-scale) * -1), var(--svg-scale));
 }
 
 .elements {
@@ -30,7 +54,7 @@ canvas {
   opacity: 97%;
   height: 100%;
   width: 200px;
-  transition: 1s ease;
+  transition: 0.5s ease;
   pointer-events: all;
 }
 
@@ -38,14 +62,8 @@ canvas {
   opacity: 0%;
   height: 100%;
   width: 200px;
-  transition: 1s ease;
+  transition: 0.5s ease;
   pointer-events: none;
-}
-
-#render-container {
-  position: relative;
-  height: 100%;
-  width: 100%;
 }
 
 #root {
@@ -76,17 +94,15 @@ canvas {
 }
 
 .sidebarlist {
- height: 100%;
- position: relative;
-/*  overflow: visible;
+  height: 100%;
+  position: relative;
+  /*  overflow: visible;
   pointer-events: all; */
 }
 
 /* .sidebarlist::-webkit-scrollbar {
   display: none;
 } */
-
-
 
 @keyframes movesidebar {
   from {
@@ -107,13 +123,10 @@ canvas {
 .ant-card-body {
   height: calc(100% - 100px);
   padding: 0px;
-
 }
-
 
 .ant-tabs {
   height: 100%;
-  
 }
 
 .ant-tabs-nav {
@@ -144,16 +157,11 @@ canvas {
   display: none;
 }
 
-
 /* CSS below is for CSS controlled 3d spin of an SVG*/
 
 /* #back-pcb {
   transform: scale(-1, 1);
 } */
-
-#back-pcb > svg, #back-pcb > object {
-  transform: scale(-1, 1);
-}
 
 .flip-card {
   background-color: transparent;
