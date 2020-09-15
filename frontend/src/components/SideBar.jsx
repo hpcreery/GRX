@@ -148,7 +148,7 @@ class SideBar extends Component {
           SHOW
         </Button>
 
-        <Card title='GRX Gerber Renderer' className={this.state.sidebar}>
+        <Card title={this.state.job  || 'GRX Gerber Renderer'} className={this.state.sidebar}>
           <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
             <TabPane tab='Jobs' key='1' className='tabpane'>
               <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: 178 }} />

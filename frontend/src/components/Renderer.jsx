@@ -81,6 +81,19 @@ class Renderer extends Component {
     svgElement.setAttribute('data-type', layer.type)
     svgElement.setAttribute('data-side', layer.side)
     svgElement.innerHTML = layer.svg
+    svgElement.style.width = '0%'
+    svgElement.style.height = '0%'
+    var svgChildElement = svgElement.childNodes[0]
+    var viewBoxString = svgChildElement.getAttribute('viewBox')
+    var viewBox = viewBoxString.split(' ')
+    var originx = Number(viewBox[0]) / 1000
+    var originy = Number(viewBox[1]) / 1000
+    var width = Number(viewBox[2]) / 1000
+    var height = Number(viewBox[3]) / 1000
+    console.log(originx, originy, width, height)
+    svgChildElement.style.position = 'relative'
+    svgChildElement.style.bottom = `${height + originy}in`
+    svgChildElement.style.left = `${originx}in`
     this.addSVGObject(svgElement, visible)
   }
 
@@ -94,6 +107,11 @@ class Renderer extends Component {
     var newCSS3DObject = new CSS3DObject(SVGObject)
     newCSS3DObject.name = SVGObject.id
     newCSS3DObject.visible = visible
+    //newCSS3DObject.position.x = parseInt(viewBox[0]) / 1000
+    //newCSS3DObject.position.y = parseInt(viewBox[1]) / 1000
+    newCSS3DObject.position.x = 0
+    newCSS3DObject.position.y = 0
+    //newCSS3DObject.translate(0, 0, 0)
     if (newCSS3DObject.name === 'back') {
       newCSS3DObject.position.z = -0.5
     } else if (newCSS3DObject.name === 'front') {
