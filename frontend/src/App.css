@@ -18,9 +18,20 @@ canvas {
 
 #render-container {
   --svg-scale: 1;
+  --blend-mode: color;
+  /* multiply and difference are also pretty good .. best => color*/
   position: relative;
   height: 100%;
   width: 100%;
+}
+
+#svg-container > div {
+  mix-blend-mode: var(--blend-mode);
+}
+
+#svg-container > #front,
+#svg-container > #back {
+  mix-blend-mode: normal;
 }
 
 #svg-container > #front > object,
