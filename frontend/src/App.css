@@ -23,13 +23,15 @@ canvas {
   width: 100%;
 }
 
+
+
 #svg-container > #front > object,
 #svg-container > #front > svg {
   transform: scale(var(--svg-scale), var(--svg-scale));
 }
 
 #svg-container > div > svg {
-  transform: scale(var(--svg-scale));
+  transform: scale(var(--svg-scale), var(--svg-scale));
 }
 
 #svg-container > #back > object,

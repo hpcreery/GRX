@@ -92,8 +92,9 @@ class Renderer extends Component {
     var height = Number(viewBox[3]) / 1000
     console.log(originx, originy, width, height)
     svgChildElement.style.position = 'relative'
-    svgChildElement.style.bottom = `${height + originy}in`
-    svgChildElement.style.left = `${originx}in`
+    svgChildElement.style.transformOrigin = '0 0'
+    svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
+    svgChildElement.style.left = `calc(${originx}in * var(--svg-scale))`
     this.addSVGObject(svgElement, visible)
   }
 
