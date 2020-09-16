@@ -81,8 +81,9 @@ class Renderer extends Component {
     svgElement.setAttribute('data-type', layer.type)
     svgElement.setAttribute('data-side', layer.side)
     svgElement.innerHTML = layer.svg
-    svgElement.style.width = '0%'
-    svgElement.style.height = '0%'
+    svgElement.style.width = '0px'
+    svgElement.style.height = '0px'
+    svgElement.style.position = 'relative'
     var svgChildElement = svgElement.childNodes[0]
     var viewBoxString = svgChildElement.getAttribute('viewBox')
     var viewBox = viewBoxString.split(' ')
