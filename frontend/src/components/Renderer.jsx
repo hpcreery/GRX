@@ -94,8 +94,14 @@ class Renderer extends Component {
     console.log(originx, originy, width, height)
     svgChildElement.style.position = 'relative'
     svgChildElement.style.transformOrigin = '0 0'
-    svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
-    svgChildElement.style.left = `calc(${originx}in * var(--svg-scale))`
+    if (svgElement.id === 'back') {
+      svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
+      svgChildElement.style.left = `calc(${originx + width}in * var(--svg-scale))`
+    } else {
+      svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
+      svgChildElement.style.left = `calc(${originx}in * var(--svg-scale))`
+    }
+
     this.addSVGObject(svgElement, visible)
   }
 

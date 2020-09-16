@@ -19,7 +19,7 @@ canvas {
 #render-container {
   --svg-scale: 1;
   --blend-mode: color;
-  /* multiply and difference are also pretty good .. best => color*/
+  /* multiply and difference are also pretty good .. best => color */
   position: relative;
   height: 100%;
   width: 100%;
@@ -45,7 +45,6 @@ canvas {
 
 #svg-container > #back > object,
 #svg-container > #back > svg {
-  transform-origin: unset !important;
   transform: scale(calc(var(--svg-scale) * -1), var(--svg-scale));
 }
 
