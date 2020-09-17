@@ -9,6 +9,8 @@ const QualitySlider = () => {
   const [quality, setQuality] = useState(getComputedStyle(rendercontainer).getPropertyValue('--svg-scale'))
 
   const handleChange = (value) => {
+    // getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
+    // getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
     rendercontainer.style.setProperty('--svg-scale', value)
     setQuality(value)
   }
