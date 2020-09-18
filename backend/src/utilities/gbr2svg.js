@@ -88,7 +88,7 @@ module.exports = {
           }
         })
       )
-      console.log(convertedGerbers)
+      //console.log(convertedGerbers)
     } catch (err) {
       console.log('Error converting layers')
       res.status(500).send('Internal Error converting gerber to SVG =>' + err)
@@ -113,11 +113,11 @@ module.exports = {
       res.status(500).send('Internal Error =>' + err)
     }
     try {
-      var layers = gerbernames.map((filename) => ({
-        filename,
-        type: gerbertypes[filename].type,
-        side: gerbertypes[filename].side,
-        gerber: fs.createReadStream(path.join(directory, filename)),
+      var layers = gerbernames.map((name) => ({
+        filename: name,
+        type: gerbertypes[name].type,
+        side: gerbertypes[name].side,
+        gerber: fs.createReadStream(path.join(directory, name)),
       }))
       var svgstackup = await pcbStackup(layers, { useOutline: true })
     } catch (err) {
@@ -142,6 +142,36 @@ module.exports = {
     ]
     res.status(200).send(convertedGerbers)
     return convertedGerbers
+  },
+
+  async getLayerList(req, res) {
+    console.log('QUERY PARAMS:', req.query)
+    if (!req.query.job) {
+      res.status(400).send('Need "job" object in Query')
+      return
+    }
+    let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir)
+    try {
+      gerbernames = gerberNamesFilter(directory)
+      var gerbertypes = await whatsThatGerber(gerbernames)
+      console.log(gerbertypes)
+    } catch (err) {
+      console.log(err)
+      res.status(500).send('Internal Error =>' + err)
+    }
+    try {
+      var layers = gerbernames.map((name) => ({
+        name: name,
+        type: gerbertypes[name].type,
+        side: gerbertypes[name].side,
+        svg: ''
+      }))
+    } catch (err) {
+      console.log(err)
+      res.status(500).send('Internal Error =>' + err)
+    }
+    res.status(200).send(layers)
+    return layers
   },
 
   getFinalSVG(req, res) {},

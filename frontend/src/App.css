@@ -52,7 +52,7 @@ canvas {
   font-size: 300px;
   width: 100in;
   position: relative;
-  line-height: 0px;
+  line-height: 300px;
   padding: 0px;
   margin: 0px;
   transform-origin: 0px 0px;
@@ -101,9 +101,18 @@ canvas {
 }
 
 .icon-attribute {
+  text-align: right;
   right: 0;
   position: absolute;
   bottom: 0px;
+  padding: 7px;
+  z-index: 1000;
+}
+
+.coordinates {
+  right: 0;
+  position: absolute;
+  bottom: 60px;
   padding: 7px;
   z-index: 1000;
 }

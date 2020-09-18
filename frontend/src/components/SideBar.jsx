@@ -47,6 +47,7 @@ class SideBar extends Component {
       jobList: [],
       sidebarhidden: false,
       sidebar: 'sidebar',
+      frontload: false
     }
   }
 
@@ -66,23 +67,22 @@ class SideBar extends Component {
     }
   }
 
-  testFetch = async () => {
-    let data = await this.fetchData('/gbr2svg/getFinishedArtowrk?job=ARDU')
-    this.changeDOMSVG('front-pcb', data.toplayer)
-    this.changeDOMSVG('back-pcb', data.botlayer)
-    return
-  }
-
   replaceArtwork = async (job) => {
     //this.props.clear()
     console.log('Getting Finished Artowrk for', job)
+    if (this.state.frontload === true) {
+      var finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
+      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
+      this.props.setJob(job, layerdata, finisheddata)
+    } else if (this.state.frontload === false ) {
+      var data = await this.getLayerList(job)
+      this.props.setJob(job, data)
+    }
 
-    let finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
-    let layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
     //let data = await response.json()
     console.log(finisheddata)
     console.log(layerdata)
-    this.props.setJob(job, layerdata, finisheddata)
+    
     //this.changeDOMSVG('front-data', data.BotLayer)
     //this.changeDOMSVG('back-data', data.TopLayer)
     //this.changeDOMSVG('front-pcb', data.toplayer)
@@ -113,11 +113,15 @@ class SideBar extends Component {
   }
 
   getJobList = async (search) => {
-    let response = await fetch(backendurl + `/odbinfo/getJobList?search=${search}`)
-    let data = await response.json()
+    let data = await this.fetchData(`/odbinfo/getJobList?search=${search}`)
     var jobList = data.Jobs.map((job) => job.Name)
     this.setState({ jobList: jobList })
     return jobList
+  }
+
+  getLayerList = async (job) => {
+    let data = await this.fetchData(`/gbr2svg/getLayerList?job=${job}`)
+    return data
   }
 
   hideSidebar = () => {
@@ -192,8 +196,8 @@ class SideBar extends Component {
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               />
             </TabPane>
-            <TabPane tab='Settings' key='3'>
-              <Row>
+            <TabPane tab='Tools' key='3'>
+              <Row style={{padding: '5px '}}>
                 <Col span={4} style={{ padding: '5px' }}>
                   <VideoCameraOutlined />
                 </Col>
@@ -208,7 +212,7 @@ class SideBar extends Component {
                   </Select>
                 </Col>
               </Row>
-              <Row>
+              <Row style={{padding: '5px '}}>
                 <Col span={4} style={{ padding: '5px' }}>
                   <FormatPainterOutlined />
                 </Col>
@@ -259,3 +263,18 @@ class SideBar extends Component {
 }
 
 export default SideBar
+
+
+// DEPRECIATED METHODS
+/*
+
+  testFetch = async () => {
+    let data = await this.fetchData('/gbr2svg/getFinishedArtowrk?job=ARDU')
+    this.changeDOMSVG('front-pcb', data.toplayer)
+    this.changeDOMSVG('back-pcb', data.botlayer)
+    return
+  }
+
+
+
+  */

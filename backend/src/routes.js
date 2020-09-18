@@ -21,6 +21,8 @@ module.exports = (app) => {
 
   app.get('/gbr2svg/getLayerArtwork', gbr2svg.getLayerArtwork)
 
+  app.get('/gbr2svg/getLayerList', gbr2svg.getLayerList)
+
   // ############  ODB2GBR  ############
 
   app.get('/odb2gbr/info', odb2gbr.moduleInfo)
