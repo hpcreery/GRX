@@ -4,7 +4,7 @@ const app = electron.app
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow
 
-const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
+
 
 const path = require('path')
 const url = require('url')
@@ -33,6 +33,7 @@ function createWindow() {
 
   // Open the DevTools.
   if (startUrl == process.env.ELECTRON_START_URL) {
+		const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer')
     mainWindow.webContents.openDevTools()
 
     // Install React Dev Tools for or Dev Session

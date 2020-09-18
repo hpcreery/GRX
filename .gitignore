@@ -11,6 +11,9 @@ coverage
 
 # production
 ./build
+frontend/build
+backend/build
+frontend/GRX**
 
 # misc
 .DS_Store

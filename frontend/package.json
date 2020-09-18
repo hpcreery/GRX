@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-es2016": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
     "electron": "^10.1.1",
     "electron-devtools-installer": "^3.0.0",
     "electron-react-devtools": "^0.5.3",
@@ -31,9 +35,9 @@
     "start-electron": "electron .",
     "pack": "build --dir",
     "build": "react-scripts build",
-    "build_osx": "electron-packager . App --platform=darwin --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for OSX'",
-    "build_linux": "electron-packager . App --platform=linux  --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for LINUX'",
-    "build_win": "electron-packager . App --platform=win32  --arch=x64 --overwrite --icon=icon.ico ; echo 'Built for WIN'"
+    "build_osx": "electron-packager . GRX --platform=darwin --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for OSX'",
+    "build_linux": "electron-packager . GRX --platform=linux  --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for LINUX'",
+    "build_win": "electron-packager . GRX --platform=win32  --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for WIN'"
   },
   "author": "Hunter Creery"
 }
