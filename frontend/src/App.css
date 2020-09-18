@@ -18,7 +18,7 @@ canvas {
 
 #render-container {
   --svg-scale: 1;
-  --blend-mode: color;
+  --blend-mode: normal;
   /* multiply and difference are also pretty good .. best => color */
   position: relative;
   height: 100%;
@@ -186,7 +186,8 @@ canvas {
 
 .ant-tabs-tabpane {
   height: 100%;
-  overflow: scroll;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 .ant-tabs-tabpane::-webkit-scrollbar {

@@ -18,6 +18,7 @@ import {
   Radio,
   Checkbox,
   message,
+  Progress,
 } from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
@@ -33,6 +34,8 @@ const pcbStackup = require('pcb-stackup')
 //import FetchArtwork from './functional/FetchArtwork'
 import QualitySlider from './functional/QualitySlider'
 import LayerListItem from './functional/LayerListItem'
+import UnloadedLayerListItem from './functional/UnloadedLayerListItem'
+import BlendMode from './functional/BlendMode'
 
 // BACKEND
 const { backendurl } = require('../config/config')
@@ -44,14 +47,17 @@ class SideBar extends Component {
       job: null,
       layers: [],
       rendered: null,
+      loading: false,
+      percent: 0,
       jobList: [],
       sidebarhidden: false,
       sidebar: 'sidebar',
-      frontload: false
+      frontload: false,
     }
   }
 
   fetchData = async (urlext) => {
+    this.setState({ loading: true, percent: 0 })
     try {
       let response = await fetch(backendurl + urlext)
       if (response.status !== 200) {
@@ -60,38 +66,38 @@ class SideBar extends Component {
         throw err
       }
       let data = await response.json()
+      this.setState({ loading: false, percent: 100 })
       return data
     } catch (err) {
+      this.setState({ loading: false })
       message.error('Server Error => ' + err)
       throw err
     }
   }
 
+  fetchLayer = async (layer) => {
+    if (layer.name !== 'front' && layer.name !== 'back') {
+      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${this.state.job}&layer=${layer.name}`)
+    } else {
+      var layerdata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${this.state.job}`)
+      layerdata = Array(layerdata.find((data) => data.name == layer.name))
+    }
+    return layerdata
+  }
+
   replaceArtwork = async (job) => {
     //this.props.clear()
     console.log('Getting Finished Artowrk for', job)
+    var finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
     if (this.state.frontload === true) {
-      var finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
       var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
       this.props.setJob(job, layerdata, finisheddata)
-    } else if (this.state.frontload === false ) {
+    } else if (this.state.frontload === false) {
       var data = await this.getLayerList(job)
-      this.props.setJob(job, data)
+      this.props.setJob(job, data, finisheddata)
     }
-
-    //let data = await response.json()
-    console.log(finisheddata)
-    console.log(layerdata)
-    
-    //this.changeDOMSVG('front-data', data.BotLayer)
-    //this.changeDOMSVG('back-data', data.TopLayer)
-    //this.changeDOMSVG('front-pcb', data.toplayer)
-    //this.changeDOMSVG('back-pcb', data.botlayer)
-    // data.forEach((layer) => {
-    //   console.log(layer)
-    //   this.props.addLayer(layer)
-    // })
-
+    //console.log(finisheddata)
+    //console.log(layerdata)
     return
   }
 
@@ -124,6 +130,13 @@ class SideBar extends Component {
     return data
   }
 
+  handleFrontLoad = (value) => {
+    if (value === true) {
+      this.replaceArtwork(this.state.job)
+    }
+    this.setState({ frontload: value })
+  }
+
   hideSidebar = () => {
     this.setState({ sidebarhidden: true, sidebar: 'sidebar-hidden' })
   }
@@ -152,7 +165,12 @@ class SideBar extends Component {
           SHOW
         </Button>
 
-        <Card title={this.state.job  || 'GRX Gerber Renderer'} className={this.state.sidebar}>
+        <Card
+          title={
+            this.state.loading ? <Spin indicator={<LoadingOutlined spin />} /> : this.state.job || 'GRX Gerber Renderer'
+          }
+          className={this.state.sidebar}
+        >
           <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
             <TabPane tab='Jobs' key='1' className='tabpane'>
               <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: 178 }} />
@@ -184,7 +202,16 @@ class SideBar extends Component {
                 dataSource={this.state.layers}
                 renderItem={(item) => (
                   <List.Item style={{ padding: '8px 8px' }}>
-                    <LayerListItem layer={item} />
+                    {this.state.frontload ? (
+                      <LayerListItem layer={item} />
+                    ) : (
+                      <UnloadedLayerListItem
+                        layer={item}
+                        add={(...props) => this.props.setSVGinElement(...props)}
+                        remove={(...props) => this.props.removeSVGinElement(...props)}
+                        fetchLayer={(...props) => this.fetchLayer(...props)}
+                      />
+                    )}
                   </List.Item>
                 )}
               />
@@ -197,7 +224,7 @@ class SideBar extends Component {
               />
             </TabPane>
             <TabPane tab='Tools' key='3'>
-              <Row style={{padding: '5px '}}>
+              <Row style={{ margin: '5px ' }}>
                 <Col span={4} style={{ padding: '5px' }}>
                   <VideoCameraOutlined />
                 </Col>
@@ -212,12 +239,18 @@ class SideBar extends Component {
                   </Select>
                 </Col>
               </Row>
-              <Row style={{padding: '5px '}}>
-                <Col span={4} style={{ padding: '5px' }}>
-                  <FormatPainterOutlined />
+              <QualitySlider />
+              <BlendMode />
+              <Row style={{ margin: '5px ' }}>
+                <Col span={18} style={{ padding: '5px' }}>
+                  Front Load
                 </Col>
-                <Col span={20}>
-                  <QualitySlider />
+                <Col span={6} style={{ padding: '5px' }}>
+                  <Switch
+                    size='small'
+                    checked={this.state.frontload}
+                    onChange={(checked) => this.handleFrontLoad(checked)}
+                  />
                 </Col>
               </Row>
               {/* <Row>
@@ -263,7 +296,6 @@ class SideBar extends Component {
 }
 
 export default SideBar
-
 
 // DEPRECIATED METHODS
 /*

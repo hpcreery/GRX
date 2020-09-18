@@ -5,6 +5,8 @@ import { BgColorsOutlined } from '@ant-design/icons'
 import { SketchPicker, BlockPicker, CirclePicker } from 'react-color'
 
 const LayerListItem = (props) => {
+  const { layer, add, remove, fetchLayer } = props
+
   //var svgContainer = document.getElementById('svg-container')
   //var layerObject = svgContainer.childNodes.item(props.layer.name)
   //var layerObject = document.getElementById(props.layer.name)
@@ -16,25 +18,33 @@ const LayerListItem = (props) => {
   const [color, setColor] = useState('white')
 
   //console.log(svgContainer.childNodes.item(props.layer.name).style.color)
-  const handleChange = (value) => {
-    console.log(value)
+  const handleChange = async (value) => {
+    const svgElement = document.getElementById(layer.name)
+    console.log(svgElement)
+    console.log(layer)
+    if (value === true) {
+      var data = await fetchLayer(layer)
+      add(...data, svgElement)
+    } else if (value === false) {
+      remove(layer)
+    }
     props.layer.visible = value
     setVisible(value)
   }
 
   const handleColorChange = (color, event) => {
-    var layerObject = document.getElementById(props.layer.name)
+    const svgElement = document.getElementById(layer.name)
     console.log(color)
-    console.log(layerObject)
-    console.log(getComputedStyle(layerObject).getPropertyValue('color'))
-    layerObject.style.color = `rgba(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}, 0.7)`
+    console.log(svgElement)
+    console.log(getComputedStyle(svgElement).getPropertyValue('color'))
+    svgElement.style.color = `rgba(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}, 0.7)`
     setColor(color.hex)
   }
 
   return (
     <div style={{ width: '100%' }}>
       <Checkbox checked={visible} onChange={(value) => handleChange(value.target.checked)} style={{ width: '90%' }}>
-        {props.layer.name}
+        {layer.name}
       </Checkbox>
       <Popover
         content={<CirclePicker onChange={(color, event) => handleColorChange(color, event)} />}

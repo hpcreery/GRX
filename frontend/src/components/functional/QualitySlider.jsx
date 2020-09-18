@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
-import { Slider } from 'antd'
+import { Slider, Col, Row } from 'antd'
+import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
 const QualitySlider = () => {
   //root = document.documentElement
@@ -15,7 +16,16 @@ const QualitySlider = () => {
     setQuality(value)
   }
 
-  return <Slider min={1} max={10} onChange={(value) => handleChange(value)} value={quality} />
+  return (
+    <Row style={{ margin: '5px ' }}>
+      <Col span={4} style={{ padding: '5px' }}>
+        <FormatPainterOutlined />
+      </Col>
+      <Col span={20}>
+        <Slider min={1} max={10} onChange={(value) => handleChange(value)} value={quality} />
+      </Col>
+    </Row>
+  )
 }
 
 export default QualitySlider

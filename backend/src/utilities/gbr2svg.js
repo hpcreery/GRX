@@ -69,8 +69,14 @@ module.exports = {
       return
     }
     let directory = path.join(dir.odbdatabase, req.query.job, dir.odbgerboutdir)
+
     try {
-      gerbernames = gerberNamesFilter(directory)
+      if (req.query.layer) {
+        gerbernames = [req.query.layer]
+      } else {
+        gerbernames = gerberNamesFilter(directory)
+      }
+
       var gerbertypes = await whatsThatGerber(gerbernames)
       console.log(gerbertypes)
     } catch (err) {
@@ -164,7 +170,7 @@ module.exports = {
         name: name,
         type: gerbertypes[name].type,
         side: gerbertypes[name].side,
-        svg: ''
+        svg: '',
       }))
     } catch (err) {
       console.log(err)
