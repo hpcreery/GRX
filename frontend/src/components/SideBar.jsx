@@ -62,7 +62,8 @@ class SideBar extends Component {
       let response = await fetch(backendurl + urlext)
       if (response.status !== 200) {
         console.error(response)
-        var err = 'Status: ' + response.status + ' Message: ' + (await response.text())
+        //var err = 'Status: ' + response.status + ' => Message: ' + (await response.text()) // ADVANCED
+        var err = await response.text()
         throw err
       }
       let data = await response.json()
@@ -70,7 +71,7 @@ class SideBar extends Component {
       return data
     } catch (err) {
       this.setState({ loading: false })
-      message.error('Server Error => ' + err)
+      message.error('Error => ' + err)
       throw err
     }
   }

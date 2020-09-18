@@ -48,15 +48,6 @@ class App extends Component {
               Hunter Creery
             </a>{' '}
           </h6>
-          <h6>
-            <a target="_blank" href="https://icons8.com/icons/set/circuit">
-              Circuit icon
-            </a>{' '}
-            icon by{' '}
-            <a target="_blank" href="https://icons8.com">
-              Icons8
-            </a>
-          </h6>
         </div>
       </div>
     );

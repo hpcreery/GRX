@@ -110,9 +110,9 @@ canvas {
 }
 
 .coordinates {
-  right: 0;
+  left: 50%;
   position: absolute;
-  bottom: 60px;
+  bottom: 0px;
   padding: 7px;
   z-index: 1000;
 }
