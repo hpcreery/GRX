@@ -5,9 +5,15 @@
 } */
 
 body {
+  overflow-x: hidden;
+  overflow-y: hidden;
   margin: 0;
   /* height: 100vh; */
   width: 100vw;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 canvas {
@@ -110,11 +116,25 @@ canvas {
 }
 
 .coordinates {
-  left: 50%;
   position: absolute;
+  width: 100%;
+  text-align: center;
   bottom: 0px;
-  padding: 7px;
   z-index: 1000;
+}
+
+.height-measurement {
+  width: max-content;
+  margin: 0;
+  position: absolute;
+}
+
+.width-measurement {
+  width: max-content;
+  margin: 0;
+  position: absolute;
+  transform: rotate(-90deg);
+  transform-origin: left top;
 }
 
 .togglesidebar {

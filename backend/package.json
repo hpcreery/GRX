@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "pm2 start index.js --name backend -i 5",
+    "start": "node index.js",
+    "start-prod": "pm2 start index.js --name backend -i 5",
     "monitor": "pm2 monit"
   },
   "author": "Hunter Creery",
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "express-fileupload": "^1.2.0",
     "gerber-to-svg": "^4.2.1",
     "morgan": "^1.10.0",
     "pcb-stackup": "^4.2.1",

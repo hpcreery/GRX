@@ -11,7 +11,7 @@ const { backendurl } = require('../config/config')
 class Upload extends Component {
   constructor(props) {
     super(props)
-    
+
   }
   state = {
     fileList: [
@@ -19,7 +19,6 @@ class Upload extends Component {
         uid: '-1',
         name: 'xxx.png',
         status: 'done',
-        url: backendurl,
       },
     ],
   };
@@ -45,13 +44,13 @@ class Upload extends Component {
 
   render() {
     const props = {
-      action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76',
+      action: backendurl,
       onChange: this.handleChange,
       multiple: true,
     };
     return (
       <Upload {...props} fileList={this.state.fileList}>
-        <Button icon={<UploadOutlined />}>Upload</Button>
+        <Button icon={<UploadOutlined />}>Upload Gerbers</Button>
       </Upload>
     );
   }

@@ -22,6 +22,12 @@ Build into Docker Image for hosting the webpage [optional]
 docker build -t <your-username>/grx-frontend .
 ```
 
+Then start the docker container
+
+```
+docker run -p 5000:5000 -d hpcreery/grx-frontend
+```
+
 or
 
 Create Electron App for multiplatform systems

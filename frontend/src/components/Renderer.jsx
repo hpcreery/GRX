@@ -111,11 +111,28 @@ class Renderer extends Component {
     var width = Number(viewBox[2]) / 1000
     var height = Number(viewBox[3]) / 1000
     //console.log(originx, originy, width, height)
+    svgElement.dataset.width = width
+    svgElement.dataset.height = height
     svgChildElement.style.position = 'relative'
     svgChildElement.style.transformOrigin = '0 0'
     if (svgElement.id === 'back') {
       svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
       svgChildElement.style.left = `calc(${originx + width}in * var(--svg-scale))`
+    } else if (svgElement.id === 'front'){
+      var widthtext = document.createElement('h4')
+      widthtext.className = 'width-measurement'
+      widthtext.innerHTML = `WIDTH: ${width}in`
+      widthtext.style.bottom = `calc(${originy}in * var(--svg-scale))`
+      widthtext.style.left = `calc(${originx + width}in * var(--svg-scale))`
+      svgElement.appendChild(widthtext)
+      var heighttext = document.createElement('h4')
+      heighttext.className = 'height-measurement'
+      heighttext.innerHTML = `HEIGHT: ${height}in`
+      heighttext.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
+      heighttext.style.left = `calc(${originx}in * var(--svg-scale))`
+      svgElement.appendChild(heighttext)
+      svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
+      svgChildElement.style.left = `calc(${originx}in * var(--svg-scale))`
     } else {
       svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
       svgChildElement.style.left = `calc(${originx}in * var(--svg-scale))`
@@ -136,7 +153,6 @@ class Renderer extends Component {
   addElementToThree = (SVGObject, visible) => {
     //console.log('Adding SVG Object ', SVGObject)
     var newCSS3DObject = new CSS3DObject(SVGObject)
-    //newCSS3DObject.onAfterRender(console.log(`rendered ${SVGObject.id}`))
     newCSS3DObject.name = SVGObject.id
     newCSS3DObject.visible = visible
     //newCSS3DObject.position.x = parseInt(viewBox[0]) / 1000
