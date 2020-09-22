@@ -24,6 +24,7 @@
     "react-color": "^2.18.1",
     "react-dom": "^16.1.1",
     "react-scripts": "0.8.5",
+    "serve": "^11.3.2",
     "three": "^0.120.0"
   },
   "homepage": "./",
@@ -31,6 +32,7 @@
   "scripts": {
     "start": "nf start",
     "dev": "node src/electron-wait-react",
+    "start-server": "serve -s build -l 5000",
     "start-react": "react-scripts start",
     "start-electron": "electron .",
     "pack": "build --dir",

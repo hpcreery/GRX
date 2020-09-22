@@ -10,25 +10,36 @@ Install dependencies
 npm install
 ```
 
-Build react
+Create production build
 
 ```
-npm start build
+npm run build
 ```
 
-Start the App
+Build into Docker Image for hosting the webpage [optional]
 
 ```
-npm start
+docker build -t <your-username>/grx-frontend .
 ```
 
-Customize the application and build for multiplatform systems
+or
+
+Create Electron App for multiplatform systems
 
 ```
 npm run build_osx
 npm run build_win
 npm run build_linux
 ```
+
+or
+
+Start the App and develop with hot-reload
+
+```
+npm run start
+```
+
 
 Acknowledgements
 
