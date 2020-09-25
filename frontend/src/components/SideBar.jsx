@@ -1,5 +1,5 @@
 // REACT
-import React, { Component } from 'react'
+import React, { Component } from 'react';
 
 // ANT DESIGN UI
 import {
@@ -19,30 +19,35 @@ import {
   Checkbox,
   message,
   Progress,
-} from 'antd'
-import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
+} from 'antd';
+import {
+  LoadingOutlined,
+  VideoCameraOutlined,
+  FormatPainterOutlined,
+} from '@ant-design/icons';
 
 // ANT DESIGN CONSTANTS
-const { Option, OptGroup } = Select
-const { TabPane } = Tabs
-const { Search } = Input
+const { Option, OptGroup } = Select;
+const { TabPane } = Tabs;
+const { Search } = Input;
 
 // TRACESPACE
-const pcbStackup = require('pcb-stackup')
+const pcbStackup = require('pcb-stackup');
 
 // CUSTOM
 //import FetchArtwork from './functional/FetchArtwork'
-import QualitySlider from './functional/QualitySlider'
-import LayerListItem from './functional/LayerListItem'
-import UnloadedLayerListItem from './functional/UnloadedLayerListItem'
-import BlendMode from './functional/BlendMode'
+import QualitySlider from './functional/QualitySlider';
+import LayerListItem from './functional/LayerListItem';
+import UnloadedLayerListItem from './functional/UnloadedLayerListItem';
+import BlendMode from './functional/BlendMode';
+import UploadModal from './functional/UploadModal';
 
-// BACKEND
-const { backendurl } = require('../config/config')
+// CONFIG
+const { backendurl, port } = require('../config/config');
 
 class SideBar extends Component {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       job: null,
       layers: [],
@@ -53,113 +58,136 @@ class SideBar extends Component {
       sidebarhidden: false,
       sidebar: 'sidebar',
       frontload: false,
-    }
+    };
   }
 
   fetchData = async (urlext) => {
-    this.setState({ loading: true, percent: 0 })
+    this.setState({ loading: true, percent: 0 });
     try {
-      let response = await fetch(backendurl + urlext)
+      let response = await fetch(backendurl + ':' + port + urlext);
       if (response.status !== 200) {
-        console.error(response)
+        console.error(response);
         //var err = 'Status: ' + response.status + ' => Message: ' + (await response.text()) // ADVANCED
-        var err = await response.text()
-        throw err
+        var err = await response.text();
+        throw err;
       }
-      let data = await response.json()
-      this.setState({ loading: false, percent: 100 })
-      return data
+      let data = await response.json();
+      this.setState({ loading: false, percent: 100 });
+      return data;
     } catch (err) {
-      this.setState({ loading: false })
-      message.error('Error => ' + err)
-      throw err
+      this.setState({ loading: false });
+      message.error('Error => ' + err);
+      throw err;
     }
-  }
+  };
 
   fetchLayer = async (layer) => {
     if (layer.name !== 'front' && layer.name !== 'back') {
-      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${this.state.job}&layer=${layer.name}`)
+      var layerdata = await this.fetchData(
+        `/gbr2svg/getLayerArtwork?job=${this.state.job}&layer=${layer.name}`
+      );
     } else {
-      var layerdata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${this.state.job}`)
-      layerdata = Array(layerdata.find((data) => data.name == layer.name))
+      var layerdata = await this.fetchData(
+        `/gbr2svg/getFinishedArtwork?job=${this.state.job}`
+      );
+      layerdata = Array(layerdata.find((data) => data.name == layer.name));
     }
-    return layerdata
-  }
+    return layerdata;
+  };
 
   replaceArtwork = async (job) => {
     //this.props.clear()
-    console.log('Getting Finished Artowrk for', job)
-    var finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}`)
+    console.log('Getting Finished Artowrk for', job);
+
     if (this.state.frontload === true) {
-      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
-      this.props.setJob(job, layerdata, finisheddata)
+      var layerdata = await this.fetchData(
+        `/gbr2svg/getLayerArtwork?job=${job}`
+      );
+      var finisheddata = await this.fetchData(
+        `/gbr2svg/getFinishedArtwork?job=${job}`
+      );
+      this.props.setJob(job, layerdata, finisheddata);
     } else if (this.state.frontload === false) {
-      var data = await this.getLayerList(job)
-      this.props.setJob(job, data, finisheddata)
+      var data = await this.getLayerList(job);
+      finisheddata = [
+        {
+          name: 'front',
+          type: 'finished',
+          side: 'top',
+          svg: '',
+        },
+        {
+          name: 'back',
+          type: 'finished',
+          side: 'bottom',
+          svg: '',
+        },
+      ];
+      this.props.setJob(job, data, finisheddata);
     }
     //console.log(finisheddata)
     //console.log(layerdata)
-    return
-  }
+    return;
+  };
 
   changeDOMSVG = (side, data) => {
-    this.removeDOMSVG(side)
-    var object = document.getElementById(side)
-    object.innerHTML = data
-    return
-  }
+    this.removeDOMSVG(side);
+    var object = document.getElementById(side);
+    object.innerHTML = data;
+    return;
+  };
 
   addDOMSVG = (side, data) => {
-    var object = document.getElementById(side)
-    object.innerHTML = data
-  }
+    var object = document.getElementById(side);
+    object.innerHTML = data;
+  };
 
   removeDOMSVG = (side) => {
-    var object = document.getElementById(side)
-    object.innerHTML = ''
-  }
+    var object = document.getElementById(side);
+    object.innerHTML = '';
+  };
 
   getJobList = async (search) => {
-    let data = await this.fetchData(`/odbinfo/getJobList?search=${search}`)
-    var jobList = data.Jobs.map((job) => job.Name)
-    this.setState({ jobList: jobList })
-    return jobList
-  }
+    let data = await this.fetchData(`/odbinfo/getJobList?search=${search}`);
+    var jobList = data.Jobs.map((job) => job.Name);
+    this.setState({ jobList: jobList });
+    return jobList;
+  };
 
   getLayerList = async (job) => {
-    let data = await this.fetchData(`/gbr2svg/getLayerList?job=${job}`)
-    return data
-  }
+    let data = await this.fetchData(`/gbr2svg/getLayerList?job=${job}`);
+    return data;
+  };
 
   handleFrontLoad = (value) => {
     if (value === true) {
-      this.replaceArtwork(this.state.job)
+      this.replaceArtwork(this.state.job);
     }
-    this.setState({ frontload: value })
-  }
+    this.setState({ frontload: value });
+  };
 
   hideSidebar = () => {
-    this.setState({ sidebarhidden: true, sidebar: 'sidebar-hidden' })
-  }
+    this.setState({ sidebarhidden: true, sidebar: 'sidebar-hidden' });
+  };
 
   showSidebar = () => {
-    this.setState({ sidebarhidden: false, sidebar: 'sidebar' })
-  }
+    this.setState({ sidebarhidden: false, sidebar: 'sidebar' });
+  };
 
   render() {
     return (
-      <div className='sidebarcontainer'>
+      <div className="sidebarcontainer">
         <Button
-          type='link'
-          className='togglesidebar'
+          type="link"
+          className="togglesidebar"
           hidden={this.state.sidebarhidden}
           onClick={() => this.hideSidebar()}
         >
           HIDE
         </Button>
         <Button
-          type='link'
-          className='togglesidebar'
+          type="link"
+          className="togglesidebar"
           hidden={!this.state.sidebarhidden}
           onClick={() => this.showSidebar()}
         >
@@ -168,23 +196,45 @@ class SideBar extends Component {
 
         <Card
           title={
-            this.state.loading ? <Spin indicator={<LoadingOutlined spin />} /> : this.state.job || 'GRX Gerber Renderer'
+            this.state.loading ? (
+              <Spin indicator={<LoadingOutlined spin />} />
+            ) : (
+              this.state.job || 'GRX Gerber Renderer'
+            )
           }
           className={this.state.sidebar}
         >
-          <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
-            <TabPane tab='Jobs' key='1' className='tabpane'>
-              <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: 178 }} />
-              <div className='sidebarlist'>
+          <Tabs
+            size="small"
+            defaultActiveKey="1"
+            onChange={(key) => console.log(key)}
+            centered
+          >
+            <TabPane tab="Jobs" key="1" className="tabpane">
+              <Search
+                placeholder="input search"
+                onSearch={(value) => this.getJobList(value)}
+                style={{ width: 178 }}
+              />
+              <div className="sidebarlist">
                 <List
-                  size='small'
-                  header={<div>Job List</div>}
+                  size="small"
+                  header={
+                    <Row style={{ margin: '0px' }}>
+                      <Col span={15} style={{ padding: '0px' }}>
+                        <div>Job List</div>
+                      </Col>
+                      <Col span={9} style={{ padding: '0px' }}>
+                        <Button size='small'>Create</Button>
+                      </Col>
+                    </Row>
+                  }
                   //bordered
                   dataSource={this.state.jobList}
                   renderItem={(jobname) => (
                     <List.Item style={{ padding: '5px 5px' }}>
                       <Button
-                        type='link'
+                        type="link"
                         style={{ width: '100%', height: '27px' }}
                         onClick={() => this.replaceArtwork(jobname)}
                       >
@@ -195,10 +245,19 @@ class SideBar extends Component {
                 />
               </div>
             </TabPane>
-            <TabPane tab='Layers' key='2'>
+            <TabPane tab="Layers" key="2">
               <List
-                size='small'
-                header={<div>Layers</div>}
+                size="small"
+                header={
+                  <Row style={{ margin: '0px' }}>
+                    <Col span={15} style={{ padding: '0px' }}>
+                      <div>Layers</div>
+                    </Col>
+                    <Col span={9} style={{ padding: '0px' }}>
+                      <UploadModal job={this.state.job} />
+                    </Col>
+                  </Row>
+                }
                 //bordered
                 dataSource={this.state.layers}
                 renderItem={(item) => (
@@ -209,7 +268,9 @@ class SideBar extends Component {
                       <UnloadedLayerListItem
                         layer={item}
                         add={(...props) => this.props.setSVGinElement(...props)}
-                        remove={(...props) => this.props.removeSVGinElement(...props)}
+                        remove={(...props) =>
+                          this.props.removeSVGinElement(...props)
+                        }
                         fetchLayer={(...props) => this.fetchLayer(...props)}
                       />
                     )}
@@ -217,26 +278,26 @@ class SideBar extends Component {
                 )}
               />
               <List
-                size='small'
+                size="small"
                 header={<div>Steps</div>}
                 //bordered
                 dataSource={this.state.layerList}
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               />
             </TabPane>
-            <TabPane tab='Tools' key='3'>
+            <TabPane tab="Tools" key="3">
               <Row style={{ margin: '5px ' }}>
                 <Col span={4} style={{ padding: '5px' }}>
                   <VideoCameraOutlined />
                 </Col>
                 <Col span={20}>
                   <Select
-                    defaultValue='perspective'
+                    defaultValue="perspective"
                     onChange={(value) => this.props.cameraSelector(value)}
                     style={{ width: '100%' }}
                   >
-                    <Option value='perspective'>Perspective</Option>
-                    <Option value='orthographic'>Orthographic</Option>
+                    <Option value="perspective">Perspective</Option>
+                    <Option value="orthographic">Orthographic</Option>
                   </Select>
                 </Col>
               </Row>
@@ -248,7 +309,7 @@ class SideBar extends Component {
                 </Col>
                 <Col span={6} style={{ padding: '5px' }}>
                   <Switch
-                    size='small'
+                    size="small"
                     checked={this.state.frontload}
                     onChange={(checked) => this.handleFrontLoad(checked)}
                   />
@@ -267,36 +328,36 @@ class SideBar extends Component {
           </Tabs>
         </Card>
       </div>
-    )
+    );
   }
 
   componentDidMount() {
-    this.getJobList('')
+    this.getJobList('');
   }
 
   componentDidUpdate() {
-    console.log('updated')
+    console.log('updated');
   }
 
   static getDerivedStateFromProps(props, state) {
-    var newState = {}
+    var newState = {};
     if (props.job !== state.job) {
-      console.log('New Job')
-      newState.job = props.job
+      console.log('New Job');
+      newState.job = props.job;
     }
     if (props.layers !== state.layers) {
       //var layerlist = props.layers.map((object) => object.name)
       //console.log('New Layers')
-      newState.layers = props.layers
+      newState.layers = props.layers;
       //state.layerList = layerlist
     }
-    console.log(state)
-    console.log(newState)
-    return newState
+    console.log(state);
+    console.log(newState);
+    return newState;
   }
 }
 
-export default SideBar
+export default SideBar;
 
 // DEPRECIATED METHODS
 /*

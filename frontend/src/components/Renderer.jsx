@@ -1,4 +1,4 @@
-// React
+// REACT
 import React, { Component } from 'react'
 import SideBar from './SideBar'
 

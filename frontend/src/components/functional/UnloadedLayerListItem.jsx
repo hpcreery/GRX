@@ -48,7 +48,9 @@ const LayerListItem = (props) => {
         onChange={(value) => handleChange(value.target.checked)}
         style={{ width: '80%' }}
       >
-        {layer.name}
+        <Tooltip placement="right" title={layer.name}>
+          {layer.name.substring(0, 12)}
+        </Tooltip>
       </Checkbox>
 
       <Popover

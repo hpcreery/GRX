@@ -144,7 +144,7 @@ module.exports = {
         side: gerbertypes[name].side,
         gerber: fs.createReadStream(path.join(directory, name)),
       }));
-      var svgstackup = await pcbStackup(layers, { useOutline: true });
+      var svgstackup = await pcbStackup(layers, { useOutline: false });
     } catch (err) {
       console.log(err);
       res.status(500).send('Server Error converting gerber to image =>' + err);

@@ -31,11 +31,19 @@ module.exports = (app) => {
 
   // ############  FILECONTROLLER  ############
 
-  app.get('/upload/info', filecontroller.moduleInfo)
+  app.get('/joblist', filecontroller.getJobList)
 
-  app.get('/upload', filecontroller.uploadFiles)
+  app.get('/filecontroller/info', filecontroller.moduleInfo)
 
-  // ############  ODBINFO  ############
+  app.post('/upload', filecontroller.uploadFiles)
+
+  app.get('/uploaded', filecontroller.getUploadedFiles)
+
+  app.delete('/file', filecontroller.deleteFile)
+
+  app.delete('/job', filecontroller.deleteJob)
+
+  // ############  ODBINFO  ############ // Soon to be depreciated
 
   app.get('/odbinfo/info', odbinfo.moduleInfo)
 
