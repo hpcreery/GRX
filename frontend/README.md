@@ -10,7 +10,7 @@ Install dependencies
 npm install
 ```
 
-Create production build
+Create production build (required for Docker Imaging)
 
 ```
 npm run build
@@ -46,8 +46,8 @@ Start the App and develop with hot-reload
 npm run start
 ```
 
-
 Acknowledgements
 
+- [Node](https://nodejs.org/en/)
 - [React](https://github.com/facebook/react)
 - [Electron](https://github.com/electron/electron)

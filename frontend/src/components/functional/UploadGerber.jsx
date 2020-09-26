@@ -1,41 +1,41 @@
 // REACT
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react'
 
 // ANT DESIGN
-import { Upload, Button } from 'antd';
-import { UploadOutlined } from '@ant-design/icons';
+import { Upload, Button, Row, Col } from 'antd'
+import { UploadOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons'
+const { Dragger } = Upload
 
 // CONFIG
-const { backendurl, port } = require('../../config/config');
+const { backendurl, port } = require('../../config/config')
 
-class UploadGerber extends Component {
-  constructor(props) {
-    super(props);
-    let job = this.props.job || 'GRX';
-    this.state = {
-      fileList: [],
-      job: job,
-    };
-  }
+const UploadGerber = (props) => {
+  console.log(props.job)
+  var { job } = props
+  const [fileList, setFileList] = useState([])
+  const [reloading, setReloading] = useState(false)
 
-  // Input box for job name, if jobname exist
-  // Fetch Initial gerber list to see contents if uploading more to same folder
-  // fetch 'uploaded' with job
+  useEffect(() => {
+    // Mount and Update
+    getExistingFiles()
+    return () => {
+      // Unmount
+    }
+  }, [])
 
-  getExistingFiles = async () => {
-    var data = await fetch(
-      `${backendurl}:${port}/uploaded?job=${this.state.job}`
-    );
-    var response = await data.json();
+  const getExistingFiles = async () => {
+    setReloading(true)
+    var data = await fetch(`${backendurl}:${port}/uploaded?job=${job}`)
+    var response = await data.json()
     var items = response.map((filename) => ({
       uid: filename,
       name: filename,
       status: 'done',
-    }));
-    console.log(items);
-    this.setState({ fileList: items });
-    return items;
-  };
+    }))
+    setFileList(items)
+    setReloading(false)
+    return items
+  }
 
   // fileList object example
   // {
@@ -44,68 +44,78 @@ class UploadGerber extends Component {
   //   status: 'done',
   // },
 
-  handleChange = (info) => {
-    console.log(info);
-    let fileList = [...info.fileList];
+  const handleChange = (info) => {
+    console.log(info)
+    let newfileList = [...info.fileList]
 
     // 1. Limit the number of uploaded files
     // Only to show two recent uploaded files, and old ones will be replaced by the new
     // fileList = fileList.slice(-2);
 
     // 2. Read from response and show file link
-    fileList = fileList.map((file) => {
+    newfileList = newfileList.map((file) => {
       if (file.response) {
         // Component will show file.url as link
-        file.url = file.response.url;
+        console.log(file.url)
+        file.url = file.response.url
       }
-      return file;
-    });
-    console.log(fileList);
+      return file
+    })
+    setFileList(newfileList)
+  }
 
-    this.setState({ fileList });
-  };
+  const handleRemove = async (file) => {
+    console.log(file)
+    try {
+      var response = await fetch(`${backendurl}:${port}/file?job=${job}&filename=${file.name}`, {
+        method: 'DELETE',
+      })
+    } catch (err) {
+      throw err
+    }
 
-  handleRemove = async (file) => {
-    console.log(file);
-    var response = await fetch(
-      `${backendurl}:${port}/file?job=${this.state.job}&filename=${file.name}`,
-      { method: 'DELETE' }
-    );
     return new Promise((resolve, reject) => {
       try {
         if (response.status !== 200) {
-          console.error(response);
-          var err = response.text();
-          throw err;
+          console.error(response)
+          var err = response.text()
+          throw err
         }
         //let data = response.json();
-        resolve(response);
+        resolve(response)
       } catch (err) {
-        reject(err);
+        reject(err)
       }
-    });
-  };
+    })
+  }
 
-  render() {
-    const props = {
-      action: `${backendurl}:${port}/upload?job=${this.state.job}`,
-      onChange: this.handleChange,
-      onRemove: this.handleRemove,
-      multiple: true,
-    };
-    return (
-      <div>
-        <Button onClick={() => this.getExistingFiles()}>Refresh</Button>
-        <Upload {...props} fileList={this.state.fileList}>
-          <Button icon={<UploadOutlined />}>Upload Gerbers</Button>
-        </Upload>
+  const uploadprops = {
+    action: `${backendurl}:${port}/upload?job=${job}`,
+    onChange: handleChange,
+    onRemove: handleRemove,
+    multiple: true,
+  }
+  return (
+    <div>
+      <Dragger {...uploadprops} fileList={fileList}>
+        <p>
+          <UploadOutlined style={{ fontSize: '32px' }} />
+        </p>
+        <p>Drag Gerber Files Here</p>
+        <p>(or click to open directory)</p>
+      </Dragger>
+      <div style={{ textAlign: 'right' }}>
+        <Button
+          loading={reloading}
+          type='text'
+          icon={<ReloadOutlined style={{ fontSize: '15px' }} />}
+          onClick={() => getExistingFiles()}
+        >
+          Reload
+        </Button>
       </div>
-    );
-  }
-
-  componentDidMount() {
-    this.getExistingFiles();
-  }
+    </div>
+  )
 }
 
-export default UploadGerber;
+export default UploadGerber

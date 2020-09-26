@@ -74,7 +74,7 @@ class Renderer extends Component {
     })
     finishedartwork.forEach((layer) => {
       //console.log(layer)
-      this.addLayer(layer, true)
+      this.addLayer(layer, false)
     })
     this.setState({ CSS3DObjects: this.cssScene.children, job: job })
   }
@@ -118,7 +118,7 @@ class Renderer extends Component {
     if (svgElement.id === 'back') {
       svgChildElement.style.bottom = `calc(${height + originy}in * var(--svg-scale))`
       svgChildElement.style.left = `calc(${originx + width}in * var(--svg-scale))`
-    } else if (svgElement.id === 'front'){
+    } else if (svgElement.id === 'front') {
       var widthtext = document.createElement('h4')
       widthtext.className = 'width-measurement'
       widthtext.innerHTML = `WIDTH: ${width}in`

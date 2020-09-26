@@ -1,8 +1,8 @@
 // REACT
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react'
 
 // ANT DESIGN
-import { Modal, Button } from 'antd';
+import { Modal, Button } from 'antd'
 
 // CUSTOM
 import UploadGerber from './UploadGerber'
@@ -10,51 +10,49 @@ import UploadGerber from './UploadGerber'
 // CONFIG
 const { backendurl, port } = require('../../config/config')
 
-class UploadModal extends Component {
-  constructor(props) {
-    super(props)
+const UploadModal = (props) => {
+  var { replaceArtwork, job } = props
+
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    // Mount and Update
+    return () => {
+      // Unmount
+    }
+  }, [job])
+
+  const showModal = () => {
+    setVisible(true)
   }
 
-
-  state = { visible: false };
-
-  showModal = () => {
-    this.setState({
-      visible: true,
-    });
-  };
-
-  handleOk = e => {
-    console.log(e);
-    this.setState({
-      visible: false,
-    });
-  };
-
-  handleCancel = e => {
-    console.log(e);
-    this.setState({
-      visible: false,
-    });
-  };
-
-  render() {
-    return (
-      <div>
-        <Button size='small' onClick={this.showModal}>
-          Upload
-        </Button>
-        <Modal
-          title={`Import Gerbers into Job: ${this.props.job}`}
-          visible={this.state.visible}
-          onOk={this.handleOk}
-          onCancel={this.handleCancel}
-        >
-          <UploadGerber job={this.props.job}/>
-        </Modal>
-      </div>
-    );
+  const handleOk = (e) => {
+    console.log(e)
+    setVisible(false)
+    replaceArtwork(job)
   }
+
+  const handleCancel = (e) => {
+    console.log(e)
+    setVisible(false)
+  }
+
+  return (
+    <div>
+      <Button type='text' size='small' onClick={showModal}>
+        Upload
+      </Button>
+      <Modal
+        title={`Import Gerbers into Job: ${job}`}
+        visible={visible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        destroyOnClose
+      >
+        <UploadGerber job={job} />
+      </Modal>
+    </div>
+  )
 }
 
 export default UploadModal

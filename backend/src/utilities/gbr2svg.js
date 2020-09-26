@@ -1,96 +1,97 @@
 // NODE
-const fs = require('fs');
-const path = require('path');
-const process = require('process');
-const util = require('util');
-const { execSync, exec, spawn, spawnSync } = require('child_process');
+const fs = require('fs')
+const path = require('path')
+const process = require('process')
+const util = require('util')
+const { execSync, exec, spawn, spawnSync } = require('child_process')
 
 // MODULES
-const pcbStackup = require('pcb-stackup');
-const gerberToSVG = require('gerber-to-svg');
-const whatsThatGerber = require('../sourced/whats-that-gerber/index');
+const pcbStackup = require('pcb-stackup')
+const gerberToSVG = require('gerber-to-svg')
+const whatsThatGerber = require('../sourced/whats-that-gerber/index')
 
 // CONFIG
-const { dir, stackup } = require('../config/config');
-const { Console } = require('console');
+const { dir, stackup } = require('../config/config')
+const { Console } = require('console')
 
 // PROMISE
-readFilePromise = util.promisify(fs.readFile);
-gerberToSVGPromise = util.promisify(gerberToSVG);
+readFilePromise = util.promisify(fs.readFile)
+gerberToSVGPromise = util.promisify(gerberToSVG)
 
-console.log('GBR2SVG: converting .gbr to .svg');
+console.log('GBR2SVG: converting .gbr to .svg')
 
 logger = (put) => {
-  console.log(put);
-};
+  console.log(put)
+}
 
-finishedConverter = () => {};
+finishedConverter = () => {}
 
 layerConverter = async (dir) => {
   try {
-    gerberString = await readFilePromise(dir, { encoding: 'utf8' });
-    svg = await gerberToSVGPromise(gerberString);
+    gerberString = await readFilePromise(dir, { encoding: 'utf8' })
+    svg = await gerberToSVGPromise(gerberString)
   } catch (err) {
-    console.error('Error converting gerber layer ' + dir, err);
-    throw err;
+    console.error('Error converting gerber layer ' + dir, err)
+    throw err
   }
 
   //console.log(svg);
-  return svg;
-};
+  return svg
+}
 
 gerberNamesFilter = (directory) => {
   try {
-    let files = fs.readdirSync(directory);
+    let files = fs.readdirSync(directory)
     let gerbernames = files.filter((file) => {
-      var stats = fs.statSync(path.join(directory, file));
+      var stats = fs.statSync(path.join(directory, file))
       if (stats.isFile()) {
-        return true;
+        return true
       } else {
-        return false;
+        return false
       }
-    });
-    return gerbernames;
+    })
+    return gerbernames
   } catch (err) {
-    throw ('Error parsing gerber directory: ' + directory + ' =>', err);
+    throw ('Error parsing gerber directory: ' + directory + ' =>', err)
   }
-};
+}
 
 module.exports = {
   moduleInfo(req, res) {
-    console.log('GBR2SVG info query:', req.query);
-    res.status(200).send({ query: req.query });
+    console.log('GBR2SVG info query:', req.query)
+    res.status(200).send({ query: req.query })
   },
 
   async getLayerArtwork(req, res) {
-    console.log('QUERY PARAMS:', req.query);
+    console.log('QUERY PARAMS:', req.query)
     if (!req.query.job) {
-      res.status(400).send('Need "job" object in Query');
-      return;
+      res.status(400).send('Need "job" object in Query')
+      return
     }
-    let directory = path.join(
-      dir.odbdatabase,
-      req.query.job,
-      dir.odbgerboutdir
-    );
+    // let directory = path.join(
+    //   dir.odbdatabase,
+    //   req.query.job,
+    //   dir.odbgerboutdir
+    // );
+    let directory = path.join(dir.artworkdb, req.query.job, 'gerbers')
 
     try {
       if (req.query.layer) {
-        gerbernames = [req.query.layer];
+        gerbernames = [req.query.layer]
       } else {
-        gerbernames = gerberNamesFilter(directory);
+        gerbernames = gerberNamesFilter(directory)
       }
 
-      var gerbertypes = await whatsThatGerber(gerbernames);
-      console.log(gerbertypes);
+      var gerbertypes = await whatsThatGerber(gerbernames)
+      console.log(gerbertypes)
     } catch (err) {
-      console.log(err);
-      res.status(500).send('Server Error =>' + err);
+      console.log(err)
+      res.status(500).send('Server Error =>' + err)
     }
     console.log(gerbernames.length)
     if (gerbernames.length == 0) {
       console.log('no gerbers')
-      res.status(500).send('No Gerber Data Found');
+      res.status(500).send('No Gerber Data Found')
       return
     }
     try {
@@ -101,40 +102,41 @@ module.exports = {
             type: gerbertypes[gerbername].type,
             side: gerbertypes[gerbername].side,
             svg: await layerConverter(path.join(directory, gerbername)),
-          };
+          }
         })
-      );
+      )
       //console.log(convertedGerbers)
     } catch (err) {
-      console.log('Error converting layers');
-      res.status(500).send('Server Error converting gerber to image =>' + err);
+      console.log('Error converting layers')
+      res.status(500).send('Server Error converting gerber to image =>' + err)
     }
-    res.status(200).send(convertedGerbers);
-    return convertedGerbers;
+    res.status(200).send(convertedGerbers)
+    return convertedGerbers
   },
 
   async getFinishedArtwork(req, res) {
-    console.log('QUERY PARAMS:', req.query);
+    console.log('QUERY PARAMS:', req.query)
     if (!req.query.job) {
-      res.status(400).send('Need "job" object in Query');
-      return;
+      res.status(400).send('Need "job" object in Query')
+      return
     }
-    let directory = path.join(
-      dir.odbdatabase,
-      req.query.job,
-      dir.odbgerboutdir
-    );
+    // let directory = path.join(
+    //   dir.odbdatabase,
+    //   req.query.job,
+    //   dir.odbgerboutdir
+    // );
+    let directory = path.join(dir.artworkdb, req.query.job, 'gerbers')
     try {
-      gerbernames = gerberNamesFilter(directory);
-      var gerbertypes = await whatsThatGerber(gerbernames);
-      console.log(gerbertypes);
+      gerbernames = gerberNamesFilter(directory)
+      var gerbertypes = await whatsThatGerber(gerbernames)
+      console.log(gerbertypes)
     } catch (err) {
-      console.log(err);
-      res.status(500).send('Server Error =>' + err);
+      console.log(err)
+      res.status(500).send('Server Error =>' + err)
     }
     if (gerbernames.length == 0) {
       console.log('no gerbers')
-      res.status(500).send('No Gerber Data Found');
+      res.status(500).send('No Gerber Data Found')
       return
     }
     try {
@@ -143,14 +145,14 @@ module.exports = {
         type: gerbertypes[name].type,
         side: gerbertypes[name].side,
         gerber: fs.createReadStream(path.join(directory, name)),
-      }));
-      var svgstackup = await pcbStackup(layers, { useOutline: false });
+      }))
+      var svgstackup = await pcbStackup(layers, { useOutline: req.query.outline == 'true' })
     } catch (err) {
-      console.log(err);
-      res.status(500).send('Server Error converting gerber to image =>' + err);
+      console.log(err)
+      res.status(500).send('Server Error converting gerber to image =>' + err)
     }
-    var toplayer = svgstackup.top.svg;
-    var botlayer = svgstackup.bottom.svg;
+    var toplayer = svgstackup.top.svg
+    var botlayer = svgstackup.bottom.svg
     convertedGerbers = [
       {
         name: 'front',
@@ -164,29 +166,30 @@ module.exports = {
         side: 'bottom',
         svg: botlayer,
       },
-    ];
-    res.status(200).send(convertedGerbers);
-    return convertedGerbers;
+    ]
+    res.status(200).send(convertedGerbers)
+    return convertedGerbers
   },
 
   async getLayerList(req, res) {
-    console.log('QUERY PARAMS:', req.query);
+    console.log('QUERY PARAMS:', req.query)
     if (!req.query.job) {
-      res.status(400).send('Need "job" object in Query');
-      return;
+      res.status(400).send('Need "job" object in Query')
+      return
     }
-    let directory = path.join(
-      dir.odbdatabase,
-      req.query.job,
-      dir.odbgerboutdir
-    );
+    // let directory = path.join(
+    //   dir.odbdatabase,
+    //   req.query.job,
+    //   dir.odbgerboutdir
+    // );
+    let directory = path.join(dir.artworkdb, req.query.job, 'gerbers')
     try {
-      gerbernames = gerberNamesFilter(directory);
-      var gerbertypes = await whatsThatGerber(gerbernames);
-      console.log(gerbertypes);
+      gerbernames = gerberNamesFilter(directory)
+      var gerbertypes = await whatsThatGerber(gerbernames)
+      console.log(gerbertypes)
     } catch (err) {
-      console.log(err);
-      res.status(500).send('Server Error =>' + err);
+      console.log(err)
+      res.status(500).send('Server Error =>' + err)
     }
     try {
       var layers = gerbernames.map((name) => ({
@@ -194,13 +197,13 @@ module.exports = {
         type: gerbertypes[name].type,
         side: gerbertypes[name].side,
         svg: '',
-      }));
+      }))
     } catch (err) {
-      console.log(err);
-      res.status(500).send('Server Error =>' + err);
+      console.log(err)
+      res.status(500).send('Server Error =>' + err)
     }
-    res.status(200).send(layers);
-    return layers;
+    res.status(200).send(layers)
+    return layers
   },
 
   getFinalSVG(req, res) {},
@@ -251,4 +254,4 @@ module.exports = {
   //   })
   //   return
   // },
-};
+}

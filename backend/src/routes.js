@@ -3,7 +3,6 @@ const gbr2svg = require('./utilities/gbr2svg')
 const odbinfo = require('./controllers/odbinfo')
 const filecontroller = require('./controllers/filecontroller')
 
-
 const express = require('express')
 
 module.exports = (app) => {
@@ -40,6 +39,8 @@ module.exports = (app) => {
   app.get('/uploaded', filecontroller.getUploadedFiles)
 
   app.delete('/file', filecontroller.deleteFile)
+
+  app.post('/job', filecontroller.createJob)
 
   app.delete('/job', filecontroller.deleteJob)
 
