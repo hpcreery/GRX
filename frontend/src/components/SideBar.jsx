@@ -19,6 +19,7 @@ import {
   Checkbox,
   message,
   Progress,
+  Popconfirm,
 } from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
@@ -229,12 +230,19 @@ class SideBar extends Component {
                     <List.Item style={{ padding: '5px 5px' }}>
                       <Button
                         type='link'
-                        style={{ width: '100%', height: '27px' }}
+                        style={{ width: '90%', height: '27px' }}
                         onClick={() => this.replaceArtwork(jobname)}
                       >
                         {jobname}
                       </Button>
-                      <CloseCircleOutlined onClick={() => this.handleJobDelete(jobname)} />
+                      <Popconfirm
+                        title='Are you sure delete this job?'
+                        onConfirm={() => this.handleJobDelete(jobname)}
+                        okText='Yes'
+                        cancelText='No'
+                      >
+                        <CloseCircleOutlined />
+                      </Popconfirm>
                     </List.Item>
                   )}
                 />
