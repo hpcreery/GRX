@@ -11,8 +11,6 @@ coverage
 
 # production
 ./build
-frontend/build
-backend/build
 frontend/GRX**
 
 # misc

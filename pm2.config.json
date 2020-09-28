@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "name": "grx frontend",
+      "name": "grx-frontend",
       "script": "npx",
       "interpreter": "none",
       "args": "serve -s frontend/build -l 5000"
