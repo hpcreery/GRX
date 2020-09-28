@@ -16,6 +16,7 @@
   "dependencies": {
     "antd": "^4.4.0",
     "axios": "^0.20.0",
+    "dot-env": "0.0.1",
     "electron-packager": "^14.2.1",
     "express": "^4.17.1",
     "gerber-to-svg": "^4.2.1",

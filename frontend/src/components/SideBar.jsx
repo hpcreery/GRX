@@ -63,7 +63,7 @@ class SideBar extends Component {
   fetchData = async (urlext, method) => {
     this.setState({ loading: true, percent: 0 })
     try {
-      let response = await fetch(backendurl + ':' + port + urlext, { method: method || 'GET' })
+      let response = await fetch(backendurl + port + urlext, { method: method || 'GET' })
       if (response.status !== 200) {
         console.error(response)
         //var err = 'Status: ' + response.status + ' => Message: ' + (await response.text()) // ADVANCED
@@ -118,8 +118,6 @@ class SideBar extends Component {
       ]
       this.props.setJob(job, layerdata, finisheddata)
     }
-    //console.log(finisheddata)
-    //console.log(layerdata)
     return
   }
 
@@ -359,10 +357,7 @@ class SideBar extends Component {
       newState.job = props.job
     }
     if (props.layers !== state.layers) {
-      //var layerlist = props.layers.map((object) => object.name)
-      //console.log('New Layers')
       newState.layers = props.layers
-      //state.layerList = layerlist
     }
     console.log(state)
     console.log(newState)

@@ -24,7 +24,7 @@ const CreateJob = (props) => {
   const handleOk = async (e) => {
     console.log(e)
     try {
-      var response = await fetch(`${backendurl}:${port}/job?job=${job}`, {
+      var response = await fetch(`${backendurl}${port}/job?job=${job}`, {
         method: 'POST',
       })
       if (response.status !== 200) {

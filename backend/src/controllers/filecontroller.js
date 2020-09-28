@@ -152,5 +152,6 @@ module.exports = {
   },
 }
 
-// example cmdline execution
+// NOT USING
+// example cmdline execution for odbtogbr
 // ./odb2gbr_cmdlne64.exe -job:H:\test\jobs\jani -outdir:C:\etc\livegerber -workdir:C:\etc\workinggerber -step:pcb,top,bot,smt,smb,outline,sst,ssb -explode_all

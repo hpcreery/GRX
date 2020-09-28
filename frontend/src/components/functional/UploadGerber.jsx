@@ -25,7 +25,7 @@ const UploadGerber = (props) => {
 
   const getExistingFiles = async () => {
     setReloading(true)
-    var data = await fetch(`${backendurl}:${port}/uploaded?job=${job}`)
+    var data = await fetch(`${backendurl}${port}/uploaded?job=${job}`)
     var response = await data.json()
     var items = response.map((filename) => ({
       uid: filename,
@@ -67,7 +67,7 @@ const UploadGerber = (props) => {
   const handleRemove = async (file) => {
     console.log(file)
     try {
-      var response = await fetch(`${backendurl}:${port}/file?job=${job}&filename=${file.name}`, {
+      var response = await fetch(`${backendurl}${port}/file?job=${job}&filename=${file.name}`, {
         method: 'DELETE',
       })
     } catch (err) {
@@ -90,7 +90,7 @@ const UploadGerber = (props) => {
   }
 
   const uploadprops = {
-    action: `${backendurl}:${port}/upload?job=${job}`,
+    action: `${backendurl}${port}/upload?job=${job}`,
     onChange: handleChange,
     onRemove: handleRemove,
     multiple: true,

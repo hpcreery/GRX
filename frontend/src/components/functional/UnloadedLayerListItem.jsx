@@ -7,13 +7,6 @@ import { SketchPicker, BlockPicker, CirclePicker } from 'react-color'
 const LayerListItem = (props) => {
   const { layer, add, remove, fetchLayer } = props
 
-  //var svgContainer = document.getElementById('svg-container')
-  //var layerObject = svgContainer.childNodes.item(props.layer.name)
-  //var layerObject = document.getElementById(props.layer.name)
-  //console.log(props.layer)
-  //console.log(layerObject)
-  //var layerObject
-
   const [visible, setVisible] = useState(props.layer.visible)
   const [color, setColor] = useState('white')
 
@@ -62,7 +55,3 @@ const LayerListItem = (props) => {
 }
 
 export default LayerListItem
-
-// <ClockCircleOutlined style={{ color: '#f5222d' }} />
-// style={{ backgroundColor: color }}
-// count={<BgColorsOutlined style={{ color: color }} />}

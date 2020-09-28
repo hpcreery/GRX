@@ -12,14 +12,6 @@ import { OrbitControls } from '../three/examples/jsm/controls/OrbitControls.js'
 import { CSS3DRenderer, CSS3DObject } from '../three/examples/jsm/renderers/CSS3DRenderer.js'
 import Stats from '../three/examples/jsm/libs/stats.module.js'
 
-// Node
-// const { remote, app } = window.require('electron');
-// const fs = window.require('fs');
-// const path = window.require('path');
-// const { promisify } = window.require('util');
-// const writeFile = promisify(fs.writeFile);
-// no longer requiring node on the frontend
-
 // FUNCTIONAL
 import MouseTracker from './functional/MouseTracker'
 
@@ -44,7 +36,6 @@ class Renderer extends Component {
   addInitSVGFromDom = () => {
     // FRONT
     var element = document.getElementById('front')
-    //console.log(element)
     this.frontPCBObject = new CSS3DObject(element)
     this.frontPCBObject.name = 'front'
     this.frontPCBObject.position.x = 0
@@ -54,7 +45,6 @@ class Renderer extends Component {
 
     // BACK
     var element = document.getElementById('back')
-    //console.log(element)
     this.backPCBObject = new CSS3DObject(element)
     this.backPCBObject.name = 'back'
     this.backPCBObject.position.x = 0
@@ -65,24 +55,20 @@ class Renderer extends Component {
     this.setState({ CSS3DObjects: [this.frontPCBObject, this.backPCBObject] })
   }
 
-  // Higher Level Abstraction Methods
+  // Higher Level Abstraction Functions
   setJob = (job, layerartwork, finishedartwork) => {
     this.removeAllCSS3DObjects()
     layerartwork.forEach((layer) => {
-      //console.log(layer)
       this.addLayer(layer, false)
     })
     finishedartwork.forEach((layer) => {
-      //console.log(layer)
       this.addLayer(layer, false)
     })
     this.setState({ CSS3DObjects: this.cssScene.children, job: job })
   }
 
-  // High Level Absraction Methods
+  // High Level Absraction Functions
   addLayer = (layer, visible) => {
-    //console.log(layer)
-    // layer = {name: '', type: '', side: '', svg: ''}
     var svgElement = document.createElement('div')
     svgElement.id = layer.name
     //svgElement.style.visibility = visible
@@ -149,14 +135,11 @@ class Renderer extends Component {
     this.removeCSS3DObject(layer.name)
   }
 
-  // Low Level Abstraction Methods
+  // Low Level Abstraction Functions
   addElementToThree = (SVGObject, visible) => {
-    //console.log('Adding SVG Object ', SVGObject)
     var newCSS3DObject = new CSS3DObject(SVGObject)
     newCSS3DObject.name = SVGObject.id
     newCSS3DObject.visible = visible
-    //newCSS3DObject.position.x = parseInt(viewBox[0]) / 1000
-    //newCSS3DObject.position.y = parseInt(viewBox[1]) / 1000
     newCSS3DObject.position.x = 0
     newCSS3DObject.position.y = 0
     //newCSS3DObject.translate(0, 0, 0)
@@ -166,8 +149,6 @@ class Renderer extends Component {
       newCSS3DObject.position.z = 0.5
     }
     this.cssScene.add(newCSS3DObject)
-    //this.addPointer(newCSS3DObject)
-    //this.setState({ CSS3DObjects: this.cssScene.children })
   }
 
   removeCSS3DObject = (name) => {
@@ -221,13 +202,6 @@ class Renderer extends Component {
     }
   }
 
-  // customZoom = (delta) => {
-  //   var cssprop = getComputedStyle(this.root).getPropertyValue('--svg-scale')
-  //   this.root.style.setProperty('--svg-scale', parseInt(cssprop) / 10 + delta)
-  //   console.log(cssprop)
-  //   console.log(delta)
-  // }
-
   setupScene = () => {
     var root = document.getElementById('root')
 
@@ -237,6 +211,8 @@ class Renderer extends Component {
 
     // Create Camera and set positions
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000)
+
+    // Or Start with an Ortho Camera
     // this.camera = new THREE.OrthographicCamera(
     //   window.innerWidth / -2,
     //   window.innerWidth / 2,
@@ -245,12 +221,12 @@ class Renderer extends Component {
     //   1,
     //   1000
     // );
+
     this.camera.position.z = 700
     this.camera.lookAt(new THREE.Vector3(0, 0, 0))
 
     // Create Scene
     this.cssScene = new THREE.Scene()
-    //this.cssScene.scale.set(0.1, 0.1, 0.1) // due to scaling svgs by 10x
 
     // Create Renderer
     this.cssRenderer = new CSS3DRenderer()
@@ -260,8 +236,6 @@ class Renderer extends Component {
     this.svgContainer = this.cssRenderer.domElement.childNodes[0]
     this.svgContainer.id = 'svg-container'
 
-    //this.captureMouse2(this.svgContainer)
-
     // Outer Method to add objects to dom
     this.addInitSVGFromDom()
 
@@ -269,14 +243,11 @@ class Renderer extends Component {
 
     // Use orbit controls on renderer
     this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
-    //this.controls.minZoom = 0
     this.controls.maxZoom = 700
+    //this.controls.minZoom = 0
     //this.controls.enableRotate = false;
     //this.controls.enableZoom = false
     //this.controls.zoomSpeed = 0.001
-    //this.controls.dispatchEvent({ type: 'movement', message: 'moving' })
-    //this.controls.addEventListener('movement', (event) => console.log(event))
-    //this.controls.addEventListener('change', (event) => console.log(event))
 
     // Other Three objects
     this.clock = new THREE.Clock()
@@ -303,11 +274,6 @@ class Renderer extends Component {
   }
 
   animationHandler = () => {
-    //var elapsed = this.clock.getElapsedTime()
-    //var delta = this.clock.getDelta()
-    // controls.update()
-    // renderer.render(scene, camera)
-    // this.rayCaster.setFromCamera( this.mousePosition, this.camera )
     this.cssRenderer.render(this.cssScene, this.camera)
     this.stats.update()
 
@@ -340,12 +306,6 @@ class Renderer extends Component {
         )}
       </div>
     )
-    // <div className='flip-card'>
-    //   <div className='flip-card-inner'>
-    //     <div className='flip-card-front' dangerouslySetInnerHTML={{ __html: this.topreturner() }}></div>
-    //     <div className='flip-card-back' dangerouslySetInnerHTML={{ __html: this.botreturner() }}></div>
-    //   </div>
-    // </div>
   }
 
   componentDidMount() {
@@ -353,17 +313,15 @@ class Renderer extends Component {
     this.animationHandler()
     window.addEventListener('resize', this.onWindowResize, false)
     this.controls.update()
-    //this.gerbeRender()
   }
   componentDidUpdate() {
-    //this.addCSS3DObjectsFromState()
     console.log(this.state)
   }
 }
 
 export default Renderer
 
-// DEPRECIATED METHODS
+// DEPRECIATED FUNCTIONS
 
 /*
 
@@ -492,5 +450,12 @@ export default Renderer
   //     this.cssScene.add(object)
   //   })
   //   this.setState({ CSS3DObjects: this.cssScene.children })
+  // }
+
+    // customZoom = (delta) => {
+  //   var cssprop = getComputedStyle(this.root).getPropertyValue('--svg-scale')
+  //   this.root.style.setProperty('--svg-scale', parseInt(cssprop) / 10 + delta)
+  //   console.log(cssprop)
+  //   console.log(delta)
   // }
   */

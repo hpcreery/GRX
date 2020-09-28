@@ -11,7 +11,7 @@ const gerberToSVG = require('gerber-to-svg')
 const whatsThatGerber = require('../sourced/whats-that-gerber/index')
 
 // CONFIG
-const { dir, stackup } = require('../config/config')
+const { dir } = require('../config/config')
 const { Console } = require('console')
 
 // PROMISE
