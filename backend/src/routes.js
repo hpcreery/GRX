@@ -59,7 +59,9 @@ module.exports = (app) => {
   })
 
   app.get('/test', (req, res) => {
-    res.send('Hello World')
+    console.log(process.env)
+    console.log(process.env.env)
+    res.send({ env_variables: process.env, other_env: process.env.env })
   })
 
   app.get('/help', (req, res) => {

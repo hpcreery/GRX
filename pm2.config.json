@@ -1,15 +1,18 @@
 {
   "apps": [
     {
-      "name": "grx-frontend",
-      "script": "./frontend/build/",
-      "instances": 1,
-      "node_args": "--max_old_space_size=8192"
+      "name": "grx frontend",
+      "script": "npx",
+      "interpreter": "none",
+      "args": "serve -s frontend/build -l 5000"
     },
     {
       "name": "grx-backend",
       "script": "./backend/index.js",
-      "instances": 3
+      "instances": 3,
+      "env": {
+        "ARTWORKDB": "/artworkdb/"
+      }
     }
   ]
 }
