@@ -1,6 +1,6 @@
 # GRX
 
-ODB++ database viewer with 3D showcase
+Gerber Viewer with 3d support and finished board rendering
 
 Acknowledgements
 

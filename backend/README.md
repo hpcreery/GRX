@@ -14,6 +14,10 @@ Run Docker Container
 docker run -p 8081:8081 -d hpcreery/grx-backend
 ```
 
+Requirements
+
+- Node v12 or greater
+
 Acknowledgements
 
 - [Node](https://nodejs.org/en/)

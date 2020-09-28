@@ -46,6 +46,10 @@ Start the App and develop with hot-reload
 npm run start
 ```
 
+Requirements
+
+- Node v12 or greater
+
 Acknowledgements
 
 - [Node](https://nodejs.org/en/)
