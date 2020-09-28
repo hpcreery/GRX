@@ -4,7 +4,11 @@
       "name": "grx-frontend",
       "script": "npx",
       "interpreter": "none",
-      "args": "serve -s frontend/build -l 5000"
+      "args": "serve -s frontend/build -l 5000",
+      "env": {
+        "REACT_APP_API": "http://grx.creery.org",
+        "REACT_APP_APIPORT": "/api"
+      }
     },
     {
       "name": "grx-backend",

@@ -1,5 +1,5 @@
-const dotenv = require('dotenv')
-dotenv.config()
+// const dotenv = require('dotenv')
+// dotenv.config({ path: `${__dirname}/../../../.env.development` })
 
 module.exports = {
   backendurl: process.env.REACT_APP_API || 'http://grx.creery.org',

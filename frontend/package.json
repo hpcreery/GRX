@@ -32,10 +32,10 @@
   "homepage": "./",
   "main": "src/electron.js",
   "scripts": {
-    "start": "nf start",
-    "dev": "node src/electron-wait-react",
+    "start": "dotenv -e .env.development nf start",
+    "dev": "dotenv -e .env.development node src/electron-wait-react",
     "start-server": "serve -s build -l 5000",
-    "start-react": "react-scripts start",
+    "start-react": "dotenv -e .env.development react-scripts start",
     "start-electron": "electron .",
     "pack": "build --dir",
     "build": "react-scripts build",
