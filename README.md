@@ -1,6 +1,6 @@
 # GRX
 
-Gerber Viewer with 3d support and finished board rendering
+Gerber Viewer with 3d support and beautiful finished board rendering
 
 #### !! DEVELOPMENT !!
 

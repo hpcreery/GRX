@@ -1,8 +1,5 @@
 # GRX FrontEnd
 
-ODB++ database viewer with 3D showcase
-
----
 
 ## For Production
 
@@ -35,7 +32,7 @@ docker build -t <your-username>/grx-frontend .
 ### Then start the docker container
 
 ```
-docker run -p 5000:5000 -d hpcreery/grx-frontend
+docker run -p 5000:5000 -d <your-username>/grx-frontend
 ```
 
 or

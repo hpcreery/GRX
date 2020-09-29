@@ -1,6 +1,5 @@
 # GRX BackEnd
 
-Gerver database viewer with 3D showcase
 
 ## For Production
 
