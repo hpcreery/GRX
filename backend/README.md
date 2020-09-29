@@ -13,7 +13,6 @@ npm install
 
 ```
 ARTWORKDB=</absolute/path/to/db>
-
 ```
 **Make sure path exists in container or server**
 
@@ -36,7 +35,7 @@ docker build -t <your-username>/grx-backend.
 ### Run Docker Container
 
 ```
-docker run -p 8081:8081 -d hpcreery/grx-backend
+docker run -p 8081:8081 -d <your-username>/grx-backend
 ```
 
 ### Requirements
