@@ -107,12 +107,13 @@ canvas {
 }
 
 .icon-attribute {
+  pointer-events: all;
   text-align: right;
   right: 0;
   position: absolute;
   bottom: 0px;
   padding: 7px;
-  z-index: 1000;
+  z-index: 1020;
 }
 
 .coordinates {

@@ -4,12 +4,8 @@ import { LoadingOutlined } from '@ant-design/icons'
 import './App.css'
 import Renderer from './components/Renderer'
 
-//const fs = window.require('fs');
-const pcbStackup = require('pcb-stackup')
-//require('./components/ThreeRenderer')
-//require('./dev/main')
-
-var parser = new DOMParser()
+const dotenv = require('dotenv')
+dotenv.config()
 
 class App extends Component {
   constructor(props) {

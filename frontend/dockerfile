@@ -1,6 +1,7 @@
 FROM node:12
 WORKDIR /app
 COPY package*.json /app/
+# COPY nvg.env /app/
 RUN npm install
 COPY build /app/build/
 EXPOSE 5000
