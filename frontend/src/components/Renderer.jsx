@@ -181,6 +181,7 @@ class Renderer extends Component {
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = true
+      this.controls.zoomSpeed = 1
       //this.controls.enableZoom = true
       this.setState({ camera: 'perspective' })
     } else if (type === 'orthographic') {
@@ -195,6 +196,7 @@ class Renderer extends Component {
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = false
+      this.controls.zoomSpeed = 10
       //this.controls.enableZoom = false
       this.setState({ camera: 'orthographic' })
     } else {

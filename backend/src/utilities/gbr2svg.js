@@ -126,6 +126,13 @@ module.exports = {
     //   dir.odbgerboutdir
     // );
     let directory = path.join(dir.artworkdb, req.query.job, 'gerbers')
+    let cache = path.join(dir.artworkdb, req.query.job, 'cache')
+    if (fs.existsSync(cache)) {
+      // res.status(200).send('found cached data')
+      let cachedGerbers = fs.readFileSync(path.join(cache, 'finishedArtwork.json'))
+      res.status(200).send(JSON.parse(cachedGerbers))
+      return
+    }
     try {
       gerbernames = gerberNamesFilter(directory)
       var gerbertypes = await whatsThatGerber(gerbernames)
@@ -167,6 +174,13 @@ module.exports = {
         svg: botlayer,
       },
     ]
+    try {
+      fs.mkdirSync(cache)
+      fs.writeFileSync(path.join(cache, 'finishedArtwork.json'), JSON.stringify(convertedGerbers))
+    } catch(err) {
+      console.log('Could not write cache file... continue')
+      console.log(err)
+    }
     res.status(200).send(convertedGerbers)
     return convertedGerbers
   },
