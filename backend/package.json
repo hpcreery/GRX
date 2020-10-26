@@ -1,6 +1,6 @@
 {
   "name": "grx-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "monitor": "pm2 monit"
   },
   "author": "Hunter Creery",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.19.0",
     "busboy": "^0.3.1",
