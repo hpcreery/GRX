@@ -10,7 +10,6 @@ coverage
 **/artwork
 
 # production
-frontend/build
 frontend/GRX**
 
 # misc
