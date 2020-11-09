@@ -1,6 +1,5 @@
 # GRX FrontEnd
 
-
 ## For Production
 
 ### Install dependencies
@@ -17,6 +16,7 @@ First edit .env for your environment.
 REACT_APP_API=http://<address to backend>
 REACT_APP_APIPORT=<ext to adress "/api" or ":8081">
 ```
+
 Then, create optimized build that places static page in `/build`
 
 ```
@@ -62,6 +62,7 @@ npm run start-serve
 ```
 npm run start
 ```
+
 ---
 
 Requirements
