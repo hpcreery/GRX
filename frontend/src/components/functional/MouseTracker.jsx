@@ -29,7 +29,7 @@ const MouseTacker = (props) => {
         0.1 / scale
       }) matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 25, 20, 1)`
       pointer.style.left = `${position.x / scale}px`
-      pointer.style.bottom = `-${position.y / scale}px`
+      pointer.style.bottom = `${-position.y / scale}px`
       pointer.innerHTML = `&#x21D6;` // (${(position.x / scale / 96 / quality).toFixed(3)}in, ${(position.y / scale / 96 / quality).toFixed(3)}in)
       console.log('set pointer to', pointer)
       setCoordinates({

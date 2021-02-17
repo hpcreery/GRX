@@ -58,36 +58,41 @@ class Renderer extends Component {
   // Higher Level Abstraction Functions
   setJob = (job, layerartwork, finishedartwork) => {
     this.removeAllCSS3DObjects()
-    layerartwork.forEach((layer) => {
-      this.addLayer(layer, false)
+    layerartwork.forEach((layerObj) => {
+      this.addLayer(layerObj, false)
     })
-    finishedartwork.forEach((layer) => {
-      this.addLayer(layer, false)
+    finishedartwork.forEach((layerObj) => {
+      this.addLayer(layerObj, false)
     })
     this.setState({ CSS3DObjects: this.cssScene.children, job: job })
   }
 
+  addDrawCanvas = () => {
+    this.addLayer()
+  }
+
   // High Level Absraction Functions
-  addLayer = (layer, visible) => {
+  addLayer = (layerObj, visible) => {
     var svgElement = document.createElement('div')
-    svgElement.id = layer.name
+    svgElement.id = layerObj.name
     //svgElement.style.visibility = visible
-    svgElement.setAttribute('data-type', layer.type)
-    svgElement.setAttribute('data-side', layer.side)
+    svgElement.setAttribute('data-type', layerObj.type)
+    svgElement.setAttribute('data-side', layerObj.side)
     svgElement.style.width = '0px'
     svgElement.style.height = '0px'
     svgElement.style.position = 'relative'
-    if (layer.svg) {
-      svgElement = this.setSVGinElement(layer, svgElement)
-    } else {
+    if (layerObj.svg) {
+      svgElement = this.setSVGinElement(layerObj, svgElement)
+    } else if (layerObj.canvas) {
+      svgElement = this.setCanvasinElement(layerObj, svgElement)
     }
 
     this.addElementToThree(svgElement, visible)
   }
 
-  setSVGinElement = (layer, svgElement) => {
+  setSVGinElement = (layerObj, svgElement) => {
     //console.log(layer, svgElement)
-    svgElement.innerHTML = layer.svg
+    svgElement.innerHTML = layerObj.svg
     var svgChildElement = svgElement.childNodes[0]
     //console.log(svgChildElement)
     var viewBoxString = svgChildElement.getAttribute('viewBox')
@@ -126,13 +131,13 @@ class Renderer extends Component {
     return svgElement
   }
 
-  removeSVGinElement = (layer) => {
-    var svgElement = document.getElementById(layer.name)
+  removeSVGinElement = (layerObj) => {
+    var svgElement = document.getElementById(layerObj.name)
     svgElement.innerHTML = ''
   }
 
-  removeLayer = (layer) => {
-    this.removeCSS3DObject(layer.name)
+  removeLayer = (layerObj) => {
+    this.removeCSS3DObject(layerObj.name)
   }
 
   // Low Level Abstraction Functions
@@ -196,7 +201,7 @@ class Renderer extends Component {
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = false
-      this.controls.zoomSpeed = 10
+      this.controls.zoomSpeed = 1
       //this.controls.enableZoom = false
       this.setState({ camera: 'orthographic' })
     } else {
@@ -237,6 +242,8 @@ class Renderer extends Component {
     this.cssRenderer.domElement.id = 'css-renderer'
     this.svgContainer = this.cssRenderer.domElement.childNodes[0]
     this.svgContainer.id = 'svg-container'
+    // this.svgContainer.style.width = '2000px'
+    // this.svgContainer.style.height = '2000px'
 
     // Outer Method to add objects to dom
     this.addInitSVGFromDom()
@@ -292,11 +299,20 @@ class Renderer extends Component {
           layers={this.state.CSS3DObjects}
           cameraSelector={(...props) => this.cameraSelector(...props)}
           setJob={(...props) => this.setJob(...props)}
-          setSVGinElement={(layer, svgElement) => this.setSVGinElement(layer, svgElement)}
-          removeSVGinElement={(layer) => this.removeSVGinElement(layer)}
+          setSVGinElement={(layerObj, svgElement) => this.setSVGinElement(layerObj, svgElement)}
+          removeSVGinElement={(layerObj) => this.removeSVGinElement(layerObj)}
           clear={() => this.removeAllCSS3DObjects()}
           update={() => this.updateCSSObjects()}
         />
+        {this.svgContainer ? (
+          <MouseTracker
+            object={this.svgContainer}
+            camera={this.state.camera}
+            render={(coordinates) => <h4>{`${coordinates.x}in, ${coordinates.y}in`}</h4>}
+          />
+        ) : (
+          <h1>loading</h1>
+        )}
         {this.svgContainer ? (
           <MouseTracker
             object={this.svgContainer}

@@ -65,6 +65,16 @@ canvas {
   text-shadow: 2px 2px black;
 }
 
+#canvas {
+  line-height: 300px;
+  padding: 0px;
+  margin: 0px;
+  transform-origin: 0px 0px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+}
+
 .elements {
   padding: 10px;
   position: absolute;

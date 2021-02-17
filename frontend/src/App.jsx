@@ -32,7 +32,7 @@ class App extends Component {
           <Button onClick={() => this.testFetch()}>Hello</Button>
         </Card> */}
         <div className='icon-attribute'>
-          <h6>!! DEVELOPMENT !!</h6>
+          <h6>!! DEVELOPMENT v1.0.2 !!</h6>
           <h6>
             Software by{' '}
             <a target='_blank' href='https://github.com/hpcreery'>
