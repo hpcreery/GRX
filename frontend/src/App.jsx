@@ -6,6 +6,7 @@ import Renderer from './components/Renderer'
 
 const dotenv = require('dotenv')
 dotenv.config()
+import { version } from '../package.json'
 
 class App extends Component {
   constructor(props) {
@@ -24,7 +25,7 @@ class App extends Component {
   }
 
   render() {
-    console.log('Rendering App')
+    console.log('Rendering App', version)
     return (
       <div className='elements' style={{ height: this.state.windowheight }} id='elements'>
         <Renderer />
@@ -32,7 +33,7 @@ class App extends Component {
           <Button onClick={() => this.testFetch()}>Hello</Button>
         </Card> */}
         <div className='icon-attribute'>
-          <h6>!! DEVELOPMENT v1.0.2 !!</h6>
+          <h6>!! DEVELOPMENT v{`${version}`} !!</h6>
           <h6>
             Software by{' '}
             <a target='_blank' href='https://github.com/hpcreery'>

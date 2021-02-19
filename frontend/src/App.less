@@ -1,15 +1,4 @@
-//@import '~antd/dist/antd.dark.css';
-
-/* :root {
-  --svg-scale: 1;
-} */
-
 @import '../node_modules/antd/dist/antd.dark.less';
-//@import '../node_modules/antd/lib/style/themes/dark.less';
-
-// .selector {
-//   color: @cyan-8;
-// }
 
 @primary-color: #08979c;
 
@@ -25,12 +14,6 @@ body::-webkit-scrollbar {
   display: none;
 }
 
-canvas {
-  display: block;
-  /* height: 100vh; */
-  width: 100vw;
-}
-
 #render-container {
   --svg-scale: 1;
   --blend-mode: normal;
@@ -40,8 +23,13 @@ canvas {
   width: 100%;
 }
 
-#svg-container > div {
+#svg-container {
+  pointer-events: all !important;
+}
+
+#svg-container > [data-context='board'] {
   mix-blend-mode: var(--blend-mode);
+  pointer-events: none !important;
 }
 
 #svg-container > #front,
@@ -58,6 +46,12 @@ canvas {
   transform: scale(var(--svg-scale), var(--svg-scale));
 }
 
+#svg-container > #draw-board > svg {
+  position: relative;
+  left: calc(-5000px * var(--svg-scale));
+  top: calc(-5000px * var(--svg-scale));
+}
+
 #svg-container > #back > object,
 #svg-container > #back > svg {
   transform: scale(calc(var(--svg-scale) * -1), var(--svg-scale));
@@ -72,6 +66,30 @@ canvas {
   margin: 0px;
   transform-origin: 0px 0px;
   text-shadow: 2px 2px black;
+}
+
+/* #canvas {
+  padding: 0px;
+  margin: 0px;
+  transform-origin: 0px 0px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  position: absolute;
+  left: -5000px;
+  bottom: -5000px;
+  z-index: 1000;
+  pointer-events: all;
+} */
+
+#draw-board {
+  position: absolute;
+  width: 0px;
+  height: 0px;
+}
+
+#draw-board > svg {
+  transform-origin: top left;
 }
 
 .elements {
@@ -122,7 +140,7 @@ canvas {
   position: absolute;
   bottom: 0px;
   padding: 7px;
-  z-index: 1000;
+  z-index: 1020;
 }
 
 .coordinates {

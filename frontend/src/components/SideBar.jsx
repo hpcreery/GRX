@@ -268,8 +268,8 @@ class SideBar extends Component {
                     ) : (
                       <UnloadedLayerListItem
                         layer={item}
-                        add={(...props) => this.props.setSVGinElement(...props)}
-                        remove={(...props) => this.props.removeSVGinElement(...props)}
+                        add={(...props) => this.props.setSVGinDIV(...props)}
+                        remove={(...props) => this.props.removeSVGinDIV(...props)}
                         fetchLayer={(...props) => this.fetchLayer(...props)}
                       />
                     )}
@@ -291,7 +291,7 @@ class SideBar extends Component {
                 </Col>
                 <Col span={20}>
                   <Select
-                    defaultValue='perspective'
+                    defaultValue='orthographic'
                     onChange={(value) => this.props.cameraSelector(value)}
                     style={{ width: '100%' }}
                   >
@@ -352,16 +352,19 @@ class SideBar extends Component {
 
   static getDerivedStateFromProps(props, state) {
     var newState = {}
-    if (props.job !== state.job) {
-      console.log('New Job')
+    console.log(state, props)
+    if (props.job !== state.job || props.layers !== state.layers) {
       newState.job = props.job
-    }
-    if (props.layers !== state.layers) {
       newState.layers = props.layers
+      return newState
+    } else {
+      return null
     }
-    console.log(state)
-    console.log(newState)
-    return newState
+    // if (props.layers !== state.layers) {
+
+    // }
+    //console.log(state)
+    //console.log(newState)
   }
 }
 

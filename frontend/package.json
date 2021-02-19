@@ -8,7 +8,7 @@
     "babel-preset-es2016": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "dotenv-cli": "^4.0.0",
-    "electron": "^10.1.1",
+    "electron": "^10.3.2",
     "electron-devtools-installer": "^3.0.0",
     "electron-react-devtools": "^0.5.3",
     "foreman": "^3.0.1",
@@ -27,6 +27,7 @@
     "react-dom": "^16.1.1",
     "react-scripts": "0.8.5",
     "serve": "^11.3.2",
+    "svg.js": "^2.7.1",
     "three": "^0.120.0"
   },
   "homepage": "./",

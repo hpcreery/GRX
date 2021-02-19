@@ -1,105 +1,63 @@
 import React, { useState, useEffect } from 'react'
 
-const MouseTacker = (props) => {
-  const { object, quality, camera, render } = props
-  const [coordinates, setCoordinates] = useState({ x: 0, y: 0 })
-
-  var pointer = document.createElement('h1')
-  pointer.id = 'pointer'
-
-  let canvas = document.createElement('CANVAS')
-  canvas.id = 'canvas'
-  let canvasContext = canvas.getContext('2d')
+const MouseActions = (props) => {
+  const { drawContainer, drawBoardSize, render } = props
+  const [coordinates, setCoordinates] = useState({
+    pixel: { x: 0, y: 0 },
+    inch: { x: 0, y: 0 },
+    mm: { x: 0, y: 0 },
+    draw: { x: 0, y: 0 },
+  })
 
   const handleMouseLocation = (event) => {
-    var rendercontainer = document.getElementById('render-container')
-    var quality = getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
-    let bound = object.getBoundingClientRect()
-    let position = {}
-
-    let scale
-    position.x = event.clientX - bound.left
-    position.y = bound.height - event.clientY + bound.top
-    console.log(position)
-    const style = window.getComputedStyle(object)
-    const transform = style.transform
-    let mat = transform.match(/^matrix3d\((.+)\)$/)
-    if (mat) {
-      var prematrix = mat[1].split`, `.map((x) => +x)
-      //var matrix = this.listToMatrix(prematrix, 4);
+    let mouseCoordinates = {
+      pixel: { x: 0, y: 0 },
+      inch: { x: 0, y: 0 },
+      mm: { x: 0, y: 0 },
+      draw: { x: 0, y: 0 },
     }
-    scale = prematrix[0]
-    if (camera === 'orthographic') {
-      console.log('(' + position.x / scale / 96 / quality + ', ' + position.y / scale / 96 / quality + ')')
-      pointer.style.transform = `scale(${0.1 / scale},-${
-        0.1 / scale
-      }) matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 25, 20, 1)`
-      pointer.style.left = `${position.x / scale}px`
-      pointer.style.bottom = `${-position.y / scale}px`
-      pointer.innerHTML = `&#x21D6;` // (${(position.x / scale / 96 / quality).toFixed(3)}in, ${(position.y / scale / 96 / quality).toFixed(3)}in)
-      console.log('set pointer to', pointer)
-      setCoordinates({
-        x: (position.x / scale / 96 / quality).toFixed(3),
-        y: (position.y / scale / 96 / quality).toFixed(3),
-      })
-    }
+    mouseCoordinates.pixel.x = event.offsetX - drawBoardSize / 2
+    mouseCoordinates.pixel.y = event.offsetY - drawBoardSize / 2
+    mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
+    mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
+    mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
+    mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
+    mouseCoordinates.draw.x = event.offsetX
+    mouseCoordinates.draw.y = event.offsetY
+    //console.log(mouseCoordinates)
+    setCoordinates(mouseCoordinates)
   }
 
-  const handleMouseRuler = (event) => {
-    console.log(canvas)
-    canvasContext.fillStyle = 'red'
-    let bound = object.getBoundingClientRect()
-    let position = {}
-
-    var rendercontainer = document.getElementById('render-container')
-    var quality = getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
-
-    let scale
-    position.x = event.clientX - bound.left
-    position.y = bound.height - event.clientY + bound.top
-    console.log(position)
-    const style = window.getComputedStyle(object)
-    const transform = style.transform
-    let mat = transform.match(/^matrix3d\((.+)\)$/)
-    if (mat) {
-      var prematrix = mat[1].split`, `.map((x) => +x)
-      //var matrix = this.listToMatrix(prematrix, 4);
-    }
-    scale = prematrix[0]
-    if (camera === 'orthographic') {
-      console.log('(' + position.x / scale / 96 / quality + ', ' + position.y / scale / 96 / quality + ')')
-      // pointer.style.transform = `scale(${0.1 / scale},-${
-      //   0.1 / scale
-      // }) matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 25, 20, 1)`
-      // pointer.style.left = `${position.x / scale}px`
-      // pointer.style.bottom = `${-position.y / scale}px`
-      //pointer.innerHTML = `&#x21D6;` // (${(position.x / scale / 96 / quality).toFixed(3)}in, ${(position.y / scale / 96 / quality).toFixed(3)}in)
-      //console.log('set pointer to', pointer)
-      var canvCord = {
-        x: (position.x / scale / 96 / quality).toFixed(3),
-        y: (position.y / scale / 96 / quality).toFixed(3),
-      }
-    }
-    console.log(canvCord)
-    canvasContext.fillRect(canvCord.x * 10, canvCord.y * 10, 10, 10)
+  const handleFastMouseLocation = (event) => {
+    console.log(event.offsetX, event.offsetY)
   }
+  //static getDerivedStateFromProps(props, state) {}
 
   useEffect(() => {
     // Mount and Update
-    object.appendChild(pointer)
-    object.appendChild(canvas)
-    object.addEventListener('click', handleMouseLocation)
-    object.addEventListener('click', handleMouseRuler)
+    drawContainer.addEventListener('mousemove', handleMouseLocation)
+    //drawContainer.addEventListener('mousemove', handleFastMouseLocation)
     return () => {
       // Unmount
-      object.removeChild(pointer)
-      object.removeChild(canvas)
-      object.removeEventListener('click', handleMouseLocation)
-      object.addEventListener('click', handleMouseRuler)
+      console.log('unmounting mouse actions')
+      drawContainer.removeEventListener('mousemove', handleMouseLocation)
+      //drawContainer.removeEventListener('mousemove', handleFastMouseLocation)
     }
-  }, [camera, quality, render])
+  }, [drawContainer])
 
-  return <div className='coordinates'>{render(coordinates)}</div>
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        width: '100%',
+        textAlign: 'center',
+        bottom: '0px',
+        zIndex: '1000',
+      }}
+    >
+      {render(coordinates)}
+    </div>
+  )
 }
 
-export default MouseTacker
+export default MouseActions
