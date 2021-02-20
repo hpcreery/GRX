@@ -197,14 +197,18 @@ class Renderer extends Component {
     this.drawContainer = document.createElement('div')
     this.drawContainer.id = 'draw-board'
     this.drawContainer.setAttribute('data-context', 'drawing')
+    this.drawContainer.style.zIndex = 1000
+    this.drawContainer.style.transform = 'scale(1, -1)'
     //this.addElementToThree(this.drawContainer, true)
     this.svgContainer.appendChild(this.drawContainer)
     console.log(document.getElementById('draw-board'))
     this.drawing = SVG(this.drawContainer.id).size(this.state.drawBoardSize, this.state.drawBoardSize)
     //this.drawContainer.addEventListener('click', this.handleMouseLocation)
+    //this.handeMouseFeatures()
+    //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
   }
 
-  handleMouseLocation = (event) => {
+  handleMouseLocation = (event, action) => {
     //var rendercontainer = document.getElementById('render-container')
     //var quality = getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
     let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
@@ -218,17 +222,64 @@ class Renderer extends Component {
     mouseCoordinates.draw.y = event.offsetY
     console.log(mouseCoordinates)
     //var rect = drawing.rect(10, 10).attr({ fill: '#f06' })
-    this.setState({
-      mouseCoordinates,
-    })
+    console.log(action)
+    action(mouseCoordinates)
+
+    // Slow, but usefule in a different funtion.
+    // this.setState({
+    //   mouseCoordinates,
+    // })
+
     // var line = this.drawing
     //   .line(0, 0, mouseCoordinates.draw.x, mouseCoordinates.draw.y)
     //   .stroke({ color: '#f06', width: 1, linecap: 'round' })
     //console.log(line.attr())
   }
 
-  handleFastMouseLocation = (event) => {
-    console.log(event.offsetX, event.offsetY)
+  handeMouseFeatures = () => {
+    this.drawing.clear()
+    if (this.state.cameraType == 'orthographic') {
+      this.drawContainer.addEventListener('click', (e) => this.handleMouseLocation(e, this.ruler), { once: true })
+    }
+  }
+
+  ruler = (coordinates) => {
+    console.log(coordinates)
+    let startPosition = coordinates
+    let line = this.drawing
+      .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
+      .stroke({ color: 'white', width: 0.5, linecap: 'round' })
+    var text = this.drawing.text(`DX:0 DY:0 D:0`)
+    text.font({ fill: 'white', family: 'Inconsolata', size: 6 })
+    let lineDrawing = (e) => {
+      this.handleMouseLocation(e, (coordinates) => {
+        console.log(text.attr())
+        line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
+        text
+          .move(coordinates.draw.x, coordinates.draw.y)
+          .text(
+            `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
+              coordinates.inch.x - startPosition.inch.x
+            ).toFixed(5)} D:${Math.sqrt(
+              Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
+                Math.pow(coordinates.inch.x - startPosition.inch.x, 2)
+            ).toFixed(5)}`
+          )
+      })
+    }
+    this.drawContainer.addEventListener('mousemove', lineDrawing)
+    this.drawContainer.addEventListener('click', (e) => {
+      this.drawContainer.removeEventListener('mousemove', lineDrawing)
+    })
+  }
+
+  setUpKeyboardEvents = () => {
+    let doc_keyUp = (e) => {
+      if (e.ctrlKey && e.key === 'r') {
+        this.handeMouseFeatures()
+      }
+    }
+    document.addEventListener('keyup', doc_keyUp, false)
   }
 
   // Camera type switcher
@@ -319,9 +370,6 @@ class Renderer extends Component {
           clear={() => this.removeAllCSS3DObjects()}
           update={() => this.updateCSSObjects()}
         />
-        <h4 style={{ position: 'absolute' }}>{`X:${this.state.mouseCoordinates.inch.x.toFixed(
-          5
-        )} Y:${this.state.mouseCoordinates.inch.y.toFixed(5)}`}</h4>
         {/* {this.svgContainer ? (
           <MouseTracker
             object={this.svgContainer}
@@ -352,6 +400,7 @@ class Renderer extends Component {
     this.initDrawBoard()
     window.addEventListener('resize', this.onWindowResize, false)
     this.controls.update()
+    this.setUpKeyboardEvents()
   }
   componentDidUpdate() {
     //console.log(this.state)

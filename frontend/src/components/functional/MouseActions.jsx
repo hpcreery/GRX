@@ -17,13 +17,13 @@ const MouseActions = (props) => {
       draw: { x: 0, y: 0 },
     }
     mouseCoordinates.pixel.x = event.offsetX - drawBoardSize / 2
-    mouseCoordinates.pixel.y = event.offsetY - drawBoardSize / 2
+    mouseCoordinates.pixel.y = -(event.offsetY - drawBoardSize / 2)
     mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
     mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
     mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
     mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
     mouseCoordinates.draw.x = event.offsetX
-    mouseCoordinates.draw.y = event.offsetY
+    mouseCoordinates.draw.y = -event.offsetY
     //console.log(mouseCoordinates)
     setCoordinates(mouseCoordinates)
   }
