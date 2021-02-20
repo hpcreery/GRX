@@ -209,6 +209,7 @@ class Renderer extends Component {
     svgChildElement.style.position = `relative`
     svgChildElement.style.transformOrigin = `center`
     svgChildElement.style.transform = `scale(${this.drawBoardScale})`
+    svgChildElement.style.cursor = 'crosshair'
     //this.drawContainer.addEventListener('click', this.handleMouseLocation)
     //this.handeMouseFeatures()
     //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
@@ -245,7 +246,7 @@ class Renderer extends Component {
     let line = this.drawing
       .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
       .stroke({ color: 'white', width: 1, linecap: 'round' })
-    var text = this.drawing.text(`DX:0 DY:0 D:0`)
+    var text = this.drawing.text(`DX:0 DY:0 D:0`).click((e) => console.log(e))
     text.font({ fill: 'white', family: 'Inconsolata', size: 20 })
     let lineDrawing = (e) => {
       this.handleMouseLocation(e, (coordinates) => {
