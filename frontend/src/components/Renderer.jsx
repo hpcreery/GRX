@@ -31,8 +31,8 @@ class Renderer extends Component {
       CSS3DObjects: [],
       cameraType: 'orthographic',
       mouseCoordinates: { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } },
-      drawBoardSize: 10000,
     }
+    ;(this.drawBoardSize = 100000), (this.drawBoardScale = 0.1)
     this.root = document.documentElement
   }
 
@@ -198,42 +198,38 @@ class Renderer extends Component {
     this.drawContainer.id = 'draw-board'
     this.drawContainer.setAttribute('data-context', 'drawing')
     this.drawContainer.style.zIndex = 1000
-    this.drawContainer.style.transform = 'scale(1, -1)'
+    this.drawContainer.style.transform = 'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1)'
     //this.addElementToThree(this.drawContainer, true)
     this.svgContainer.appendChild(this.drawContainer)
     console.log(document.getElementById('draw-board'))
-    this.drawing = SVG(this.drawContainer.id).size(this.state.drawBoardSize, this.state.drawBoardSize)
+    this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
+    let svgChildElement = this.drawContainer.childNodes[0]
+    svgChildElement.style.top = `calc(-${this.drawBoardSize / 2}px * var(--svg-scale))`
+    svgChildElement.style.left = `calc(-${this.drawBoardSize / 2}px * var(--svg-scale))`
+    svgChildElement.style.position = `relative`
+    svgChildElement.style.transformOrigin = `center`
+    svgChildElement.style.transform = `scale(${this.drawBoardScale})`
     //this.drawContainer.addEventListener('click', this.handleMouseLocation)
     //this.handeMouseFeatures()
     //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
   }
 
   handleMouseLocation = (event, action) => {
-    //var rendercontainer = document.getElementById('render-container')
-    //var quality = getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
     let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
-    mouseCoordinates.pixel.x = event.offsetX - this.state.drawBoardSize / 2
-    mouseCoordinates.pixel.y = event.offsetY - this.state.drawBoardSize / 2
+    mouseCoordinates.pixel.x = (event.offsetX - this.drawBoardSize / 2) * this.drawBoardScale
+    mouseCoordinates.pixel.y = -(event.offsetY - this.drawBoardSize / 2) * this.drawBoardScale
     mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
     mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
     mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
     mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
     mouseCoordinates.draw.x = event.offsetX
     mouseCoordinates.draw.y = event.offsetY
-    console.log(mouseCoordinates)
-    //var rect = drawing.rect(10, 10).attr({ fill: '#f06' })
-    console.log(action)
     action(mouseCoordinates)
 
     // Slow, but usefule in a different funtion.
     // this.setState({
     //   mouseCoordinates,
     // })
-
-    // var line = this.drawing
-    //   .line(0, 0, mouseCoordinates.draw.x, mouseCoordinates.draw.y)
-    //   .stroke({ color: '#f06', width: 1, linecap: 'round' })
-    //console.log(line.attr())
   }
 
   handeMouseFeatures = () => {
@@ -244,25 +240,24 @@ class Renderer extends Component {
   }
 
   ruler = (coordinates) => {
-    console.log(coordinates)
+    //console.log(coordinates)
     let startPosition = coordinates
     let line = this.drawing
       .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
-      .stroke({ color: 'white', width: 0.5, linecap: 'round' })
+      .stroke({ color: 'white', width: 1, linecap: 'round' })
     var text = this.drawing.text(`DX:0 DY:0 D:0`)
-    text.font({ fill: 'white', family: 'Inconsolata', size: 6 })
+    text.font({ fill: 'white', family: 'Inconsolata', size: 20 })
     let lineDrawing = (e) => {
       this.handleMouseLocation(e, (coordinates) => {
-        console.log(text.attr())
         line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
         text
           .move(coordinates.draw.x, coordinates.draw.y)
           .text(
             `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
-              coordinates.inch.x - startPosition.inch.x
+              coordinates.inch.y - startPosition.inch.y
             ).toFixed(5)} D:${Math.sqrt(
               Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
-                Math.pow(coordinates.inch.x - startPosition.inch.x, 2)
+                Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
             ).toFixed(5)}`
           )
       })
@@ -275,7 +270,7 @@ class Renderer extends Component {
 
   setUpKeyboardEvents = () => {
     let doc_keyUp = (e) => {
-      if (e.ctrlKey && e.key === 'r') {
+      if (e.altKey && e.key === 'r') {
         this.handeMouseFeatures()
       }
     }
@@ -381,7 +376,8 @@ class Renderer extends Component {
         )} */}
         {this.svgContainer ? (
           <MouseActions
-            drawBoardSize={this.state.drawBoardSize}
+            drawBoardSize={this.drawBoardSize}
+            drawBoardScale={this.drawBoardScale}
             drawContainer={this.drawContainer}
             render={(coordinates) => (
               <h4>{`${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in`}</h4>

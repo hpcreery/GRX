@@ -48,11 +48,11 @@ body::-webkit-scrollbar {
   transform: scale(var(--svg-scale), var(--svg-scale));
 }
 
-#svg-container > #draw-board > svg {
+/* #svg-container > #draw-board > svg {
   position: relative;
-  left: calc(-5000px * var(--svg-scale));
-  top: calc(-5000px * var(--svg-scale));
-}
+  left: calc(-50000px * var(--svg-scale));
+  top: calc(-50000px * var(--svg-scale));
+} */
 
 #svg-container > #back > object,
 #svg-container > #back > svg {
@@ -90,9 +90,10 @@ body::-webkit-scrollbar {
   height: 0px;
 }
 
-#draw-board > svg {
-  transform-origin: top left;
-}
+/* #draw-board > svg {
+  transform-origin: center;
+  transform: scale(0.1) !important;
+} */
 
 .elements {
   padding: 10px;
