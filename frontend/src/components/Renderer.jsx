@@ -198,14 +198,15 @@ class Renderer extends Component {
     this.drawContainer.id = 'draw-board'
     this.drawContainer.setAttribute('data-context', 'drawing')
     this.drawContainer.style.zIndex = 1000
-    this.drawContainer.style.transform = 'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1)'
+    this.drawContainer.style.transform =
+      'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1) scale(var(--svg-scale))'
     //this.addElementToThree(this.drawContainer, true)
     this.svgContainer.appendChild(this.drawContainer)
     console.log(document.getElementById('draw-board'))
     this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
     let svgChildElement = this.drawContainer.childNodes[0]
-    svgChildElement.style.top = `calc(-${this.drawBoardSize / 2}px * var(--svg-scale))`
-    svgChildElement.style.left = `calc(-${this.drawBoardSize / 2}px * var(--svg-scale))`
+    svgChildElement.style.top = `-${this.drawBoardSize / 2}px`
+    svgChildElement.style.left = `-${this.drawBoardSize / 2}px`
     svgChildElement.style.position = `relative`
     svgChildElement.style.transformOrigin = `center`
     svgChildElement.style.transform = `scale(${this.drawBoardScale})`
@@ -218,7 +219,7 @@ class Renderer extends Component {
   handleMouseLocation = (event, action) => {
     let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
     mouseCoordinates.pixel.x = (event.offsetX - this.drawBoardSize / 2) * this.drawBoardScale
-    mouseCoordinates.pixel.y = -(event.offsetY - this.drawBoardSize / 2) * this.drawBoardScale
+    mouseCoordinates.pixel.y = -((event.offsetY - this.drawBoardSize / 2) * this.drawBoardScale)
     mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
     mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
     mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
@@ -245,9 +246,9 @@ class Renderer extends Component {
     let startPosition = coordinates
     let line = this.drawing
       .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
-      .stroke({ color: 'white', width: 1, linecap: 'round' })
+      .stroke({ color: 'white', width: 3, linecap: 'round' })
     var text = this.drawing.text(`DX:0 DY:0 D:0`).click((e) => console.log(e))
-    text.font({ fill: 'white', family: 'Inconsolata', size: 20 })
+    text.font({ fill: 'white', family: 'Inconsolata', size: 50 })
     let lineDrawing = (e) => {
       this.handleMouseLocation(e, (coordinates) => {
         line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
