@@ -39,6 +39,7 @@
     "start-electron": "electron .",
     "start-server": "serve -s build -l 5000",
     "pack": "build --dir",
+    "build_css": "lessc -js src/App.less src/App.css",
     "build": "react-scripts build",
     "build_osx": "electron-packager . GRX --platform=darwin --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for OSX'",
     "build_linux": "electron-packager . GRX --platform=linux  --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for LINUX'",
