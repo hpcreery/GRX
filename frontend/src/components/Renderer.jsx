@@ -357,7 +357,7 @@ class Renderer extends Component {
   }
 
   render() {
-    //console.log('Rendering Renderer')
+    console.log('Rendering Renderer', this.units)
     let layers = this.state.CSS3DObjects.filter((layer) => layer.context == 'board')
     //console.log(layers)
     return (
@@ -394,6 +394,7 @@ class Renderer extends Component {
             textAlign: 'center',
             bottom: '0px',
             zIndex: '1000',
+            filter: 'drop-shadow(2px 4px 6px black)',
           }}
         >
           <h4>0in, 0in</h4>

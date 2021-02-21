@@ -17,6 +17,8 @@ const SelectKit = (props) => {
     //var svgChildElement = divLayer.childNodes[0]
     var svgChildElement = svgContainer.querySelector('div > svg')
     let svgElements = svgChildElement.querySelectorAll('g > *')
+    var widthattr = svgChildElement.getAttribute('width')
+    var units = widthattr.slice(-2)
     //console.log(svgElements)
     //svgElement.addEventListener('mouseover', (e) => console.log(e))
     let initColor
@@ -24,7 +26,7 @@ const SelectKit = (props) => {
       initColor = node.style.color
       let g
       node.onmouseover = (e) => {
-        console.log(e)
+        console.log(units)
         e.target.style.color = '#08979c'
 
         if (e.target.nodeName == 'path') {
@@ -45,7 +47,6 @@ const SelectKit = (props) => {
             attr: e.target.attributes,
           }
         }
-        console.log(g)
         let infoBar = document.getElementById('bottom-info-bar')
         let oldInfo = infoBar.childNodes[0]
         let info = document.createElement('h4')
@@ -53,11 +54,10 @@ const SelectKit = (props) => {
           ? g.g == 'path'
             ? g.lineWidth == '0'
               ? `SURFACE`
-              : `LINE | Width: ${g.lineWidth}`
-            : `PAD | X: ${g.x} Y: ${g.y}`
+              : `LINE | Width: ${g.lineWidth / 1000}${units}`
+            : `PAD | X: ${g.x / 1000}${units} Y: ${g.y / 1000}${units}`
           : 'NA'
         infoBar.replaceChild(info, oldInfo)
-        // this.setState({ objectSelection: g })
       }
 
       node.onmouseleave = (e) => {
@@ -65,6 +65,9 @@ const SelectKit = (props) => {
       }
     })
     svgContainer.onclick = (e) => {
+      if (drawContainer.innerHTML != '') {
+        return
+      }
       e.target.style.color = initColor
       var old_element = svgChildElement
       var new_element = old_element.cloneNode(true)

@@ -29,7 +29,7 @@ const InfoCoords = (props) => {
     mouseCoordinates.draw.x = event.offsetX
     mouseCoordinates.draw.y = -event.offsetY
     let info = document.createElement('h4')
-    info.innerHTML = `${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in`
+    info.innerHTML = `( ${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in )`
     infoBar.replaceChild(info, oldInfo)
     setCoordinates(mouseCoordinates)
   }

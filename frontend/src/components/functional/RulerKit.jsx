@@ -38,6 +38,7 @@ const RulerKit = (props) => {
     svgChildElement.style.transformOrigin = `center`
     svgChildElement.style.transform = `scale(${drawBoardScale})`
     svgChildElement.style.cursor = 'crosshair'
+    svgChildElement.style.filter = 'drop-shadow(2px 4px 6px black)'
     drawContainer.addEventListener('click', (e) => handleMouseLocation(e, ruler), { once: true })
   }
 
@@ -54,12 +55,12 @@ const RulerKit = (props) => {
         text
           .move(coordinates.draw.x, coordinates.draw.y)
           .text(
-            `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
+            `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)}" DY:${(
               coordinates.inch.y - startPosition.inch.y
-            ).toFixed(5)} D:${Math.sqrt(
+            ).toFixed(5)}" D:${Math.sqrt(
               Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
                 Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
-            ).toFixed(5)}`
+            ).toFixed(5)}"`
           )
       })
     }
