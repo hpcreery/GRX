@@ -15,12 +15,15 @@ import Stats from '../three/examples/jsm/libs/stats.module.js'
 // FUNCTIONAL
 import MouseTracker from './functional/MouseTracker'
 import MouseActions from './functional/MouseActions'
+import InfoCoords from './functional/InfoCoords'
 
 // TRACESPACE
 const pcbStackup = require('pcb-stackup')
 
 // SVGJS
 import SVG from 'svg.js'
+
+const DrawBoardContext = React.createContext()
 
 class Renderer extends Component {
   constructor(props) {
@@ -33,6 +36,8 @@ class Renderer extends Component {
       mouseCoordinates: { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } },
     }
     ;(this.drawBoardSize = 100000), (this.drawBoardScale = 0.1)
+    this.svgContainer = null
+    this.drawContainer = null
     this.root = document.documentElement
   }
 
@@ -149,9 +154,9 @@ class Renderer extends Component {
       }
     })
 
-    console.log(g)
-    let svgElements = svgChildElement.querySelectorAll('g > *')
-    console.log(svgElements)
+    // console.log(g)
+    // let svgElements = svgChildElement.querySelectorAll('g > *')
+    // console.log(svgElements)
     //svgElement.addEventListener('mouseover', (e) => console.log(e))
     // svgElements.forEach((node) => {
     //   let initColor = node.style.color
@@ -357,41 +362,30 @@ class Renderer extends Component {
     //console.log(layers)
     return (
       <div style={{ height: '100%' }}>
-        <SideBar
-          job={this.state.job}
-          layers={layers}
-          svgContainer={this.svgContainer}
-          drawContainer={this.drawContainer}
-          drawBoardSize={this.drawBoardSize}
-          drawBoardScale={this.drawBoardScale}
-          cameraSelector={(...props) => this.cameraSelector(...props)}
-          setJob={(...props) => this.setJob(...props)}
-          setSVGinDIV={(layer, divLayer) => this.setSVGinDIV(layer, divLayer)}
-          removeSVGinDIV={(layer) => this.removeSVGinDIV(layer)}
-          clear={() => this.removeAllCSS3DObjects()}
-          update={() => this.updateCSSObjects()}
-        />
-        {/* {this.svgContainer ? (
-          <MouseTracker
-            object={this.svgContainer}
-            camera={this.state.camera}
-            render={(coordinates) => <h4>{`${coordinates.x}in, ${coordinates.y}in`}</h4>}
-          />
-        ) : (
-          <h1>loading</h1>
-        )} */}
-        {/* {this.svgContainer ? (
-          <MouseActions
+        <DrawBoardContext.Provider
+          value={{
+            svgContainer: this.svgContainer,
+            drawContainer: this.drawContainer,
+            drawBoardSize: this.drawBoardSize,
+            drawBoardScale: this.drawBoardScale,
+          }}
+        >
+          <SideBar
+            job={this.state.job}
+            layers={layers}
+            svgContainer={this.svgContainer}
+            drawContainer={this.drawContainer}
             drawBoardSize={this.drawBoardSize}
             drawBoardScale={this.drawBoardScale}
-            drawContainer={this.drawContainer}
-            render={(coordinates) => (
-              <h4>{`${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in`}</h4>
-            )}
+            cameraSelector={(...props) => this.cameraSelector(...props)}
+            setJob={(...props) => this.setJob(...props)}
+            setSVGinDIV={(layer, divLayer) => this.setSVGinDIV(layer, divLayer)}
+            removeSVGinDIV={(layer) => this.removeSVGinDIV(layer)}
+            clear={() => this.removeAllCSS3DObjects()}
+            update={() => this.updateCSSObjects()}
           />
-        ) : (
-          <h1>loading</h1>
-        )} */}
+          <InfoCoords />
+        </DrawBoardContext.Provider>
         <div
           id='bottom-info-bar'
           style={{
@@ -421,7 +415,7 @@ class Renderer extends Component {
   }
 }
 
-export default Renderer
+export { Renderer as default, DrawBoardContext }
 
 // Depreciated or Moved
 // initDrawBoard = () => {

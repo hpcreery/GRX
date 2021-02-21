@@ -11,8 +11,6 @@ const MouseActions = (props) => {
     draw: { x: 0, y: 0 },
   })
 
-  //console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
   const handleMouseLocation = (event) => {
     let infoBar = document.getElementById('bottom-info-bar')
     let oldInfo = infoBar.childNodes[0]
@@ -37,34 +35,12 @@ const MouseActions = (props) => {
     setCoordinates(mouseCoordinates)
   }
 
-  const handleFastMouseLocation = (event) => {
-    let mouseCoordinates = {
-      pixel: { x: 0, y: 0 },
-      inch: { x: 0, y: 0 },
-      mm: { x: 0, y: 0 },
-      draw: { x: 0, y: 0 },
-    }
-    mouseCoordinates.pixel.x = event.offsetX - drawBoardSize / 20
-    mouseCoordinates.pixel.y = -(event.offsetY - drawBoardSize / 20)
-    mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
-    mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
-    mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
-    mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
-    mouseCoordinates.draw.x = event.offsetX
-    mouseCoordinates.draw.y = -event.offsetY
-    console.log(mouseCoordinates.pixel.x, mouseCoordinates.pixel.y)
-  }
-
-  //static getDerivedStateFromProps(props, state) {}
-
   useEffect(() => {
     // Mount and Update
-    //console.log('mounting.updating')
     drawContainer.addEventListener('mousemove', handleMouseLocation)
     //drawContainer.addEventListener('click', handleFastMouseLocation)
     return () => {
       // Unmount
-      //console.log('unmounting mouse actions')
       drawContainer.removeEventListener('mousemove', handleMouseLocation)
       //drawContainer.removeEventListener('click', handleFastMouseLocation)
     }
