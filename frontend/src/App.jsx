@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { Spin, Switch, Alert, Button, Card } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
-import './App-simple.css'
+import './App.css'
 import Renderer from './components/Renderer'
 
 const dotenv = require('dotenv')

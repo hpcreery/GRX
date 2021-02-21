@@ -2,6 +2,10 @@
 
 @primary-color: #08979c;
 
+/* :root {
+  --svg-scale: 1;
+} */
+
 body {
   position: absolute;
   overflow: hidden;
@@ -45,6 +49,15 @@ body::-webkit-scrollbar {
 #svg-container > div > svg {
   transform: scale(var(--svg-scale), var(--svg-scale));
 }
+
+#svg-container > div > svg > g > * {
+  pointer-events: all;
+  cursor: grab;
+}
+
+/* #svg-container > div > svg > g > *:hover {
+  color: red;
+} */
 
 /* #svg-container > #draw-board > svg {
   position: relative;
