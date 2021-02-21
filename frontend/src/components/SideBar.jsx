@@ -278,9 +278,10 @@ class SideBar extends Component {
                 renderItem={(item) => (
                   <List.Item style={{ padding: '8px 8px' }}>
                     {this.state.frontload ? (
-                      <LayerListItem layer={item} />
+                      <LayerListItem key={item} layer={item} />
                     ) : (
                       <UnloadedLayerListItem
+                        key={item}
                         layer={item}
                         add={(...props) => this.props.setSVGinDIV(...props)}
                         remove={(...props) => this.props.removeSVGinDIV(...props)}

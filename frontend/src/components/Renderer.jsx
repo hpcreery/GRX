@@ -114,6 +114,9 @@ class Renderer extends Component {
     divLayer.style.width = '0px'
     divLayer.style.height = '0px'
     divLayer.style.position = 'relative'
+    divLayer.style.color = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(
+      Math.random() * 256
+    )}, 0.7)`
     if (layer.svg) {
       divLayer = this.setSVGinDIV(layer, divLayer)
     } else if (layer.canvas) {

@@ -1,18 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { Checkbox, Popover, Badge, Tooltip } from 'antd'
 import { BgColorsOutlined, InfoCircleOutlined } from '@ant-design/icons'
-import { SketchPicker, BlockPicker, CirclePicker } from 'react-color'
+import { SketchPicker, BlockPicker, CirclePicker, HuePicker, SliderPicker } from 'react-color'
 
 const LayerListItem = (props) => {
-  const { layer, add, remove, fetchLayer } = props
-
+  let { layer, add, remove, fetchLayer } = props
   const [visible, setVisible] = useState(props.layer.visible)
-  const [color, setColor] = useState('white')
+  const [color, setColor] = useState('#FFFFFF')
 
-  //console.log(svgContainer.childNodes.item(props.layer.name).style.color)
   const handleChange = async (value) => {
-    const svgElement = document.getElementById(layer.name)
+    let svgElement = document.getElementById(layer.name)
     console.log(svgElement)
     console.log(layer)
     if (value === true) {
@@ -26,13 +24,18 @@ const LayerListItem = (props) => {
   }
 
   const handleColorChange = (color, event) => {
-    const svgElement = document.getElementById(layer.name)
-    console.log(color)
-    console.log(svgElement)
-    console.log(getComputedStyle(svgElement).getPropertyValue('color'))
+    let svgElement = document.getElementById(layer.name)
+    // console.log(color)
+    // console.log(svgElement)
+    //console.log(getComputedStyle(svgElement).getPropertyValue('color'))
     svgElement.style.color = `rgba(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}, 0.7)`
     setColor(color.hex)
   }
+
+  useEffect(() => {
+    let svgElement = document.getElementById(layer.name)
+    setColor(getComputedStyle(svgElement).getPropertyValue('color'))
+  }, [props.layer])
 
   return (
     <div style={{ width: '100%' }}>
@@ -43,7 +46,7 @@ const LayerListItem = (props) => {
       </Checkbox>
 
       <Popover
-        content={<CirclePicker onChange={(color, event) => handleColorChange(color, event)} />}
+        content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
         title='ColorPicker'
         placement='right'
         trigger='click'

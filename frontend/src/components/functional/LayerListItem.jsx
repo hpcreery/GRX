@@ -1,13 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 import { Checkbox, Popover, Badge, Tooltip } from 'antd'
 import { BgColorsOutlined } from '@ant-design/icons'
-import { SketchPicker, BlockPicker, CirclePicker } from 'react-color'
+import { SketchPicker, BlockPicker, CirclePicker, HuePicker, SliderPicker } from 'react-color'
 
 const LayerListItem = (props) => {
   const [visible, setVisible] = useState(props.layer.visible)
-  const [color, setColor] = useState('white')
-
+  const [color, setColor] = useState('#FFFFFF')
   const handleChange = (value) => {
     console.log(value)
     props.layer.visible = value
@@ -16,12 +15,14 @@ const LayerListItem = (props) => {
 
   const handleColorChange = (color, event) => {
     var layerObject = document.getElementById(props.layer.name)
-    console.log(color)
-    console.log(layerObject)
-    console.log(getComputedStyle(layerObject).getPropertyValue('color'))
     layerObject.style.color = `rgba(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}, 0.7)`
     setColor(color.hex)
   }
+
+  useEffect(() => {
+    let svgElement = document.getElementById(props.layer.name)
+    setColor(getComputedStyle(svgElement).getPropertyValue('color'))
+  }, [props.layer])
 
   return (
     <div style={{ width: '100%' }}>
@@ -31,7 +32,7 @@ const LayerListItem = (props) => {
         </Tooltip>
       </Checkbox>
       <Popover
-        content={<CirclePicker onChange={(color, event) => handleColorChange(color, event)} />}
+        content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
         title='ColorPicker'
         placement='right'
         trigger='click'
