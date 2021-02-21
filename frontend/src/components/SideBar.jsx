@@ -20,6 +20,8 @@ import {
   message,
   Progress,
   Popconfirm,
+  Divider,
+  Typography,
 } from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
@@ -27,9 +29,13 @@ import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined, CloseCircl
 const { Option, OptGroup } = Select
 const { TabPane } = Tabs
 const { Search } = Input
+const { Text, Link } = Typography
 
 // TRACESPACE
 const pcbStackup = require('pcb-stackup')
+
+// SVGJS
+import SVG from 'svg.js'
 
 // CUSTOM
 //import FetchArtwork from './functional/FetchArtwork'
@@ -39,6 +45,7 @@ import UnloadedLayerListItem from './functional/UnloadedLayerListItem'
 import BlendMode from './functional/BlendMode'
 import UploadModal from './functional/UploadModal'
 import CreateJob from './functional/CreateJob'
+import MouseActions from './functional/MouseActions'
 
 // CONFIG
 const { backendurl, port } = require('../config/config')
@@ -57,7 +64,11 @@ class SideBar extends Component {
       sidebar: 'sidebar',
       frontload: false,
       useoutline: true,
+      objectSelection: null,
+      coordinatesActive: false,
     }
+    // ;(this.drawBoardSize = 100000), (this.drawBoardScale = 0.1), (this.svgContainer = props.svgContainer)
+    // this.drawContainer = props.drawContainer
   }
 
   fetchData = async (urlext, method) => {
@@ -177,6 +188,136 @@ class SideBar extends Component {
     this.setState({ sidebarhidden: false, sidebar: 'sidebar' })
   }
 
+  objectSelectionKit = (layer) => {
+    this.props.drawContainer.innerHTML = ''
+    //let svgContainer = document.getElementById('svg-container')
+    //let divLayer = a // divLayer.id = layer.name
+    //var svgChildElement = divLayer.childNodes[0]
+    var svgChildElement = this.props.svgContainer.querySelector('div > svg')
+    let svgElements = svgChildElement.querySelectorAll('g > *')
+    console.log(svgElements)
+    //svgElement.addEventListener('mouseover', (e) => console.log(e))
+    let initColor
+    svgElements.forEach((node) => {
+      initColor = node.style.color
+      let g
+      node.onmouseover = (e) => {
+        e.target.style.color = '#08979c'
+
+        if (node.nodeName == 'path') {
+          g = {
+            type: node.nodeName,
+            g: 'path',
+            lineWidth: node.attributes['stroke-width'] ? node.attributes['stroke-width'].value : 0,
+            code: node.attributes.d.value,
+            attr: node.attributes,
+          }
+        } else if (node.nodeName == 'use') {
+          g = {
+            type: node.nodeName,
+            g: 'pad',
+            x: node.attributes.x.value,
+            y: node.attributes.y.value,
+            shape: node.attributes['xlink:href'].value,
+            attr: node.attributes,
+          }
+        }
+        console.log(g)
+        let infoBar = document.getElementById('bottom-info-bar')
+        let oldInfo = infoBar.childNodes[0]
+        let info = document.createElement('h4')
+        info.innerHTML = g
+          ? g.g == 'path'
+            ? `SURFACE/LINE | Line Width: ${g.lineWidth}`
+            : `PAD | X: ${g.x} Y: ${g.y} Shape: ${g.shape}`
+          : 'NA'
+        infoBar.replaceChild(info, oldInfo)
+        this.setState({ objectSelection: g })
+      }
+
+      node.onmouseleave = (e) => {
+        e.target.style.color = initColor
+      }
+    })
+    this.props.svgContainer.onclick = (e) => {
+      e.target.style.color = initColor
+      var old_element = svgChildElement
+      var new_element = old_element.cloneNode(true)
+      old_element.parentNode.replaceChild(new_element, old_element)
+    }
+  }
+
+  handleMouseLocation = (event, action) => {
+    console.log('CLICK')
+    let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
+    mouseCoordinates.pixel.x = (event.offsetX - this.props.drawBoardSize / 2) * this.props.drawBoardScale
+    mouseCoordinates.pixel.y = -((event.offsetY - this.props.drawBoardSize / 2) * this.props.drawBoardScale)
+    mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
+    mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
+    mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
+    mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
+    mouseCoordinates.draw.x = event.offsetX
+    mouseCoordinates.draw.y = event.offsetY
+    action(mouseCoordinates)
+
+    // Slow, but usefule in a different funtion.
+    // this.setState({
+    //   mouseCoordinates,
+    // })
+  }
+
+  handeMouseFeatures = () => {
+    this.props.drawContainer.innerHTML = ''
+    //console.log(document.getElementById('draw-board'))
+    this.drawing = SVG(this.props.drawContainer.id).size(this.props.drawBoardSize, this.props.drawBoardSize)
+    let svgChildElement = this.props.drawContainer.childNodes[0]
+    svgChildElement.style.top = `-${this.props.drawBoardSize / 2}px`
+    svgChildElement.style.left = `-${this.props.drawBoardSize / 2}px`
+    svgChildElement.style.position = `relative`
+    svgChildElement.style.transformOrigin = `center`
+    svgChildElement.style.transform = `scale(${this.props.drawBoardScale})`
+    svgChildElement.style.cursor = 'crosshair'
+    this.props.drawContainer.addEventListener('click', (e) => this.handleMouseLocation(e, this.ruler), { once: true })
+  }
+
+  ruler = (coordinates) => {
+    console.log(coordinates)
+    let startPosition = coordinates
+    let line = this.drawing
+      .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
+      .stroke({ color: 'white', width: 3, linecap: 'round' })
+    var text = this.drawing.text(`DX:0 DY:0 D:0`).click((e) => console.log(e))
+    text.font({ fill: 'white', family: 'Inconsolata', size: 50 })
+    let lineDrawing = (e) => {
+      this.handleMouseLocation(e, (coordinates) => {
+        line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
+        text
+          .move(coordinates.draw.x, coordinates.draw.y)
+          .text(
+            `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
+              coordinates.inch.y - startPosition.inch.y
+            ).toFixed(5)} D:${Math.sqrt(
+              Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
+                Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
+            ).toFixed(5)}`
+          )
+      })
+    }
+    this.props.drawContainer.addEventListener('mousemove', lineDrawing)
+    this.props.drawContainer.addEventListener('click', (e) => {
+      this.props.drawContainer.removeEventListener('mousemove', lineDrawing)
+    })
+  }
+
+  setUpKeyboardEvents = () => {
+    let doc_keyUp = (e) => {
+      if (e.altKey && e.key === 'r') {
+        this.handeMouseFeatures()
+      }
+    }
+    document.addEventListener('keyup', doc_keyUp, false)
+  }
+
   render() {
     return (
       <div className='sidebarcontainer'>
@@ -285,6 +426,15 @@ class SideBar extends Component {
               /> */}
             </TabPane>
             <TabPane tab='Tools' key='3'>
+              <Divider plain>Kit</Divider>
+
+              <Button type='text' style={{ width: '100%' }} onClick={() => this.objectSelectionKit()}>
+                Select .<Text type='secondary'>(alt+s)</Text>
+              </Button>
+              <Button type='text' style={{ width: '100%' }} onClick={() => this.handeMouseFeatures()}>
+                Ruler .<Text type='secondary'>(alt+r)</Text>
+              </Button>
+              <Divider plain>Settings</Divider>
               <Row style={{ margin: '5px ' }}>
                 <Col span={4} style={{ padding: '5px' }}>
                   <VideoCameraOutlined />
@@ -338,12 +488,25 @@ class SideBar extends Component {
             </TabPane>
           </Tabs>
         </Card>
+        {this.props.svgContainer ? (
+          <MouseActions
+            drawBoardSize={this.props.drawBoardSize}
+            drawBoardScale={this.props.drawBoardScale}
+            drawContainer={this.props.drawContainer}
+            render={(coordinates) => (
+              <h4>{`${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in`}</h4>
+            )}
+          />
+        ) : (
+          <h1>loading</h1>
+        )}
       </div>
     )
   }
 
   componentDidMount() {
     this.getJobList('')
+    //this.initDrawBoard()
   }
 
   componentDidUpdate() {

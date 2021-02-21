@@ -48,6 +48,15 @@ body::-webkit-scrollbar {
   transform: scale(var(--svg-scale), var(--svg-scale));
 }
 
+#svg-container > div > svg > g > * {
+  pointer-events: all;
+  cursor: grab;
+}
+
+/* #svg-container > div > svg > g > *:hover {
+  color: red;
+} */
+
 /* #svg-container > #draw-board > svg {
   position: relative;
   left: calc(-50000px * var(--svg-scale));

@@ -63,6 +63,29 @@ class Renderer extends Component {
     this.setState({ CSS3DObjects: [this.frontPCBObject, this.backPCBObject] })
   }
 
+  initDrawBoard = () => {
+    this.drawContainer = document.createElement('div')
+    this.drawContainer.id = 'draw-board'
+    this.drawContainer.setAttribute('data-context', 'drawing')
+    this.drawContainer.style.zIndex = 1000
+    this.drawContainer.style.transform =
+      'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1) scale(var(--svg-scale))'
+    //this.addElementToThree(this.drawContainer, true)
+    this.svgContainer.appendChild(this.drawContainer)
+    console.log(document.getElementById('draw-board'))
+    this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
+    let svgChildElement = this.drawContainer.childNodes[0]
+    svgChildElement.style.top = `-${this.drawBoardSize / 2}px`
+    svgChildElement.style.left = `-${this.drawBoardSize / 2}px`
+    svgChildElement.style.position = `relative`
+    svgChildElement.style.transformOrigin = `center`
+    svgChildElement.style.transform = `scale(${this.drawBoardScale})`
+    svgChildElement.style.cursor = 'crosshair'
+    //this.drawContainer.addEventListener('click', this.handleMouseLocation)
+    //this.handeMouseFeatures()
+    //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
+  }
+
   // Higher Level Abstraction Functions
   setJob = (job, layerartwork, finishedartwork) => {
     this.removeAllLayers()
@@ -98,7 +121,70 @@ class Renderer extends Component {
     //console.log(layer, divLayer)
     divLayer.innerHTML = layer.svg
     var svgChildElement = divLayer.childNodes[0]
-    //console.log(svgChildElement)
+    //console.log(svgChildElement.innerHTML)
+    let g = []
+    svgChildElement.childNodes.forEach((node) => {
+      if (node.nodeName == 'defs') {
+      } else if (node.nodeName == 'g') {
+        node.childNodes.forEach((node) => {
+          if (node.nodeName == 'path') {
+            g.push({
+              type: node.nodeName,
+              g: 'line/surface',
+              lineWidth: node.attributes['stroke-width'] ? node.attributes['stroke-width'].value : 0,
+              code: node.attributes.d.value,
+              attr: node.attributes,
+            })
+          } else if (node.nodeName == 'use') {
+            g.push({
+              type: node.nodeName,
+              g: 'pad',
+              x: node.attributes.x.value,
+              y: node.attributes.y.value,
+              shape: node.attributes['xlink:href'].value,
+              attr: node.attributes,
+            })
+          }
+        })
+      }
+    })
+
+    console.log(g)
+    let svgElements = svgChildElement.querySelectorAll('g > *')
+    console.log(svgElements)
+    //svgElement.addEventListener('mouseover', (e) => console.log(e))
+    // svgElements.forEach((node) => {
+    //   let initColor = node.style.color
+    //   let g
+    //   node.onmouseover = (e) => {
+    //     e.target.style.color = '#08979c'
+
+    //     if (node.nodeName == 'path') {
+    //       g = {
+    //         type: node.nodeName,
+    //         g: 'line/surface',
+    //         lineWidth: node.attributes['stroke-width'] ? node.attributes['stroke-width'].value : 0,
+    //         code: node.attributes.d.value,
+    //         attr: node.attributes,
+    //       }
+    //     } else if (node.nodeName == 'use') {
+    //       g = {
+    //         type: node.nodeName,
+    //         g: 'pad',
+    //         x: node.attributes.x.value,
+    //         y: node.attributes.y.value,
+    //         shape: node.attributes['xlink:href'].value,
+    //         attr: node.attributes,
+    //       }
+    //     }
+    //     console.log(g)
+    //   }
+
+    //   node.onmouseleave = (e) => {
+    //     e.target.style.color = initColor
+    //   }
+    // })
+
     var viewBoxString = svgChildElement.getAttribute('viewBox')
     var widthattr = svgChildElement.getAttribute('width')
     var unit = widthattr.slice(-2)
@@ -193,92 +279,6 @@ class Renderer extends Component {
     })
   }
 
-  initDrawBoard = () => {
-    this.drawContainer = document.createElement('div')
-    this.drawContainer.id = 'draw-board'
-    this.drawContainer.setAttribute('data-context', 'drawing')
-    this.drawContainer.style.zIndex = 1000
-    this.drawContainer.style.transform =
-      'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1) scale(var(--svg-scale))'
-    //this.addElementToThree(this.drawContainer, true)
-    this.svgContainer.appendChild(this.drawContainer)
-    console.log(document.getElementById('draw-board'))
-    this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
-    let svgChildElement = this.drawContainer.childNodes[0]
-    svgChildElement.style.top = `-${this.drawBoardSize / 2}px`
-    svgChildElement.style.left = `-${this.drawBoardSize / 2}px`
-    svgChildElement.style.position = `relative`
-    svgChildElement.style.transformOrigin = `center`
-    svgChildElement.style.transform = `scale(${this.drawBoardScale})`
-    svgChildElement.style.cursor = 'crosshair'
-    //this.drawContainer.addEventListener('click', this.handleMouseLocation)
-    //this.handeMouseFeatures()
-    //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
-  }
-
-  handleMouseLocation = (event, action) => {
-    let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
-    mouseCoordinates.pixel.x = (event.offsetX - this.drawBoardSize / 2) * this.drawBoardScale
-    mouseCoordinates.pixel.y = -((event.offsetY - this.drawBoardSize / 2) * this.drawBoardScale)
-    mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
-    mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
-    mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
-    mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
-    mouseCoordinates.draw.x = event.offsetX
-    mouseCoordinates.draw.y = event.offsetY
-    action(mouseCoordinates)
-
-    // Slow, but usefule in a different funtion.
-    // this.setState({
-    //   mouseCoordinates,
-    // })
-  }
-
-  handeMouseFeatures = () => {
-    this.drawing.clear()
-    if (this.state.cameraType == 'orthographic') {
-      this.drawContainer.addEventListener('click', (e) => this.handleMouseLocation(e, this.ruler), { once: true })
-    }
-  }
-
-  ruler = (coordinates) => {
-    //console.log(coordinates)
-    let startPosition = coordinates
-    let line = this.drawing
-      .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
-      .stroke({ color: 'white', width: 3, linecap: 'round' })
-    var text = this.drawing.text(`DX:0 DY:0 D:0`).click((e) => console.log(e))
-    text.font({ fill: 'white', family: 'Inconsolata', size: 50 })
-    let lineDrawing = (e) => {
-      this.handleMouseLocation(e, (coordinates) => {
-        line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
-        text
-          .move(coordinates.draw.x, coordinates.draw.y)
-          .text(
-            `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
-              coordinates.inch.y - startPosition.inch.y
-            ).toFixed(5)} D:${Math.sqrt(
-              Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
-                Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
-            ).toFixed(5)}`
-          )
-      })
-    }
-    this.drawContainer.addEventListener('mousemove', lineDrawing)
-    this.drawContainer.addEventListener('click', (e) => {
-      this.drawContainer.removeEventListener('mousemove', lineDrawing)
-    })
-  }
-
-  setUpKeyboardEvents = () => {
-    let doc_keyUp = (e) => {
-      if (e.altKey && e.key === 'r') {
-        this.handeMouseFeatures()
-      }
-    }
-    document.addEventListener('keyup', doc_keyUp, false)
-  }
-
   // Camera type switcher
   cameraSelector = (type) => {
     //console.log(type)
@@ -360,6 +360,10 @@ class Renderer extends Component {
         <SideBar
           job={this.state.job}
           layers={layers}
+          svgContainer={this.svgContainer}
+          drawContainer={this.drawContainer}
+          drawBoardSize={this.drawBoardSize}
+          drawBoardScale={this.drawBoardScale}
           cameraSelector={(...props) => this.cameraSelector(...props)}
           setJob={(...props) => this.setJob(...props)}
           setSVGinDIV={(layer, divLayer) => this.setSVGinDIV(layer, divLayer)}
@@ -376,7 +380,7 @@ class Renderer extends Component {
         ) : (
           <h1>loading</h1>
         )} */}
-        {this.svgContainer ? (
+        {/* {this.svgContainer ? (
           <MouseActions
             drawBoardSize={this.drawBoardSize}
             drawBoardScale={this.drawBoardScale}
@@ -387,7 +391,19 @@ class Renderer extends Component {
           />
         ) : (
           <h1>loading</h1>
-        )}
+        )} */}
+        <div
+          id='bottom-info-bar'
+          style={{
+            position: 'absolute',
+            width: '100%',
+            textAlign: 'center',
+            bottom: '0px',
+            zIndex: '1000',
+          }}
+        >
+          <h4>0in, 0in</h4>
+        </div>
       </div>
     )
   }
@@ -398,7 +414,7 @@ class Renderer extends Component {
     this.initDrawBoard()
     window.addEventListener('resize', this.onWindowResize, false)
     this.controls.update()
-    this.setUpKeyboardEvents()
+    //this.setUpKeyboardEvents()
   }
   componentDidUpdate() {
     //console.log(this.state)
@@ -406,3 +422,90 @@ class Renderer extends Component {
 }
 
 export default Renderer
+
+// Depreciated or Moved
+// initDrawBoard = () => {
+//   this.drawContainer = document.createElement('div')
+//   this.drawContainer.id = 'draw-board'
+//   this.drawContainer.setAttribute('data-context', 'drawing')
+//   this.drawContainer.style.zIndex = 1000
+//   this.drawContainer.style.transform =
+//     'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1) scale(var(--svg-scale))'
+//   //this.addElementToThree(this.drawContainer, true)
+//   this.svgContainer.appendChild(this.drawContainer)
+//   console.log(document.getElementById('draw-board'))
+//   this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
+//   let svgChildElement = this.drawContainer.childNodes[0]
+//   svgChildElement.style.top = `-${this.drawBoardSize / 2}px`
+//   svgChildElement.style.left = `-${this.drawBoardSize / 2}px`
+//   svgChildElement.style.position = `relative`
+//   svgChildElement.style.transformOrigin = `center`
+//   svgChildElement.style.transform = `scale(${this.drawBoardScale})`
+//   svgChildElement.style.cursor = 'crosshair'
+//   //this.drawContainer.addEventListener('click', this.handleMouseLocation)
+//   //this.handeMouseFeatures()
+//   //this.drawContainer.addEventListener('touchstart', this.handleMouseLocation)
+// }
+
+// handleMouseLocation = (event, action) => {
+//   let mouseCoordinates = { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } }
+//   mouseCoordinates.pixel.x = (event.offsetX - this.drawBoardSize / 2) * this.drawBoardScale
+//   mouseCoordinates.pixel.y = -((event.offsetY - this.drawBoardSize / 2) * this.drawBoardScale)
+//   mouseCoordinates.inch.x = mouseCoordinates.pixel.x / 96
+//   mouseCoordinates.inch.y = mouseCoordinates.pixel.y / 96
+//   mouseCoordinates.mm.x = mouseCoordinates.inch.x * 24
+//   mouseCoordinates.mm.y = mouseCoordinates.inch.y * 24
+//   mouseCoordinates.draw.x = event.offsetX
+//   mouseCoordinates.draw.y = event.offsetY
+//   action(mouseCoordinates)
+
+//   // Slow, but usefule in a different funtion.
+//   // this.setState({
+//   //   mouseCoordinates,
+//   // })
+// }
+
+// handeMouseFeatures = () => {
+//   this.drawing.clear()
+//   if (this.state.cameraType == 'orthographic') {
+//     this.drawContainer.addEventListener('click', (e) => this.handleMouseLocation(e, this.ruler), { once: true })
+//   }
+// }
+
+// ruler = (coordinates) => {
+//   //console.log(coordinates)
+//   let startPosition = coordinates
+//   let line = this.drawing
+//     .line(coordinates.draw.x, coordinates.draw.y, coordinates.draw.x, coordinates.draw.y)
+//     .stroke({ color: 'white', width: 3, linecap: 'round' })
+//   var text = this.drawing.text(`DX:0 DY:0 D:0`).click((e) => console.log(e))
+//   text.font({ fill: 'white', family: 'Inconsolata', size: 50 })
+//   let lineDrawing = (e) => {
+//     this.handleMouseLocation(e, (coordinates) => {
+//       line.attr({ x2: coordinates.draw.x, y2: coordinates.draw.y })
+//       text
+//         .move(coordinates.draw.x, coordinates.draw.y)
+//         .text(
+//           `DX:${(coordinates.inch.x - startPosition.inch.x).toFixed(5)} DY:${(
+//             coordinates.inch.y - startPosition.inch.y
+//           ).toFixed(5)} D:${Math.sqrt(
+//             Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
+//               Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
+//           ).toFixed(5)}`
+//         )
+//     })
+//   }
+//   this.drawContainer.addEventListener('mousemove', lineDrawing)
+//   this.drawContainer.addEventListener('click', (e) => {
+//     this.drawContainer.removeEventListener('mousemove', lineDrawing)
+//   })
+// }
+
+// setUpKeyboardEvents = () => {
+//   let doc_keyUp = (e) => {
+//     if (e.altKey && e.key === 'r') {
+//       this.handeMouseFeatures()
+//     }
+//   }
+//   document.addEventListener('keyup', doc_keyUp, false)
+// }

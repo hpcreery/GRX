@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
+//const infoBar = document.getElementById('bottom-info-bar')
+
 const MouseActions = (props) => {
   const { drawContainer, drawBoardSize, drawBoardScale, render } = props
   const [coordinates, setCoordinates] = useState({
@@ -9,7 +11,11 @@ const MouseActions = (props) => {
     draw: { x: 0, y: 0 },
   })
 
+  //console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
   const handleMouseLocation = (event) => {
+    let infoBar = document.getElementById('bottom-info-bar')
+    let oldInfo = infoBar.childNodes[0]
     let mouseCoordinates = {
       pixel: { x: 0, y: 0 },
       inch: { x: 0, y: 0 },
@@ -25,6 +31,9 @@ const MouseActions = (props) => {
     mouseCoordinates.draw.x = event.offsetX
     mouseCoordinates.draw.y = -event.offsetY
     //console.log(mouseCoordinates)
+    let info = document.createElement('h4')
+    info.innerHTML = `${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in`
+    infoBar.replaceChild(info, oldInfo)
     setCoordinates(mouseCoordinates)
   }
 
@@ -50,29 +59,18 @@ const MouseActions = (props) => {
 
   useEffect(() => {
     // Mount and Update
+    //console.log('mounting.updating')
     drawContainer.addEventListener('mousemove', handleMouseLocation)
     //drawContainer.addEventListener('click', handleFastMouseLocation)
     return () => {
       // Unmount
-      console.log('unmounting mouse actions')
+      //console.log('unmounting mouse actions')
       drawContainer.removeEventListener('mousemove', handleMouseLocation)
       //drawContainer.removeEventListener('click', handleFastMouseLocation)
     }
-  }, [drawContainer])
+  })
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        width: '100%',
-        textAlign: 'center',
-        bottom: '0px',
-        zIndex: '1000',
-      }}
-    >
-      {render(coordinates)}
-    </div>
-  )
+  return <div>{}</div>
 }
 
 export default MouseActions
