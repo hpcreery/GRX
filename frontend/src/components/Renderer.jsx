@@ -394,7 +394,8 @@ class Renderer extends Component {
             textAlign: 'center',
             bottom: '0px',
             zIndex: '1000',
-            filter: 'drop-shadow(2px 4px 6px black)',
+            // filter: 'drop-shadow(2px 4px 6px black)',
+            textShadow: '-1px 0px 2px black, 0 1px 2px black, 1px 0 2px black, 0 -1px 2px black',
           }}
         >
           <h4>0in, 0in</h4>
