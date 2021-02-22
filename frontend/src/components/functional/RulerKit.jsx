@@ -27,7 +27,7 @@ const RulerKit = (props) => {
     action(mouseCoordinates)
   }
 
-  const handeMouseFeatures = () => {
+  const handleRulerKit = () => {
     drawContainer.innerHTML = ''
     //console.log(document.getElementById('draw-board'))
     drawing = SVG(drawContainer.id).size(drawBoardSize, drawBoardSize)
@@ -39,7 +39,15 @@ const RulerKit = (props) => {
     svgChildElement.style.transform = `scale(${drawBoardScale})`
     svgChildElement.style.cursor = 'crosshair'
     svgChildElement.style.filter = 'drop-shadow(2px 4px 6px black)'
-    drawContainer.addEventListener('click', (e) => handleMouseLocation(e, ruler), { once: true })
+    var action = (e) => handleMouseLocation(e, ruler)
+    drawContainer.addEventListener('click', action, { once: true })
+    let escape = (e) => {
+      if (e.key == 'Escape') {
+        console.log(e)
+        drawContainer.removeEventListener('click', action)
+      }
+    }
+    document.addEventListener('keydown', escape, { once: true })
   }
 
   const ruler = (coordinates) => {
@@ -72,7 +80,7 @@ const RulerKit = (props) => {
   let doc_keyDown = (e) => {
     console.log(e)
     if (e.altKey && e.code === 'KeyR') {
-      handeMouseFeatures()
+      handleRulerKit()
     }
   }
 
@@ -98,7 +106,7 @@ const RulerKit = (props) => {
 
   return (
     <div>
-      <Button type='text' style={{ width: '100%' }} onClick={() => handeMouseFeatures()}>
+      <Button type='text' style={{ width: '100%' }} onClick={() => handleRulerKit()}>
         Ruler .<Text type='secondary'>(alt+r)</Text>
       </Button>
     </div>

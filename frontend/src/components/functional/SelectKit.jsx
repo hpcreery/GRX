@@ -23,8 +23,20 @@ const SelectKit = (props) => {
     return string
   }
 
-  const objectSelectionKit = (layer) => {
-    drawContainer.innerHTML = ''
+  const initSelectionKit = () => {
+    let oldDrawContainerNodes = drawContainer.childNodes[0]
+    drawContainer.removeChild(oldDrawContainerNodes)
+    objectSelectionKit()
+    let escape = (e) => {
+      if (e.key == 'Escape') {
+        console.log(e)
+        drawContainer.appendChild(oldDrawContainerNodes)
+      }
+    }
+    document.addEventListener('keydown', escape, { once: true })
+  }
+
+  const objectSelectionKit = () => {
     //let svgContainer = document.getElementById('svg-container')
     //let divLayer = a // divLayer.id = layer.name
     //var svgChildElement = divLayer.childNodes[0]
@@ -103,7 +115,7 @@ const SelectKit = (props) => {
   let doc_keyDown = (e) => {
     console.log(e)
     if (e.altKey && e.code === 'KeyS') {
-      objectSelectionKit()
+      initSelectionKit()
     }
   }
 
@@ -118,7 +130,7 @@ const SelectKit = (props) => {
 
   return (
     <div>
-      <Button type='text' style={{ width: '100%' }} onClick={() => objectSelectionKit()}>
+      <Button type='text' style={{ width: '100%' }} onClick={() => initSelectionKit()}>
         Select .<Text type='secondary'>(alt+s)</Text>
       </Button>
     </div>
