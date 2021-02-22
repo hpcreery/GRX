@@ -69,15 +69,21 @@ const RulerKit = (props) => {
       drawContainer.removeEventListener('mousemove', lineDrawing)
     })
   }
-
-  const setUpKeyboardEvents = () => {
-    let doc_keyUp = (e) => {
-      if (e.altKey && e.key === 'r') {
-        handeMouseFeatures()
-      }
+  let doc_keyDown = (e) => {
+    console.log(e)
+    if (e.altKey && e.code === 'KeyR') {
+      handeMouseFeatures()
     }
-    document.addEventListener('keyup', doc_keyUp, false)
   }
+
+  const setUpKeyboardEvents = () => {}
+
+  useEffect(() => {
+    document.addEventListener('keyup', doc_keyDown, false)
+    return function cleanup() {
+      document.removeEventListener('keyup', doc_keyDown, false)
+    }
+  })
 
   // useEffect(() => {
   //   // Mount and Update

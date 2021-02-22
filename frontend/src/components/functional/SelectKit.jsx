@@ -100,14 +100,21 @@ const SelectKit = (props) => {
     }
   }
 
-  const setUpKeyboardEvents = () => {
-    let doc_keyUp = (e) => {
-      if (e.altKey && e.key === 's') {
-        objectSelectionKit()
-      }
+  let doc_keyDown = (e) => {
+    console.log(e)
+    if (e.altKey && e.code === 'KeyS') {
+      objectSelectionKit()
     }
-    document.addEventListener('keyup', doc_keyUp, false)
   }
+
+  const setUpKeyboardEvents = () => {}
+
+  useEffect(() => {
+    document.addEventListener('keyup', doc_keyDown, false)
+    return function cleanup() {
+      document.removeEventListener('keyup', doc_keyDown, false)
+    }
+  })
 
   return (
     <div>
