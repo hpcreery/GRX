@@ -299,7 +299,7 @@ class SideBar extends Component {
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               /> */}
             </TabPane>
-            <TabPane tab='Tools' key='3'>
+            <TabPane tab='Tools' key='3' forceRender>
               <Divider plain>Kit</Divider>
               <SelectKit />
               <RulerKit />
