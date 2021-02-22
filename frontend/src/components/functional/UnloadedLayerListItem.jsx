@@ -25,17 +25,24 @@ const LayerListItem = (props) => {
 
   const handleColorChange = (color, event) => {
     let svgElement = document.getElementById(layer.name)
-    // console.log(color)
-    // console.log(svgElement)
-    //console.log(getComputedStyle(svgElement).getPropertyValue('color'))
     svgElement.style.color = `rgba(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}, 0.7)`
     setColor(color.hex)
   }
 
   useEffect(() => {
+    console.log('Effect')
+    console.log(layer.name)
     let svgElement = document.getElementById(layer.name)
-    setColor(getComputedStyle(svgElement).getPropertyValue('color'))
-  }, [props.layer])
+    let waitForElement = () => {
+      if (svgElement !== null) {
+        setColor(getComputedStyle(svgElement).getPropertyValue('color'))
+      } else {
+        svgElement = document.getElementById(layer.name)
+        setTimeout(waitForElement, 250)
+      }
+    }
+    waitForElement()
+  }, [props.layer.name])
 
   return (
     <div style={{ width: '100%' }}>

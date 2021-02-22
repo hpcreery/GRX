@@ -1,6 +1,6 @@
 {
   "name": "grx-frontend",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "devDependencies": {
     "babel-preset-env": "^1.7.0",
@@ -41,9 +41,9 @@
     "pack": "build --dir",
     "build_css": "lessc -js src/App.less src/App.css",
     "build": "react-scripts build",
-    "build_osx": "electron-packager . GRX --platform=darwin --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for OSX'",
-    "build_linux": "electron-packager . GRX --platform=linux  --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for LINUX'",
-    "build_win": "electron-packager . GRX --platform=win32  --arch=x64 --overwrite --icon=public/favicon.ico ; echo 'Built for WIN'"
+    "build_osx": "electron-packager . GRX --platform=darwin --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for OSX'",
+    "build_linux": "electron-packager . GRX --platform=linux  --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for LINUX'",
+    "build_win": "electron-packager . GRX --platform=win32  --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for WIN'"
   },
   "author": "Hunter Creery"
 }

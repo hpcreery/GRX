@@ -21,8 +21,16 @@ const LayerListItem = (props) => {
 
   useEffect(() => {
     let svgElement = document.getElementById(props.layer.name)
-    setColor(getComputedStyle(svgElement).getPropertyValue('color'))
-  }, [props.layer])
+    let waitForElement = () => {
+      if (svgElement !== null) {
+        setColor(getComputedStyle(svgElement).getPropertyValue('color'))
+      } else {
+        svgElement = document.getElementById(props.layer.name)
+        setTimeout(waitForElement, 250)
+      }
+    }
+    waitForElement()
+  }, [props.layer.name])
 
   return (
     <div style={{ width: '100%' }}>
