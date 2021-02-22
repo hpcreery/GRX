@@ -39,8 +39,9 @@
     "start-electron": "electron .",
     "start-server": "serve -s build -l 5000",
     "pack": "build --dir",
-    "build_css": "lessc -js src/App.less src/App.css",
     "build": "react-scripts build",
+    "build_css": "lessc -js src/App.less src/App.css",
+    "build_docker": "docker build -t hpcreery/grx-frontend .",
     "build_osx": "electron-packager . GRX --platform=darwin --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for OSX'",
     "build_linux": "electron-packager . GRX --platform=linux  --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for LINUX'",
     "build_win": "electron-packager . GRX --platform=win32  --arch=x64 --overwrite --ignore=^/node_modules --icon=public/favicon.ico ; echo 'Built for WIN'"
