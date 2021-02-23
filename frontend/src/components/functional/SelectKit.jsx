@@ -15,7 +15,7 @@ const SelectKit = (props) => {
     let string = ''
     for (var i = 0; i < array.length; i++) {
       if (array[i].nodeName != 'id') {
-        string += ` ${array[i].nodeName.toUpperCase()}: ${array[i].value / 1000}${units}`
+        string += ` ${array[i].nodeName.toUpperCase()}: ${(array[i].value / 1000).toFixed(5)}${units}`
       }
     }
     console.log(array)
@@ -84,32 +84,37 @@ const SelectKit = (props) => {
         let infoBar = document.getElementById('bottom-info-bar')
         let oldInfo = infoBar.childNodes[0]
         let info = document.createElement('h4')
+        console.log(e.target.nodeName)
         //let attributes = deriveNodeAttributes(g.shape.attributes)
         info.innerHTML = g
           ? g.g == 'path'
             ? g.lineWidth == '0'
               ? `SURFACE`
               : `LINE | Width: ${g.lineWidth / 1000}${units}`
-            : `PAD | Shape: ${g.shape.type.toUpperCase()} X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(
-                g.y / 1000
-              ).toFixed(5)}${units} | ${deriveNodeAttributes(g.shape.attributes, units)}`
+            : `PAD | Shape: ${
+                g.shape.type == 'g'
+                  ? `SPECIAL | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(5)}${units}`
+                  : `${g.shape.type.toUpperCase()}  | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(
+                      5
+                    )}${units} | ${deriveNodeAttributes(g.shape.attributes, units)}`
+              }`
           : 'NA'
-        infoBar.replaceChild(info, oldInfo)
+        g ? infoBar.replaceChild(info, oldInfo) : ''
       }
 
       node.onmouseleave = (e) => {
         e.target.style.color = initColor
       }
     })
-    svgContainer.onclick = (e) => {
-      if (drawContainer.innerHTML != '') {
-        return
-      }
-      e.target.style.color = initColor
-      var old_element = svgChildElement
-      var new_element = old_element.cloneNode(true)
-      old_element.parentNode.replaceChild(new_element, old_element)
-    }
+    // svgContainer.onclick = (e) => {
+    //   if (drawContainer.innerHTML != '') {
+    //     return
+    //   }
+    //   e.target.style.color = '#08979c'
+    //   var old_element = svgChildElement
+    //   var new_element = old_element.cloneNode(true)
+    //   old_element.parentNode.replaceChild(new_element, old_element)
+    // }
   }
 
   let doc_keyDown = (e) => {
