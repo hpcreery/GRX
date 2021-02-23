@@ -27,10 +27,9 @@ const RulerKit = (props) => {
     action(mouseCoordinates)
   }
 
-  const handleRulerKit = () => {
+  const reCreateDrawBoard = () => {
     drawContainer.innerHTML = ''
-    //console.log(document.getElementById('draw-board'))
-    drawing = SVG(drawContainer.id).size(drawBoardSize, drawBoardSize)
+    let drawingBoard = SVG(drawContainer.id).size(drawBoardSize, drawBoardSize)
     let svgChildElement = drawContainer.childNodes[0]
     svgChildElement.style.top = `-${drawBoardSize / 2}px`
     svgChildElement.style.left = `-${drawBoardSize / 2}px`
@@ -39,12 +38,18 @@ const RulerKit = (props) => {
     svgChildElement.style.transform = `scale(${drawBoardScale})`
     svgChildElement.style.cursor = 'crosshair'
     svgChildElement.style.filter = 'drop-shadow(2px 4px 6px black)'
+    return drawingBoard
+  }
+
+  const handleRulerKit = () => {
+    drawing = reCreateDrawBoard()
     var action = (e) => handleMouseLocation(e, ruler)
     drawContainer.addEventListener('click', action, { once: true })
     let escape = (e) => {
       if (e.key == 'Escape') {
         console.log(e)
         drawContainer.removeEventListener('click', action)
+        reCreateDrawBoard()
       }
     }
     document.addEventListener('keydown', escape, { once: true })
@@ -77,6 +82,7 @@ const RulerKit = (props) => {
       drawContainer.removeEventListener('mousemove', lineDrawing)
     })
   }
+
   let doc_keyDown = (e) => {
     console.log(e)
     if (e.altKey && e.code === 'KeyR') {
@@ -84,30 +90,17 @@ const RulerKit = (props) => {
     }
   }
 
-  const setUpKeyboardEvents = () => {}
-
   useEffect(() => {
-    document.addEventListener('keyup', doc_keyDown, false)
+    document.addEventListener('keydown', doc_keyDown, false)
     return function cleanup() {
-      document.removeEventListener('keyup', doc_keyDown, false)
+      document.removeEventListener('keydown', doc_keyDown, false)
     }
   })
-
-  // useEffect(() => {
-  //   // Mount and Update
-  //   console.log('update')
-  //   console.log(drawContainer)
-  //   drawContainer ? drawContainer.addEventListener('mousemove', setInfoCoordinates) : ''
-  //   return () => {
-  //     // Unmount
-  //     drawContainer ? drawContainer.removeEventListener('mousemove', setInfoCoordinates) : ''
-  //   }
-  // })
 
   return (
     <div>
       <Button type='text' style={{ width: '100%' }} onClick={() => handleRulerKit()}>
-        Ruler .<Text type='secondary'>(alt+r)</Text>
+        Ruler&#160;<Text type='secondary'>(alt+r)</Text>
       </Button>
     </div>
   )

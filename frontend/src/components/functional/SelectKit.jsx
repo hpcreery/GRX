@@ -24,34 +24,40 @@ const SelectKit = (props) => {
   }
 
   const initSelectionKit = () => {
-    let oldDrawContainerNodes = drawContainer.childNodes[0]
-    drawContainer.removeChild(oldDrawContainerNodes)
+    // let oldDrawContainerNodes = drawContainer.childNodes[0]
+    // drawContainer.removeChild(oldDrawContainerNodes)
     objectSelectionKit()
-    let escape = (e) => {
-      if (e.key == 'Escape') {
-        console.log(e)
-        drawContainer.appendChild(oldDrawContainerNodes)
-      }
-    }
-    document.addEventListener('keydown', escape, { once: true })
+    // let escape = (e) => {
+    //   if (e.key == 'Escape') {
+    //     console.log(e)
+    //     drawContainer.appendChild(oldDrawContainerNodes)
+    //   }
+    // }
+    // document.addEventListener('keydown', escape, { once: true })
   }
 
   const objectSelectionKit = () => {
+    let oldDrawContainerNodes = drawContainer.childNodes[0]
+    drawContainer.removeChild(oldDrawContainerNodes)
     //let svgContainer = document.getElementById('svg-container')
     //let divLayer = a // divLayer.id = layer.name
     //var svgChildElement = divLayer.childNodes[0]
     var svgChildElement = svgContainer.querySelector('div > svg')
     let defs = svgChildElement.querySelectorAll('defs > *')
+    let svgElements = svgChildElement.querySelectorAll('g > *')
+    var widthattr = svgChildElement.getAttribute('width')
+    var units = widthattr.slice(-2)
+
+    // let old_element = svgChildElement
+    let svgChildElementClone = svgChildElement.cloneNode(true)
+
+    // Get Defs or Features in SVG
     let defList = []
     defs.forEach((node) => {
       defList.push({ id: node.id, type: node.nodeName, attributes: node.attributes })
     })
     console.log(defList)
-    let svgElements = svgChildElement.querySelectorAll('g > *')
-    var widthattr = svgChildElement.getAttribute('width')
-    var units = widthattr.slice(-2)
-    //console.log(svgElements)
-    //svgElement.addEventListener('mouseover', (e) => console.log(e))
+
     let initColor
     svgElements.forEach((node) => {
       initColor = node.style.color
@@ -106,6 +112,15 @@ const SelectKit = (props) => {
         e.target.style.color = initColor
       }
     })
+
+    let escape = (e) => {
+      if (e.key == 'Escape') {
+        console.log(e)
+        drawContainer.appendChild(oldDrawContainerNodes)
+        svgChildElement.parentNode.replaceChild(svgChildElementClone, svgChildElement)
+      }
+    }
+    document.addEventListener('keydown', escape, { once: true })
     // svgContainer.onclick = (e) => {
     //   if (drawContainer.innerHTML != '') {
     //     return
@@ -127,16 +142,16 @@ const SelectKit = (props) => {
   const setUpKeyboardEvents = () => {}
 
   useEffect(() => {
-    document.addEventListener('keyup', doc_keyDown, false)
+    document.addEventListener('keydown', doc_keyDown, false)
     return function cleanup() {
-      document.removeEventListener('keyup', doc_keyDown, false)
+      document.removeEventListener('keydown', doc_keyDown, false)
     }
   })
 
   return (
     <div>
       <Button type='text' style={{ width: '100%' }} onClick={() => initSelectionKit()}>
-        Select .<Text type='secondary'>(alt+s)</Text>
+        Select&#160;<Text type='secondary'>(alt+s)</Text>
       </Button>
     </div>
   )
