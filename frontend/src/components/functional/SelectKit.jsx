@@ -18,22 +18,7 @@ const SelectKit = (props) => {
         string += ` ${array[i].nodeName.toUpperCase()}: ${(array[i].value / 1000).toFixed(5)}${units}`
       }
     }
-    console.log(array)
-    console.log(string)
     return string
-  }
-
-  const initSelectionKit = () => {
-    // let oldDrawContainerNodes = drawContainer.childNodes[0]
-    // drawContainer.removeChild(oldDrawContainerNodes)
-    objectSelectionKit()
-    // let escape = (e) => {
-    //   if (e.key == 'Escape') {
-    //     console.log(e)
-    //     drawContainer.appendChild(oldDrawContainerNodes)
-    //   }
-    // }
-    // document.addEventListener('keydown', escape, { once: true })
   }
 
   const objectSelectionKit = () => {
@@ -42,7 +27,7 @@ const SelectKit = (props) => {
     //let svgContainer = document.getElementById('svg-container')
     //let divLayer = a // divLayer.id = layer.name
     //var svgChildElement = divLayer.childNodes[0]
-    var svgChildElement = svgContainer.querySelector('div > svg')
+    var svgChildElement = svgContainer.querySelector('div > svg') // Literally gets first SVG... Need way to select or tell what layer ...
     let defs = svgChildElement.querySelectorAll('defs > *')
     let svgElements = svgChildElement.querySelectorAll('g > *')
     var widthattr = svgChildElement.getAttribute('width')
@@ -76,7 +61,7 @@ const SelectKit = (props) => {
           }
         } else if (e.target.nodeName == 'use') {
           let pad = defList.find((def) => def.id == e.target.attributes['xlink:href'].value.substring(1))
-          console.log(pad)
+          //console.log(pad)
           g = {
             type: e.target.nodeName,
             g: 'pad',
@@ -90,7 +75,7 @@ const SelectKit = (props) => {
         let infoBar = document.getElementById('bottom-info-bar')
         let oldInfo = infoBar.childNodes[0]
         let info = document.createElement('h4')
-        console.log(e.target.nodeName)
+        //console.log(e.target.nodeName)
         //let attributes = deriveNodeAttributes(g.shape.attributes)
         info.innerHTML = g
           ? g.g == 'path'
@@ -115,7 +100,6 @@ const SelectKit = (props) => {
 
     let escape = (e) => {
       if (e.key == 'Escape') {
-        console.log(e)
         drawContainer.appendChild(oldDrawContainerNodes)
         svgChildElement.parentNode.replaceChild(svgChildElementClone, svgChildElement)
       }
@@ -133,9 +117,8 @@ const SelectKit = (props) => {
   }
 
   let doc_keyDown = (e) => {
-    console.log(e)
     if (e.altKey && e.code === 'KeyS') {
-      initSelectionKit()
+      objectSelectionKit()
     }
   }
 
@@ -150,7 +133,7 @@ const SelectKit = (props) => {
 
   return (
     <div>
-      <Button type='text' style={{ width: '100%' }} onClick={() => initSelectionKit()}>
+      <Button type='text' style={{ width: '100%' }} onClick={() => objectSelectionKit()}>
         Select&#160;<Text type='secondary'>(alt+s)</Text>
       </Button>
     </div>

@@ -31,12 +31,6 @@ const { TabPane } = Tabs
 const { Search } = Input
 const { Text, Link } = Typography
 
-// TRACESPACE
-const pcbStackup = require('pcb-stackup')
-
-// SVGJS
-import SVG from 'svg.js'
-
 // CUSTOM
 //import FetchArtwork from './functional/FetchArtwork'
 import QualitySlider from './functional/QualitySlider'
@@ -45,12 +39,8 @@ import UnloadedLayerListItem from './functional/UnloadedLayerListItem'
 import BlendMode from './functional/BlendMode'
 import UploadModal from './functional/UploadModal'
 import CreateJob from './functional/CreateJob'
-import MouseActions from './functional/MouseActions'
 import RulerKit from './functional/RulerKit'
 import SelectKit from './functional/SelectKit'
-
-// Context Providers
-import { DrawBoardContext } from './Renderer'
 
 // CONFIG
 const { backendurl, port } = require('../config/config')
@@ -345,15 +335,6 @@ class SideBar extends Component {
                   />
                 </Col>
               </Row>
-              {/* <Row>
-                <Col span={4} style={{ padding: '5px' }}>
-                  <FormatPainterOutlined />
-                </Col>
-                <Col span={20}>
-                  <Button onClick={() => this.testFetch()}>Get Sample</Button>
-                  <Button onClick={() => this.getJobList('')}>Get Jobs</Button>
-                </Col>
-              </Row> */}
             </TabPane>
           </Tabs>
         </Card>
@@ -363,7 +344,6 @@ class SideBar extends Component {
 
   componentDidMount() {
     this.getJobList('')
-    //this.initDrawBoard()
   }
 
   componentDidUpdate() {
@@ -380,26 +360,9 @@ class SideBar extends Component {
     } else {
       return null
     }
-    // if (props.layers !== state.layers) {
-
-    // }
-    //console.log(state)
-    //console.log(newState)
   }
 }
 
 export default SideBar
 
 // DEPRECIATED METHODS
-/*
-
-  testFetch = async () => {
-    let data = await this.fetchData('/gbr2svg/getFinishedArtowrk?job=ARDU')
-    this.changeDOMSVG('front-pcb', data.toplayer)
-    this.changeDOMSVG('back-pcb', data.botlayer)
-    return
-  }
-
-
-
-  */

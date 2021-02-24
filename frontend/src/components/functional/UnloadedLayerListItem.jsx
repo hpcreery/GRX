@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { Checkbox, Popover, Badge, Tooltip } from 'antd'
 import { BgColorsOutlined, InfoCircleOutlined } from '@ant-design/icons'
-import { SketchPicker, BlockPicker, CirclePicker, HuePicker, SliderPicker } from 'react-color'
+import { SliderPicker } from 'react-color'
 
 const LayerListItem = (props) => {
   let { layer, add, remove, fetchLayer } = props
@@ -54,7 +54,12 @@ const LayerListItem = (props) => {
 
       <Popover
         content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
-        title='ColorPicker'
+        title={
+          <div>
+            <BgColorsOutlined />
+            &nbsp; ColorPicker
+          </div>
+        }
         placement='right'
         trigger='click'
       >

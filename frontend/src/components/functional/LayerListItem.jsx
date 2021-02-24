@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { Checkbox, Popover, Badge, Tooltip } from 'antd'
 import { BgColorsOutlined } from '@ant-design/icons'
-import { SketchPicker, BlockPicker, CirclePicker, HuePicker, SliderPicker } from 'react-color'
+import { SliderPicker } from 'react-color'
 
 const LayerListItem = (props) => {
   const [visible, setVisible] = useState(props.layer.visible)
@@ -41,7 +41,12 @@ const LayerListItem = (props) => {
       </Checkbox>
       <Popover
         content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
-        title='ColorPicker'
+        title={
+          <div>
+            <BgColorsOutlined />
+            &nbsp; ColorPicker
+          </div>
+        }
         placement='right'
         trigger='click'
       >

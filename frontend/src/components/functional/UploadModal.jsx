@@ -48,6 +48,7 @@ const UploadModal = (props) => {
         onOk={handleOk}
         onCancel={handleCancel}
         destroyOnClose
+        keyboard
       >
         <UploadGerber job={job} />
       </Modal>

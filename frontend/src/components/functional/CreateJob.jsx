@@ -2,17 +2,13 @@
 import React, { useState, useEffect } from 'react'
 
 // ANT DESIGN
-import { Modal, Button, Input } from 'antd'
-
-// CUSTOM
-import UploadGerber from './UploadGerber'
+import { Modal, Button, Input, message } from 'antd'
 
 // CONFIG
 const { backendurl, port } = require('../../config/config')
 
 const CreateJob = (props) => {
   const { replaceArtwork, update } = props
-
   const [visible, setVisible] = useState(false)
   const [job, setJob] = useState(null)
   const [waitInput, setWaitInput] = useState(true)
@@ -22,34 +18,38 @@ const CreateJob = (props) => {
   }
 
   const handleOk = async (e) => {
-    console.log(e)
+    if (job == null || job == '') {
+      message.warning('Must Assign your job a name')
+      return
+    }
     try {
       var response = await fetch(`${backendurl}${port}/job?job=${job}`, {
         method: 'POST',
       })
       if (response.status !== 200) {
-        console.error(response)
-        var err = response.text()
+        var err = await response.text()
+        console.log(err)
+        try {
+          let errjson = JSON.parse(err)
+          err = errjson['Message']
+        } catch (e) {}
         throw err
       }
-      //let data = response.json();
-      //return response
     } catch (err) {
-      throw err
+      console.error(err)
+      message.error(err)
+      return
     }
-
     setVisible(false)
     update()
     replaceArtwork(job)
   }
 
   const handleCancel = (e) => {
-    console.log(e)
     setVisible(false)
   }
 
   const handleInput = (e) => {
-    console.log(e.target.value)
     setJob(e.target.value)
     setWaitInput(false)
   }
@@ -65,8 +65,9 @@ const CreateJob = (props) => {
         onOk={handleOk}
         onCancel={handleCancel}
         okButtonProps={{ disabled: waitInput }}
+        keyboard
       >
-        <Input placeholder='enter job name' onChange={handleInput} />
+        <Input placeholder='enter job name' onChange={handleInput} onPressEnter={() => handleOk()} />
       </Modal>
     </div>
   )
