@@ -31,6 +31,9 @@ const { TabPane } = Tabs
 const { Search } = Input
 const { Text, Link } = Typography
 
+// NPM PACKAGES
+import { Resizable } from "re-resizable";
+
 // CUSTOM
 //import FetchArtwork from './functional/FetchArtwork'
 import QualitySlider from './functional/QualitySlider'
@@ -183,7 +186,7 @@ class SideBar extends Component {
 
   render() {
     return (
-      <div className='sidebarcontainer'>
+      <div style={{ padding: '10px', width: '200px', height: '-webkit-fill-available' }}>
         <Button
           type='text'
           className='togglesidebar'
@@ -200,144 +203,160 @@ class SideBar extends Component {
         >
           SHOW
         </Button>
-
-        <Card
-          title={
-            this.state.loading ? <Spin indicator={<LoadingOutlined spin />} /> : this.state.job || 'GRX Gerber Renderer'
-          }
-          className={this.state.sidebar}
+        <Resizable
+          style={{ padding: 0 }}
+          defaultSize={{ height: '100%', width: '200px', }}
+          enable={{ top: false, right: true, bottom: false, left: false, topRight: false, bottomRight: false, bottomLeft: false, topLeft: false }}
+          maxWidth='400px'
+          minWidth='200px'
         >
-          <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
-            <TabPane tab='Jobs' key='1' className='tabpane'>
-              <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: 178 }} />
-              <div className='sidebarlist'>
+
+          <Card
+            style={{
+              backgroundColor: 'rgba(30, 30, 30, 0.85)',
+              backdropFilter: 'blur(25px)',
+              height: '-webkit-fill-available',
+              width: '-webkit-fill-available',
+              transition: '0.5s ease',
+              pointerEvents: 'all'
+            }}
+            title={
+              this.state.loading ? <Spin indicator={<LoadingOutlined spin />} /> : this.state.job || 'GRX Gerber Renderer'
+            }
+            className={this.state.sidebar}
+          >
+            <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
+              <TabPane tab='Jobs' key='1' >
+                <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: '-webkit-fill-available' }} />
+                <div style={{ height: '100%', position: 'relative', overflowX: 'hidden', overflowY: 'scroll', height: '100%' }}>
+                  <List
+                    size='small'
+                    header={
+                      <Row style={{ margin: '0px' }}>
+                        <Col span={15} style={{ padding: '0px 10px' }}>
+                          <div>Job List</div>
+                        </Col>
+                        <Col span={9} style={{ padding: '0px', textAlign: 'right' }}>
+                          <CreateJob
+                            replaceArtwork={(job) => this.replaceArtwork(job)}
+                            update={() => this.getJobList('')}
+                          />
+                        </Col>
+                      </Row>
+                    }
+                    //bordered
+                    dataSource={this.state.jobList}
+                    renderItem={(jobname) => (
+                      <List.Item style={{ padding: '5px 5px' }}>
+                        <Button
+                          type='link'
+                          style={{ width: '90%', height: '27px' }}
+                          onClick={() => this.replaceArtwork(jobname)}
+                        >
+                          {jobname}
+                        </Button>
+                        <Popconfirm
+                          title='Are you sure delete this job?'
+                          onConfirm={() => this.handleJobDelete(jobname)}
+                          okText='Yes'
+                          cancelText='No'
+                        >
+                          <CloseCircleOutlined />
+                        </Popconfirm>
+                      </List.Item>
+                    )}
+                  />
+                </div>
+              </TabPane>
+              <TabPane tab='Layers' key='2' style={{ overflowX: 'hidden', overflowY: 'scroll', height: '100%' }}>
                 <List
                   size='small'
                   header={
                     <Row style={{ margin: '0px' }}>
                       <Col span={15} style={{ padding: '0px 10px' }}>
-                        <div>Job List</div>
+                        <div>Layers</div>
                       </Col>
-                      <Col span={9} style={{ padding: '0px' }}>
-                        <CreateJob
-                          replaceArtwork={(job) => this.replaceArtwork(job)}
-                          update={() => this.getJobList('')}
-                        />
+                      <Col span={9} style={{ padding: '0px', textAlign: 'right' }}>
+                        <UploadModal replaceArtwork={(job) => this.replaceArtwork(job)} job={this.state.job} />
                       </Col>
                     </Row>
                   }
                   //bordered
-                  dataSource={this.state.jobList}
-                  renderItem={(jobname) => (
-                    <List.Item style={{ padding: '5px 5px' }}>
-                      <Button
-                        type='link'
-                        style={{ width: '90%', height: '27px' }}
-                        onClick={() => this.replaceArtwork(jobname)}
-                      >
-                        {jobname}
-                      </Button>
-                      <Popconfirm
-                        title='Are you sure delete this job?'
-                        onConfirm={() => this.handleJobDelete(jobname)}
-                        okText='Yes'
-                        cancelText='No'
-                      >
-                        <CloseCircleOutlined />
-                      </Popconfirm>
+                  dataSource={this.state.layers}
+                  renderItem={(item) => (
+                    <List.Item style={{ padding: '8px 8px' }}>
+                      {this.state.frontload ? (
+                        <LayerListItem key={item} layer={item} />
+                      ) : (
+                          <UnloadedLayerListItem
+                            key={item}
+                            layer={item}
+                            add={(...props) => this.props.setSVGinDIV(...props)}
+                            remove={(...props) => this.props.removeSVGinDIV(...props)}
+                            fetchLayer={(...props) => this.fetchLayer(...props)}
+                          />
+                        )}
                     </List.Item>
                   )}
                 />
-              </div>
-            </TabPane>
-            <TabPane tab='Layers' key='2'>
-              <List
-                size='small'
-                header={
-                  <Row style={{ margin: '0px' }}>
-                    <Col span={15} style={{ padding: '0px 10px' }}>
-                      <div>Layers</div>
-                    </Col>
-                    <Col span={9} style={{ padding: '0px' }}>
-                      <UploadModal replaceArtwork={(job) => this.replaceArtwork(job)} job={this.state.job} />
-                    </Col>
-                  </Row>
-                }
-                //bordered
-                dataSource={this.state.layers}
-                renderItem={(item) => (
-                  <List.Item style={{ padding: '8px 8px' }}>
-                    {this.state.frontload ? (
-                      <LayerListItem key={item} layer={item} />
-                    ) : (
-                      <UnloadedLayerListItem
-                        key={item}
-                        layer={item}
-                        add={(...props) => this.props.setSVGinDIV(...props)}
-                        remove={(...props) => this.props.removeSVGinDIV(...props)}
-                        fetchLayer={(...props) => this.fetchLayer(...props)}
-                      />
-                    )}
-                  </List.Item>
-                )}
-              />
-              {/* <List
+                {/* <List
                 size='small'
                 header={<div>Steps</div>}
                 //bordered
                 dataSource={this.state.layerList}
                 renderItem={(item) => <List.Item>{item}</List.Item>}
               /> */}
-            </TabPane>
-            <TabPane tab='Tools' key='3' forceRender>
-              <Divider plain>Kit</Divider>
-              <SelectKit />
-              <RulerKit />
-              <Divider plain>Settings</Divider>
-              <Row style={{ margin: '5px ' }}>
-                <Col span={4} style={{ padding: '5px' }}>
-                  <VideoCameraOutlined />
+              </TabPane>
+              <TabPane tab='Tools' key='3' forceRender style={{ overflowX: 'hidden', overflowY: 'scroll', height: '100%' }}>
+                <Divider plain>Kit</Divider>
+                <SelectKit />
+                <RulerKit />
+                <Divider plain>Settings</Divider>
+                <Row style={{ margin: '5px ' }}>
+                  <Col flex='30px' style={{ padding: '5px' }}>
+                    <VideoCameraOutlined />
+                  </Col>
+                  <Col flex='auto'>
+                    <Select
+                      defaultValue='orthographic'
+                      onChange={(value) => this.props.cameraSelector(value)}
+                      style={{ width: '100%' }}
+                    >
+                      <Option value='perspective'>Perspective</Option>
+                      <Option value='orthographic'>Orthographic</Option>
+                    </Select>
+                  </Col>
+                </Row>
+                <QualitySlider />
+                <BlendMode />
+                <Row style={{ margin: '5px ' }}>
+                  <Col flex='auto' style={{ padding: '5px' }}>
+                    Front Load
                 </Col>
-                <Col span={20}>
-                  <Select
-                    defaultValue='orthographic'
-                    onChange={(value) => this.props.cameraSelector(value)}
-                    style={{ width: '100%' }}
-                  >
-                    <Option value='perspective'>Perspective</Option>
-                    <Option value='orthographic'>Orthographic</Option>
-                  </Select>
+                  <Col flex='30px' style={{ padding: '5px' }}>
+                    <Switch
+                      size='small'
+                      checked={this.state.frontload}
+                      onChange={(checked) => this.handleFrontLoad(checked)}
+                    />
+                  </Col>
+                </Row>
+                <Row style={{ margin: '5px ' }}>
+                  <Col flex='auto' style={{ padding: '5px' }}>
+                    Use Outline
                 </Col>
-              </Row>
-              <QualitySlider />
-              <BlendMode />
-              <Row style={{ margin: '5px ' }}>
-                <Col span={18} style={{ padding: '5px' }}>
-                  Front Load
-                </Col>
-                <Col span={6} style={{ padding: '5px' }}>
-                  <Switch
-                    size='small'
-                    checked={this.state.frontload}
-                    onChange={(checked) => this.handleFrontLoad(checked)}
-                  />
-                </Col>
-              </Row>
-              <Row style={{ margin: '5px ' }}>
-                <Col span={18} style={{ padding: '5px' }}>
-                  Use Outline
-                </Col>
-                <Col span={6} style={{ padding: '5px' }}>
-                  <Switch
-                    size='small'
-                    checked={this.state.useoutline}
-                    onChange={(checked) => this.handleUseOutline(checked)}
-                  />
-                </Col>
-              </Row>
-            </TabPane>
-          </Tabs>
-        </Card>
+                  <Col flex='30px' style={{ padding: '5px' }}>
+                    <Switch
+                      size='small'
+                      checked={this.state.useoutline}
+                      onChange={(checked) => this.handleUseOutline(checked)}
+                    />
+                  </Col>
+                </Row>
+              </TabPane>
+            </Tabs>
+          </Card>
+        </Resizable>
       </div>
     )
   }

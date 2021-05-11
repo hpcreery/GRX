@@ -1,27 +1,28 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
+import { DrawBoardContext } from '../Renderer'
 
 import { Slider, Col, Row } from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
 const QualitySlider = () => {
-  //root = document.documentElement
-  var rendercontainer = document.getElementById('render-container')
-
-  const [quality, setQuality] = useState(getComputedStyle(rendercontainer).getPropertyValue('--svg-scale'))
+  const { rendercontainer } = useContext(DrawBoardContext)
+  let renderScale
+  if (rendercontainer) {
+    renderScale = getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
+  }
+  const [quality, setQuality] = useState(renderScale)
 
   const handleChange = (value) => {
-    // getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
-    // getComputedStyle(rendercontainer).getPropertyValue('--svg-scale')
     rendercontainer.style.setProperty('--svg-scale', value)
     setQuality(value)
   }
 
   return (
     <Row style={{ margin: '5px ' }}>
-      <Col span={4} style={{ padding: '5px' }}>
+      <Col flex='30px' style={{ padding: '5px' }}>
         <FormatPainterOutlined />
       </Col>
-      <Col span={20}>
+      <Col flex='auto'>
         <Slider min={1} max={10} onChange={(value) => handleChange(value)} value={quality} />
       </Col>
     </Row>

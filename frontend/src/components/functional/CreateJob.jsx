@@ -32,7 +32,7 @@ const CreateJob = (props) => {
         try {
           let errjson = JSON.parse(err)
           err = errjson['Message']
-        } catch (e) {}
+        } catch (e) { }
         throw err
       }
     } catch (err) {

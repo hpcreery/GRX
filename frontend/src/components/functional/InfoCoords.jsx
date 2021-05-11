@@ -9,11 +9,11 @@ const InfoCoords = (props) => {
     mm: { x: 0, y: 0 },
     draw: { x: 0, y: 0 },
   })
-  const { drawContainer, drawBoardSize, drawBoardScale } = useContext(DrawBoardContext)
+  const { drawContainer, drawBoardSize, drawBoardScale, infobar } = useContext(DrawBoardContext)
 
   const setInfoCoordinates = (event) => {
-    let infoBar = document.getElementById('bottom-info-bar')
-    let oldInfo = infoBar.childNodes[0]
+    // let infoBar = document.getElementById('bottom-info-bar')
+    let oldInfo = infobar.childNodes[0]
     let mouseCoordinates = {
       pixel: { x: 0, y: 0 },
       inch: { x: 0, y: 0 },
@@ -30,7 +30,7 @@ const InfoCoords = (props) => {
     mouseCoordinates.draw.y = -event.offsetY
     let info = document.createElement('h4')
     info.innerHTML = `( ${coordinates.inch.x.toFixed(5)}in, ${coordinates.inch.y.toFixed(5)}in )`
-    infoBar.replaceChild(info, oldInfo)
+    infobar.replaceChild(info, oldInfo)
     setCoordinates(mouseCoordinates)
   }
 

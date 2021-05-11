@@ -29,10 +29,9 @@ class Renderer extends Component {
       cameraType: 'orthographic',
       mouseCoordinates: { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } },
     }
-    ;(this.drawBoardSize = 100000), (this.drawBoardScale = 0.1)
+      ; (this.drawBoardSize = 100000), (this.drawBoardScale = 0.1)
     this.svgContainer = null
     this.drawContainer = null
-    this.root = document.documentElement
   }
 
   CSS3DObjects = []
@@ -68,12 +67,14 @@ class Renderer extends Component {
     }
     this.drawContainer = document.createElement('div')
     this.drawContainer.id = 'draw-board'
+    this.drawContainer.style.cssText = 'position: absolute; width: 0px; height: 0px;'
+    this.drawContainer.style.zIndex = '1000'
     this.drawContainer.setAttribute('data-context', 'drawing')
-    this.drawContainer.style.zIndex = 1000
+    // this.drawContainer.style.zIndex = 1000
     this.drawContainer.style.transform =
       'matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1) scale(var(--svg-scale))'
     this.svgContainer.appendChild(this.drawContainer)
-    console.log(document.getElementById('draw-board'))
+    // console.log(document.getElementById('draw-board'))
     this.drawing = SVG(this.drawContainer.id).size(this.drawBoardSize, this.drawBoardSize)
     let svgChildElement = this.drawContainer.childNodes[0]
     svgChildElement.style.top = `-${this.drawBoardSize / 2}px`
@@ -216,7 +217,7 @@ class Renderer extends Component {
   // Camera type switcher
   cameraSelector = (type) => {
     if (type === 'perspective') {
-      this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000)
+      this.camera = new THREE.PerspectiveCamera(75, this.rendercontainer.innerWidth / this.rendercontainer.innerHeight, 0.01, 1000)
       this.camera.position.z = 700
       this.controls = new OrbitControls(this.camera, this.cssRenderer.domElement)
       this.controls.enableRotate = true
@@ -225,10 +226,10 @@ class Renderer extends Component {
       this.setState({ cameraType: type })
     } else if (type === 'orthographic') {
       this.camera = new THREE.OrthographicCamera(
-        window.innerWidth / -2,
-        window.innerWidth / 2,
-        window.innerHeight / 2,
-        window.innerHeight / -2,
+        this.rendercontainer.offsetWidth / -2,
+        this.rendercontainer.offsetWidth / 2,
+        this.rendercontainer.offsetHeight / 2,
+        this.rendercontainer.offsetHeight / -2,
         1,
         1000
       )
@@ -244,15 +245,18 @@ class Renderer extends Component {
   }
 
   setupScene = () => {
-    var root = document.getElementById('root')
-    this.rendercontainer = document.getElementById('render-container')
+
+    // Experimental
+    let width = this.rendercontainer.clientWidth
+    let height = this.rendercontainer.clientHeight
 
     // Create Scene
     this.cssScene = new THREE.Scene()
+    this.rendercontainer.style.setProperty('--svg-scale', '1')
 
     // Create Renderer
     this.cssRenderer = new CSS3DRenderer()
-    this.cssRenderer.setSize(window.innerWidth, window.innerHeight)
+    this.cssRenderer.setSize(width, height)
     this.cameraSelector('orthographic')
     this.rendercontainer.appendChild(this.cssRenderer.domElement)
     this.cssRenderer.domElement.id = 'css-renderer'
@@ -260,21 +264,25 @@ class Renderer extends Component {
     this.svgContainer.id = 'svg-container'
 
     // Outer Method to add objects to dom
-    this.addInitSVGFromDom()
+    // this.addInitSVGFromDom()
     // rendercontainer.onwheel = (event) => this.customZoom(event.wheelDelta) // Depreciated => zooming is vert slow | planning to replace with quality slider
 
     // Other Three objects
     this.clock = new THREE.Clock()
     this.stats = new Stats()
-    this.stats.domElement.classList.add('stats')
-    root.appendChild(this.stats.dom)
+    this.stats.domElement.style.right = '10px'
+    this.stats.domElement.style.position = 'absolute'
+    this.stats.domElement.style.zIndex = '1002'
+    this.stats.domElement.style.top = '10px'
+    // this.stats.domElement.classList.add('stats')
+    this.rendercontainer.appendChild(this.stats.domElement)
     this.setState({ rendered: true })
   }
 
   onWindowResize = () => {
-    this.camera.aspect = window.innerWidth / window.innerHeight
+    this.camera.aspect = this.rendercontainer.offsetWidth / this.rendercontainer.offsetHeight
     this.camera.updateProjectionMatrix()
-    this.cssRenderer.setSize(window.innerWidth, window.innerHeight)
+    this.cssRenderer.setSize(this.rendercontainer.offsetWidth, this.rendercontainer.offsetHeight)
   }
 
   animationHandler = () => {
@@ -289,16 +297,20 @@ class Renderer extends Component {
     let layers = this.state.CSS3DObjects.filter((layer) => layer.context == 'board')
     //console.log(layers)
     return (
-      <div style={{ height: '100%' }}>
+      <div id='main' style={{ position: 'relative', height: '-webkit-fill-available', zIndex: 1000 }}>
         <DrawBoardContext.Provider
           value={{
+            infobar: this.infobar,
+            rendercontainer: this.rendercontainer,
             svgContainer: this.svgContainer,
             drawContainer: this.drawContainer,
             drawBoardSize: this.drawBoardSize,
             drawBoardScale: this.drawBoardScale,
           }}
         >
+
           <SideBar
+            style={{ zIndex: '10' }}
             job={this.state.job}
             layers={layers}
             svgContainer={this.svgContainer}
@@ -312,13 +324,19 @@ class Renderer extends Component {
             clear={() => this.removeAllCSS3DObjects()}
             update={() => this.updateCSSObjects()}
           />
+          <div
+            id='three'
+            style={{ width: '-webkit-fill-available', height: '-webkit-fill-available', position: 'absolute', left: 0, top: 0, zIndex: '-1' }}
+            ref={(rendercontainer) => { this.rendercontainer = rendercontainer }}
+          />
           <InfoCoords />
         </DrawBoardContext.Provider>
         <div
           id='bottom-info-bar'
+          ref={(infobar) => { this.infobar = infobar }}
           style={{
             position: 'absolute',
-            width: '100%',
+            width: '-webkit-fill-available',
             textAlign: 'center',
             bottom: '0px',
             zIndex: '1000',
@@ -336,7 +354,7 @@ class Renderer extends Component {
     this.setupScene()
     this.animationHandler()
     this.initDrawBoard()
-    window.addEventListener('resize', this.onWindowResize, false)
+    new window.ResizeObserver(this.onWindowResize).observe(this.rendercontainer)
     this.controls.update()
   }
 }

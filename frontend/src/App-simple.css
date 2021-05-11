@@ -1,28 +1,13 @@
 @import '~antd/dist/antd.dark.css';
 
-/* :root {
-  --svg-scale: 1;
+/* .main::-webkit-scrollbar {
+  display: none;
+  overflow: scroll;
 } */
 
-body {
-  position: absolute;
-  overflow: hidden;
-  margin: 0;
-  /* height: 100vh; */
-  width: 100vw;
-}
-
-body::-webkit-scrollbar {
-  display: none;
-}
-
-#render-container {
-  --svg-scale: 1;
-  --blend-mode: normal;
-  /* multiply and difference are also pretty good .. best => color */
-  position: relative;
-  height: 100%;
-  width: 100%;
+::-webkit-scrollbar {
+  width: 0; /* Remove scrollbar space */
+  background: transparent; /* Optional: just make scrollbar invisible */
 }
 
 #svg-container {
@@ -53,6 +38,11 @@ body::-webkit-scrollbar {
   cursor: grab;
 }
 
+#svg-container > #back > object,
+#svg-container > #back > svg {
+  transform: scale(calc(var(--svg-scale) * -1), var(--svg-scale));
+}
+
 /* #svg-container > div > svg > g > *:hover {
   color: red;
 } */
@@ -63,66 +53,30 @@ body::-webkit-scrollbar {
   top: calc(-50000px * var(--svg-scale));
 } */
 
-#svg-container > #back > object,
-#svg-container > #back > svg {
-  transform: scale(calc(var(--svg-scale) * -1), var(--svg-scale));
-}
-
-#pointer {
-  font-size: 300px;
-  width: 100in;
-  position: relative;
-  line-height: 300px;
-  padding: 0px;
-  margin: 0px;
-  transform-origin: 0px 0px;
-  text-shadow: 2px 2px black;
-}
-
-/* #canvas {
-  padding: 0px;
-  margin: 0px;
-  transform-origin: 0px 0px;
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  position: absolute;
-  left: -5000px;
-  bottom: -5000px;
-  z-index: 1000;
-  pointer-events: all;
-} */
-
-#draw-board {
-  position: absolute;
-  width: 0px;
-  height: 0px;
-}
-
 /* #draw-board > svg {
   transform-origin: center;
   transform: scale(0.1) !important;
 } */
 
-.elements {
+/* .elements {
   padding: 10px;
   position: absolute;
   z-index: 1000;
   height: 100vh;
   width: 100vw;
   pointer-events: none;
-}
+} */
 
-.sidebarcontainer {
+/* .sidebarcontainer {
   height: 100%;
   width: 200px;
-}
+} */
 
 .sidebar {
   /* opacity: 97%; */
   background-color: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(25px);
-  height: 100%;
+  height: -webkit-fill-available;
   width: 200px;
   transition: 0.5s ease;
   pointer-events: all;
@@ -136,17 +90,6 @@ body::-webkit-scrollbar {
   pointer-events: none;
 }
 
-#root {
-  position: absolute;
-}
-
-.stats {
-  position: absolute;
-  right: 0;
-  left: auto !important;
-  padding: 10px;
-}
-
 .icon-attribute {
   pointer-events: all;
   text-align: right;
@@ -157,13 +100,13 @@ body::-webkit-scrollbar {
   z-index: 1020;
 }
 
-.coordinates {
+/* .coordinates {
   position: absolute;
   width: 100%;
   text-align: center;
   bottom: 0px;
   z-index: 1000;
-}
+} */
 
 .height-measurement {
   width: max-content;
@@ -187,12 +130,12 @@ body::-webkit-scrollbar {
   pointer-events: all;
 }
 
-.sidebarlist {
+/* .sidebarlist {
   height: 100%;
   position: relative;
-  /*  overflow: visible;
-  pointer-events: all; */
-}
+   overflow: visible;
+  pointer-events: all;
+} */
 
 /* .sidebarlist::-webkit-scrollbar {
   display: none;
@@ -246,72 +189,12 @@ body::-webkit-scrollbar {
   /* overflow: auto; */
 }
 
-.ant-tabs-tabpane {
+/* .ant-tabs-tabpane {
   height: 100%;
   overflow-y: scroll;
   overflow-x: hidden;
-}
-
-.ant-tabs-tabpane::-webkit-scrollbar {
-  display: none;
-}
-
-/* CSS below is for CSS controlled 3d spin of an SVG*/
-
-/* #back-pcb {
-  transform: scale(-1, 1);
 } */
 
-.flip-card {
-  background-color: transparent;
-  margin-left: auto;
-  margin-right: auto;
-  width: 300px;
-  height: 200px;
-  perspective: 500px; /* Remove this if you don't want the 3D effect */
-}
-
-/* This container is needed to position the front and back side */
-.flip-card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  transition: transform 0.8s;
-  transform-style: preserve-3d;
-  animation-name: spinner;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-duration: 6s;
-}
-
-/* Do an horizontal flip when you move the mouse over the flip box container */
-
-/* Position the front and back side */
-.flip-card-front,
-.flip-card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  -webkit-backface-visibility: hidden; /* Safari */
-  backface-visibility: hidden;
-}
-
-/* Style the front side (fallback if image is missing) */
-.flip-card-front {
-  color: white;
-}
-
-/* Style the back side */
-.flip-card-back {
-  transform: rotateY(180deg);
-}
-
-@keyframes spinner {
-  from {
-    transform: rotateY(0deg);
-  }
-  to {
-    transform: rotateY(360deg);
-  }
-}
+/* .ant-tabs-tabpane::-webkit-scrollbar {
+  display: none;
+} */

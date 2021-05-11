@@ -15,20 +15,17 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.elements = document.getElementById('elements')
-    window.addEventListener('resize', this.onWindowResize)
     console.log(process.env)
-  }
-
-  onWindowResize = () => {
-    this.setState({ windowheight: window.innerHeight })
   }
 
   render() {
     console.log('Rendering App', version)
     return (
-      <div className='elements' style={{ height: this.state.windowheight }} id='elements'>
-        <Renderer />
+      <div style={{ top: 0, left: 0, height: '100vh', width: '100vw', position: 'absolute' }}>
+        <div style={{ margin: 0, height: '-webkit-fill-available' }}>
+          <Renderer />
+        </div>
+
         {/* <Card title='test' className='sidebar'>
           <Button onClick={() => this.testFetch()}>Hello</Button>
         </Card> */}

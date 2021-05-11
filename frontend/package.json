@@ -1,6 +1,6 @@
 {
   "name": "grx-frontend",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "devDependencies": {
     "babel-preset-env": "^1.7.0",
@@ -16,19 +16,20 @@
   },
   "dependencies": {
     "antd": "^4.4.0",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "dotenv": "^8.2.0",
     "electron-packager": "^14.2.1",
     "express": "^4.17.1",
     "gerber-to-svg": "^4.2.1",
     "pcb-stackup": "^4.2.1",
+    "re-resizable": "^6.9.0",
     "react": "^16.1.1",
     "react-color": "^2.18.1",
     "react-dom": "^16.1.1",
     "react-scripts": "0.8.5",
     "serve": "^11.3.2",
     "svg.js": "^2.7.1",
-    "three": "^0.120.0"
+    "three": "^0.128.0"
   },
   "homepage": "./",
   "main": "src/electron.js",
