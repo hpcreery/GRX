@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 
-import { Checkbox, Popover, Badge, Tooltip } from 'antd'
+import { Checkbox, Popover, Badge, Tooltip, Row, Col } from 'antd'
 import { BgColorsOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { SliderPicker } from 'react-color'
 
@@ -46,25 +46,30 @@ const LayerListItem = (props) => {
 
   return (
     <div style={{ width: '100%' }}>
-      <Checkbox checked={visible} onChange={(value) => handleChange(value.target.checked)} style={{ width: '90%' }}>
-        <Tooltip placement='right' title={layer.name}>
-          {layer.name.substring(0, 12)}
-        </Tooltip>
-      </Checkbox>
-
-      <Popover
-        content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
-        title={
-          <div>
-            <BgColorsOutlined />
+      <Row wrap={false}>
+        <Col flex="10px">
+          <Popover
+            content={<SliderPicker color={color} onChange={(color, event) => handleColorChange(color, event)} />}
+            title={
+              <div>
+                <BgColorsOutlined />
             &nbsp; ColorPicker
           </div>
-        }
-        placement='right'
-        trigger='click'
-      >
-        <Badge color={color} />
-      </Popover>
+            }
+            placement='right'
+            trigger='click'
+          >
+            <Badge color={color} />
+          </Popover>
+        </Col>
+        <Col flex="auto">
+          <Checkbox style={{ whiteSpace: 'pre' }} checked={visible} onChange={(value) => handleChange(value.target.checked)}>
+            <Tooltip placement='right' title={layer.name}>
+              {layer.name}
+            </Tooltip>
+          </Checkbox>
+        </Col>
+      </Row>
     </div>
   )
 }
