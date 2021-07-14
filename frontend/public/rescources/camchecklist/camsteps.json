@@ -1,0 +1,1681 @@
+{
+  "verifyInfo": {
+    "grp": "Setup",
+    "text": "Verify All Job Info on Info Tab to Traveler and Fab Drawing",
+    "runcode": "self.app.setTabbedFrameSelectedTab(\"TabbedFrame\",\"Info\")",
+    "pyfilter": "",
+    "helptext": "Go to info tab to review job attributes, and compare to traveler and customer print to ensure accuracy.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "orig"
+  },
+  "setMatrix": {
+    "grp": "Setup",
+    "text": "Setup Initial Matrix",
+    "runcode": "self.handler_menu_other(\"Matrix\")",
+    "pyfilter": "",
+    "helptext": "Go to Genesis Matrix to name layers, set types, and reorder rows.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "orig"
+  },
+
+  "registerLayers": {
+    "grp": "Setup",
+    "text": "Register Layers",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "Confirm layers are aligned/registered to one another.",
+    "runscript": "g:/automation/modules/nvgen/macro/cb_register.csh",
+    "type": "button",
+    "step_context": "orig"
+  },
+
+  "checkdims": {
+    "grp": "Setup",
+    "text": "Check Dimensions to Drawing",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "checkPartNumandRevToTraveler": {
+    "grp": "Setup",
+    "text": "Verify that the part # and rev match on traveler, fab drawing and PCB on board text.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "createoutline": {
+    "grp": "Setup",
+    "text": "Define Profile and Create Outline Layer",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "viapadcheck": {
+    "grp": "Setup",
+    "text": "Check that via holes have pads on terminating layers.  If not, verify with customer.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "npthnets": {
+    "grp": "Setup",
+    "text": "Ensure no NPTH are tied to nets and make sure any intersecting nets are not plated.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "platedpad": {
+    "grp": "Setup",
+    "text": "If pads are <= drilled hole size, see if hole can be changed to NPTH to avoid unnecessary plating.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "orig"
+  },
+
+  "createrefnet_orig": {
+    "grp": "Setup",
+    "text": "Create Reference Netlist (orig)",
+    "runcode": "self.nvc.setRefNetlist(stepname='orig');self.nvc.savejob()",
+    "pyfilter": "",
+    "runscript": "",
+    "helptext": "",
+    "type": "button",
+    "step_context": "orig"
+  },
+  "createpcb": {
+    "grp": "PCB",
+    "text": "Create PCB Step from Orig Step",
+    "runcode": "self.nvc.job.copyStep(\"orig\",\"pcb\");self.nvc.setstep(\"pcb\");self.nvc.job.addStep(\"panel\")",
+    "pyfilter": "",
+    "helptext": "Also creates the panel step",
+    "runscript": "",
+    "type": "button",
+    "step_context": "orig"
+  },
+
+  "setSuperMatrix": {
+    "grp": "PCB",
+    "text": "Setup Super Matrix",
+    "runcode": "self.app.setTabbedFrameSelectedTab(\"TabbedFrame\",\"SuperMatrix\")",
+    "pyfilter": "",
+    "helptext": "Go to Matrix to optionally import from Arkeo, create special layers, and set layer attributes.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "clipprofile": {
+    "grp": "PCB",
+    "text": "Clip Outside Profile and Verify",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/macro/clip_profile.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+
+  "createdrilllayers": {
+    "grp": "PCB",
+    "text": "Separate drills into appropriate layers. (2dr, bbv, bd, etc.)",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "1dr, 2dr, bv_x-y, dd_x-y, bd_x-y, 1cs, 1cb",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+
+  "2nddrillcheck": {
+    "grp": "PCB",
+    "text": "Verify traveler identifies 2nd drill properly.  Verify customer defined NPTH.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "If the only NPTH’s are array tooling holes, then they can be placed in to the 1st drill program.  If there are any NPTH’s other than array tooling, then the array tooling (if applicable) along with all other NPTH’s are to be placed in to a 2nd drill program, and CAM operator must verify that a 2nd drill step is listed on the traveler prior to final etch.",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "setdrills": {
+    "grp": "PCB",
+    "text": "Setup Drill Sizes and Tolerances in DTM.",
+    "runcode": "self.nvc.rundtm(\"pcb\")",
+    "pyfilter": "",
+    "helptext": "Select finish, check type for each drill, enter tolerance, enter finished hole size, calc drills to select bits. Small drills, under 0.020 should be set to type VIA.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "setrouteddrills": {
+    "grp": "PCB",
+    "text": "For RIGID Polyimid Boards, change any drills over 150mils to routs.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"material\")=='polyimide'",
+    "helptext": "Ensure to remember comp when changing PTH to Routs.",
+    "runscript": "g:/automation/modules/nvgen/macro/drill_to_rout.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "setrouteddrillscheck": {
+    "grp": "PCB",
+    "text": "If plated routs were created, verify traveler notes rout step immediately after plated drill step",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "Second drill/NPTH can be routed before final rout",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createdrawing": {
+    "grp": "PCB",
+    "text": "Create Drill Map and Fab Drawing if Not Provided",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createdots&stns": {
+    "grp": "PCB",
+    "text": "Auto Generate Dot and Stencil Layers",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\") or self.nvc.job.getGenesisAttrBool(\"plate_shut_vias\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/macro/create_filled_via_layers.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "createpvp/bbvdots": {
+    "grp": "PCB",
+    "text": "Create dot pattern layer +.010 over DHS for PVP/BBV.  For via fill holes > 12 mils we must run via fill.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createpsvdots": {
+    "grp": "PCB",
+    "text": "Create dot pattern layer +.006 over DHS for PSV.  Holes are plate shut if filled and <= .010 and aspect ratio is >=6:1.  If tolerance allows .012 can drill at .010",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"plate_shut_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createstencildrill": {
+    "grp": "PCB",
+    "text": "Create stencil drill layer +.004 over DHS for PVP/BBV.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createaoidrill": {
+    "grp": "PCB",
+    "text": "For each drill layer that has filled vias and through vias, create new drill layer as misc/drill, appending -aoi to the name, that only includes the drills visible at aoi.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "BackDrillClearance": {
+    "grp": "PCB",
+    "text": "At a minimum, back drill diameter should be 10 mils greater than original hole diameter.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"backdrills\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "BackDrillPadSizeCheck": {
+    "grp": "PCB",
+    "text": "If external pads being back drilled are not greater than 20 mils over the back drill diameter, then decrease those pads to only be 4 mils greater than original hole diameter,this will prevent pad lifting / slivering.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"backdrills\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "BackDrillType": {
+    "grp": "PCB",
+    "text": "Set back-drills to type NPTH in the drill tool manager.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"backdrills\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createrefnet": {
+    "grp": "PCB",
+    "text": "Create Reference Netlist (pcb)",
+    "runcode": "self.nvc.setRefNetlist(stepname='pcb');self.nvc.savejob()",
+    "pyfilter": "",
+    "runscript": "",
+    "helptext": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "legenddetect": {
+    "grp": "PCB",
+    "text": "Detect Legend",
+    "runcode": "self.nvc.checklister(\"legend\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "setsmd": {
+    "grp": "PCB",
+    "text": "Set Attrib for SMD Pads",
+    "runcode": "self.nvc.checklister(\"smdattribs\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "removenfp": {
+    "grp": "PCB",
+    "text": "Identify and remove non-functional pads",
+    "runcode": "self.nvc.checklister(\"nonfunctionalpads\")",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")=='rigid'",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "addnfp": {
+    "grp": "PCB",
+    "text": "Add non-functional pads to internal layers if not present on Flex/Rigid-Flex",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")!='rigid'",
+    "helptext": "NFPs aid in drilling plated through holes for flex materials",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "removelines": {
+    "grp": "PCB",
+    "text": "Identify and remove redundant lines",
+    "runcode": "self.nvc.checklister(\"redundantlines\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "tdrcheck": {
+    "grp": "PCB",
+    "text": "Check That Controlled Impedance Lines Match Stackup",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"controlledimpedance\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "drillcheck": {
+    "grp": "PCB",
+    "text": "Drill Checks",
+    "runcode": "self.nvc.checklister(\"drill\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "minDrillToTraceDistance": {
+    "grp": "PCB",
+    "text": "Record minimum distance between a hole to copper.",
+    "runcode": "note=self.nvc.checklister(\"holetocu\");timestamp = time.strftime('%Y-%m-%d %H:%M:%S');self.nvc.logbutton('minDrillToTraceDistance',timestamp=timestamp,note=note);self.app.setButtonBg(\"minDrillToTraceDistance\", self.nvgold)",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "spacingquick": {
+    "grp": "PCB",
+    "text": "Quick Spacing Check",
+    "runcode": "self.nvc.checklister(\"spacingquick\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "signallayerchecks": {
+    "grp": "PCB",
+    "text": "Signal Layer Checks (Inners, Outers)",
+    "runcode": "self.nvc.checklister(\"signal\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "CopperToBoardEdge": {
+    "grp": "PCB",
+    "text": "Copper is a minimum of 10 mils, with 3 mils allowed from board edge for RF boards.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "plane1": {
+    "grp": "PCB",
+    "text": "Clearance pads on internal layers verified not to cause isolation",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "plane2": {
+    "grp": "PCB",
+    "text": "Internal planes 100 mils from vent pattern",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smopt": {
+    "grp": "PCB",
+    "text": "LDI Solder Mask Optimization",
+    "runcode": "self.nvc.checklister(\"soldermaskoptldi\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "smoptplot": {
+    "grp": "PCB",
+    "text": "Non-LDI Solder Mask Optimization",
+    "runcode": "self.nvc.checklister(\"soldermaskoptplot\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "soldermaskchecks": {
+    "grp": "PCB",
+    "text": "Solder Mask Check",
+    "runcode": "self.nvc.checklister(\"soldermask\")",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "smcheck1": {
+    "grp": "PCB",
+    "text": "For non-LDI SM, use the 2/3/3 rule (2 mil soldermask clearance, 3 mil min soldermask to nearest Copper and 3 mil min dam)",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck2": {
+    "grp": "PCB",
+    "text": "For 1 mil SM clearance or 2 mil SM to Cu, or matte finish use LDI SM.  (1/2/3 rule)\nMake sure SM is green AND TRAVELER SHOWS LDI SM.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "If not green, customer contact reqd.",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck3": {
+    "grp": "PCB",
+    "text": "If SM dam is < 4 mil, note on LPI exposure step on traveler.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck4": {
+    "grp": "PCB",
+    "text": "If design has SM defined pads (especially BGA), isolate them to ensure not enlarged.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck5": {
+    "grp": "PCB",
+    "text": "Make sure NPTH have 3 mil SM clearance",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck6": {
+    "grp": "PCB",
+    "text": "If customer provides paste layer, overlay to SM layer and ensure paste pads have SM clearnace pads.  If not, verify with customer.  Optionally run solder paste optimization if difficult to do manually.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck7": {
+    "grp": "PCB",
+    "text": "If job has holes < 16 mils and fab drawing notes no mask allowed in hole, place job on hold and request deviation from customer. NVG cannot guarantee that result.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck8": {
+    "grp": "PCB",
+    "text": "If there are NPTHs < 17 mils diameter within the PCB outline AND the PCB has soldermask, then the CAM operator is to move the Second Drill step on the traveler to occur just prior to final route.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "This is to ensure no soldermask is left in holes for any component that may be placed there",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "smcheck9": {
+    "grp": "PCB",
+    "text": "If soldermask openings (test points) are less than 5 mils, must change traveler to ET before soldermask. Also inform Jeff, may need to also put surface finish on PCB prior to soldermask.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "ssopt": {
+    "grp": "PCB",
+    "text": "Silk Screen Clipping / Optimization and Verify",
+    "runcode": "self.nvc.checklister(\"ssopt\")",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "ssopt1": {
+    "grp": "PCB",
+    "text": "Ensure that Soldermask layers were turned on so silk screen gets clipped properly",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "LegendSM": {
+    "grp": "PCB",
+    "text": "Verify the text in the SS layer has SM under it in the SM layer.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "sscheck1": {
+    "grp": "PCB",
+    "text": "If SS must print on metal, manually screen print prior to surface finish.  Check traveler to match.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "sscheck2": {
+    "grp": "PCB",
+    "text": "Make sure SS includes internal markings, serialization, panel ID, and date code.  Do not add PNL, BD, or SN as text, but do add LOT prefix.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "sscheck3": {
+    "grp": "PCB",
+    "text": "If board has no SM and substrate is Rogers material (Teflon) or similar, or has no exposed substrate which can except Sprint 100 (i.e. has solid copper planes,) add soldermask below the NVG, WWYY, PNL ##, BD ### markings. Add SM step to traveler.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))==0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "sscheck4": {
+    "grp": "PCB",
+    "text": "Verify with management prior to adding UL markings to materials other than FR4 as normally markings would not be added to RF boards unless specifically requested by customer print.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "sscheck5(Flex)": {
+    "grp": "PCB",
+    "text": "If silk-screen must be printed on flex material or flex coverlay, it must be manually screen printed  (Sprint 100 ink will not adhere to flex or flex coverlay).",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")<>'rigid'",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "addmarkings": {
+    "grp": "PCB",
+    "text": "Add PCB Markings",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "spacingcheck": {
+    "grp": "PCB",
+    "text": "Final Spacing Check - Verify and Save",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/util/verify_layer_critical_values.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "spacingapprove": {
+    "grp": "PCB",
+    "text": "If spacing prohibits standard etch comp, management approval is required.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "flagspacing": {
+    "grp": "PCB",
+    "text": "If 3/3 or smaller, note as such on the traveler at LDI or AT30 exposure step so that dry film is aware of this.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "copypcbpec": {
+    "grp": "PCB",
+    "text": "Backup PCB to PCB-PEC step before etch comp",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/util/pcb_step_copies.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "WarnGlobalEchFabNotes": {
+    "grp": "PCB",
+    "text": "Check for a fab note regarding global etch factors (example: Metawave)",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "NoEtchCompForFullBodyGold": {
+    "grp": "PCB",
+    "text": "If the entire PCB is electroplated Gold, do not add etch compensation, the Gold plating does not etch or reduce in width.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"fullbodygold\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "etchcomp": {
+    "grp": "PCB",
+    "text": "Etch Comp",
+    "runcode": "self.nvc.checklister(\"etchcomp\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "etchcheck": {
+    "grp": "PCB",
+    "text": "Etch Analysis",
+    "runcode": "self.nvc.checklister(\"etchanalysis\")",
+    "pyfilter": "",
+    "helptext": "Runs Etch Analysis read-only Action to check for possible problems caused by etch, after etch comp such as opens casued by over-etch or shorts by under-etch.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "pocketCavityWithImage": {
+    "grp": "PCB",
+    "text": "Is there an image in the pocket?  If so, contact engineering manager for guidance.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"pocketcavities\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "pocketCavityModOuters": {
+    "grp": "PCB",
+    "text": "Outer layers have been modified as appropriate for pocket(s)?",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"pocketcavities\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "pocketCavityModSM": {
+    "grp": "PCB",
+    "text": "Soldermask layers have been modified as appropriate for pocket(s)?",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"pocketcavities\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "pocketCavityPeelableMaskCheck": {
+    "grp": "PCB",
+    "text": "Is the pocket cavity routed prior to electroless but is required to be free of copper?\nIf so, a peelable mask layer will be required to keep the cavity from receiving any additional plating.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"pocketcavities\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "FlexWithStiffenerCheck": {
+    "grp": "PCB",
+    "text": "If design is Flex with stiffener, it has been verified against SP132 Flex with Stiffener.",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Planning and CAM/SP132-Flex w Stiffener.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")<>'rigid'",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "RigidFlexCheck": {
+    "grp": "PCB",
+    "text": "If design is Rigid flex, it has been verified against SP135 Rigid Flex.",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Planning and CAM/SP135-Rigid Flex.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")=='rigid-flex'",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "EdgeBreakLink": {
+    "grp": "PCB",
+    "text": "Where edge plate is required review WI412.",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Planning and CAM/WI412-CAM Edge Break Guidelines.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"platededge\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "EdgeBreakCopper": {
+    "grp": "PCB",
+    "text": "Verify copper is placed over the routing of the plated edges so that there is no dry film getting in the routes since dry film is applied after edge route",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"platededge\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "heavyCuReverseImage": {
+    "grp": "PCB",
+    "text": " If line width <= 5 AND ethcing through >=1oz OR adding >= .4 mil wrap, see Jeff about need for reverse image.  Std reverse image is feature size +100 mil clearance.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "CastellatedHolesCheck": {
+    "grp": "PCB",
+    "text": "If board has castellated holes, reference document SP401 Castellated Holes for proper procedure.",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Mechanical and Fabrication/SP401-Castellated Holes.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"castholes\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "SelectivePlating": {
+    "grp": "PCB",
+    "text": "Preferred method is to extend selective gold plate all the way to nearest via in locations requiring it.\nWhen extending to nearest via, gold pad must be present on both sides for gold plating.\nIf preferred method is not feasible, then extend transition to nearest area underneath solder mask.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"selectiveplating\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "PeelableMaskLink": {
+    "grp": "PCB",
+    "text": "If peelable mask is required, reference the work instruction for peelable mask (WI 151)",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Planning and CAM/WI151 CAM of Peelable Mask.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"peelablemask\") or self.nvc.job.getGenesisAttrBool(\"selectiveplating\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "createpcbarray": {
+    "grp": "ARRAY",
+    "text": "Create Array from PCB step",
+    "runcode": "self.nvc.makearray()",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"has_array\")",
+    "helptext": "Not yet scripted - simply makes a blank array step.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "verifyarrayscoreclearance": {
+    "grp": "ARRAY",
+    "text": "Verify no features are less than 20 mils to center of score line",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"has_array\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "array"
+  },
+  "verifyarraytabsize": {
+    "grp": "ARRAY",
+    "text": "Verify the tabs are wide enough to prevent accidental breaking",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"has_array\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "array"
+  },
+  "verifyarraymousebitecopperclearance": {
+    "grp": "ARRAY",
+    "text": "Verify mouse bites (10 mil) / score (15 mil) have internal copper clearances",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"mousebites\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "array"
+  },
+  "verifyarraycopperfill": {
+    "grp": "ARRAY",
+    "text": "Used solid copper fill on outer layers and  pattern or broken copper fill on inner layers for break-away areas - making sure to add clearances for tooling holes and fiducials.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"has_array\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "array"
+  },
+  "ArrayToolingHoles": {
+    "grp": "ARRAY",
+    "text": "If there are any NPTH other than array tooling, then the array tooling (if applicable) along with all other NPTH are to be placed in to a 2nd drill program, and CAM operator must verify that a 2nd drill step is listed on the traveler prior to final etch.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"has_array\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "array"
+  },
+  "createrout": {
+    "grp": "Rout",
+    "text": "Create Rout Layers",
+    "runcode": "self.nvc.createRout()",
+    "pyfilter": "",
+    "helptext": "Doesn't do much yet - for now, just adds the 1rt layer.  Will add more automation in the future.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "routlink": {
+    "grp": "Rout",
+    "text": "Open Rout Programming Procedure SP136",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Planning and CAM/SP136-Route-Programming.docx\")",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "laser_routing": {
+    "grp": "Rout",
+    "text": "Open Laser Rout and Drill Programming Procedure",
+    "runcode": "self.nvc.open_file(\"//files/nvg/cam/esi/Development/Laser Routing & Drilling File Creation from Genesis.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"laser_rout\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "npslots": {
+    "grp": "Rout",
+    "text": "All mechanically routed internal cutouts, including NP slots, to be placed in separate route file from final to allow route operator to adjust compensation.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "lsr_thk_cuts": {
+    "grp": "Rout",
+    "text": "For laser routing with thick cuts (thickness > 0.010 mils) use the layer-naming convention: lsr_yrt_thkx_pattern/panel, where y is route ID and x is panel thickness rounded to the nearest mil.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"thickness\")>.010 and self.nvc.job.getGenesisAttrBool(\"laser_rout\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "lsr_thk_cuts2": {
+    "grp": "Rout",
+    "text": "For laser routing with thick cuts (thickness > 0.010 mils) use separate layer sets (_pattern & _ panel) with drills separated from routs.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"thickness\")>.010 and self.nvc.job.getGenesisAttrBool(\"laser_rout\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "plateslots": {
+    "grp": "Rout",
+    "text": "Plated slots in .1slt layer if >= .020, drilled if < .020.\nCreate accordingly and make sure traveler shows appropriate step.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "slotbit": {
+    "grp": "Rout",
+    "text": "If slot size does not match a standard rout bit, use smaller size and rout perimeter.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "extra fidos": {
+    "grp": "Rout",
+    "text": "If parts are small or have critical tolerances, add four fiducials around the part or part sets for better precision at rout.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "Countersink": {
+    "grp": "Rout",
+    "text": "Create a route file for all countersink locations. The diameter of the route file will be the same as the diameter of the original hole size PRIOR to C/S.\nRegardless of far-side or NS, route file is set up as if you are looking through the board from the NS.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"countersinks\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "CountersinkSide": {
+    "grp": "Rout",
+    "text": "The above mentioned route file, on near side countersinks, set up as internal clockwise route direction (right-comp). For far side, set up as internal counter-clockwise route direction (left-comp).",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"countersinks\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "Solderability coupon": {
+    "grp": "Panel-Coupons",
+    "text": "Create S-section in coupons for the Solderability Test",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\") or self.nvc.job.getGenesisAttrBool(\"solderabilitytest\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createcoupon": {
+    "grp": "Panel-Coupons",
+    "text": "Create Coupons",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/ipc_coupon_nvg.csh",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "couponcheck": {
+    "grp": "Panel-Coupons",
+    "text": "Verify coupon types (A,B,S,etc.) and that coupon is representative of board.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "couponcheck2": {
+    "grp": "Panel-Coupons",
+    "text": "Verify coupon markings are added and are inside rout profile.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "couponcheck6": {
+    "grp": "Panel-Coupons",
+    "text": "Add a max of 2 Back Drill sets (3 drills in a set) per board side to coupons, perpendicular coupon rout. Leaving a non-bd via and at least one per set available for lab.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"backdrills\")",
+    "helptext": "Necessary for customers that require backdrill samples.",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "create_cvr_pad_openings": {
+    "grp": "Panel-Coupons",
+    "text": "In each coupon, create pad openings (+ 10 mils) in all coverlay layers for all sections' pads and tooling holes.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")!='rigid'",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "RigidFlexCpnCheck": {
+    "grp": "Panel-Coupons",
+    "text": "Across the entire coupon, remove all adhesive between the flex and rigid sections, by at least 20 mils outside the coupon's profile.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"panel_type\")=='rigid-flex'",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "couponcheck5": {
+    "grp": "Panel-Coupons",
+    "text": "Verify coupons have any needed dot layers.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\") or self.nvc.job.getGenesisAttrBool(\"plate_shut_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createtdrcoupon": {
+    "grp": "Panel-Coupons",
+    "text": "Create TDR Coupons",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"controlledimpedance\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/pnl/impCoupon.pl",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "etchcomptdrcoupon": {
+    "grp": "Panel-Coupons",
+    "text": "Etch Compensate TDR Coupons",
+    "runcode": "self.nvc.checklister(\"etchcomp\",stepname=\"imp-cpn\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"controlledimpedance\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "add_cvr_pad openings": {
+    "grp": "Panel-Coupons",
+    "text": "Create ROUND pad openings (+ 10 mils) in all coverlay layers for any top and bot drilled pads in the impedance coupon",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"controlledimpedance\") and self.nvc.job.getGenesisAttr(\"panel_type\")!='rigid'",
+    "helptext": "round pads don't need to be routed with chains like lines, which would also require stick-down pads to be added",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "ResistorCoupons": {
+    "grp": "Panel-Coupons",
+    "text": "On jobs with resistors, create resistor coupons for resistive value evaluation, include pads and pth holes on outer layers as well as on resistive layer.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"etchedresistors\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "ResistorCouponsMask": {
+    "grp": "Panel-Coupons",
+    "text": "Create coupon mask layer that exposes only resistor coupons while protecting the rest of the layer.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"etchedresistors\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "ResistorAttribSet": {
+    "grp": "Panel-Coupons",
+    "text": "Set resistor_set and resistor_end attributes in layers with resistors.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"etchedresistors\")",
+    "helptext": "Etched resistor tests (for now) must test ONLY etched resistors and cannot be combined with continuity or isolation testing\nEtched resistor tests must only test one layer at a time (for now) If there are resistors on front and back, we’d have to run a separate test for each.  If multiple layers contain etched resistors, they will each be output as their own .EMM file.\nTest points must be square or round pads on the layer to be tested (not the etched resistor layer)\nTest pads must be assigned to “sets” based on common end points for the resistance measurement.  In a job like the Jabil we just did, all 100+ points were in one set, tested to a common ground.  Another job might have many sets – potentially a different set for each resistor if they are all on their own nets.\nAttributes required\nEvery pad to be tested against a given end point is assigned resistor_set = set number (you have to make up the set numbers for now)",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "CreatepecialSteps": {
+    "grp": "Panel-Coupons",
+    "text": "Create the Layer ID and Etch Coupons.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/macro/specsteps.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+  "panelize": {
+    "grp": "Panel",
+    "text": "Panelize PCB's, Place tooling, coupons, and fill",
+    "runcode": "self.nvc.startPanelize()",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "Multi-layer core construction": {
+    "grp": "Panel",
+    "text": "For stackups with white or black protect layers, verify top_pep and bot_pep layers exist that have the top and bot PEP targets and alignment marks that are scaled.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"construction_type\")=='core' and len(self.nvc.getcopperlayers())>2",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "createlenztargets": {
+    "grp": "Panel",
+    "text": "BEFORE FILL: Adjust any scripted Lenz targets and the (0.0433 drills!) as needed, suggested at least one new set per blind via set.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"bbv\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "checkqty": {
+    "grp": "Panel",
+    "text": "Check Traveler Quantity to Panelized Quantity - Adjust Traveler if Needed",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "couponcheck3": {
+    "grp": "Panel",
+    "text": "Verify coupons properly placed (R = G / L = S) and A coupons are X axis",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "couponcheck4": {
+    "grp": "Panel",
+    "text": "Verify coupons are numbered according to (A1, A8 are LL / A2, A3 are UL / A4, A5 are UR / A6, A7 are LR) / B coupons are Y axis  (B1, B8 are LL / B2, B3 are UL / B4, B5 are UR / B6, B7 are LR). \n include the number in the outline layer as well.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "calccu": {
+    "grp": "Panel",
+    "text": "Calculate Copper and Finish",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "When manually calculating copper area (e.g. dot patterns) or final finish area (e.g. ENIG area) be sure to include appropriate drill file and core thickness",
+    "runscript": "g:/automation/modules/nvgen/util/calc_copper.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "calccuSelectivePlating": {
+    "grp": "Panel",
+    "text": "Verify selective plating square inches are correct as script will output all Copper area, so manually correct sq. in. area printed on panel as necessary.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"selectiveplating\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "createscore": {
+    "grp": "Panel",
+    "text": "Create Score",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"scorejob\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/pnl/score_make.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "scorecheck1": {
+    "grp": "Panel",
+    "text": "No features within 20 mils of score line center",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"scorejob\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "scorecheck2": {
+    "grp": "Panel",
+    "text": "Mouse bites no closer than 10 mils to feature",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"mousebites\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "scorecheck3": {
+    "grp": "Panel",
+    "text": "Leave min .250\", preferred .400\" clearance from score line start/stop point to next board in order to avoid shallow entry and exit points.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"scorejob\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "tooldrillcheck": {
+    "grp": "Panel",
+    "text": "If multi-layer and core thickness > .030, tool drill instead of PEP.  Check trav for tool drill.  Drill uses standard tool drill file unless non-standard size or other exception.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.getcopperlayers())>2",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "scaledrill": {
+    "grp": "Panel",
+    "text": "Panel thickness is less than 20 mils.  Scale drill as well as etch. (See Jeff)",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttr(\"thickness\")<.020 and len(self.nvc.getcopperlayers())<=2",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+
+  "TabFingersSMclearanceForPlateBar": {
+    "grp": "Panel-Tab Fingers",
+    "text": "If tab fingers exist, make sure we include sufficient soldermask clearance for plating bus contact (for our internal processing).",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"tabfingers\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "TabFingersSMclearanceCheck": {
+    "grp": "Panel-Tab Fingers",
+    "text": "If tab fingers exist, verify design does not have soldermask between fingers/beyond fingers to PCB routed edge.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"tabfingers\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "TabFingersInternalClearance": {
+    "grp": "Panel-Tab Fingers",
+    "text": "If tab fingers exist, pull back internal layers sufficient enough to prevent exposure if bevel is required (at least 0.020\").",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"tabfingers\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "SMoutline": {
+    "grp": "Final Checks",
+    "text": "For the steps PCB, Array and and routed-out coupons, all soldermask layers have 10 mil openings (lines) under the rout profile?",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='solder_mask'))>0",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "OutlineLayer": {
+    "grp": "Final Checks",
+    "text": "PCB, Array, and coupons all have an outline drawn and all drills and slots added.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "ArrayMarkings": {
+    "grp": "Final Checks",
+    "text": "Numbering - follow customer call out numbering if provided, else use Sprint DCode numbering and allow it to auto-number.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "stenciltooling": {
+    "grp": "Final Checks",
+    "text": "stencil drills have 0.118 OLEC drills on left edge of panel.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"filled_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "dotborders": {
+    "grp": "Final Checks",
+    "text": "Dot layers have title and copper blocks, with plating borders added. Includes alignment targets and any Lenz target drills (0.0433 drills) if has bbv.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"plate_shut_vias\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "AlignmentTargets": {
+    "grp": "Final Checks",
+    "text": "Verify alignment targets are all visible in the copper and SM layers and are not in the SS layers.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "tell Brady if this check no longer needed after new panelization working",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "OutlineFilmBoxandTitleBoxes": {
+    "grp": "Final Checks",
+    "text": "Verify the canned-text part number, both title and copper blocks and the Film Box are in the outline layer.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "InnerLayerPEPTargets": {
+    "grp": "Final Checks",
+    "text": "Verify the inner layer PEP targets are correct for the stackup, i.e. a top-target (Square) when the layer is a top in the stackup, and round in the bottom. Alignment marks and layer scales are in both layers.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.getcopperlayers())>2",
+    "helptext": "This can be wrong if the panel parameters are not set properly prior to placing the tooling.\ntell Brady if this check no longer needed after new panelization working",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "InnerLayerScales": {
+    "grp": "Final Checks",
+    "text": "Verify the inner layers have scaling nomenclature added.",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.getcopperlayers())>2",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+
+  "HardGoldMaskTargets": {
+    "grp": "Final Checks",
+    "text": "Verify the hard gold layer contains: alignment targets, SCR holes, a top_targ (or bot_targ), film punch targets, film box, and the title and copper blocks.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"fullbodygold\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "HardGoldMaskPlateBar": {
+    "grp": "Final Checks",
+    "text": "For hard gold, verify coupons and all circuits are connected together to an external bus bar (in the robber bar).",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"fullbodygold\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "HardGoldMaskPlatingArea": {
+    "grp": "Final Checks",
+    "text": "Verify the gold area is added and is calculated only by the copper area that will be plated (i.e. is exposed by the mask).",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"fullbodygold\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "LegendScreeningTargets": {
+    "grp": "Final Checks",
+    "text": "For Silk Screen legend (non-digital), verify all film and punch targets are for negative plotting.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"sslegend\")",
+    "helptext": "This can be wrong if the panel parameters are not set properly prior to placing the tooling.",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "BackdrillToCopper": {
+    "grp": "Final Checks",
+    "text": "Verify no less than 5 mils clearance from back drill to nearest Copper feature/s",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"backdrills\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "laserChecks": {
+    "grp": "Final Checks",
+    "text": "Verify: Copper thieving is cleared from all Fiducials in the copper layers and all coverlay and sm layers have 0.050 clearances for the Fidos. For lsr_bv jobs the new lenz_targs are used (may need to copy the symbols from genesislib to the current job) and the terminating layers have copper planes in borders for lsr dev (usually in coupon title blocks) with no copper above the planes in the intermediate layers.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "laserChecks2": {
+    "grp": "Final Checks",
+    "text": "Lasered adhesive and coverlay layers have the part number, layer name and layer scale (if any) added as 19.7 drill canned text.",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"laser_rout\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "pcb"
+  },
+  "layercompare": {
+    "grp": "Final Checks",
+    "text": "Compare all physical layers between the orig and PCB steps.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "outdrill": {
+    "grp": "Output",
+    "text": "Drill",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/drill.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "CastellatedHolesInfeedCheck": {
+    "grp": "Output",
+    "text": "Adjust infeed of castellated hole drills per document SP401 Castellated Holes.",
+    "runcode": "self.nvc.open_file(\"//files/files/Quality/ISO NVG/Procedures/Mechanical and Fabrication/SP401-Castellated Holes.docx\")",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"castholes\")",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "outldi": {
+    "grp": "Output",
+    "text": "LDI",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/ldi.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "outdrillrpt": {
+    "grp": "Output",
+    "text": "Drill Report",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/drill_report_xl.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "drillreportcheck": {
+    "grp": "Output",
+    "text": "Compare drill report to output files and back to customer drawing to make sure all bits are reported and none were inadvertently removed.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "Finish Size-Drill Size": {
+    "grp": "Output",
+    "text": "Verify drill sheet reflects the drill hole size at the size it is being drilled not the finish size",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "outfilm": {
+    "grp": "Output",
+    "text": "Film",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/plot.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "outlaser": {
+    "grp": "Output",
+    "text": "Laser",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"laser_rout\") or self.nvc.job.getGenesisAttrBool(\"laser_1dr\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/laser.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "outaoi": {
+    "grp": "Output",
+    "text": "AOI",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/aoi.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+
+  "outet": {
+    "grp": "Output",
+    "text": "ET",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/et_panel.py",
+    "type": "button",
+    "step_context": "pcb"
+  },
+
+  "outetresistor": {
+    "grp": "Output",
+    "text": "ET - Etched Resistor Layers",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"etchedresistors\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/ipc_resistor_out.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "outsprint": {
+    "grp": "Output",
+    "text": "Sprint",
+    "runcode": "",
+    "pyfilter": "len(self.nvc.job.matrix.returnRows(context='board',type='silk_screen'))>0",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/sprint.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+
+  "outscore": {
+    "grp": "Output",
+    "text": "Score",
+    "runcode": "",
+    "pyfilter": "self.nvc.job.getGenesisAttrBool(\"scorejob\")",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/score.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+
+  "outrout": {
+    "grp": "Output",
+    "text": "Rout",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "g:/automation/modules/nvgen/out/rout.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+
+  "outgerb": {
+    "grp": "Output",
+    "text": "Generic Gerbers",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "IPC-274x",
+    "runscript": "g:/automation/modules/nvgen/out/gerb.py",
+    "type": "button",
+    "step_context": "panel"
+  },
+
+  "outpublish": {
+    "grp": "Output",
+    "text": "Publish",
+    "runcode": "self.nvc.publishjob();self.setfooter(lastpub=time.strftime(\"%Y-%m-%d %H:%M:%S\"));easygui.msgbox(\"Publish Succeeded\")",
+    "pyfilter": "",
+    "helptext": "Sychronize job files to the published CAM archives directory, backing up any replaced files.  Must be done for operators to access files.",
+    "runscript": "",
+    "type": "button",
+    "step_context": "panel"
+  },
+  "finalizetrav": {
+    "grp": "Output",
+    "text": "Sign and Date Traveler.  Verify all files are in output folder and published before releasing.",
+    "runcode": "",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "checkbox",
+    "step_context": "panel"
+  },
+  "completeJob": {
+    "grp": "Output",
+    "text": "Mark complete, check in, and close job.",
+    "runcode": "self.complete_job()",
+    "pyfilter": "",
+    "helptext": "",
+    "runscript": "",
+    "type": "button",
+    "step_context": "panel"
+  }
+}

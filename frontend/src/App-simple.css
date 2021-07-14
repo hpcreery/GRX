@@ -1,14 +1,14 @@
-@import '~antd/dist/antd.dark.css';
+/* @import '~antd/dist/antd.dark.css'; */
 
 /* .main::-webkit-scrollbar {
   display: none;
   overflow: scroll;
 } */
 
-::-webkit-scrollbar {
-  width: 0; /* Remove scrollbar space */
-  background: transparent; /* Optional: just make scrollbar invisible */
-}
+/* ::-webkit-scrollbar {
+  width: 0;
+  background: transparent; 
+} */
 
 #svg-container {
   pointer-events: all !important;
@@ -76,7 +76,7 @@
   /* opacity: 97%; */
   background-color: rgba(30, 30, 30, 0.85);
   backdrop-filter: blur(25px);
-  height: -webkit-fill-available;
+  height: 100%;
   width: 200px;
   transition: 0.5s ease;
   pointer-events: all;
@@ -156,16 +156,6 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-.ant-card-head {
-  padding: 0 16px;
-  font-size: 16px;
-}
-
-.ant-card-body {
-  height: calc(100% - 100px);
-  padding: 0px;
-}
-
 .ant-tabs {
   height: 100%;
 }
@@ -176,7 +166,7 @@
 
 .ant-tabs-tab {
   align-content: center;
-  margin: 0 10px 0 0px;
+  margin: 0px 5px 0px 5px;
 }
 
 .ant-tabs-content-holder {

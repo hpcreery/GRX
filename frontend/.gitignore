@@ -1,0 +1,22 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# dependencies
+node_modules/
+
+# testing
+coverage
+
+# production
+build/
+dist/
+NetVia-win32*
+NetVia-darwin*
+electron-win32*
+electron-darwin*
+
+# misc
+.DS_Store
+.env
+npm-debug.log
+
+.idea

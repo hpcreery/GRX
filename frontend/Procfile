@@ -1,2 +1,2 @@
-react: npm run start-react
-electron: npm run dev
+react: npm run dev:react
+electron: npm run dev:electronwaitreact

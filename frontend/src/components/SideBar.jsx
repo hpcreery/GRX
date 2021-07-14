@@ -25,12 +25,6 @@ import {
 } from 'antd'
 import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
-// ANT DESIGN CONSTANTS
-const { Option, OptGroup } = Select
-const { TabPane } = Tabs
-const { Search } = Input
-const { Text, Link } = Typography
-
 // NPM PACKAGES
 import { Resizable } from "re-resizable";
 
@@ -44,6 +38,12 @@ import UploadModal from './functional/UploadModal'
 import CreateJob from './functional/CreateJob'
 import RulerKit from './functional/RulerKit'
 import SelectKit from './functional/SelectKit'
+
+// ANT DESIGN CONSTANTS
+const { Option, OptGroup } = Select
+const { TabPane } = Tabs
+const { Search } = Input
+const { Text, Link } = Typography
 
 // CONFIG
 const { backendurl, port } = require('../config/config')
@@ -186,7 +186,7 @@ class SideBar extends Component {
 
   render() {
     return (
-      <div style={{ padding: '10px', width: '200px', height: '-webkit-fill-available' }}>
+      <div style={{ padding: '10px', width: '200px', height: '100%' }}>
         <Button
           type='text'
           className='togglesidebar'
@@ -215,17 +215,21 @@ class SideBar extends Component {
             style={{
               backgroundColor: 'rgba(30, 30, 30, 0.85)',
               backdropFilter: 'blur(25px)',
-              height: '-webkit-fill-available',
+              height: '100%',
               width: '-webkit-fill-available',
               transition: '0.5s ease',
               pointerEvents: 'all'
+            }}
+            bodyStyle={{
+              height: 'calc(100% - 100px)',
+              padding: '0px'
             }}
             title={
               this.state.loading ? <Spin indicator={<LoadingOutlined spin />} /> : this.state.job || 'GRX Gerber Renderer'
             }
             className={this.state.sidebar}
           >
-            <Tabs size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
+            <Tabs animated={{ inkBar: true, tabPane: true }} size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
               <TabPane tab='Jobs' key='1' >
                 <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: '-webkit-fill-available' }} />
                 <div style={{ height: '100%', position: 'relative', overflowX: 'hidden', overflowY: 'scroll', height: '100%' }}>
@@ -288,14 +292,14 @@ class SideBar extends Component {
                       {this.state.frontload ? (
                         <LayerListItem key={item} layer={item} />
                       ) : (
-                          <UnloadedLayerListItem
-                            key={item}
-                            layer={item}
-                            add={(...props) => this.props.setSVGinDIV(...props)}
-                            remove={(...props) => this.props.removeSVGinDIV(...props)}
-                            fetchLayer={(...props) => this.fetchLayer(...props)}
-                          />
-                        )}
+                        <UnloadedLayerListItem
+                          key={item}
+                          layer={item}
+                          add={(...props) => this.props.setSVGinDIV(...props)}
+                          remove={(...props) => this.props.removeSVGinDIV(...props)}
+                          fetchLayer={(...props) => this.fetchLayer(...props)}
+                        />
+                      )}
                     </List.Item>
                   )}
                 />
@@ -332,7 +336,7 @@ class SideBar extends Component {
                 <Row style={{ margin: '5px ' }}>
                   <Col flex='auto' style={{ padding: '5px' }}>
                     Front Load
-                </Col>
+                  </Col>
                   <Col flex='30px' style={{ padding: '5px' }}>
                     <Switch
                       size='small'
@@ -344,7 +348,7 @@ class SideBar extends Component {
                 <Row style={{ margin: '5px ' }}>
                   <Col flex='auto' style={{ padding: '5px' }}>
                     Use Outline
-                </Col>
+                  </Col>
                   <Col flex='30px' style={{ padding: '5px' }}>
                     <Switch
                       size='small'

@@ -3,10 +3,10 @@ import React, { Component } from 'react'
 import SideBar from './SideBar'
 
 // THREE
-import * as THREE from '../three/build/three.module.js'
-import { OrbitControls } from '../three/examples/jsm/controls/OrbitControls.js'
-import { CSS3DRenderer, CSS3DObject } from '../three/examples/jsm/renderers/CSS3DRenderer.js'
-import Stats from '../three/examples/jsm/libs/stats.module.js'
+import * as THREE from 'three'
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js'
+import Stats from 'three/examples/jsm/libs/stats.module.js'
 
 // FUNCTIONAL
 import InfoCoords from './functional/InfoCoords'
@@ -16,6 +16,9 @@ import InfoCoords from './functional/InfoCoords'
 
 // SVGJS
 import SVG from 'svg.js'
+
+// STYLE
+import '../App-simple.css'
 
 const DrawBoardContext = React.createContext()
 
@@ -29,7 +32,8 @@ class Renderer extends Component {
       cameraType: 'orthographic',
       mouseCoordinates: { pixel: { x: 0, y: 0 }, inch: { x: 0, y: 0 }, mm: { x: 0, y: 0 }, draw: { x: 0, y: 0 } },
     }
-      ; (this.drawBoardSize = 100000), (this.drawBoardScale = 0.1)
+    this.drawBoardSize = 100000
+    this.drawBoardScale = 0.1
     this.svgContainer = null
     this.drawContainer = null
   }
@@ -271,6 +275,7 @@ class Renderer extends Component {
     this.clock = new THREE.Clock()
     this.stats = new Stats()
     this.stats.domElement.style.right = '10px'
+    this.stats.domElement.style.left = 'auto'
     this.stats.domElement.style.position = 'absolute'
     this.stats.domElement.style.zIndex = '1002'
     this.stats.domElement.style.top = '10px'
@@ -280,9 +285,12 @@ class Renderer extends Component {
   }
 
   onWindowResize = () => {
-    this.camera.aspect = this.rendercontainer.offsetWidth / this.rendercontainer.offsetHeight
-    this.camera.updateProjectionMatrix()
-    this.cssRenderer.setSize(this.rendercontainer.offsetWidth, this.rendercontainer.offsetHeight)
+    if (this.rendercontainer) {
+      this.camera.aspect = this.rendercontainer.offsetWidth / this.rendercontainer.offsetHeight
+      this.camera.updateProjectionMatrix()
+      this.cssRenderer.setSize(this.rendercontainer.offsetWidth, this.rendercontainer.offsetHeight)
+    }
+
   }
 
   animationHandler = () => {
@@ -297,7 +305,7 @@ class Renderer extends Component {
     let layers = this.state.CSS3DObjects.filter((layer) => layer.context == 'board')
     //console.log(layers)
     return (
-      <div id='main' style={{ position: 'relative', height: '-webkit-fill-available', zIndex: 1000 }}>
+      <div id='main' style={{ position: 'relative', height: '100%', zIndex: 1000 }}>
         <DrawBoardContext.Provider
           value={{
             infobar: this.infobar,
