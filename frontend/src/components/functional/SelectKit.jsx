@@ -2,10 +2,11 @@ import React, { useState, useEffect, useContext } from 'react'
 
 // Ant Design
 import { Button, Typography } from 'antd'
-const { Text } = Typography
 
 // Context
 import { DrawBoardContext } from '../Renderer'
+
+const { Text } = Typography
 
 const SelectKit = (props) => {
   const { drawContainer, drawBoardSize, drawBoardScale, svgContainer } = useContext(DrawBoardContext)
@@ -82,15 +83,14 @@ const SelectKit = (props) => {
             ? g.lineWidth == '0'
               ? `SURFACE`
               : `LINE | Width: ${g.lineWidth / 1000}${units}`
-            : `PAD | Shape: ${
-                g.shape.type == 'g'
-                  ? `SPECIAL | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(5)}${units}`
-                  : `${g.shape.type.toUpperCase()}  | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(
-                      5
-                    )}${units} | ${deriveNodeAttributes(g.shape.attributes, units)}`
-              }`
+            : `PAD | Shape: ${g.shape.type == 'g'
+              ? `SPECIAL | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(5)}${units}`
+              : `${g.shape.type.toUpperCase()}  | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(
+                5
+              )}${units} | ${deriveNodeAttributes(g.shape.attributes, units)}`
+            }`
           : 'NA'
-        g ? infoBar.replaceChild(info, oldInfo) : ''
+        if (g) infoBar.replaceChild(info, oldInfo)
       }
 
       node.onmouseleave = (e) => {
@@ -122,7 +122,7 @@ const SelectKit = (props) => {
     }
   }
 
-  const setUpKeyboardEvents = () => {}
+  const setUpKeyboardEvents = () => { }
 
   useEffect(() => {
     document.addEventListener('keydown', doc_keyDown, false)

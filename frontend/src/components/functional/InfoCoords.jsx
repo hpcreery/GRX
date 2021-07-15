@@ -36,10 +36,10 @@ const InfoCoords = (props) => {
 
   useEffect(() => {
     // Mount and Update
-    drawContainer ? drawContainer.addEventListener('mousemove', setInfoCoordinates) : ''
+    // drawContainer ? drawContainer.addEventListener('mousemove', setInfoCoordinates) : null
     return () => {
       // Unmount
-      drawContainer ? drawContainer.removeEventListener('mousemove', setInfoCoordinates) : ''
+      drawContainer?.removeEventListener('mousemove', setInfoCoordinates)
     }
   })
 

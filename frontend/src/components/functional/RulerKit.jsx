@@ -2,13 +2,14 @@ import React, { useState, useEffect, useContext } from 'react'
 
 // Ant Design
 import { Button, Typography } from 'antd'
-const { Text } = Typography
 
 // Context
 import { DrawBoardContext } from '../Renderer'
 
 // SVGJS
 import SVG from 'svg.js'
+
+const { Text } = Typography
 
 const RulerKit = (props) => {
   const { drawContainer, drawBoardSize, drawBoardScale } = useContext(DrawBoardContext)
@@ -72,7 +73,7 @@ const RulerKit = (props) => {
               coordinates.inch.y - startPosition.inch.y
             ).toFixed(5)}" D:${Math.sqrt(
               Math.pow(coordinates.inch.x - startPosition.inch.x, 2) +
-                Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
+              Math.pow(coordinates.inch.y - startPosition.inch.y, 2)
             ).toFixed(5)}"`
           )
       })

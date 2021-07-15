@@ -3,10 +3,10 @@ import { Spin, Switch, Alert, Button, Card } from 'antd'
 import { LoadingOutlined } from '@ant-design/icons'
 import './Appcustom.css'
 import Renderer from './components/Renderer'
+import { version } from '../package.json'
 
 const dotenv = require('dotenv')
 dotenv.config()
-import { version } from '../package.json'
 
 class App extends Component {
   constructor(props) {
