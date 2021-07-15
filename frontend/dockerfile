@@ -5,4 +5,4 @@ COPY package*.json /app/
 RUN npm install
 COPY build /app/build/
 EXPOSE 5000
-CMD npm run start-server
+CMD npm run start:server
