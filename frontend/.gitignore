@@ -7,7 +7,7 @@ node_modules/
 coverage
 
 # production
-build/
+# build/
 dist/
 NetVia-win32*
 NetVia-darwin*
