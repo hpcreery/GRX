@@ -8,7 +8,7 @@ import { Modal, Button } from 'antd'
 import UploadGerber from './UploadGerber'
 
 // CONFIG
-const { backendurl, port } = require('../../config/config')
+// const { backendurl, port } = require('../../config/config')
 
 const UploadModal = (props) => {
   var { replaceArtwork, job } = props

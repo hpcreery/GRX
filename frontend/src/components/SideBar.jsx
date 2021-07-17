@@ -5,7 +5,6 @@ import React, { Component } from 'react'
 import {
   Spin,
   Switch,
-  Alert,
   Button,
   Card,
   Select,
@@ -14,16 +13,11 @@ import {
   Col,
   List,
   Input,
-  Slider,
-  Radio,
-  Checkbox,
   message,
-  Progress,
   Popconfirm,
   Divider,
-  Typography,
 } from 'antd'
-import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { LoadingOutlined, VideoCameraOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 // NPM PACKAGES
 import { Resizable } from "re-resizable";
@@ -40,10 +34,9 @@ import RulerKit from './functional/RulerKit'
 import SelectKit from './functional/SelectKit'
 
 // ANT DESIGN CONSTANTS
-const { Option, OptGroup } = Select
+const { Option } = Select
 const { TabPane } = Tabs
 const { Search } = Input
-const { Text, Link } = Typography
 
 // CONFIG
 const { backendurl, port } = require('../config/config')
@@ -88,13 +81,14 @@ class SideBar extends Component {
   }
 
   fetchLayer = async (layer) => {
+    var layerdata
     if (layer.name !== 'front' && layer.name !== 'back') {
-      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${this.state.job}&layer=${layer.name}`)
+      layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${this.state.job}&layer=${layer.name}`)
     } else {
-      var layerdata = await this.fetchData(
+      layerdata = await this.fetchData(
         `/gbr2svg/getFinishedArtwork?job=${this.state.job}&outline=${this.state.useoutline}`
       )
-      layerdata = Array(layerdata.find((data) => data.name == layer.name))
+      layerdata = Array(layerdata.find((data) => data.name === layer.name))
     }
     return layerdata
   }
@@ -102,13 +96,13 @@ class SideBar extends Component {
   replaceArtwork = async (job) => {
     //this.props.clear()
     console.log('Getting Finished Artowrk for', job)
-
+    var layerdata
     if (this.state.frontload === true) {
-      var layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
+      layerdata = await this.fetchData(`/gbr2svg/getLayerArtwork?job=${job}`)
       var finisheddata = await this.fetchData(`/gbr2svg/getFinishedArtwork?job=${job}&outline=${this.state.useoutline}`)
       this.props.setJob(job, layerdata, finisheddata)
     } else if (this.state.frontload === false) {
-      var layerdata = await this.getLayerList(job)
+      layerdata = await this.getLayerList(job)
       finisheddata = [
         {
           name: 'front',
@@ -232,7 +226,7 @@ class SideBar extends Component {
             <Tabs animated={{ inkBar: true, tabPane: true }} size='small' defaultActiveKey='1' onChange={(key) => console.log(key)} centered>
               <TabPane tab='Jobs' key='1' >
                 <Search placeholder='input search' onSearch={(value) => this.getJobList(value)} style={{ width: '-webkit-fill-available' }} />
-                <div style={{ height: '100%', position: 'relative', overflowX: 'hidden', overflowY: 'scroll', height: '100%' }}>
+                <div style={{ height: '100%', position: 'relative', overflowX: 'hidden', overflowY: 'scroll' }}>
                   <List
                     size='small'
                     header={

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useEffect, useContext } from 'react'
 
 // Ant Design
 import { Button, Typography } from 'antd'
@@ -47,7 +47,7 @@ const RulerKit = (props) => {
     var action = (e) => handleMouseLocation(e, ruler)
     drawContainer.addEventListener('click', action, { once: true })
     let escape = (e) => {
-      if (e.key == 'Escape') {
+      if (e.key === 'Escape') {
         console.log(e)
         drawContainer.removeEventListener('click', action)
         reCreateDrawBoard()

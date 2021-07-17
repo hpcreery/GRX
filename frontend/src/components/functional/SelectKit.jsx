@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react'
+import React, { useEffect, useContext } from 'react'
 
 // Ant Design
 import { Button, Typography } from 'antd'
@@ -9,13 +9,13 @@ import { DrawBoardContext } from '../Renderer'
 const { Text } = Typography
 
 const SelectKit = (props) => {
-  const { drawContainer, drawBoardSize, drawBoardScale, svgContainer } = useContext(DrawBoardContext)
+  const { drawContainer, svgContainer } = useContext(DrawBoardContext)
 
   const deriveNodeAttributes = (nodeMap, units) => {
     let array = [...nodeMap]
     let string = ''
     for (var i = 0; i < array.length; i++) {
-      if (array[i].nodeName != 'id') {
+      if (array[i].nodeName !== 'id') {
         string += ` ${array[i].nodeName.toUpperCase()}: ${(array[i].value / 1000).toFixed(5)}${units}`
       }
     }
@@ -52,7 +52,7 @@ const SelectKit = (props) => {
         //console.log(e)
         e.target.style.color = '#08979c'
 
-        if (e.target.nodeName == 'path') {
+        if (e.target.nodeName === 'path') {
           g = {
             type: e.target.nodeName,
             g: 'path',
@@ -60,8 +60,8 @@ const SelectKit = (props) => {
             code: e.target.attributes.d.value,
             attr: e.target.attributes,
           }
-        } else if (e.target.nodeName == 'use') {
-          let pad = defList.find((def) => def.id == e.target.attributes['xlink:href'].value.substring(1))
+        } else if (e.target.nodeName === 'use') {
+          let pad = defList.find((def) => def.id === e.target.attributes['xlink:href'].value.substring(1))
           //console.log(pad)
           g = {
             type: e.target.nodeName,
@@ -79,11 +79,11 @@ const SelectKit = (props) => {
         //console.log(e.target.nodeName)
         //let attributes = deriveNodeAttributes(g.shape.attributes)
         info.innerHTML = g
-          ? g.g == 'path'
-            ? g.lineWidth == '0'
+          ? g.g === 'path'
+            ? g.lineWidth === '0'
               ? `SURFACE`
               : `LINE | Width: ${g.lineWidth / 1000}${units}`
-            : `PAD | Shape: ${g.shape.type == 'g'
+            : `PAD | Shape: ${g.shape.type === 'g'
               ? `SPECIAL | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(5)}${units}`
               : `${g.shape.type.toUpperCase()}  | X: ${(g.x / 1000).toFixed(5)}${units} Y: ${(g.y / 1000).toFixed(
                 5
@@ -99,7 +99,7 @@ const SelectKit = (props) => {
     })
 
     let escape = (e) => {
-      if (e.key == 'Escape') {
+      if (e.key === 'Escape') {
         drawContainer.appendChild(oldDrawContainerNodes)
         svgChildElement.parentNode.replaceChild(svgChildElementClone, svgChildElement)
       }
@@ -122,7 +122,7 @@ const SelectKit = (props) => {
     }
   }
 
-  const setUpKeyboardEvents = () => { }
+  // const setUpKeyboardEvents = () => { }
 
   useEffect(() => {
     document.addEventListener('keydown', doc_keyDown, false)

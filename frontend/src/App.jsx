@@ -1,6 +1,4 @@
 import React, { Component } from 'react'
-import { Spin, Switch, Alert, Button, Card } from 'antd'
-import { LoadingOutlined } from '@ant-design/icons'
 import './Appcustom.css'
 import Renderer from './components/Renderer'
 import { version } from '../package.json'
@@ -33,7 +31,7 @@ class App extends Component {
           <h6>!! DEVELOPMENT v{`${version}`} !!</h6>
           <h6>
             Software by{' '}
-            <a target='_blank' href='https://github.com/hpcreery'>
+            <a target='_blank' rel='noreferrer' href='https://github.com/hpcreery'>
               Hunter Creery
             </a>{' '}
           </h6>

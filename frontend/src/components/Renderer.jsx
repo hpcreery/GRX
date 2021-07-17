@@ -43,7 +43,8 @@ class Renderer extends Component {
   // Three.js
   addInitSVGFromDom = () => {
     // FRONT
-    var element = document.getElementById('front')
+    var element
+    element = document.getElementById('front')
     this.frontPCBObject = new CSS3DObject(element)
     this.frontPCBObject.name = 'front'
     this.frontPCBObject.position.x = 0
@@ -53,7 +54,7 @@ class Renderer extends Component {
     this.cssScene.add(this.frontPCBObject)
 
     // BACK
-    var element = document.getElementById('back')
+    element = document.getElementById('back')
     this.backPCBObject = new CSS3DObject(element)
     this.backPCBObject.name = 'back'
     this.backPCBObject.position.x = 0
@@ -201,7 +202,7 @@ class Renderer extends Component {
   }
 
   removeAllLayers = () => {
-    let boardLayers = this.state.CSS3DObjects.filter((layer) => layer.context == 'board')
+    let boardLayers = this.state.CSS3DObjects.filter((layer) => layer.context === 'board')
     for (var i = boardLayers.length - 1; i >= 0; i--) {
       this.cssScene.remove(boardLayers[i])
     }
@@ -302,7 +303,7 @@ class Renderer extends Component {
 
   render() {
     console.log('Rendering Renderer', this.units)
-    let layers = this.state.CSS3DObjects.filter((layer) => layer.context == 'board')
+    let layers = this.state.CSS3DObjects.filter((layer) => layer.context === 'board')
     //console.log(layers)
     return (
       <div id='main' style={{ position: 'relative', height: '100%', zIndex: 1000 }}>
