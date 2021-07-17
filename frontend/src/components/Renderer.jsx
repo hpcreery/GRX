@@ -4,7 +4,8 @@ import SideBar from './SideBar'
 
 // THREE
 import * as THREE from 'three'
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+// import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { OrbitControls } from "./functional/OrbitControls";
 import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js'
 import Stats from 'three/examples/jsm/libs/stats.module.js'
 
