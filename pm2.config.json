@@ -6,8 +6,8 @@
       "interpreter": "none",
       "args": "serve -s frontend/build -l 5000",
       "env": {
-        "REACT_APP_API": "http://grx.creery.org",
-        "REACT_APP_APIPORT": "/api"
+        "REACT_APP_GRX_API": "http://grx.creery.org",
+        "REACT_APP_GRX_APIPORT": "/api"
       }
     },
     {
