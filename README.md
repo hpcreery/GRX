@@ -6,7 +6,7 @@ Gerber Viewer with 3d support and beautiful finished board rendering
 
 See the current build in production here => [GRX](http://grx.creery.org)
 
-![homepage](/frontend/public/GIFs/full.gif)
+![homepage](/doc/full.gif)
 
 ## About
 
