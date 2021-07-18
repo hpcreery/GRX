@@ -1,5 +1,5 @@
 // REACT
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 
 // ANT DESIGN
 import { Modal, Button, Input, message } from 'antd'
@@ -18,7 +18,7 @@ const CreateJob = (props) => {
   }
 
   const handleOk = async (e) => {
-    if (job == null || job == '') {
+    if (job == null || job === '') {
       message.warning('Must Assign your job a name')
       return
     }

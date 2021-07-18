@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react'
 import { DrawBoardContext } from '../Renderer'
 import { Switch, Col, Row } from 'antd'
-import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
 
 const QualitySlider = () => {
   //root = document.documentElement

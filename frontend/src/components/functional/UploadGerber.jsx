@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react'
 
 // ANT DESIGN
-import { Upload, Button, Row, Col } from 'antd'
-import { UploadOutlined, ReloadOutlined, InboxOutlined } from '@ant-design/icons'
+import { Upload, Button } from 'antd'
+import { UploadOutlined, ReloadOutlined } from '@ant-design/icons'
 const { Dragger } = Upload
 
 // CONFIG
@@ -22,6 +22,8 @@ const UploadGerber = (props) => {
       // Unmount
     }
   }, [])
+  // ^^ React Hook useEffect has a missing dependency: 'getExistingFiles'. 
+  // Either include it or remove the dependency array.eslintreact - hooks / exhaustive - deps
 
   const getExistingFiles = async () => {
     setReloading(true)

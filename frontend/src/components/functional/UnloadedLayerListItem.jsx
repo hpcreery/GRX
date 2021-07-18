@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 
 import { Checkbox, Popover, Badge, Tooltip, Row, Col } from 'antd'
-import { BgColorsOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { BgColorsOutlined } from '@ant-design/icons'
 import { SliderPicker } from 'react-color'
 
 const LayerListItem = (props) => {
@@ -42,7 +42,8 @@ const LayerListItem = (props) => {
       }
     }
     waitForElement()
-  }, [props.layer.name])
+  }, [props.layer.name]) // props.layer.name is erroring isn eslint??
+  // React Hook useEffect has a missing dependency: 'layer.name'. Either include it or remove the dependency array.eslintreact-hooks/exhaustive-deps
 
   return (
     <div style={{ width: '100%' }}>
@@ -53,8 +54,8 @@ const LayerListItem = (props) => {
             title={
               <div>
                 <BgColorsOutlined />
-            &nbsp; ColorPicker
-          </div>
+                &nbsp; ColorPicker
+              </div>
             }
             placement='right'
             trigger='click'

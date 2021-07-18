@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react'
 import { DrawBoardContext } from '../Renderer'
 
 import { Slider, Col, Row } from 'antd'
-import { LoadingOutlined, VideoCameraOutlined, FormatPainterOutlined } from '@ant-design/icons'
+import { FormatPainterOutlined } from '@ant-design/icons'
 
 const QualitySlider = () => {
   const { rendercontainer } = useContext(DrawBoardContext)
