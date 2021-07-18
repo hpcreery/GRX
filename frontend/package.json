@@ -100,7 +100,7 @@
   "main": "src/electron.bundle.js",
   "scripts": {
     "start:server": "npx serve -s build -l 8080",
-    "start:service": "pm2 --name ToolkitFrontend --watch --no-automation serve -s build -l 8080 --spa",
+    "start:service": "pm2 --name GRX --watch --no-automation serve -s build -l 8080 --spa",
     "start:electron": "electron .",
     "dev": "nf start",
     "dev:electronwaitreact": "node src/electron-wait-react",
@@ -128,7 +128,7 @@
     ]
   },
   "build": {
-    "appId": "com.netvia.toolkit",
+    "appId": "org.creery.grx",
     "productName": "EngineerTookit",
     "extends": null,
     "directories": {
