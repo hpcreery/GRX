@@ -39,7 +39,6 @@ const InfoCoords = (props) => {
     drawContainer?.addEventListener('mousemove', setInfoCoordinates)
     return () => {
       // Unmount
-      console.log("unmounted")
       drawContainer?.removeEventListener('mousemove', setInfoCoordinates)
     }
   })
