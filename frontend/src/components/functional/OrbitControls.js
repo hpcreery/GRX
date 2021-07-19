@@ -562,7 +562,7 @@ class OrbitControls extends EventDispatcher {
 
     function handleMouseMovePan(event) {
 
-      console.log('pannin', event.clientX, event.clientY)
+      // console.log('pannin', event.clientX, event.clientY)
 
       panEnd.set(event.clientX, event.clientY);
 
@@ -584,7 +584,7 @@ class OrbitControls extends EventDispatcher {
 
     function handleMouseWheel(event) {
 
-      console.log('zoomin', event)
+      // console.log('zoomin', event)
 
       // zoom to mouse position
 
