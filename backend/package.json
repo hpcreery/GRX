@@ -1,8 +1,9 @@
 {
   "name": "grx-backend",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
@@ -12,6 +13,9 @@
   "author": "Hunter Creery",
   "license": "MIT",
   "dependencies": {
+    "@tracespace/identify-layers": "^5.0.0-alpha.0",
+    "@tracespace/parser": "^5.0.0-alpha.0",
+    "@tracespace/plotter": "^5.0.0-alpha.0",
     "body-parser": "^1.19.0",
     "busboy": "^0.3.1",
     "connect-busboy": "0.0.2",
@@ -19,11 +23,11 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.0",
-    "gerber-to-svg": "^4.2.1",
     "lodash": "^4.17.20",
     "morgan": "^1.10.0",
-    "pcb-stackup": "^4.2.1",
-    "pm2": "^4.4.1",
-    "whats-that-gerber": "^4.2.0"
+    "pm2": "^4.4.1"
+  },
+  "devDependencies": {
+    "@tracespace/fixtures": "5.0.0-alpha.0"
   }
 }

@@ -1,119 +1,51 @@
 {
   "name": "grx",
-  "version": "1.0.1",
-  "description": "Gerber Renderer",
+  "version": "2.0.0",
+  "description": "PWB Renderer",
   "author": "Hunter Creery",
   "private": true,
-  "devDependencies": {
-    "electron": "^13.0.1",
-    "electron-builder": "^22.11.7",
-    "electron-devtools-installer": "^3.2.0",
-    "electron-react-devtools": "^0.5.3",
-    "foreman": "^3.0.1",
-    "serve": "^11.3.2",
-    "webpack-cli": "^4.7.2"
+  "main": "src/electron/electron.bundle.cjs",
+  "type": "module",
+  "scripts": {
+    "dev:all": "nf start",
+    "dev:react": "react-scripts start",
+    "dev:electron": "electron .",
+    "dev:electronwaitreact": "wait-on tcp:127.0.0.1:5000 && ELECTRON_START_URL=http://localhost:5000 npm run dev:electron",
+    "build:electron": "webpack --config src/electron/webpackElectron.config.cjs",
+    "build:react": "react-scripts build",
+    "eject:react": "react-scripts eject",
+    "test": "react-scripts test"
   },
   "dependencies": {
-    "@ant-design/charts": "^1.1.6",
-    "@ant-design/icons": "^4.6.2",
-    "@antv/g2": "^4.1.17",
-    "@antv/g2plot": "^2.3.21",
-    "@antv/util": "^2.0.13",
-    "@babel/core": "7.12.3",
-    "@pmmmwh/react-refresh-webpack-plugin": "0.4.3",
-    "@svgr/webpack": "5.5.0",
-    "@typescript-eslint/eslint-plugin": "^4.5.0",
-    "@typescript-eslint/parser": "^4.5.0",
-    "antd": "^4.4.0",
-    "babel-eslint": "^10.1.0",
-    "babel-jest": "^26.6.0",
-    "babel-loader": "8.1.0",
-    "babel-plugin-named-asset-import": "^0.3.7",
-    "babel-preset-react-app": "^10.0.0",
-    "bfj": "^7.0.2",
-    "camelcase": "^6.1.0",
-    "case-sensitive-paths-webpack-plugin": "2.3.0",
-    "css-loader": "4.3.0",
-    "dotenv": "8.2.0",
-    "dotenv-expand": "5.1.0",
-    "electron-log": "^4.3.5",
-    "electron-packager": "^14.2.1",
-    "electron-updater": "^4.3.9",
-    "eslint": "^7.11.0",
-    "eslint-config-react-app": "^6.0.0",
-    "eslint-plugin-flowtype": "^5.2.0",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-jest": "^24.1.0",
-    "eslint-plugin-jsx-a11y": "^6.3.1",
-    "eslint-plugin-react": "^7.21.5",
-    "eslint-plugin-react-hooks": "^4.2.0",
-    "eslint-plugin-testing-library": "^3.9.2",
-    "eslint-webpack-plugin": "^2.5.2",
-    "file-loader": "6.1.1",
-    "file-saver": "^2.0.5",
-    "fs-extra": "^9.0.1",
-    "html-webpack-plugin": "4.5.0",
-    "http-server": "^0.12.3",
-    "identity-obj-proxy": "3.0.0",
-    "jest": "26.6.0",
-    "jest-circus": "26.6.0",
-    "jest-resolve": "26.6.0",
-    "jest-watch-typeahead": "0.6.1",
-    "mini-css-extract-plugin": "0.11.3",
-    "optimize-css-assets-webpack-plugin": "5.0.4",
-    "pm2": "^5.0.4",
-    "pnp-webpack-plugin": "1.6.4",
-    "postcss-flexbugs-fixes": "4.2.1",
-    "postcss-loader": "3.0.0",
-    "postcss-normalize": "8.0.1",
-    "postcss-preset-env": "6.7.0",
-    "postcss-safe-parser": "5.0.2",
-    "prismjs": "^1.23.0",
-    "prompts": "2.4.0",
-    "re-resizable": "^6.9.0",
-    "react": "^16.14.0",
-    "react-app-polyfill": "^2.0.0",
-    "react-color": "^2.19.3",
-    "react-dev-utils": "^11.0.3",
-    "react-diff-viewer": "^3.1.1",
-    "react-dom": "^16.14.0",
-    "react-refresh": "^0.8.3",
-    "react-simple-code-editor": "^0.11.0",
-    "react-syntax-highlighter": "^15.4.3",
-    "resolve": "1.18.1",
-    "resolve-url-loader": "^3.1.2",
-    "sass-loader": "^10.0.5",
-    "semver": "7.3.2",
-    "style-loader": "1.3.0",
-    "svg.js": "^2.7.1",
-    "tedious": "^11.0.8",
-    "terser-webpack-plugin": "4.2.3",
-    "three": "^0.129.0",
-    "ts-pnp": "1.2.0",
-    "url-loader": "4.1.1",
-    "webpack": "4.44.2",
-    "webpack-dev-server": "3.11.1",
-    "webpack-manifest-plugin": "2.2.0",
-    "workbox-webpack-plugin": "5.1.4"
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@tracespace/plotter": "^5.0.0-alpha.0",
+    "@types/jest": "^27.5.2",
+    "@types/node": "^16.18.12",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "pixi.js": "^7.2.0-beta",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "typescript": "^4.9.5",
+    "web-vitals": "^2.1.4"
   },
-  "homepage": "./",
-  "main": "src/electron.bundle.js",
-  "scripts": {
-    "start:server": "npx serve -s build -l 8080",
-    "start:service": "pm2 --name GRX --watch --no-automation serve -s build -l 8080 --spa",
-    "start:electron": "electron .",
-    "dev": "nf start",
-    "dev:electronwaitreact": "node src/electron-wait-react",
-    "dev:electron": "electron ./src/electron.js",
-    "dev:react": "node scripts/start.js",
-    "build": "npm run build:react && npm run build:electron",
-    "build:react": "node scripts/build.js",
-    "build:electron": "webpack --config config/webpackElectron.config.js",
-    "pack": "electron-packager . electron --platform=win32  --arch=x64 --ignore=/node_modules --ignore=/dist --overwrite --icon=public/NVG.ico && xcopy /s /q /i public electron-win32-x64\\public && echo 'Built for WIN'",
-    "release": "electron-builder -p always",
-    "dist": "electron-builder --publish always",
-    "start-update-server": "http-server dist/ -p 8083",
-    "reinvent": "npm install && npm run build && npm run pack && npm run dist && npm run start-update-server"
+  "devDependencies": {
+    "electron": "^23.1.0",
+    "electron-builder": "^23.6.0",
+    "electron-log": "^5.0.0-beta.16",
+    "electron-updater": "^5.3.0",
+    "wait-on": "^7.0.1",
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
@@ -126,89 +58,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "build": {
-    "appId": "org.creery.grx",
-    "productName": "EngineerTookit",
-    "extends": null,
-    "directories": {
-      "buildResources": "build"
-    },
-    "electronDist": "electron-win32-x64",
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false,
-      "installerIcon": "public/icon.ico",
-      "installerHeaderIcon": "public/icon.ico",
-      "runAfterFinish": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    },
-    "publish": [
-      {
-        "provider": "generic",
-        "url": "http://hunter-machine:8083",
-        "channel": "latest",
-        "publishAutoUpdate": true
-      }
-    ]
-  },
-  "jest": {
-    "roots": [
-      "<rootDir>/src"
-    ],
-    "collectCoverageFrom": [
-      "src/**/*.{js,jsx,ts,tsx}",
-      "!src/**/*.d.ts"
-    ],
-    "setupFiles": [
-      "react-app-polyfill/jsdom"
-    ],
-    "setupFilesAfterEnv": [],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}",
-      "<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}"
-    ],
-    "testEnvironment": "jsdom",
-    "testRunner": "C:\\Users\\huntercreery\\AppData\\Roaming\\npm-cache\\_npx\\51116\\node_modules\\react-scripts\\node_modules\\jest-circus\\runner.js",
-    "transform": {
-      "^.+\\.(js|jsx|mjs|cjs|ts|tsx)$": "<rootDir>/config/jest/babelTransform.js",
-      "^.+\\.css$": "<rootDir>/config/jest/cssTransform.js",
-      "^(?!.*\\.(js|jsx|mjs|cjs|ts|tsx|css|json)$)": "<rootDir>/config/jest/fileTransform.js"
-    },
-    "transformIgnorePatterns": [
-      "[/\\\\]node_modules[/\\\\].+\\.(js|jsx|mjs|cjs|ts|tsx)$",
-      "^.+\\.module\\.(css|sass|scss)$"
-    ],
-    "modulePaths": [],
-    "moduleNameMapper": {
-      "^react-native$": "react-native-web",
-      "^.+\\.module\\.(css|sass|scss)$": "identity-obj-proxy"
-    },
-    "moduleFileExtensions": [
-      "web.js",
-      "js",
-      "web.ts",
-      "ts",
-      "web.tsx",
-      "tsx",
-      "json",
-      "web.jsx",
-      "jsx",
-      "node"
-    ],
-    "watchPlugins": [
-      "jest-watch-typeahead/filename",
-      "jest-watch-typeahead/testname"
-    ],
-    "resetMocks": true
-  },
-  "babel": {
-    "presets": [
-      "react-app"
-    ]
-  },
-  "eslintConfig": {
-    "extends": "react-app"
   }
 }

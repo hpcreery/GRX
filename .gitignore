@@ -11,6 +11,7 @@ coverage
 
 # production
 frontend/GRX**
+discard**
 
 # misc
 .DS_Store

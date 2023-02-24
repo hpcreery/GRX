@@ -1,8 +1,8 @@
-const express = require('express') //  backend route manager/site server
-const bodyParser = require('body-parser')
-const cors = require('cors') //  some security thing?
-const morgan = require('morgan') //  for debugging
-const config = require('./src/config/config') // server config properties
+import express from 'express' //  backend route manager/site server
+import bodyParser from 'body-parser'
+import cors from 'cors' //  some security thing?
+import morgan from 'morgan' //  for debugging
+import { port } from './src/config/config.js' // server config properties
 // var busboy = require('connect-busboy') // for multipart file handling
 
 const app = express()
@@ -13,8 +13,9 @@ app.use(cors())
 
 
 // import routes.js for URL routing. Passes 'app' object
-require('./src/routes')(app)
+import routes from './src/routes.js'
+routes(app)
 
 // Start
-app.listen(config.port)
-console.log(`Server Started on port ${config.port}`)
+app.listen(port)
+console.log(`Server Started on port ${port}`)
