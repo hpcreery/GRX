@@ -20,11 +20,15 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
+    "@tracespace/parser": "^5.0.0-alpha.0",
     "@tracespace/plotter": "^5.0.0-alpha.0",
+    "@types/hast": "^2.3.4",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.12",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
+    "hast": "^1.0.0",
+    "hastscript": "^7.2.0",
     "pixi.js": "^7.2.0-beta",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -33,6 +37,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@tracespace/fixtures": "5.0.0-alpha.0",
     "electron": "^23.1.0",
     "electron-builder": "^23.6.0",
     "electron-log": "^5.0.0-beta.16",
