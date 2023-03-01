@@ -1,16 +1,18 @@
-import {s} from 'hastscript'
+import { s } from 'hastscript'
 
-import type {ImageTree, SizeEnvelope} from '@tracespace/plotter'
-import {BoundingBox} from '@tracespace/plotter'
+import type { ImageTree, SizeEnvelope } from '@tracespace/plotter'
+import { BoundingBox } from '@tracespace/plotter'
 
-import {renderGraphic} from './render'
-import type {SvgElement, ViewBox} from './types'
+import { renderGraphic } from './render'
+import type { SvgElement, ViewBox } from './types'
 
 import * as PIXI from 'pixi.js'
+import { DisplayObject, IApplicationOptions } from 'pixi.js'
 
-export {renderGraphic} from './render'
+import { IViewportOptions, Viewport } from 'pixi-viewport'
+export { renderGraphic } from './render'
 
-export type {SvgElement, ViewBox} from './types'
+export type { SvgElement, ViewBox } from './types'
 
 export const BASE_SVG_PROPS = {
   version: '1.1',
@@ -29,7 +31,7 @@ export const BASE_IMAGE_PROPS = {
 }
 
 export function render(image: ImageTree, viewBox?: ViewBox) {
-  const {units, size, children} = image
+  const { units, size, children } = image
 
   // viewBox = viewBox ?? sizeToViewBox(size)
 
@@ -44,7 +46,6 @@ export function render(image: ImageTree, viewBox?: ViewBox) {
   //   },
   //   children.map(renderGraphic)
   // )
-
 }
 
 // export function renderFragment(image: ImageTree): SvgElement {
@@ -69,7 +70,9 @@ export async function createCanvas(): Promise<PIXI.Application<PIXI.ICanvas>> {
   // inputRef.current.appendChild(app.view as HTMLCanvasElement)
 
   // load the texture we need
-  const texture = await PIXI.Assets.load('https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg')
+  const texture = await PIXI.Assets.load(
+    'https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg'
+  )
 
   // This creates a texture from a 'bunny.png' image
   const bunny = new PIXI.Sprite(texture)
@@ -93,41 +96,91 @@ export async function createCanvas(): Promise<PIXI.Application<PIXI.ICanvas>> {
   return app
 }
 
-export class PixiRenderer extends PIXI.Application<PIXI.ICanvas> {
-  // app: PIXI.Application<PIXI.ICanvas>
-  constructor() {
-    super()
+export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
+  viewport: Viewport
+  constructor(options?: Partial<IApplicationOptions>) {
+    super(options)
+    this.viewport = new Viewport({
+      worldWidth: 1000,
+      worldHeight: 1000,
+      screenWidth: window.innerWidth, // TODO: fix this to allow embedded
+      screenHeight: window.innerHeight, // TODO: fix this to allow embedded
+      // @ts-ignore
+      divWheel: this.view,
+      events: this.renderer.events,
+    })
+      .drag()
+      .pinch({ percent: 2 })
+      .wheel()
+      .decelerate()
     // this.demo()
+    this.stage.addChild(this.viewport)
+    console.log(this.stage)
+    this.ticker.start()
+    window.addEventListener('resize', this.onResize)
   }
-  async demo() {
-    const texture = await PIXI.Assets.load('https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg')
+
+  onResize = () => {
+    this.renderer.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
+    this.viewport.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
+  }
+
+  async demo(viewport: Viewport) {
+    const texture = await PIXI.Assets.load(
+      'https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg'
+    )
     const bunny = new PIXI.Sprite(texture)
     bunny.x = this.renderer.width / 2
     bunny.y = this.renderer.height / 2
     bunny.anchor.x = 0.5
     bunny.anchor.y = 0.5
-    this.stage.addChild(bunny)
+    viewport.addChild(bunny)
     this.ticker.add(() => {
       bunny.rotation += 0.01
     })
   }
 
-  async renderTree(image: ImageTree, viewBox?: ViewBox) {
-    const {units, size, children} = image
-    this.stage.addChild(...children.map(renderGraphic))
+  async renderImageTree(image: ImageTree, viewBox?: ViewBox) {
+    const { units, size, children } = image
+    this.viewport.addChild(...children.map(renderGraphic))
+    this.viewport.children.forEach((child) => {
+      child.interactive = true
+      // child.buttonMode = true
+      child.on('pointerdown', (event) => onClickDown(child))
+      child.on('pointerup', (event) => onClickUp(child))
+      child.on('pointerover', (event) => onPointerOver(child))
+      child.on('pointerout', (event) => onPointerOut(child))
+      // child.x = this.renderer.width / 2
+      // child.y = this.renderer.height / 2
+      child.scale.set(100, 100)
+      // child.dra
+      // child.anchor.x = 0.5
+      // child.anchor.y = 0.5
+      // child.
+    })
   }
+}
 
-  // async loadTexture(url: string): Promise<PIXI.Texture> {
-  //   return await PIXI.Assets.load(url)
-  // }
-  // async loadTextures(urls: string[]): Promise<PIXI.Texture[]> {
-  //   return await Promise.all(urls.map(url => this.loadTexture(url)))
-  // }
-  // async loadSprite(url: string): Promise<PIXI.Sprite> {
-  //   const texture = await this.loadTexture(url)
-  //   return new PIXI.Sprite(texture)
-  // }
-  // async loadSprites(urls: string[]): Promise<PIXI.Sprite[]> {
-  //   return await Promise.all(urls.map(url => this.loadSprite(url)))
-  // }
+function onClickDown(object: PIXI.DisplayObject) {
+  if (object instanceof PIXI.Graphics) {
+    object.tint = 0x333333
+  }
+}
+
+function onClickUp(object: PIXI.DisplayObject) {
+  if (object instanceof PIXI.Graphics) {
+    object.tint = 0x666666
+  }
+}
+
+function onPointerOver(object: PIXI.DisplayObject) {
+  if (object instanceof PIXI.Graphics) {
+    object.tint = 0x666666
+  }
+}
+
+function onPointerOut(object: PIXI.DisplayObject) {
+  if (object instanceof PIXI.Graphics) {
+    object.tint = 0xffffff
+  }
 }
