@@ -58,44 +58,6 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
     : [size[0], -size[3], size[2] - size[0], size[3] - size[1]]
 }
 
-// TOTALLY DEVELOPING
-export async function createCanvas(): Promise<PIXI.Application<PIXI.ICanvas>> {
-  // The application will create a renderer using WebGL, if possible,
-  // with a fallback to a canvas render. It will also setup the ticker
-  // and the root stage PIXI.Container
-  const app = new PIXI.Application()
-
-  // The application will create a canvas element for you that you
-  // can then insert into the DOM
-  // inputRef.current.appendChild(app.view as HTMLCanvasElement)
-
-  // load the texture we need
-  const texture = await PIXI.Assets.load(
-    'https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg'
-  )
-
-  // This creates a texture from a 'bunny.png' image
-  const bunny = new PIXI.Sprite(texture)
-
-  // Setup the position of the bunny
-  bunny.x = app.renderer.width / 2
-  bunny.y = app.renderer.height / 2
-
-  // Rotate around the center
-  bunny.anchor.x = 0.5
-  bunny.anchor.y = 0.5
-
-  // Add the bunny to the scene we are building
-  app.stage.addChild(bunny)
-
-  // Listen for frame updates
-  app.ticker.add(() => {
-    // each frame we spin the bunny around a bit
-    bunny.rotation += 0.01
-  })
-  return app
-}
-
 export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
   viewport: Viewport
   constructor(options?: Partial<IApplicationOptions>) {
@@ -106,17 +68,17 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       screenWidth: window.innerWidth, // TODO: fix this to allow embedded
       screenHeight: window.innerHeight, // TODO: fix this to allow embedded
       // @ts-ignore
-      divWheel: this.view,
+      // divWheel: this.view,
       events: this.renderer.events,
     })
       .drag()
       .pinch({ percent: 2 })
       .wheel()
-      .decelerate()
+      // .decelerate()
     // this.demo()
     this.stage.addChild(this.viewport)
     console.log(this.stage)
-    this.ticker.start()
+    // this.ticker.start()
     window.addEventListener('resize', this.onResize)
   }
 
@@ -144,7 +106,7 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
     const { units, size, children } = image
     this.viewport.addChild(...children.map(renderGraphic))
     this.viewport.children.forEach((child) => {
-      child.interactive = true
+      // child.interactive = true
       // child.buttonMode = true
       child.on('pointerdown', (event) => onClickDown(child))
       child.on('pointerup', (event) => onClickUp(child))
@@ -152,7 +114,7 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       child.on('pointerout', (event) => onPointerOut(child))
       // child.x = this.renderer.width / 2
       // child.y = this.renderer.height / 2
-      child.scale.set(100, 100)
+      // child.scale.set(100, 100)
       // child.dra
       // child.anchor.x = 0.5
       // child.anchor.y = 0.5

@@ -13,3 +13,8 @@ export interface Colors {
 }
 
 export type ViewBox = [x: number, y: number, width: number, height: number]
+
+export interface PathProps {
+  strokeWidth: number;
+  fill: string;
+}
