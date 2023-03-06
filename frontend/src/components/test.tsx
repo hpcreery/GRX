@@ -58,35 +58,35 @@ M02*
 // `
 
 // Two Arcs drawn with circles => works
-gerber = `%FSLAX34Y34*%
-%MOIN*%
-%ADD10C,0.15*%
-D10*
-G75*
-X-2500Y2500D02*
-G03*
-X-7500Y2500I-2500J-2500D01*
-X2500Y2500D02*
-G02*
-X7500Y2500I2500J-2500D01*
-M02*
-`
+// gerber = `%FSLAX34Y34*%
+// %MOIN*%
+// %ADD10C,0.15*%
+// D10*
+// G75*
+// X-2500Y2500D02*
+// G03*
+// X-7500Y2500I-2500J-2500D01*
+// X2500Y2500D02*
+// G02*
+// X7500Y2500I2500J-2500D01*
+// M02*
+// `
 
 // lines drawn with squares
-gerber = `%FSLAX34Y34*%
-%MOIN*%
-%ADD10R,0.2X0.1*%
-D10*
-G01*
-X10000Y4000D01*
-G01*
-X3000Y8000D01*
-G01*
-X1000Y6000D01*
-G01*
-X4000Y4000D01*
-M02*
-`
+// gerber = `%FSLAX34Y34*%
+// %MOIN*%
+// %ADD10R,0.2X0.1*%
+// D10*
+// G01*
+// X10000Y4000D01*
+// G01*
+// X3000Y8000D01*
+// G01*
+// X1000Y6000D01*
+// G01*
+// X4000Y4000D01*
+// M02*
+// `
 
 // // sqare with square hole => Works
 // gerber = `%FSLAX33Y33*%

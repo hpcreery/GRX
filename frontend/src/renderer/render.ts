@@ -1,6 +1,3 @@
-// import {s} from 'hastscript'
-
-// import {random as createId} from '@tracespace/xml-id'
 import type {
   ImageGraphic,
   ImageShape,
@@ -27,179 +24,20 @@ import * as PIXI from 'pixi.js'
 
 import * as Tess2 from 'tess2-ts'
 
-import type { SvgElement, PathProps } from './types'
+import type { PathProps } from './types'
 
 export function renderGraphic(node: ImageGraphic): PIXI.Graphics {
+  const graphic = new CustomGraphics()
+  graphic.beginFill(0xffffff, 1)
   if (node.type === IMAGE_SHAPE) {
     console.log('RENDERING IMAGE_SHAPE: ', node)
-    return renderShape(node)
+    graphic.renderShape(node)
+    graphic.endFill()
+    return graphic
   }
-
-  return renderPath(node)
-}
-
-export function renderShape(node: ImageShape): PIXI.Graphics {
-  const { shape } = node
-  return shapeToElement(shape)
-}
-
-export function shapeToElement(shape: Shape): PIXI.Graphics {
-  switch (shape.type) {
-    case CIRCLE: {
-      const { cx, cy, r } = shape
-      console.log('RENDERING CIRCLE: ', shape)
-      const graphics = new PIXI.Graphics()
-      graphics.beginFill(0xffffff, 0.3)
-      graphics.drawCircle(cx * 100, cy * 100, r * 100)
-      graphics.endFill()
-      return graphics
-    }
-
-    case RECTANGLE: {
-      const { x, y, xSize: width, ySize: height, r } = shape
-      console.log('RENDERING RECTANGLE: ', shape)
-      const graphics = new PIXI.Graphics()
-      graphics.beginFill(0xffffff, 0.3)
-      graphics.drawRoundedRect(x * 100, y * 100, width * 100, height * 100, r ? r * 100 : 0)
-      graphics.endFill()
-      return graphics
-    }
-
-    case POLYGON: {
-      console.log('RENDERING POLYGON: ', shape)
-      const graphics = new PIXI.Graphics()
-      graphics.beginFill(0xffffff, 0.3)
-      graphics.drawPolygon(shape.points.flat().map((point) => point * 100))
-      graphics.endFill()
-      return graphics
-    }
-
-    case OUTLINE: {
-      console.log('RENDERING OUTLINE (development): ', shape)
-      const graphics = new CustomGraphics()
-      graphics.drawPath(shape.segments, { strokeWidth: 0, fill: '' })
-      return graphics
-    }
-
-    case LAYERED_SHAPE: {
-      // const boundingBox = BoundingBox.fromShape(shape)
-      // const clipIdBase = '1'
-      // const defs: PIXI.Graphics[] = []
-      // let children: PIXI.Graphics[] = []
-
-      // for (const [index, layerShape] of shape.shapes.entries()) {
-      //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
-      //     const clipId = `${clipIdBase}__${index}`
-
-      //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
-      //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
-      //   } else {
-      //     children.push(shapeToElement(layerShape))
-      //   }
-      // }
-
-      // if (defs.length > 0) children.unshift(s('defs', defs))
-      // if (children.length === 1) return children[0]
-      // return s('g', children)
-
-      // TODO: Implement this
-      console.log('RENDERING LAYERED_SHAPE (development): ', shape)
-      // const graphics = new CustomGraphics()
-      // graphics.drawLayeredShape(shape)
-      const boundingBox = BoundingBox.fromShape(shape)
-      console.log('boundingBox: ', boundingBox)
-      // if (BoundingBox.isEmpty(boundingBox)) {
-      //   return new PIXI.Graphics()
-      // }
-      const mainGraphics = new PIXI.Graphics()
-      let graphics: PIXI.Graphics[] = []
-      let shapes: PIXI.Graphics[] = []
-      let masks: PIXI.Container = new PIXI.Container()
-
-      // for (const [index, layerShape] of shape.shapes.entries()) {
-      //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
-      //     const clipId = `${clipIdBase}__${index}`
-
-      //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
-      //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
-      //   } else {
-      //     children.push(shapeToElement(layerShape))
-      //   }
-      // }
-
-      if (BoundingBox.isEmpty(boundingBox)) {
-        return new PIXI.Graphics()
-      }
-      let maskGraphic = new PIXI.Graphics()
-      maskGraphic.beginFill(0xffffff, 0.3)
-      maskGraphic.drawRect(
-        boundingBox[0] * 100,
-        boundingBox[1] * 100,
-        (boundingBox[2] - boundingBox[0]) * 100,
-        (boundingBox[3] - boundingBox[1]) * 100
-      )
-      maskGraphic.endFill()
-
-      let newMask = true
-
-      for (const [index, layerShape] of shape.shapes.entries()) {
-        if (layerShape.erase === true) {
-          newMask = true
-          maskGraphic.addChild(shapeToElement(layerShape))
-        } else {
-          if (newMask) {
-            shapes.map((shape) => {
-              shape.mask = maskGraphic
-            })
-            graphics = [...graphics, ...shapes, maskGraphic]
-            shapes = []
-            maskGraphic = new PIXI.Graphics()
-            maskGraphic.beginFill(0xffffff, 0.3)
-            maskGraphic.drawRect(
-              boundingBox[0] * 100,
-              boundingBox[1] * 100,
-              (boundingBox[2] - boundingBox[0]) * 100,
-              (boundingBox[3] - boundingBox[1]) * 100
-            )
-            maskGraphic.endFill()
-          }
-          newMask = false
-          shapes.push(shapeToElement(layerShape))
-          
-        }
-      }
-      graphics = [...graphics, ...shapes, maskGraphic]
-      mainGraphics.addChild(...graphics)
-      return mainGraphics
-    }
-
-    default: {
-      // return s('g')
-
-      // TODO: Implement this
-      console.log('RENDERING DEFAULT (development): ', shape)
-      const graphics = new PIXI.Graphics()
-      graphics.beginFill(0xffffff)
-      graphics.drawRect(50, 50, 100, 100)
-      graphics.endFill()
-      return graphics
-    }
-  }
-}
-
-export function renderPath(node: ImagePath | ImageRegion): PIXI.Graphics {
-  // const pathData = segmentsToPathData(node.segments)
-  const props: PathProps =
-    node.type === IMAGE_PATH
-      ? { strokeWidth: node.width, fill: 'none' }
-      : { strokeWidth: 0, fill: '' }
-
-  // return s('path', {...props, d: pathData})
-
-  console.log('RENDERING PATH (development): ', node)
-  const graphics = new CustomGraphics()
-  graphics.drawPath(node.segments, props)
-  return graphics
+  graphic.renderPath(node)
+  graphic.endFill()
+  return graphic
 }
 
 class CustomGraphics extends PIXI.Graphics {
@@ -221,27 +59,186 @@ class CustomGraphics extends PIXI.Graphics {
       .endFill()
   }
 
-  render(r: PIXI.Renderer) {
-    PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-    super.render(r)
+  renderShape(node: ImageShape): this {
+    const { shape } = node
+    return this.shapeToElement(shape)
   }
 
-  public drawLayeredShape(shape: LayeredShape): this {
-    // if (defs.length > 0) children.unshift(s('defs', defs))
-    // if (children.length === 1) return children[0]
+  shapeToElement(shape: Shape): this {
+    switch (shape.type) {
+      case CIRCLE: {
+        const { cx, cy, r } = shape
+        console.log('RENDERING CIRCLE: ', shape)
+        this.drawCircle(cx * 100, cy * 100, r * 100)
+        return this
+      }
+  
+      case RECTANGLE: {
+        const { x, y, xSize: width, ySize: height, r } = shape
+        console.log('RENDERING RECTANGLE: ', shape)
+        this.drawRoundedRect(x * 100, y * 100, width * 100, height * 100, r ? r * 100 : 0)
+        return this
+      }
+  
+      case POLYGON: {
+        console.log('RENDERING POLYGON: ', shape)
+        this.drawPolygon(shape.points.flat().map((point) => point * 100))
+        return this
+      }
+  
+      case OUTLINE: {
+        console.log('RENDERING OUTLINE (development): ', shape)
+        this.drawPath(shape.segments, { strokeWidth: 0, fill: '' })
+        return this
+      }
+  
+      case LAYERED_SHAPE: {
+        // const boundingBox = BoundingBox.fromShape(shape)
+        // const clipIdBase = '1'
+        // const defs: PIXI.Graphics[] = []
+        // let children: PIXI.Graphics[] = []
+  
+        // for (const [index, layerShape] of shape.shapes.entries()) {
+        //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
+        //     const clipId = `${clipIdBase}__${index}`
+  
+        //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
+        //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
+        //   } else {
+        //     children.push(shapeToElement(layerShape))
+        //   }
+        // }
+  
+        // if (defs.length > 0) children.unshift(s('defs', defs))
+        // if (children.length === 1) return children[0]
+        // return s('g', children)
+  
+        // TODO: Implement this
+        console.log('RENDERING LAYERED_SHAPE (development): ', shape)
+        // const graphics = new CustomGraphics()
+        // graphics.drawLayeredShape(shape)
+        const boundingBox = BoundingBox.fromShape(shape)
+        console.log('boundingBox: ', boundingBox)
+        // if (BoundingBox.isEmpty(boundingBox)) {
+        //   return new PIXI.Graphics()
+        // }
+        // const mainGraphics = new PIXI.Graphics()
+        let graphics: PIXI.Graphics[] = []
+        let shapes: PIXI.Graphics[] = []
+        let masks: PIXI.Container = new PIXI.Container()
+  
+        // for (const [index, layerShape] of shape.shapes.entries()) {
+        //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
+        //     const clipId = `${clipIdBase}__${index}`
+  
+        //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
+        //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
+        //   } else {
+        //     children.push(shapeToElement(layerShape))
+        //   }
+        // }
+  
+        if (BoundingBox.isEmpty(boundingBox)) {
+          return this
+        }
+        let maskGraphic = new CustomGraphics()
+        maskGraphic.beginFill(0xffffff, 0)
+        maskGraphic.drawRect(
+          boundingBox[0] * 100,
+          boundingBox[1] * 100,
+          (boundingBox[2] - boundingBox[0]) * 100,
+          (boundingBox[3] - boundingBox[1]) * 100
+        )
+        maskGraphic.endFill()
+  
+        let newMask = true
+  
+        for (const [index, layerShape] of shape.shapes.entries()) {
+          if (layerShape.erase === true) {
+            newMask = true
+            // maskGraphic.addChild(this.shapeToElement(layerShape))
+            maskGraphic.shapeToElement(layerShape)
+          } else {
+            if (newMask) {
+              shapes.map((shape) => {
+                shape.mask = maskGraphic
+              })
+              graphics = [...graphics, ...shapes, maskGraphic]
+              shapes = []
+              maskGraphic = new CustomGraphics()
+              maskGraphic.beginFill(0xffffff, 0)
+              maskGraphic.drawRect(
+                boundingBox[0] * 100,
+                boundingBox[1] * 100,
+                (boundingBox[2] - boundingBox[0]) * 100,
+                (boundingBox[3] - boundingBox[1]) * 100
+              )
+              maskGraphic.endFill()
+            }
+            newMask = false
+            shapes.push(this.shapeToElement(layerShape))
+            
+          }
+        }
+        graphics = [...graphics, ...shapes, maskGraphic]
+        this.addChild(...graphics)
+        return this
+      }
+  
+      default: {
+        // return s('g')
+  
+        // TODO: Implement this
+        console.log('RENDERING DEFAULT (development): ', shape)
+        // const graphics = new PIXI.Graphics()
+        // graphics.beginFill(0xffffff)
+        this.drawRect(50, 50, 100, 100)
+        // graphics.endFill()
+        return this
+      }
+    }
+  }
+
+  // public drawLayeredShape(shape: LayeredShape): this {
+  //   // if (defs.length > 0) children.unshift(s('defs', defs))
+  //   // if (children.length === 1) return children[0]
+  //   return this
+  // }
+
+  renderPath(node: ImagePath | ImageRegion): this {
+    // const pathData = segmentsToPathData(node.segments)
+    const props: PathProps =
+      node.type === IMAGE_PATH
+        ? { strokeWidth: node.width, fill: 'none' }
+        : { strokeWidth: 0, fill: '' }
+  
+    // return s('path', {...props, d: pathData})
+  
+    console.log('RENDERING PATH (development): ', node)
+    // const graphics = new CustomGraphics()
+    this.drawPath(node.segments, props)
     return this
   }
 
   public drawPath(segments: PathSegment[], props: PathProps): this {
     const { strokeWidth, fill } = props
     if (fill != 'none') {
-      this.beginFill(0xffffff, 0.5)
+      this.beginFill(0xffffff, 1)
+    } else {
+      this.beginFill(0xffffff, 0)
     }
     if (strokeWidth != 0) {
       this.lineStyle({
         width: strokeWidth * 100,
         color: 0xffffff,
         alpha: 1,
+        cap: PIXI.LINE_CAP.ROUND,
+      })
+    } else {
+      this.lineStyle({
+        width: 0,
+        color: 0xffffff,
+        alpha: 0,
         cap: PIXI.LINE_CAP.ROUND,
       })
     }
@@ -274,6 +271,11 @@ class CustomGraphics extends PIXI.Graphics {
     // this.closePath()
     this.endFill()
     return this
+  }
+
+  render(r: PIXI.Renderer) {
+    PIXI.graphicsUtils.buildPoly.triangulate = triangulate
+    super.render(r)
   }
 }
 
@@ -384,3 +386,168 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
 //   [0.2, 0.8],
 //   [0, 0.5],
 // ]
+
+
+// export function renderShape(node: ImageShape): PIXI.Graphics {
+//   const { shape } = node
+//   return shapeToElement(shape)
+// }
+
+// export function shapeToElement(shape: Shape): PIXI.Graphics {
+//   switch (shape.type) {
+//     case CIRCLE: {
+//       const { cx, cy, r } = shape
+//       console.log('RENDERING CIRCLE: ', shape)
+//       const graphics = new PIXI.Graphics()
+//       graphics.beginFill(0xffffff, 0.3)
+//       graphics.drawCircle(cx * 100, cy * 100, r * 100)
+//       graphics.endFill()
+//       return graphics
+//     }
+
+//     case RECTANGLE: {
+//       const { x, y, xSize: width, ySize: height, r } = shape
+//       console.log('RENDERING RECTANGLE: ', shape)
+//       const graphics = new PIXI.Graphics()
+//       graphics.beginFill(0xffffff, 0.3)
+//       graphics.drawRoundedRect(x * 100, y * 100, width * 100, height * 100, r ? r * 100 : 0)
+//       graphics.endFill()
+//       return graphics
+//     }
+
+//     case POLYGON: {
+//       console.log('RENDERING POLYGON: ', shape)
+//       const graphics = new PIXI.Graphics()
+//       graphics.beginFill(0xffffff, 0.3)
+//       graphics.drawPolygon(shape.points.flat().map((point) => point * 100))
+//       graphics.endFill()
+//       return graphics
+//     }
+
+//     case OUTLINE: {
+//       console.log('RENDERING OUTLINE (development): ', shape)
+//       const graphics = new CustomGraphics()
+//       graphics.drawPath(shape.segments, { strokeWidth: 0, fill: '' })
+//       return graphics
+//     }
+
+//     case LAYERED_SHAPE: {
+//       // const boundingBox = BoundingBox.fromShape(shape)
+//       // const clipIdBase = '1'
+//       // const defs: PIXI.Graphics[] = []
+//       // let children: PIXI.Graphics[] = []
+
+//       // for (const [index, layerShape] of shape.shapes.entries()) {
+//       //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
+//       //     const clipId = `${clipIdBase}__${index}`
+
+//       //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
+//       //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
+//       //   } else {
+//       //     children.push(shapeToElement(layerShape))
+//       //   }
+//       // }
+
+//       // if (defs.length > 0) children.unshift(s('defs', defs))
+//       // if (children.length === 1) return children[0]
+//       // return s('g', children)
+
+//       // TODO: Implement this
+//       console.log('RENDERING LAYERED_SHAPE (development): ', shape)
+//       // const graphics = new CustomGraphics()
+//       // graphics.drawLayeredShape(shape)
+//       const boundingBox = BoundingBox.fromShape(shape)
+//       console.log('boundingBox: ', boundingBox)
+//       // if (BoundingBox.isEmpty(boundingBox)) {
+//       //   return new PIXI.Graphics()
+//       // }
+//       const mainGraphics = new PIXI.Graphics()
+//       let graphics: PIXI.Graphics[] = []
+//       let shapes: PIXI.Graphics[] = []
+//       let masks: PIXI.Container = new PIXI.Container()
+
+//       // for (const [index, layerShape] of shape.shapes.entries()) {
+//       //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
+//       //     const clipId = `${clipIdBase}__${index}`
+
+//       //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
+//       //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
+//       //   } else {
+//       //     children.push(shapeToElement(layerShape))
+//       //   }
+//       // }
+
+//       if (BoundingBox.isEmpty(boundingBox)) {
+//         return new PIXI.Graphics()
+//       }
+//       let maskGraphic = new PIXI.Graphics()
+//       maskGraphic.beginFill(0xffffff, 0.3)
+//       maskGraphic.drawRect(
+//         boundingBox[0] * 100,
+//         boundingBox[1] * 100,
+//         (boundingBox[2] - boundingBox[0]) * 100,
+//         (boundingBox[3] - boundingBox[1]) * 100
+//       )
+//       maskGraphic.endFill()
+
+//       let newMask = true
+
+//       for (const [index, layerShape] of shape.shapes.entries()) {
+//         if (layerShape.erase === true) {
+//           newMask = true
+//           maskGraphic.addChild(shapeToElement(layerShape))
+//         } else {
+//           if (newMask) {
+//             shapes.map((shape) => {
+//               shape.mask = maskGraphic
+//             })
+//             graphics = [...graphics, ...shapes, maskGraphic]
+//             shapes = []
+//             maskGraphic = new PIXI.Graphics()
+//             maskGraphic.beginFill(0xffffff, 0.3)
+//             maskGraphic.drawRect(
+//               boundingBox[0] * 100,
+//               boundingBox[1] * 100,
+//               (boundingBox[2] - boundingBox[0]) * 100,
+//               (boundingBox[3] - boundingBox[1]) * 100
+//             )
+//             maskGraphic.endFill()
+//           }
+//           newMask = false
+//           shapes.push(shapeToElement(layerShape))
+          
+//         }
+//       }
+//       graphics = [...graphics, ...shapes, maskGraphic]
+//       mainGraphics.addChild(...graphics)
+//       return mainGraphics
+//     }
+
+//     default: {
+//       // return s('g')
+
+//       // TODO: Implement this
+//       console.log('RENDERING DEFAULT (development): ', shape)
+//       const graphics = new PIXI.Graphics()
+//       graphics.beginFill(0xffffff)
+//       graphics.drawRect(50, 50, 100, 100)
+//       graphics.endFill()
+//       return graphics
+//     }
+//   }
+// }
+
+// export function renderPath(node: ImagePath | ImageRegion): PIXI.Graphics {
+//   // const pathData = segmentsToPathData(node.segments)
+//   const props: PathProps =
+//     node.type === IMAGE_PATH
+//       ? { strokeWidth: node.width, fill: 'none' }
+//       : { strokeWidth: 0, fill: '' }
+
+//   // return s('path', {...props, d: pathData})
+
+//   console.log('RENDERING PATH (development): ', node)
+//   const graphics = new CustomGraphics()
+//   graphics.drawPath(node.segments, props)
+//   return graphics
+// }
