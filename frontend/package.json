@@ -17,6 +17,7 @@
     "test": "react-scripts test"
   },
   "dependencies": {
+    "@pixi/display": "^7.1.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -31,7 +32,7 @@
     "hastscript": "^7.2.0",
     "pixi-graphpaper": "^2.0.1",
     "pixi-viewport": "^5.0.0",
-    "pixi.js": "^7.2.0-beta",
+    "pixi.js": "^7.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",

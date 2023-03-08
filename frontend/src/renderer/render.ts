@@ -26,24 +26,57 @@ import * as Tess2 from 'tess2-ts'
 
 import type { PathProps } from './types'
 
-export function renderGraphic(node: ImageGraphic): PIXI.Graphics {
-  const graphic = new CustomGraphics()
-  graphic.beginFill(0xffffff, 1)
+export function renderGraphic(node: ImageGraphic): CustomGraphics {
+  let graphic: CustomGraphics
   if (node.type === IMAGE_SHAPE) {
+    graphic = new CustomGraphics()
+    graphic.beginFill(0xff00ff, 0.7)
     console.log('RENDERING IMAGE_SHAPE: ', node)
     graphic.renderShape(node)
     graphic.endFill()
     return graphic
+  } else {
+    graphic = renderPath(node)
   }
-  graphic.renderPath(node)
-  graphic.endFill()
   return graphic
 }
 
-class CustomGraphics extends PIXI.Graphics {
+export function renderPath(node: ImagePath | ImageRegion): CustomGraphics {
+  const graphic = new CustomGraphics()
+  const props: PathProps =
+    node.type === IMAGE_PATH
+      ? { strokeWidth: node.width, fill: 'none' }
+      : { strokeWidth: 0, fill: '' }
+  console.log('RENDERING PATH (development): ', node, props)
+  const { strokeWidth, fill } = props
+  if (fill != 'none') {
+    graphic.beginFill(0xffffff, 1)
+  } else {
+    graphic.beginFill(0xffffff, 0)
+  }
+  if (strokeWidth != 0) {
+    graphic.lineStyle({
+      width: strokeWidth * 100,
+      color: 0xffffff,
+      alpha: 1,
+      cap: PIXI.LINE_CAP.ROUND,
+    })
+  } else {
+    graphic.lineStyle({
+      width: 0,
+      color: 0xffffff,
+      alpha: 0,
+      cap: PIXI.LINE_CAP.ROUND,
+    })
+  }
+  graphic.drawPath(node.segments, props)
+  return graphic
+}
+
+export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    console.log('CustomGraphicsFill: ', this.fill)
+    // console.log('CustomGraphicsFill: ', this.fill)
   }
 
   star() {
@@ -72,122 +105,131 @@ class CustomGraphics extends PIXI.Graphics {
         this.drawCircle(cx * 100, cy * 100, r * 100)
         return this
       }
-  
+
       case RECTANGLE: {
         const { x, y, xSize: width, ySize: height, r } = shape
         console.log('RENDERING RECTANGLE: ', shape)
         this.drawRoundedRect(x * 100, y * 100, width * 100, height * 100, r ? r * 100 : 0)
         return this
       }
-  
+
       case POLYGON: {
         console.log('RENDERING POLYGON: ', shape)
         this.drawPolygon(shape.points.flat().map((point) => point * 100))
         return this
       }
-  
+
       case OUTLINE: {
         console.log('RENDERING OUTLINE (development): ', shape)
         this.drawPath(shape.segments, { strokeWidth: 0, fill: '' })
         return this
       }
-  
+
       case LAYERED_SHAPE: {
+        const rectAndHole = new PIXI.Graphics()
+
+        rectAndHole.beginFill(0x00ff00)
+        rectAndHole.drawRect(350, 350, 150, 150)
+        rectAndHole.beginHole()
+        rectAndHole.drawCircle(375, 375, 25)
+        rectAndHole.drawCircle(425, 425, 25)
+        rectAndHole.drawCircle(475, 475, 25)
+        rectAndHole.endHole()
+        rectAndHole.endFill()
+        this.addChild(rectAndHole)
+        return this
         // const boundingBox = BoundingBox.fromShape(shape)
         // const clipIdBase = '1'
         // const defs: PIXI.Graphics[] = []
         // let children: PIXI.Graphics[] = []
-  
+
         // for (const [index, layerShape] of shape.shapes.entries()) {
         //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
         //     const clipId = `${clipIdBase}__${index}`
-  
+
         //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
         //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
         //   } else {
         //     children.push(shapeToElement(layerShape))
         //   }
         // }
-  
+
         // if (defs.length > 0) children.unshift(s('defs', defs))
         // if (children.length === 1) return children[0]
         // return s('g', children)
-  
+
         // TODO: Implement this
         console.log('RENDERING LAYERED_SHAPE (development): ', shape)
         // const graphics = new CustomGraphics()
         // graphics.drawLayeredShape(shape)
         const boundingBox = BoundingBox.fromShape(shape)
         console.log('boundingBox: ', boundingBox)
-        // if (BoundingBox.isEmpty(boundingBox)) {
-        //   return new PIXI.Graphics()
-        // }
-        // const mainGraphics = new PIXI.Graphics()
         let graphics: PIXI.Graphics[] = []
         let shapes: PIXI.Graphics[] = []
-        let masks: PIXI.Container = new PIXI.Container()
-  
-        // for (const [index, layerShape] of shape.shapes.entries()) {
-        //   if (layerShape.erase === true && !BoundingBox.isEmpty(boundingBox)) {
-        //     const clipId = `${clipIdBase}__${index}`
-  
-        //     defs.push(s('clipPath', {id: clipId}, [shapeToElement(layerShape)]))
-        //     children = [s('g', {clipPath: `url(#${clipId})`}, children)]
-        //   } else {
-        //     children.push(shapeToElement(layerShape))
-        //   }
-        // }
-  
+        let masks: PIXI.Graphics[] = []
+
         if (BoundingBox.isEmpty(boundingBox)) {
           return this
         }
-        let maskGraphic = new CustomGraphics()
-        maskGraphic.beginFill(0xffffff, 0)
-        maskGraphic.drawRect(
-          boundingBox[0] * 100,
-          boundingBox[1] * 100,
-          (boundingBox[2] - boundingBox[0]) * 100,
-          (boundingBox[3] - boundingBox[1]) * 100
-        )
-        maskGraphic.endFill()
-  
-        let newMask = true
-  
-        for (const [index, layerShape] of shape.shapes.entries()) {
-          if (layerShape.erase === true) {
-            newMask = true
-            // maskGraphic.addChild(this.shapeToElement(layerShape))
-            maskGraphic.shapeToElement(layerShape)
-          } else {
-            if (newMask) {
-              shapes.map((shape) => {
-                shape.mask = maskGraphic
-              })
-              graphics = [...graphics, ...shapes, maskGraphic]
-              shapes = []
-              maskGraphic = new CustomGraphics()
-              maskGraphic.beginFill(0xffffff, 0)
-              maskGraphic.drawRect(
-                boundingBox[0] * 100,
-                boundingBox[1] * 100,
-                (boundingBox[2] - boundingBox[0]) * 100,
-                (boundingBox[3] - boundingBox[1]) * 100
-              )
-              maskGraphic.endFill()
-            }
-            newMask = false
-            shapes.push(this.shapeToElement(layerShape))
-            
-          }
-        }
-        graphics = [...graphics, ...shapes, maskGraphic]
-        this.addChild(...graphics)
+
+        // let newMask = true
+
+        // for (const [index, layerShape] of shape.shapes.entries()) {
+        //   if (layerShape.erase === true) {
+        //     let maskGraphic = new CustomGraphics()
+        //     maskGraphic.beginFill(0x0000ff, 0.5)
+        //     // maskGraphic.drawRect(
+        //     //   boundingBox[0] * 100,
+        //     //   boundingBox[1] * 100,
+        //     //   (boundingBox[2] - boundingBox[0]) * 100,
+        //     //   (boundingBox[3] - boundingBox[1]) * 100,
+
+        //     // )
+        //     maskGraphic.drawPolygon([boundingBox[0] * 100, boundingBox[1] * 100, boundingBox[2] * 100, boundingBox[1] * 100, boundingBox[2] * 100, boundingBox[3] * 100, boundingBox[0] * 100, boundingBox[3] * 100])
+        //     maskGraphic.closePath()
+        //     // maskGraphic.endFill()
+        //     maskGraphic.moveTo(0, 0)
+        //     // newMask = true
+        //     // maskGraphic.addChild(this.shapeToElement(layerShape))
+        //     maskGraphic.beginHole()
+        //     // maskGraphic.shapeToElement(layerShape)
+        //     maskGraphic.drawCircle(10, 10, 10)
+        //     maskGraphic.endHole()
+        //     console.log(maskGraphic)
+        //     // maskGraphic.endFill()
+        //     // this.children.map((child) => {
+        //     //   if (child instanceof CustomGraphics) {
+        //     //     console.log('child: ', child)
+        //     //     child.mask = maskGraphic
+        //     //     child.addChild(maskGraphic)
+        //     //   }
+        //     // })
+        //     this.addChild(maskGraphic)
+        //     return this
+        //     // this.mask = maskGraphic
+        //     // this.addChild(maskGraphic)
+        //   } else {
+        //     let graphic = new CustomGraphics()
+        //     graphic.beginFill(0x00ffff, 0.5)
+        //     graphic.shapeToElement(layerShape)
+        //     graphic.closePath()
+        //     graphic.endFill()
+        //     this.addChild(graphic)
+        //     // graphics.push(this)
+        //     // this.addChild()
+
+        //   }
+        // }
+        // maskGraphic.endFill()
+        // graphics = [...graphics, ...shapes, maskGraphic]
+        // this.addChild(...graphics)
+        console.log('LayerdShape graphics: ', this)
         return this
       }
-  
+
       default: {
         // return s('g')
-  
+
         // TODO: Implement this
         console.log('RENDERING DEFAULT (development): ', shape)
         // const graphics = new PIXI.Graphics()
@@ -205,49 +247,15 @@ class CustomGraphics extends PIXI.Graphics {
   //   return this
   // }
 
-  renderPath(node: ImagePath | ImageRegion): this {
-    // const pathData = segmentsToPathData(node.segments)
-    const props: PathProps =
-      node.type === IMAGE_PATH
-        ? { strokeWidth: node.width, fill: 'none' }
-        : { strokeWidth: 0, fill: '' }
-  
-    // return s('path', {...props, d: pathData})
-  
-    console.log('RENDERING PATH (development): ', node)
-    // const graphics = new CustomGraphics()
-    this.drawPath(node.segments, props)
-    return this
-  }
-
   public drawPath(segments: PathSegment[], props: PathProps): this {
-    const { strokeWidth, fill } = props
-    if (fill != 'none') {
-      this.beginFill(0xffffff, 1)
-    } else {
-      this.beginFill(0xffffff, 0)
-    }
-    if (strokeWidth != 0) {
-      this.lineStyle({
-        width: strokeWidth * 100,
-        color: 0xffffff,
-        alpha: 1,
-        cap: PIXI.LINE_CAP.ROUND,
-      })
-    } else {
-      this.lineStyle({
-        width: 0,
-        color: 0xffffff,
-        alpha: 0,
-        cap: PIXI.LINE_CAP.ROUND,
-      })
-    }
     for (const [index, next] of segments.entries()) {
       // console.log("DRAWING PATH SEGMENT: ", next)
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
 
-      if (previous === undefined || strokeWidth != 0) {
+      //  || strokeWidth != 0
+      // console.log(this._lineStyle.width)
+      if (previous === undefined || this._lineStyle.width != 0) {
         // console.log("DRAWING MOVING TO: ", next, this)
         this.moveTo(start[0] * 100, start[1] * 100)
       } else if (!positionsEqual(previous.end, start)) {
@@ -268,8 +276,6 @@ class CustomGraphics extends PIXI.Graphics {
         this.arc(center[0] * 100, center[1] * 100, radius * 100, start[2], end[2], c > 0)
       }
     }
-    // this.closePath()
-    this.endFill()
     return this
   }
 
@@ -303,7 +309,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     points = points.concat(hole.points)
   }
 
-  console.log(points)
+  // console.log(points)
   // Tesselate
   const res = Tess2.tesselate({
     contours: [points],
@@ -386,7 +392,6 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
 //   [0.2, 0.8],
 //   [0, 0.5],
 // ]
-
 
 // export function renderShape(node: ImageShape): PIXI.Graphics {
 //   const { shape } = node
@@ -515,7 +520,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
 //           }
 //           newMask = false
 //           shapes.push(shapeToElement(layerShape))
-          
+
 //         }
 //       }
 //       graphics = [...graphics, ...shapes, maskGraphic]

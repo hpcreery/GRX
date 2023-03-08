@@ -162,8 +162,9 @@ export default function Test() {
   const inputRef = useRef<HTMLDivElement>(document.createElement('div'))
 
   useEffect(() => {
-    insertPixiCanvas()
+    const pixi = insertPixiCanvas()
     return () => {
+      pixi.destroy(true)
       inputRef.current.innerHTML = ''
     }
   }, [])
@@ -176,7 +177,7 @@ export default function Test() {
     return imagetree
   }
 
-  async function insertPixiCanvas() {
+  function insertPixiCanvas() {
     const pixi = new CustomPixiApplication({
       width: window.innerWidth, // TODO: fix this to allow embedded
       height: window.innerHeight, // TODO: fix this to allow embedded
@@ -185,11 +186,16 @@ export default function Test() {
       backgroundColor: 0x0,
       resolution: devicePixelRatio,
     })
+    if (pixi.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
+      console.log('Using WebGL')
+    } else {
+      console.log('Using Canvas')
+    }
     inputRef.current.appendChild(pixi.view as HTMLCanvasElement)
-    // pixi.stage.interactive = true;
-    // pixi.stage.eventMode = 'auto'
-    // pixi.stage.hitArea = pixi.screen;
-    pixi.renderImageTree(await parserGerber(gerber))
+    parserGerber(gerber).then((imageTree) => pixi.renderImageTree(imageTree))
+    // pixi.demo()
+
+    return pixi
   }
 
   return (

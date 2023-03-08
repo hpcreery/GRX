@@ -3,7 +3,7 @@ import { s } from 'hastscript'
 import type { ImageTree, SizeEnvelope } from '@tracespace/plotter'
 import { BoundingBox } from '@tracespace/plotter'
 
-import { renderGraphic } from './render'
+import { renderGraphic, CustomGraphics } from './render'
 import type { SvgElement, ViewBox } from './types'
 
 import * as PIXI from 'pixi.js'
@@ -74,32 +74,31 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       .drag()
       .pinch({ percent: 2 })
       .wheel()
-      // .decelerate()
+    // .decelerate()
     // this.demo()
     this.stage.addChild(this.viewport)
-    console.log(this.stage)
+    // console.log(this.stage)
     // this.ticker.start()
     window.addEventListener('resize', this.onResize)
   }
 
   onResize = () => {
-    this.renderer.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
+    // this.renderer.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
     this.viewport.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
   }
 
-  async demo(viewport: Viewport) {
-    const texture = await PIXI.Assets.load(
-      'https://www.cbc.ca/kids/images/weird_wonderful_bunnies_header_update_1140.jpg'
-    )
-    const bunny = new PIXI.Sprite(texture)
-    bunny.x = this.renderer.width / 2
-    bunny.y = this.renderer.height / 2
-    bunny.anchor.x = 0.5
-    bunny.anchor.y = 0.5
-    viewport.addChild(bunny)
-    this.ticker.add(() => {
-      bunny.rotation += 0.01
-    })
+  async demo() {
+    const rectAndHole = new PIXI.Graphics()
+
+    rectAndHole.beginFill(0x00ff00)
+    rectAndHole.drawRect(350, 350, 150, 150)
+    rectAndHole.beginHole()
+    rectAndHole.drawCircle(375, 375, 25)
+    rectAndHole.drawCircle(425, 425, 25)
+    rectAndHole.drawCircle(475, 475, 25)
+    rectAndHole.endHole()
+    rectAndHole.endFill()
+    this.stage.addChild(rectAndHole)
   }
 
   async renderImageTree(image: ImageTree, viewBox?: ViewBox) {
@@ -124,25 +123,25 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
 }
 
 function onClickDown(object: PIXI.DisplayObject) {
-  if (object instanceof PIXI.Graphics) {
+  if (object instanceof CustomGraphics) {
     object.tint = 0x333333
   }
 }
 
 function onClickUp(object: PIXI.DisplayObject) {
-  if (object instanceof PIXI.Graphics) {
+  if (object instanceof CustomGraphics) {
     object.tint = 0x666666
   }
 }
 
 function onPointerOver(object: PIXI.DisplayObject) {
-  if (object instanceof PIXI.Graphics) {
+  if (object instanceof CustomGraphics) {
     object.tint = 0x666666
   }
 }
 
 function onPointerOut(object: PIXI.DisplayObject) {
-  if (object instanceof PIXI.Graphics) {
+  if (object instanceof CustomGraphics) {
     object.tint = 0xffffff
   }
 }
