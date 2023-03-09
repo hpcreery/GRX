@@ -59,14 +59,16 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
 }
 
 export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
+  reactRef: React.RefObject<HTMLDivElement>
   viewport: Viewport
-  constructor(options?: Partial<IApplicationOptions>) {
+  constructor(ref: React.RefObject<HTMLDivElement>, options?: Partial<IApplicationOptions>) {
     super(options)
+    this.reactRef = ref
     this.viewport = new Viewport({
       worldWidth: 1000,
       worldHeight: 1000,
-      screenWidth: window.innerWidth, // TODO: fix this to allow embedded
-      screenHeight: window.innerHeight, // TODO: fix this to allow embedded
+      screenWidth: options?.width,
+      screenHeight: options?.height,
       // @ts-ignore
       // divWheel: this.view,
       events: this.renderer.events,
@@ -74,32 +76,11 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       .drag()
       .pinch({ percent: 2 })
       .wheel()
-    // .decelerate()
-    // this.demo()
+    .decelerate()
     this.stage.addChild(this.viewport)
-    // console.log(this.stage)
     // this.ticker.start()
-    window.addEventListener('resize', this.onResize)
   }
 
-  onResize = () => {
-    // this.renderer.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
-    this.viewport.resize(window.innerWidth, window.innerHeight) // TODO: fix this to allow embedded
-  }
-
-  async demo() {
-    const rectAndHole = new PIXI.Graphics()
-
-    rectAndHole.beginFill(0x00ff00)
-    rectAndHole.drawRect(350, 350, 150, 150)
-    rectAndHole.beginHole()
-    rectAndHole.drawCircle(375, 375, 25)
-    rectAndHole.drawCircle(425, 425, 25)
-    rectAndHole.drawCircle(475, 475, 25)
-    rectAndHole.endHole()
-    rectAndHole.endFill()
-    this.stage.addChild(rectAndHole)
-  }
 
   async renderImageTree(image: ImageTree, viewBox?: ViewBox) {
     const { units, size, children } = image

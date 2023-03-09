@@ -1,14 +1,10 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
-import Test from './components/test';
+import React from 'react'
+import logo from './logo.svg'
+import './App.css'
+import Test from './components/test'
 
 function App() {
-  return (
-    <div>
-      <Test />
-    </div>
-  );
+  return <Test />
 }
 
-export default App;
+export default App
