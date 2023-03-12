@@ -1,4 +1,6 @@
+import { CLEAR, DARK } from '@hpcreery/tracespace-parser'
 import type {
+  ImageTree,
   ImageGraphic,
   ImageShape,
   ImagePath,
@@ -6,7 +8,7 @@ import type {
   PathSegment,
   Shape,
   LayeredShape,
-} from '@tracespace/plotter'
+} from '@hpcreery/tracespace-plotter'
 import {
   BoundingBox,
   positionsEqual,
@@ -18,9 +20,11 @@ import {
   OUTLINE,
   LAYERED_SHAPE,
   LINE,
-} from '@tracespace/plotter'
+} from '@hpcreery/tracespace-plotter'
+import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
 
 import * as PIXI from 'pixi.js'
+import { Container } from 'pixi.js'
 import { mas } from 'process'
 
 import * as Tess2 from 'tess2-ts'
@@ -29,53 +33,113 @@ import type { PathProps } from './types'
 
 let alpha: number = 0.7
 
-export function renderGraphic(node: ImageGraphic): CustomGraphics {
-  if (node.type === IMAGE_SHAPE) {
-    const graphic = new CustomGraphics()
-    graphic.beginFill(0xffffff, alpha)
-    // console.log('RENDERING IMAGE_SHAPE: ', node)
-    graphic.renderShape(node)
-    graphic.endFill()
-    return graphic
-  } else {
-    const graphic = new CustomGraphics()
-    const props: PathProps =
-      node.type === IMAGE_PATH
-        ? { strokeWidth: node.width, fill: 'none' }
-        : { strokeWidth: 0, fill: '' }
-    // console.log('RENDERING PATH: ', node, props)
-    const { strokeWidth, fill } = props
-    if (fill != 'none') {
-      graphic.beginFill(0xffffff, alpha)
-    } else {
-      graphic.beginFill(0xffffff, 0)
+export function renderTreeGraphicsContainer(tree: ImageTree): Container {
+  const { size, children } = tree
+  console.log('SIZE: ', size)
+  console.log('CHILDREN: ', children)
+  const viewBox = sizeToViewBox(size)
+
+  const newChildren: Container[] = []
+  const layerChildren: CustomGraphics[] = []
+  const layerHoles: ImageGraphic[] = []
+
+  for (const [index, child] of children.entries()) {
+    if (child.polarity === DARK) {
+      console.log('new Child: ', child)
+      layerChildren.push(renderGraphic(child))
+    } else if (child.polarity === CLEAR) {
+      console.log('new Hole: ', child)
+      layerHoles.push(child)
+      if (index >= children.length - 1 || children[index + 1].polarity === DARK) {
+        console.log('wrapping up layer: ', layerChildren, layerHoles)
+        const container = new Container()
+        container.addChild(...layerChildren)
+        const rect = new CustomGraphics()
+        rect.beginFill(0xffffff, 1)
+        rect.drawRect(viewBox[0], viewBox[1], viewBox[2], viewBox[3])
+        rect.beginHole()
+        layerHoles.forEach((hole) => rect.renderGraphic(hole))
+        rect.endHole()
+        rect.endFill()
+        rect.interactive = false
+        container.addChild(rect)
+        container.mask = rect
+        newChildren.push(container)
+
+        layerChildren.length = 0
+        layerHoles.length = 0
+      }
     }
-    if (strokeWidth != 0) {
-      graphic.lineStyle({
-        width: strokeWidth,
-        color: 0xffffff,
-        alpha: alpha,
-        cap: PIXI.LINE_CAP.ROUND,
-      })
-    } else {
-      graphic.lineStyle({
-        width: 0,
-        color: 0xffffff,
-        alpha: 0,
-        cap: PIXI.LINE_CAP.ROUND,
-      })
-    }
-    graphic.drawPath(node.segments, props)
-    return graphic
   }
+  if (layerChildren.length > 0) {
+    newChildren.push(...layerChildren)
+  }
+  const container = new Container()
+  if (newChildren.length > 0) {
+    container.addChild(...newChildren)
+  }
+  console.log('CONTAINER: ', container)
+  return container
+}
+
+export function renderGraphic(node: ImageGraphic): CustomGraphics {
+  const graphic = new CustomGraphics()
+  graphic.beginFill(0xffffff, alpha)
+  graphic.renderGraphic(node)
+  graphic.endFill()
+  // graphic.interactive = true
+  return graphic
 }
 
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
     this.scale = new PIXI.Point(3, -3)
-    this.interactive = true
+    // this.interactive = true
+    this.on('pointerdown', (event) => onClickDown(this))
+    this.on('pointerup', (event) => onClickUp(this))
+    this.on('pointerover', (event) => onPointerOver(this))
+    this.on('pointerout', (event) => onPointerOut(this))
     // TODO: Draw featuers with more vertices
+  }
+
+  renderGraphic(node: ImageGraphic): this {
+    if (node.type === IMAGE_SHAPE) {
+      // this.beginFill(this.fill.color, alpha)
+      // console.log('RENDERING IMAGE_SHAPE: ', node)
+      this.renderShape(node)
+      // this.endFill()
+      return this
+    } else {
+      const props: PathProps =
+        node.type === IMAGE_PATH
+          ? { strokeWidth: node.width, fill: 'none' }
+          : { strokeWidth: 0, fill: '' }
+      // console.log('RENDERING PATH: ', node, props)
+      const { strokeWidth, fill } = props
+      if (fill != 'none') {
+        this.beginFill(this.fill.color, alpha)
+      } else {
+        this.beginFill(this.fill.color, 0)
+      }
+      if (strokeWidth != 0) {
+        this.lineStyle({
+          width: strokeWidth,
+          color: this.fill.color,
+          alpha: alpha,
+          cap: PIXI.LINE_CAP.ROUND,
+        })
+      } else {
+        this.lineStyle({
+          width: 0,
+          color: this.fill.color,
+          alpha: 0,
+          cap: PIXI.LINE_CAP.ROUND,
+        })
+      }
+      this.drawPath(node.segments, props)
+      return this
+    }
   }
 
   renderShape(node: ImageShape): this {
@@ -250,4 +314,21 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
   for (let i = 0; i < vrt.length; i++) {
     verts.push(vrt[i])
   }
+}
+
+function onClickDown(object: CustomGraphics) {
+  console.log('CLICKED DOWN: ', object)
+  object.tint = 0x333333
+}
+
+function onClickUp(object: CustomGraphics) {
+  object.tint = 0x666666
+}
+
+function onPointerOver(object: CustomGraphics) {
+  object.tint = 0x666666
+}
+
+function onPointerOut(object: CustomGraphics) {
+  object.tint = 0xffffff
 }
