@@ -17,9 +17,9 @@
     "test": "react-scripts test"
   },
   "dependencies": {
-    "@hpcreery/tracespace-parser": "^5.0.0-alpha.3",
-    "@hpcreery/tracespace-plotter": "^5.0.0-alpha.4",
-    "@hpcreery/tracespace-renderer": "^5.0.0-alpha.4",
+    "@hpcreery/tracespace-parser": "^5.0.0-alpha.6",
+    "@hpcreery/tracespace-plotter": "^5.0.0-alpha.6",
+    "@hpcreery/tracespace-renderer": "^5.0.0-alpha.6",
     "@pixi/display": "^7.1.4",
     "@react-hook/resize-observer": "^1.2.6",
     "@testing-library/jest-dom": "^5.16.5",

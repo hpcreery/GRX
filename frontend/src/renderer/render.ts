@@ -8,6 +8,7 @@ import type {
   PathSegment,
   Shape,
   LayeredShape,
+  SizeEnvelope,
 } from '@hpcreery/tracespace-plotter'
 import {
   BoundingBox,
@@ -21,7 +22,7 @@ import {
   LAYERED_SHAPE,
   LINE,
 } from '@hpcreery/tracespace-plotter'
-import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
+// import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
 
 import * as PIXI from 'pixi.js'
 import { Container } from 'pixi.js'
@@ -29,16 +30,23 @@ import { mas } from 'process'
 
 import * as Tess2 from 'tess2-ts'
 
-import type { PathProps } from './types'
+import type { PathProps, ViewBox } from './types'
 
 const alpha: number = 1
 const scale: number = 100
+
+export function sizeToViewBox(size: SizeEnvelope): ViewBox {
+  return BoundingBox.isEmpty(size)
+    ? [0, 0, 0, 0]
+    : [size[0], size[1], size[2] - size[0], size[3] - size[1]]
+}
 
 export function renderTreeGraphicsContainer(tree: ImageTree): Container {
   const { size, children } = tree
   console.log('SIZE: ', size)
   console.log('CHILDREN: ', children)
   const viewBox = sizeToViewBox(size)
+  console.log('VIEWBOX: ', viewBox)
 
   const newChildren: Container[] = []
   const layerChildren: CustomGraphics[] = []
@@ -46,25 +54,25 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
 
   for (const [index, child] of children.entries()) {
     if (child.polarity === DARK) {
-      console.log('new Child: ', child)
+      // console.log('new Child: ', child)
       layerChildren.push(renderGraphic(child))
     } else if (child.polarity === CLEAR) {
-      console.log('new Hole: ', child)
+      // console.log('new Hole: ', child)
       layerHoles.push(child)
       if (index >= children.length - 1 || children[index + 1].polarity === DARK) {
-        console.log('wrapping up layer: ', layerChildren, layerHoles)
+        // console.log('wrapping up layer: ', layerChildren, layerHoles)
         const container = new Container()
         container.addChild(...layerChildren)
         const mask = new CustomGraphics()
-        mask.beginFill(0xffffff, 1)
+        mask.beginFill(0xff0000, 1)
         mask.drawRect(viewBox[0]*scale, viewBox[1]*scale, viewBox[2]*scale, viewBox[3]*scale)
+        mask.endFill()
         mask.beginHole()
         layerHoles.forEach((hole) => mask.renderGraphic(hole))
         mask.endHole()
-        mask.endFill()
         // rect.interactive = false
+        container.mask = mask
         container.addChild(mask)
-        // container.mask = mask
         newChildren.push(container)
 
         layerChildren.length = 0
@@ -72,15 +80,9 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
       }
     }
   }
-  // if (layerChildren.length > 0) {
   newChildren.push(...layerChildren)
-  // }
   const container = new Container()
-  // if (newChildren.length > 0) {
   container.addChild(...newChildren)
-  // container.addChild(...layerChildren)
-  // }
-  console.log('CONTAINER: ', container)
   return container
 }
 
@@ -96,7 +98,7 @@ export function renderGraphic(node: ImageGraphic): CustomGraphics {
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    this.scale = new PIXI.Point(3, -3)
+    // this.scale = new PIXI.Point(1, -1)
     // this.interactive = true
     this.on('pointerdown', (event) => onClickDown(this))
     this.on('pointerup', (event) => onClickUp(this))
@@ -107,10 +109,7 @@ export class CustomGraphics extends PIXI.Graphics {
 
   renderGraphic(node: ImageGraphic): this {
     if (node.type === IMAGE_SHAPE) {
-      // this.beginFill(this.fill.color, alpha)
-      // console.log('RENDERING IMAGE_SHAPE: ', node)
       this.renderShape(node)
-      // this.endFill()
       return this
     } else {
       const props: PathProps =
@@ -184,7 +183,7 @@ export class CustomGraphics extends PIXI.Graphics {
       }
 
       case LAYERED_SHAPE: {
-        // console.log('RENDERING LAYERED_SHAPE (development): ', shape)
+        console.log('RENDERING LAYERED_SHAPE (development): ', shape)
         const boundingBox = BoundingBox.fromShape(shape)
         let container: PIXI.Container = new PIXI.Container()
 
@@ -195,17 +194,17 @@ export class CustomGraphics extends PIXI.Graphics {
         for (const [index, layerShape] of shape.shapes.entries()) {
           if (layerShape.erase === true) {
             let maskGraphic = new CustomGraphics()
-            maskGraphic.beginFill(0xffffff, 1)
+            maskGraphic.beginFill(this._holeMode ? 0xffffff : 0x000000, 1)
             maskGraphic.drawRect(
               boundingBox[0]*scale,
               boundingBox[1]*scale,
               (boundingBox[2] - boundingBox[0])*scale,
               (boundingBox[3] - boundingBox[1])*scale
             )
+            maskGraphic.endFill()
             maskGraphic.beginHole()
             maskGraphic.shapeToElement(layerShape)
             maskGraphic.endHole()
-            maskGraphic.endFill()
             container.mask = maskGraphic
             container.addChild(maskGraphic)
             let containernew = new PIXI.Container()
@@ -213,19 +212,20 @@ export class CustomGraphics extends PIXI.Graphics {
             container = containernew
           } else {
             let graphic = new CustomGraphics()
-            graphic.beginFill(0xffffff, alpha)
+            graphic.beginFill(this._holeMode ? 0x000000 : 0xffffff, 1)
             graphic.shapeToElement(layerShape)
             graphic.endFill()
             container.addChild(graphic)
           }
         }
         this.addChild(container)
+        // console.log('CONTAINER: ', container)
         return this
       }
 
       default: {
         // TODO: Implement this
-        console.log('RENDERING DEFAULT (development): ', shape)
+        console.log('RENDERING DEFAULT (UNKNOWN): ', shape)
         // this.drawRect(50, 50, 100, 100)
         return this
       }
@@ -256,14 +256,14 @@ export class CustomGraphics extends PIXI.Graphics {
         const { start, end, radius, center } = next
         const c = start[2] - end[2]
         // console.log("DRAWING ARC: ", next, this, c)
-        this.arc(center[0]*scale, center[1]*scale, radius*scale, start[2]*scale, end[2]*scale, c > 0)
+        this.arc(center[0]*scale, center[1]*scale, radius*scale, start[2], end[2], c > 0)
       }
     }
     return this
   }
 
   render(r: PIXI.Renderer) {
-    // PIXI.graphicsUtils.buildPoly.triangulate = triangulate
+    PIXI.graphicsUtils.buildPoly.triangulate = triangulate
     super.render(r)
   }
 }
