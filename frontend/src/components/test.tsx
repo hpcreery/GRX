@@ -1016,34 +1016,6 @@ M02*
 
 // `
 
-gerber = `*
-%FSLAX24Y24*%
-%MOIN*%
-%ADD10R,0.064000X0.064000*%
-%ADD11C,0.100000*%
-%ADD12C,0.010000*%
-%ADD13R,0.016000X0.016000*%
-%IPPOS*%
-%LNfeatures_minimal.gbr*%
-%LPD*%
-%SRX1Y1I0J0*%
-G01*
-G75*
-G54D10*
-X003523Y002047D02*
-X006361D01*
-X003523Y002233D02*
-X006361D01*
-%LPC*%
-G01*
-G75*
-X004333Y002147D02*
-G54D12*
-X004102Y001886D02*
-X004696Y002379D01*
-
-M02*
-`
 
 export default function Test() {
   const inputRef = useRef<HTMLDivElement>(document.createElement('div'))

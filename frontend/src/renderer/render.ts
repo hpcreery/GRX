@@ -9,6 +9,7 @@ import type {
   Shape,
   LayeredShape,
   SizeEnvelope,
+  ErasableShape,
 } from '@hpcreery/tracespace-plotter'
 import {
   BoundingBox,
@@ -33,7 +34,7 @@ import * as Tess2 from 'tess2-ts'
 import type { PathProps, ViewBox } from './types'
 
 const alpha: number = 1
-const scale: number = 100
+const scale: number = 300
 
 export function sizeToViewBox(size: SizeEnvelope): ViewBox {
   return BoundingBox.isEmpty(size)
@@ -43,47 +44,64 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
 
 export function renderTreeGraphicsContainer(tree: ImageTree): Container {
   const { size, children } = tree
-  console.log('SIZE: ', size)
-  console.log('CHILDREN: ', children)
   const viewBox = sizeToViewBox(size)
-  console.log('VIEWBOX: ', viewBox)
 
-  const newChildren: Container[] = []
+  let mainContainer: Container = new Container()
   const layerChildren: CustomGraphics[] = []
   const layerHoles: ImageGraphic[] = []
 
   for (const [index, child] of children.entries()) {
     if (child.polarity === DARK) {
-      // console.log('new Child: ', child)
-      layerChildren.push(renderGraphic(child))
+      mainContainer.addChild(renderGraphic(child))
     } else if (child.polarity === CLEAR) {
-      // console.log('new Hole: ', child)
-      layerHoles.push(child)
+      if (child.type === IMAGE_SHAPE && child.shape.type === LAYERED_SHAPE) {
+        for (const [index, shape] of child.shape.shapes.entries()) {
+          const mask = new CustomGraphics()
+          mask.beginFill(0x00ffff, 1)
+          mask.drawRect(
+            viewBox[0] * scale,
+            viewBox[1] * scale,
+            viewBox[2] * scale,
+            viewBox[3] * scale
+          )
+          mask.endFill()
+          mask.beginHole()
+          mask.shapeToElement(shape)
+          mask.endHole()
+          mainContainer.addChild(mask)
+          mainContainer.mask = mask
+          let mainContainerNew = new Container()
+          mainContainerNew.addChild(mainContainer)
+          mainContainer = mainContainerNew
+        }
+      } else {
+        layerHoles.push(child)
+      }
       if (index >= children.length - 1 || children[index + 1].polarity === DARK) {
-        // console.log('wrapping up layer: ', layerChildren, layerHoles)
-        const container = new Container()
-        container.addChild(...layerChildren)
         const mask = new CustomGraphics()
-        mask.beginFill(0xff0000, 1)
-        mask.drawRect(viewBox[0]*scale, viewBox[1]*scale, viewBox[2]*scale, viewBox[3]*scale)
+        mask.beginFill(0x00ffff, 1)
+        mask.drawRect(
+          viewBox[0] * scale,
+          viewBox[1] * scale,
+          viewBox[2] * scale,
+          viewBox[3] * scale
+        )
         mask.endFill()
         mask.beginHole()
         layerHoles.forEach((hole) => mask.renderGraphic(hole))
         mask.endHole()
         // rect.interactive = false
-        container.mask = mask
-        container.addChild(mask)
-        newChildren.push(container)
-
+        mainContainer.addChild(mask)
+        mainContainer.mask = mask
+        let mainContainerNew = new Container()
+        mainContainerNew.addChild(mainContainer)
+        mainContainer = mainContainerNew
         layerChildren.length = 0
         layerHoles.length = 0
       }
     }
   }
-  newChildren.push(...layerChildren)
-  const container = new Container()
-  container.addChild(...newChildren)
-  return container
+  return mainContainer
 }
 
 export function renderGraphic(node: ImageGraphic): CustomGraphics {
@@ -116,8 +134,12 @@ export class CustomGraphics extends PIXI.Graphics {
         node.type === IMAGE_PATH
           ? { strokeWidth: node.width, fill: 'none' }
           : { strokeWidth: 0, fill: '' }
-      // console.log('RENDERING PATH: ', node, props)
       const { strokeWidth, fill } = props
+      if (node.type === IMAGE_PATH && this._holeMode) {
+        for (const segment of node.segments) {
+          this.segmentToOutline(segment, node.width)
+        }
+      }
       if (fill != 'none') {
         this.beginFill(this.fill.color, alpha)
       } else {
@@ -125,7 +147,7 @@ export class CustomGraphics extends PIXI.Graphics {
       }
       if (strokeWidth != 0) {
         this.lineStyle({
-          width: strokeWidth*scale,
+          width: strokeWidth * scale,
           color: this.fill.color,
           alpha: alpha,
           cap: PIXI.LINE_CAP.ROUND,
@@ -151,27 +173,23 @@ export class CustomGraphics extends PIXI.Graphics {
   shapeToElement(shape: Shape): this {
     switch (shape.type) {
       case CIRCLE: {
-        // console.log('RENDERING CIRCLE: ', shape)
         const { cx, cy, r } = shape
-        this.drawCircle(cx*scale, cy*scale, r*scale)
+        this.drawCircle(cx * scale, cy * scale, r * scale)
         return this
       }
 
       case RECTANGLE: {
-        // console.log('RENDERING RECTANGLE: ', shape)
         const { x, y, xSize: width, ySize: height, r } = shape
-        this.drawRoundedRect(x*scale, y*scale, width*scale, height*scale, r ? r*scale : 0)
+        this.drawRoundedRect(x * scale, y * scale, width * scale, height * scale, r ? r * scale : 0)
         return this
       }
 
       case POLYGON: {
-        // console.log('RENDERING POLYGON: ', shape)
-        this.drawPolygon(shape.points.flat().map((point) => point*scale))
+        this.drawPolygon(shape.points.flat().map((point) => point * scale))
         return this
       }
 
       case OUTLINE: {
-        // console.log('RENDERING OUTLINE (development): ', shape)
         this.lineStyle({
           width: 0,
           color: this.fill.color,
@@ -183,7 +201,6 @@ export class CustomGraphics extends PIXI.Graphics {
       }
 
       case LAYERED_SHAPE: {
-        console.log('RENDERING LAYERED_SHAPE (development): ', shape)
         const boundingBox = BoundingBox.fromShape(shape)
         let container: PIXI.Container = new PIXI.Container()
 
@@ -194,12 +211,12 @@ export class CustomGraphics extends PIXI.Graphics {
         for (const [index, layerShape] of shape.shapes.entries()) {
           if (layerShape.erase === true) {
             let maskGraphic = new CustomGraphics()
-            maskGraphic.beginFill(this._holeMode ? 0xffffff : 0x000000, 1)
+            maskGraphic.beginFill(0x000000, 1)
             maskGraphic.drawRect(
-              boundingBox[0]*scale,
-              boundingBox[1]*scale,
-              (boundingBox[2] - boundingBox[0])*scale,
-              (boundingBox[3] - boundingBox[1])*scale
+              boundingBox[0] * scale,
+              boundingBox[1] * scale,
+              (boundingBox[2] - boundingBox[0]) * scale,
+              (boundingBox[3] - boundingBox[1]) * scale
             )
             maskGraphic.endFill()
             maskGraphic.beginHole()
@@ -212,14 +229,13 @@ export class CustomGraphics extends PIXI.Graphics {
             container = containernew
           } else {
             let graphic = new CustomGraphics()
-            graphic.beginFill(this._holeMode ? 0x000000 : 0xffffff, 1)
+            graphic.beginFill(0xffffff, 1)
             graphic.shapeToElement(layerShape)
             graphic.endFill()
             container.addChild(graphic)
           }
         }
         this.addChild(container)
-        // console.log('CONTAINER: ', container)
         return this
       }
 
@@ -232,31 +248,54 @@ export class CustomGraphics extends PIXI.Graphics {
     }
   }
 
+  // Necessary as PIXI.Graphics.drawPath() does not support being holes
+  public segmentToOutline(segment: PathSegment, width: number): this {
+    const { start, end } = segment
+    const [x1, y1] = start
+    const [x2, y2] = end
+    const dx = x2 - x1
+    const dy = y2 - y1
+    const length = Math.sqrt(dx ** 2 + dy ** 2)
+    const nx = dx / length
+    const ny = dy / length
+    const px = -ny
+    const py = nx
+    const halfWidth = width / 2
+    const x1p = x1 + px * halfWidth
+    const y1p = y1 + py * halfWidth
+    const x1n = x1 - px * halfWidth
+    const y1n = y1 - py * halfWidth
+    const x2p = x2 + px * halfWidth
+    const y2p = y2 + py * halfWidth
+    const angle = Math.atan2(dy, dx) + Math.PI / 2
+    this.moveTo(x1p * scale, y1p * scale)
+    this.lineTo(x2p * scale, y2p * scale)
+    this.arc(x2 * scale, y2 * scale, halfWidth * scale, angle, angle + Math.PI, true)
+    this.lineTo(x1n * scale, y1n * scale)
+    this.arc(x1 * scale, y1 * scale, halfWidth * scale, angle + Math.PI, angle, true)
+    return this
+  }
+
   public drawPath(segments: PathSegment[]): this {
     for (const [index, next] of segments.entries()) {
-      // console.log("DRAWING PATH SEGMENT: ", next)
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
-
-      if (previous === undefined || this._lineStyle.width != 0) {
-        // console.log("DRAWING MOVING TO: ", next, this)
-        this.moveTo(start[0]*scale, start[1]*scale)
+      if (this._lineStyle.width != 0) {
+        this.moveTo(start[0] * scale, start[1] * scale)
+      } else if (previous === undefined || this._lineStyle.width != 0) {
+        this.lineTo(start[0] * scale, start[1] * scale)
       } else if (!positionsEqual(previous.end, start)) {
-        // NEED TO MOVE TO SO TESSELLATION WORKS WITH ODD EVEN RULE
-        this.lineTo(start[0]*scale, start[1]*scale)
+        // NEED TO MOVE TO SO TESSELLATION WORKS WITH ODD EVEN RULE]
+        this.lineTo(0, 0)
+        this.lineTo(start[0] * scale, start[1] * scale)
+        // this.moveTo(start[0] * scale, start[1] * scale)
       }
-
       if (next.type === LINE) {
-        // this.lineStyle(1, 0x00ff00)
-        // console.log("DRAWING LINE: ", next, this)
-        this.lineTo(end[0]*scale, end[1]*scale)
+        this.lineTo(end[0] * scale, end[1] * scale)
       } else {
-        // this.lineStyle(1, 0xff00ff)
-        // console.log("DRAWING ARC: ", next, this)
         const { start, end, radius, center } = next
         const c = start[2] - end[2]
-        // console.log("DRAWING ARC: ", next, this, c)
-        this.arc(center[0]*scale, center[1]*scale, radius*scale, start[2], end[2], c > 0)
+        this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
       }
     }
     return this
@@ -293,7 +332,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     points.push(hole.points[0], hole.points[1])
   }
 
-  // console.log(points)
+  console.log(points)
   // Tesselate
   const res = Tess2.tesselate({
     contours: [points],
