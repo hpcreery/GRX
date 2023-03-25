@@ -10,6 +10,8 @@ import type {
   LayeredShape,
   SizeEnvelope,
   ErasableShape,
+  Position,
+  ArcPosition,
 } from '@hpcreery/tracespace-plotter'
 import {
   BoundingBox,
@@ -24,17 +26,13 @@ import {
   LINE,
 } from '@hpcreery/tracespace-plotter'
 // import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
-
 import * as PIXI from 'pixi.js'
-import { Container } from 'pixi.js'
-import { mas } from 'process'
-
 import * as Tess2 from 'tess2-ts'
+import type { ViewBox } from './types'
 
-import type { PathProps, ViewBox } from './types'
-
+const color = 0xf00fff
 const alpha: number = 1
-const scale: number = 300
+const scale: number = 100
 
 export function sizeToViewBox(size: SizeEnvelope): ViewBox {
   return BoundingBox.isEmpty(size)
@@ -42,11 +40,11 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
     : [size[0], size[1], size[2] - size[0], size[3] - size[1]]
 }
 
-export function renderTreeGraphicsContainer(tree: ImageTree): Container {
+export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
   const { size, children } = tree
   const viewBox = sizeToViewBox(size)
 
-  let mainContainer: Container = new Container()
+  let mainContainer: PIXI.Container = new PIXI.Container()
   const layerChildren: CustomGraphics[] = []
   const layerHoles: ImageGraphic[] = []
 
@@ -57,6 +55,7 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
       if (child.type === IMAGE_SHAPE && child.shape.type === LAYERED_SHAPE) {
         for (const [index, shape] of child.shape.shapes.entries()) {
           const mask = new CustomGraphics()
+          // mask.interactive = false
           mask.beginFill(0x00ffff, 1)
           mask.drawRect(
             viewBox[0] * scale,
@@ -70,7 +69,7 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
           mask.endHole()
           mainContainer.addChild(mask)
           mainContainer.mask = mask
-          let mainContainerNew = new Container()
+          let mainContainerNew = new PIXI.Container()
           mainContainerNew.addChild(mainContainer)
           mainContainer = mainContainerNew
         }
@@ -79,6 +78,7 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
       }
       if (index >= children.length - 1 || children[index + 1].polarity === DARK) {
         const mask = new CustomGraphics()
+        // mask.interactive = false
         mask.beginFill(0x00ffff, 1)
         mask.drawRect(
           viewBox[0] * scale,
@@ -93,7 +93,7 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
         // rect.interactive = false
         mainContainer.addChild(mask)
         mainContainer.mask = mask
-        let mainContainerNew = new Container()
+        let mainContainerNew = new PIXI.Container()
         mainContainerNew.addChild(mainContainer)
         mainContainer = mainContainerNew
         layerChildren.length = 0
@@ -106,23 +106,21 @@ export function renderTreeGraphicsContainer(tree: ImageTree): Container {
 
 export function renderGraphic(node: ImageGraphic): CustomGraphics {
   const graphic = new CustomGraphics()
-  graphic.beginFill(0xffffff, alpha)
+  graphic.beginFill(color, alpha)
   graphic.renderGraphic(node)
   graphic.endFill()
-  // graphic.interactive = true
   return graphic
 }
 
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    // this.scale = new PIXI.Point(1, -1)
+    // this.cacheAsBitmap = true
     // this.interactive = true
-    this.on('pointerdown', (event) => onClickDown(this))
-    this.on('pointerup', (event) => onClickUp(this))
-    this.on('pointerover', (event) => onPointerOver(this))
-    this.on('pointerout', (event) => onPointerOut(this))
-    // TODO: Draw featuers with more vertices
+    // this.on('pointerdown', (event) => onClickDown(this))
+    // this.on('pointerup', (event) => onClickUp(this))
+    // this.on('pointerover', (event) => onPointerOver(this))
+    // this.on('pointerout', (event) => onPointerOut(this))
   }
 
   renderGraphic(node: ImageGraphic): this {
@@ -130,36 +128,18 @@ export class CustomGraphics extends PIXI.Graphics {
       this.renderShape(node)
       return this
     } else {
-      const props: PathProps =
-        node.type === IMAGE_PATH
-          ? { strokeWidth: node.width, fill: 'none' }
-          : { strokeWidth: 0, fill: '' }
-      const { strokeWidth, fill } = props
       if (node.type === IMAGE_PATH && this._holeMode) {
         for (const segment of node.segments) {
           this.segmentToOutline(segment, node.width)
         }
       }
-      if (fill != 'none') {
-        this.beginFill(this.fill.color, alpha)
-      } else {
-        this.beginFill(this.fill.color, 0)
-      }
-      if (strokeWidth != 0) {
-        this.lineStyle({
-          width: strokeWidth * scale,
-          color: this.fill.color,
-          alpha: alpha,
-          cap: PIXI.LINE_CAP.ROUND,
-        })
-      } else {
-        this.lineStyle({
-          width: 0,
-          color: this.fill.color,
-          alpha: 0,
-          cap: PIXI.LINE_CAP.ROUND,
-        })
-      }
+      this.beginFill(color, node.type !== IMAGE_PATH ? alpha : 0)
+      this.lineStyle({
+        width: node.type === IMAGE_PATH ? node.width * scale : 0,
+        color: color,
+        alpha: node.type === IMAGE_PATH ? alpha : 0,
+        cap: PIXI.LINE_CAP.ROUND,
+      })
       this.drawPath(node.segments)
       return this
     }
@@ -192,7 +172,7 @@ export class CustomGraphics extends PIXI.Graphics {
       case OUTLINE: {
         this.lineStyle({
           width: 0,
-          color: this.fill.color,
+          color: color,
           alpha: 0,
           cap: PIXI.LINE_CAP.ROUND,
         })
@@ -210,26 +190,27 @@ export class CustomGraphics extends PIXI.Graphics {
 
         for (const [index, layerShape] of shape.shapes.entries()) {
           if (layerShape.erase === true) {
-            let maskGraphic = new CustomGraphics()
-            maskGraphic.beginFill(0x000000, 1)
-            maskGraphic.drawRect(
+            const mask = new CustomGraphics()
+            // mask.interactive = false
+            mask.beginFill(0x000000, 1)
+            mask.drawRect(
               boundingBox[0] * scale,
               boundingBox[1] * scale,
               (boundingBox[2] - boundingBox[0]) * scale,
               (boundingBox[3] - boundingBox[1]) * scale
             )
-            maskGraphic.endFill()
-            maskGraphic.beginHole()
-            maskGraphic.shapeToElement(layerShape)
-            maskGraphic.endHole()
-            container.mask = maskGraphic
-            container.addChild(maskGraphic)
+            mask.endFill()
+            mask.beginHole()
+            mask.shapeToElement(layerShape)
+            mask.endHole()
+            container.mask = mask
+            container.addChild(mask)
             let containernew = new PIXI.Container()
             containernew.addChild(container)
             container = containernew
           } else {
             let graphic = new CustomGraphics()
-            graphic.beginFill(0xffffff, 1)
+            graphic.beginFill(color, alpha)
             graphic.shapeToElement(layerShape)
             graphic.endFill()
             container.addChild(graphic)
@@ -240,9 +221,7 @@ export class CustomGraphics extends PIXI.Graphics {
       }
 
       default: {
-        // TODO: Implement this
-        console.log('RENDERING DEFAULT (UNKNOWN): ', shape)
-        // this.drawRect(50, 50, 100, 100)
+        console.log('RENDERING (UNKNOWN): ', shape)
         return this
       }
     }
@@ -277,18 +256,20 @@ export class CustomGraphics extends PIXI.Graphics {
   }
 
   public drawPath(segments: PathSegment[]): this {
+    let lastHome: Position | ArcPosition = [0, 0]
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
       if (this._lineStyle.width != 0) {
         this.moveTo(start[0] * scale, start[1] * scale)
-      } else if (previous === undefined || this._lineStyle.width != 0) {
+      } else if (previous === undefined) {
         this.lineTo(start[0] * scale, start[1] * scale)
+        lastHome = start
       } else if (!positionsEqual(previous.end, start)) {
-        // NEED TO MOVE TO SO TESSELLATION WORKS WITH ODD EVEN RULE]
+        this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
         this.lineTo(0, 0)
         this.lineTo(start[0] * scale, start[1] * scale)
-        // this.moveTo(start[0] * scale, start[1] * scale)
+        lastHome = start
       }
       if (next.type === LINE) {
         this.lineTo(end[0] * scale, end[1] * scale)
@@ -297,6 +278,9 @@ export class CustomGraphics extends PIXI.Graphics {
         const c = start[2] - end[2]
         this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
       }
+    }
+    if (this._lineStyle.width == 0) {
+      this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
     }
     return this
   }
@@ -323,7 +307,6 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
 
   const holeArray = []
 
-  // Comming soon
   for (let i = 0; i < holes.length; i++) {
     const hole = holes[i]
     holeArray.push(points.length / 2)
@@ -332,7 +315,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     points.push(hole.points[0], hole.points[1])
   }
 
-  console.log(points)
+  // console.log(points)
   // Tesselate
   const res = Tess2.tesselate({
     contours: [points],

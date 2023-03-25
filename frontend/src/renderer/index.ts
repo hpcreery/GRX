@@ -1,12 +1,11 @@
 import type { ImageTree, SizeEnvelope } from '@hpcreery/tracespace-plotter'
-import { BoundingBox } from '@hpcreery/tracespace-plotter'
 
 import { renderTreeGraphicsContainer } from './render'
 
 import * as PIXI from 'pixi.js'
 import { DisplayObject, IApplicationOptions } from 'pixi.js'
 
-import { IViewportOptions, Viewport } from 'pixi-viewport'
+import { Viewport } from 'pixi-viewport'
 export { renderGraphic } from './render'
 
 export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
@@ -20,8 +19,6 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       worldHeight: 1000,
       screenWidth: options?.width,
       screenHeight: options?.height,
-      // @ts-ignore
-      // divWheel: this.view,
       events: this.renderer.events,
     })
       .drag()
@@ -29,10 +26,34 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       .wheel()
       .decelerate()
     this.stage.addChild(this.viewport)
-    // this.ticker.start()
+    
+    //   this.stage.onrightclick = (e) => {
+    //     const checkintersect = (obj: DisplayObject) => {
+    //       if (obj instanceof CustomGraphics) {
+    //         obj.children.forEach((child) => {
+    //           checkintersect(child)
+    //         })
+    //         if (obj.containsPoint(new PIXI.Point(e.clientX, e.clientY)) && !obj.isMask) {
+    //           // console.log('hit')
+    //           console.log(obj.shape)
+    //         }
+    //       }
+    //       if (obj instanceof PIXI.Container) {
+    //         obj.children.forEach((child) => {
+    //           checkintersect(child)
+    //         })
+    //       }
+    //     }
+    //     checkintersect(this.stage)
+    //   }
   }
 
   async renderImageTree(image: ImageTree) {
-    this.viewport.addChild(renderTreeGraphicsContainer(image))
+    const mainContainer = new PIXI.Container()
+    mainContainer.scale = { x: 1, y: -1 }
+    mainContainer.interactiveChildren = false
+    mainContainer.position.y = this.renderer.height / this.renderer.resolution
+    mainContainer.addChild(renderTreeGraphicsContainer(image))
+    this.viewport.addChild(mainContainer)
   }
 }
