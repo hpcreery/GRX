@@ -1,9 +1,10 @@
 import type { ImageTree, SizeEnvelope } from '@hpcreery/tracespace-plotter'
 
-import { renderTreeGraphicsContainer } from './render'
+// import { renderTreeGraphicsContainer } from './render'
+import { renderTreeGraphicsContainer } from './render_chroma_key'
 
 import * as PIXI from 'pixi.js'
-import { DisplayObject, IApplicationOptions } from 'pixi.js'
+import { IApplicationOptions } from 'pixi.js'
 
 import { Viewport } from 'pixi-viewport'
 export { renderGraphic } from './render'
@@ -26,7 +27,7 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       .wheel()
       .decelerate()
     this.stage.addChild(this.viewport)
-    
+
     //   this.stage.onrightclick = (e) => {
     //     const checkintersect = (obj: DisplayObject) => {
     //       if (obj instanceof CustomGraphics) {
@@ -50,10 +51,12 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
 
   async renderImageTree(image: ImageTree) {
     const mainContainer = new PIXI.Container()
+    mainContainer.filters = [new PIXI.AlphaFilter(0.5)]
     mainContainer.scale = { x: 1, y: -1 }
-    mainContainer.interactiveChildren = false
     mainContainer.position.y = this.renderer.height / this.renderer.resolution
+    mainContainer.interactiveChildren = false
     mainContainer.addChild(renderTreeGraphicsContainer(image))
     this.viewport.addChild(mainContainer)
   }
 }
+

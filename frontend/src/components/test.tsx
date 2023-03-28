@@ -696,6 +696,8 @@ Y001743D01*
 M02*
 `
 
+// gerber = ``
+
 export default function Test() {
   const inputRef = useRef<HTMLDivElement>(document.createElement('div'))
 
@@ -719,7 +721,7 @@ export default function Test() {
     const pixi = new CustomPixiApplication(inputRef, {
       width: inputRef.current.clientWidth,
       height: inputRef.current.clientHeight,
-      antialias: true,
+      antialias: false,
       autoDensity: true,
       backgroundColor: 0x0,
       resolution: devicePixelRatio,
@@ -734,7 +736,9 @@ export default function Test() {
 
     inputRef.current.appendChild(pixi.view as HTMLCanvasElement)
 
+    // parserGerber(gerber2).then((imageTree) => pixi.renderImageTree(imageTree))
     parserGerber(gerber).then((imageTree) => pixi.renderImageTree(imageTree))
+
 
     if (pixi.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
       console.log('Using WebGL')

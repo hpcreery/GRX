@@ -36,6 +36,32 @@ const clearColor = 0x000000
 const alpha: number = 1
 const scale: number = 100
 
+const ChromaFilter = new PIXI.Filter(
+  undefined,
+  [
+    'varying vec2 vTextureCoord;',
+    'uniform float thresholdSensitivity;',
+    'uniform float smoothing;',
+    'uniform vec3 colorToReplace;',
+    'uniform sampler2D uSampler;',
+    'void main() {',
+    'vec4 textureColor = texture2D(uSampler, vTextureCoord);',
+    'float maskY = 0.2989 * colorToReplace.r + 0.5866 * colorToReplace.g + 0.1145 * colorToReplace.b;',
+    'float maskCr = 0.7132 * (colorToReplace.r - maskY);',
+
+    'float maskCb = 0.5647 * (colorToReplace.b - maskY);',
+    'float Y = 0.2989 * textureColor.r + 0.5866 * textureColor.g + 0.1145 * textureColor.b;',
+    'float Cr = 0.7132 * (textureColor.r - Y);',
+    'float Cb = 0.5647 * (textureColor.b - Y);',
+    'float blendValue = smoothstep(thresholdSensitivity, thresholdSensitivity + smoothing, distance(vec2(Cr, Cb), vec2(maskCr, maskCb)));',
+    'gl_FragColor = vec4(textureColor.rgb, textureColor.a * blendValue);',
+    '}',
+  ].join('\n')
+)
+ChromaFilter.uniforms.thresholdSensitivity = 0
+ChromaFilter.uniforms.smoothing = 0.2
+ChromaFilter.uniforms.colorToReplace = [0, 0, 0]
+
 export function sizeToViewBox(size: SizeEnvelope): ViewBox {
   return BoundingBox.isEmpty(size)
     ? [0, 0, 0, 0]
@@ -45,64 +71,12 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
 export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
   darkColor = Math.floor(Math.random() * 16777215)
   const { size, children } = tree
-  const viewBox = sizeToViewBox(size)
 
   let mainContainer: PIXI.Container = new PIXI.Container()
-  const layerChildren: CustomGraphics[] = []
-  const layerHoles: ImageGraphic[] = []
+  mainContainer.filters = [ChromaFilter]
 
   for (const [index, child] of children.entries()) {
-    if (child.polarity === DARK) {
-      mainContainer.addChild(renderGraphic(child))
-    } else if (child.polarity === CLEAR) {
-      if (child.type === IMAGE_SHAPE && child.shape.type === LAYERED_SHAPE) {
-        for (const [index, shape] of child.shape.shapes.entries()) {
-          const mask = new CustomGraphics()
-          // mask.interactive = false
-          mask.beginFill(0x00ffff, 1)
-          mask.drawRect(
-            viewBox[0] * scale,
-            viewBox[1] * scale,
-            viewBox[2] * scale,
-            viewBox[3] * scale
-          )
-          mask.endFill()
-          mask.beginHole()
-          mask.shapeToElement(shape)
-          mask.endHole()
-          mainContainer.addChild(mask)
-          mainContainer.mask = mask
-          let mainContainerNew = new PIXI.Container()
-          mainContainerNew.addChild(mainContainer)
-          mainContainer = mainContainerNew
-        }
-      } else {
-        layerHoles.push(child)
-      }
-      if (index >= children.length - 1 || children[index + 1].polarity === DARK) {
-        const mask = new CustomGraphics()
-        // mask.interactive = false
-        mask.beginFill(0x00ffff, 1)
-        mask.drawRect(
-          viewBox[0] * scale,
-          viewBox[1] * scale,
-          viewBox[2] * scale,
-          viewBox[3] * scale
-        )
-        mask.endFill()
-        mask.beginHole()
-        layerHoles.forEach((hole) => mask.renderGraphic(hole))
-        mask.endHole()
-        // rect.interactive = false
-        mainContainer.addChild(mask)
-        mainContainer.mask = mask
-        let mainContainerNew = new PIXI.Container()
-        mainContainerNew.addChild(mainContainer)
-        mainContainer = mainContainerNew
-        layerChildren.length = 0
-        layerHoles.length = 0
-      }
-    }
+    mainContainer.addChild(renderGraphic(child))
   }
   console.log('Done rendering')
   return mainContainer
@@ -131,12 +105,6 @@ export class CustomGraphics extends PIXI.Graphics {
     if (node.type === IMAGE_SHAPE) {
       this.renderShape(node)
     } else {
-      if (node.type === IMAGE_PATH && this._holeMode) {
-        for (const segment of node.segments) {
-          this.segmentToOutline(segment, node.width)
-        }
-        return this
-      }
       this.beginFill(
         node.polarity == DARK ? darkColor : clearColor,
         node.type === IMAGE_PATH ? 0 : alpha
@@ -198,31 +166,17 @@ export class CustomGraphics extends PIXI.Graphics {
         }
 
         for (const [index, layerShape] of shape.shapes.entries()) {
-          if (layerShape.erase === true) {
-            const mask = new CustomGraphics()
-            mask.beginFill(0x000000, 1)
-            mask.drawRect(
-              boundingBox[0] * scale,
-              boundingBox[1] * scale,
-              (boundingBox[2] - boundingBox[0]) * scale,
-              (boundingBox[3] - boundingBox[1]) * scale
-            )
-            mask.endFill()
-            mask.beginHole()
-            mask.shapeToElement(layerShape)
-            mask.endHole()
-            container.mask = mask
-            container.addChild(mask)
-            let containernew = new PIXI.Container()
-            containernew.addChild(container)
-            container = containernew
-          } else {
-            let graphic = new CustomGraphics()
-            graphic.beginFill(darkColor, alpha)
-            graphic.shapeToElement(layerShape)
-            graphic.endFill()
-            container.addChild(graphic)
-          }
+          let graphic = new CustomGraphics()
+          let color =
+            layerShape.erase === true
+              ? this._fillStyle.color == darkColor
+                ? clearColor
+                : darkColor
+              : this._fillStyle.color
+          graphic.beginFill(color, alpha)
+          graphic.shapeToElement(layerShape)
+          graphic.endFill()
+          container.addChild(graphic)
         }
         this.addChild(container)
         return this
@@ -233,34 +187,6 @@ export class CustomGraphics extends PIXI.Graphics {
         return this
       }
     }
-  }
-
-  // Necessary as PIXI.Graphics.drawPath() does not support being holes
-  public segmentToOutline(segment: PathSegment, width: number): this {
-    const { start, end } = segment
-    const [x1, y1] = start
-    const [x2, y2] = end
-    const dx = x2 - x1
-    const dy = y2 - y1
-    const length = Math.sqrt(dx ** 2 + dy ** 2)
-    const nx = dx / length
-    const ny = dy / length
-    const px = -ny
-    const py = nx
-    const halfWidth = width / 2
-    const x1p = x1 + px * halfWidth
-    const y1p = y1 + py * halfWidth
-    const x1n = x1 - px * halfWidth
-    const y1n = y1 - py * halfWidth
-    const x2p = x2 + px * halfWidth
-    const y2p = y2 + py * halfWidth
-    const angle = Math.atan2(dy, dx) + Math.PI / 2
-    this.moveTo(x1p * scale, y1p * scale)
-    this.lineTo(x2p * scale, y2p * scale)
-    this.arc(x2 * scale, y2 * scale, halfWidth * scale, angle, angle + Math.PI, true)
-    this.lineTo(x1n * scale, y1n * scale)
-    this.arc(x1 * scale, y1 * scale, halfWidth * scale, angle + Math.PI, angle, true)
-    return this
   }
 
   public drawPath(segments: PathSegment[]): this {
