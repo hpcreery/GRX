@@ -20,6 +20,7 @@
     "@hpcreery/tracespace-parser": "^5.0.0-alpha.7",
     "@hpcreery/tracespace-plotter": "^5.0.0-alpha.7",
     "@hpcreery/tracespace-renderer": "^5.0.0-alpha.7",
+    "@pixi-essentials/cull": "^2.0.0",
     "@pixi/display": "^7.1.4",
     "@react-hook/resize-observer": "^1.2.6",
     "@testing-library/jest-dom": "^5.16.5",

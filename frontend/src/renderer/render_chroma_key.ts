@@ -91,13 +91,14 @@ export function renderGraphic(node: ImageGraphic): CustomGraphics {
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
+    // this.cullable = true
     // this.blendMode = PIXI.BLEND_MODES.SCREEN
     // this.cacheAsBitmap = true
-    this.interactive = true
-    this.on('pointerdown', (event) => onClickDown(this))
-    this.on('pointerup', (event) => onClickUp(this))
-    this.on('pointerover', (event) => onPointerOver(this))
-    this.on('pointerout', (event) => onPointerOut(this))
+    // this.interactive = true
+    // this.on('pointerdown', (event) => onClickDown(this))
+    // this.on('pointerup', (event) => onClickUp(this))
+    // this.on('pointerover', (event) => onPointerOver(this))
+    // this.on('pointerout', (event) => onPointerOut(this))
   }
 
   renderGraphic(node: ImageGraphic): this {

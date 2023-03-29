@@ -119,11 +119,11 @@ export class CustomGraphics extends PIXI.Graphics {
     super()
     // this.blendMode = PIXI.BLEND_MODES.SCREEN
     // this.cacheAsBitmap = true
-    this.interactive = true
-    this.on('pointerdown', (event) => onClickDown(this))
-    this.on('pointerup', (event) => onClickUp(this))
-    this.on('pointerover', (event) => onPointerOver(this))
-    this.on('pointerout', (event) => onPointerOut(this))
+    // this.interactive = true
+    // this.on('pointerdown', (event) => onClickDown(this))
+    // this.on('pointerup', (event) => onClickUp(this))
+    // this.on('pointerover', (event) => onPointerOver(this))
+    // this.on('pointerout', (event) => onPointerOut(this))
   }
 
   renderGraphic(node: ImageGraphic): this {
