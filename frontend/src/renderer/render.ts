@@ -66,7 +66,6 @@ export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
             viewBox[2] * scale,
             viewBox[3] * scale
           )
-          mask.endFill()
           mask.beginHole()
           mask.shapeToElement(shape)
           mask.endHole()
@@ -117,8 +116,6 @@ export function renderGraphic(node: ImageGraphic): CustomGraphics {
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    // this.blendMode = PIXI.BLEND_MODES.SCREEN
-    // this.cacheAsBitmap = true
     // this.interactive = true
     // this.on('pointerdown', (event) => onClickDown(this))
     // this.on('pointerup', (event) => onClickUp(this))
@@ -163,6 +160,7 @@ export class CustomGraphics extends PIXI.Graphics {
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
+        // TODO: use conic. https://www.npmjs.com/package/@pixi-essentials/conic
         this.drawCircle(cx * scale, cy * scale, r * scale)
         return this
       }
@@ -301,20 +299,17 @@ export class CustomGraphics extends PIXI.Graphics {
     return this
   }
 
-  render(r: PIXI.Renderer) {
-    PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-    super.render(r)
-  }
+  // render(r: PIXI.Renderer) {
+  //   super.render(r)
+  // }
 }
 
 // This is a hack to get PIXI to use the Tess2 library for triangulation. REQUIRED
 // implemented by extending the graphics library and overriding the triangulate function
 // ``` js
-// render(r: PIXI.Renderer) {
-//   PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-//   super.render(r)
-// }
+// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
 // ```
+PIXI.graphicsUtils.buildPoly.triangulate = triangulate
 function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.GraphicsGeometry) {
   let points = graphicsData.points
   const holes = graphicsData.holes

@@ -91,9 +91,6 @@ export function renderGraphic(node: ImageGraphic): CustomGraphics {
 export class CustomGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    // this.cullable = true
-    // this.blendMode = PIXI.BLEND_MODES.SCREEN
-    // this.cacheAsBitmap = true
     // this.interactive = true
     // this.on('pointerdown', (event) => onClickDown(this))
     // this.on('pointerup', (event) => onClickUp(this))
@@ -132,6 +129,7 @@ export class CustomGraphics extends PIXI.Graphics {
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
+        // TODO: use conic. https://www.npmjs.com/package/@pixi-essentials/conic
         this.drawCircle(cx * scale, cy * scale, r * scale)
         return this
       }
@@ -159,13 +157,7 @@ export class CustomGraphics extends PIXI.Graphics {
       }
 
       case LAYERED_SHAPE: {
-        const boundingBox = BoundingBox.fromShape(shape)
         let container: PIXI.Container = new PIXI.Container()
-
-        if (BoundingBox.isEmpty(boundingBox)) {
-          return this
-        }
-
         for (const [index, layerShape] of shape.shapes.entries()) {
           let graphic = new CustomGraphics()
           let color =
@@ -229,7 +221,6 @@ export class CustomGraphics extends PIXI.Graphics {
   }
 
   render(r: PIXI.Renderer) {
-    PIXI.graphicsUtils.buildPoly.triangulate = triangulate
     super.render(r)
   }
 }
@@ -237,11 +228,9 @@ export class CustomGraphics extends PIXI.Graphics {
 // This is a hack to get PIXI to use the Tess2 library for triangulation. REQUIRED
 // implemented by extending the graphics library and overriding the triangulate function
 // ``` js
-// render(r: PIXI.Renderer) {
-//   PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-//   super.render(r)
-// }
+// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
 // ```
+PIXI.graphicsUtils.buildPoly.triangulate = triangulate
 function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.GraphicsGeometry) {
   let points = graphicsData.points
   const holes = graphicsData.holes

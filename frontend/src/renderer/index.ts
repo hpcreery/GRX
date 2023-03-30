@@ -1,7 +1,7 @@
 import type { ImageTree, SizeEnvelope } from '@hpcreery/tracespace-plotter'
 
 // import { renderTreeGraphicsContainer } from './render'
-import { renderTreeGraphicsContainer } from './render_chroma_key'
+import { renderTreeGraphicsContainer, CustomGraphics } from './render_chroma_key'
 
 import * as PIXI from 'pixi.js'
 import { IApplicationOptions } from 'pixi.js'
@@ -10,12 +10,15 @@ import { Viewport, IViewportOptions } from 'pixi-viewport'
 import { Cull } from '@pixi-essentials/cull'
 export { renderGraphic } from './render'
 
-
 class CustomRootBoundary extends PIXI.EventBoundary {
   constructor() {
     super()
   }
-  all(e: PIXI.FederatedEvent<UIEvent>, type?: string | undefined, target?: PIXI.FederatedEventTarget | undefined): void {
+  all(
+    e: PIXI.FederatedEvent<UIEvent>,
+    type?: string | undefined,
+    target?: PIXI.FederatedEventTarget | undefined
+  ): void {
     return
   }
 }
@@ -40,16 +43,13 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
       .drag()
       .pinch({ percent: 2 })
       .wheel()
-      // .decelerate()
+    // .decelerate()
 
     // @ts-ignore
     this.renderer.events.rootBoundary = new CustomRootBoundary()
-
-    
-
-
-    this.stage.addChild(this.viewport)
     this.cull = new Cull()
+    this.stage.addChild(this.viewport)
+    this.setupCulling()
 
     //   this.stage.onrightclick = (e) => {
     //     const checkintersect = (obj: DisplayObject) => {
@@ -70,12 +70,45 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
     //     }
     //     checkintersect(this.stage)
     //   }
+  }
+
+  setupCulling(): void {
+    // console.log('setting up culling')
+
+    let cachedState = true
+    let cullDisabled = true
+    this.viewport.on('moved', (e) => {
+      // console.log(e.viewport.transform.scale)
+      if (e.viewport.transform.scale.x < 2) {
+        if (!cachedState) {
+          // console.log('caching')
+          cullDisabled = true
+          cachedState = true
+          this.cull.uncull()
+          this.viewport.children.forEach((child) => {
+            child.cacheAsBitmap = true
+          })
+        }
+      } else {
+        if (cachedState) {
+          // console.log('uncaching')
+          cullDisabled = false
+          cachedState = false
+          this.viewport.children.forEach((child) => {
+            child.cacheAsBitmap = false
+          })
+        }
+      }
+    })
 
     let cullDirty = false
-    this.viewport.on('frame-end', () => {
-      if (this.viewport.dirty || cullDirty) {
-        this.cull.cull(this.renderer.screen)
 
+    this.viewport.on('frame-end', () => {
+      if (cullDisabled === true) {
+        // console.log('culling disabled')
+      } else if (this.viewport.dirty || cullDirty) {
+        // console.log('culling')
+        this.cull.cull(this.renderer.screen)
         this.viewport.dirty = false
         cullDirty = false
       }
@@ -89,10 +122,11 @@ export class CustomPixiApplication extends PIXI.Application<PIXI.ICanvas> {
     mainContainer.position.y = this.renderer.height / this.renderer.resolution
     mainContainer.interactiveChildren = false
     mainContainer.addChild(renderTreeGraphicsContainer(image))
+    mainContainer.cacheAsBitmapResolution = 5
     mainContainer.cacheAsBitmap = true
     this.viewport.addChild(mainContainer)
     this.cull.addAll(mainContainer.children)
     // @ts-ignore
-    window.mainContainer = mainContainer
+    // window.mainContainer = mainContainer
   }
 }
