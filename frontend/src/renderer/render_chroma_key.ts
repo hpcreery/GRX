@@ -82,13 +82,13 @@ export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
   return mainContainer
 }
 
-export function renderGraphic(node: ImageGraphic): CustomGraphics {
-  const graphic = new CustomGraphics()
+export function renderGraphic(node: ImageGraphic): GerberGraphics {
+  const graphic = new GerberGraphics()
   graphic.renderGraphic(node)
   return graphic
 }
 
-export class CustomGraphics extends PIXI.Graphics {
+export class GerberGraphics extends PIXI.Graphics {
   constructor() {
     super()
     // this.interactive = true
@@ -103,18 +103,27 @@ export class CustomGraphics extends PIXI.Graphics {
     if (node.type === IMAGE_SHAPE) {
       this.renderShape(node)
     } else {
-      this.beginFill(
-        node.polarity == DARK ? darkColor : clearColor,
-        node.type === IMAGE_PATH ? 0 : alpha
-      )
-      this.lineStyle({
-        width: node.type === IMAGE_PATH ? node.width * scale : 0,
-        color: node.polarity == DARK ? darkColor : clearColor,
-        alpha: node.type === IMAGE_PATH ? alpha : 0,
-        cap: PIXI.LINE_CAP.ROUND,
-        join: PIXI.LINE_JOIN.ROUND,
-      })
-      this.drawPath(node.segments)
+      if (node.type === IMAGE_PATH) {
+        this.beginFill(node.polarity == DARK ? darkColor : clearColor, 0)
+        this.lineStyle({
+          width: node.width * scale,
+          color: node.polarity == DARK ? darkColor : clearColor,
+          alpha: alpha,
+          cap: PIXI.LINE_CAP.ROUND,
+          join: PIXI.LINE_JOIN.ROUND,
+        })
+        this.drawPolyLine(node.segments)
+      } else {
+        this.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
+        this.lineStyle({
+          width: 0,
+          color: node.polarity == DARK ? darkColor : clearColor,
+          alpha: 0,
+          cap: PIXI.LINE_CAP.ROUND,
+          join: PIXI.LINE_JOIN.ROUND,
+        })
+        this.drawContour(node.segments)
+      }
     }
     this.endFill()
     return this
@@ -146,20 +155,14 @@ export class CustomGraphics extends PIXI.Graphics {
       }
 
       case OUTLINE: {
-        // this.lineStyle({
-        //   width: 0,
-        //   color: dark,
-        //   alpha: 0,
-        //   cap: PIXI.LINE_CAP.ROUND,
-        // })
-        this.drawPath(shape.segments)
+        this.drawContour(shape.segments)
         return this
       }
 
       case LAYERED_SHAPE: {
         let container: PIXI.Container = new PIXI.Container()
         for (const [index, layerShape] of shape.shapes.entries()) {
-          let graphic = new CustomGraphics()
+          let graphic = new GerberGraphics()
           let color =
             layerShape.erase === true
               ? this._fillStyle.color == darkColor
@@ -182,29 +185,51 @@ export class CustomGraphics extends PIXI.Graphics {
     }
   }
 
-  public drawPath(segments: PathSegment[]): this {
-    let lastHome: Position | ArcPosition = [0, 0]
+  // TODO: deprecated
+  // public drawPath(segments: PathSegment[]): this {
+  //   let lastHome: Position | ArcPosition = [0, 0]
+  //   for (const [index, next] of segments.entries()) {
+  //     const previous = index > 0 ? segments[index - 1] : undefined
+  //     const { start, end } = next
+
+  //     if (this._lineStyle.width != 0) {
+  //       if (previous === undefined) {
+  //         this.moveTo(start[0] * scale, start[1] * scale)
+  //       } else if (!positionsEqual(previous.end, start)) {
+  //         this.moveTo(start[0] * scale, start[1] * scale)
+  //       }
+  //     } else {
+  //       if (previous === undefined) {
+  //         this.moveTo(0, 0)
+  //         this.lineTo(start[0] * scale, start[1] * scale)
+  //         lastHome = start
+  //       } else if (!positionsEqual(previous.end, start)) {
+  //         this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+  //         this.lineTo(0, 0)
+  //         this.lineTo(start[0] * scale, start[1] * scale)
+  //         lastHome = start
+  //       }
+  //     }
+  //     if (next.type === LINE) {
+  //       this.lineTo(end[0] * scale, end[1] * scale)
+  //     } else {
+  //       const { start, end, radius, center } = next
+  //       const c = start[2] - end[2]
+  //       this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
+  //     }
+  //   }
+  //   if (this._lineStyle.width == 0) {
+  //     this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+  //   }
+  //   return this
+  // }
+
+  public drawPolyLine(segments: PathSegment[]): this {
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
-
-      if (this._lineStyle.width != 0) {
-        if (previous === undefined) {
-          this.moveTo(start[0] * scale, start[1] * scale)
-        } else if (!positionsEqual(previous.end, start)) {
-          this.moveTo(start[0] * scale, start[1] * scale)
-        }
-      } else {
-        if (previous === undefined) {
-          this.moveTo(0, 0)
-          this.lineTo(start[0] * scale, start[1] * scale)
-          lastHome = start
-        } else if (!positionsEqual(previous.end, start)) {
-          this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
-          this.lineTo(0, 0)
-          this.lineTo(start[0] * scale, start[1] * scale)
-          lastHome = start
-        }
+      if (previous === undefined || !positionsEqual(previous.end, start)) {
+        this.moveTo(start[0] * scale, start[1] * scale)
       }
       if (next.type === LINE) {
         this.lineTo(end[0] * scale, end[1] * scale)
@@ -214,9 +239,33 @@ export class CustomGraphics extends PIXI.Graphics {
         this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
       }
     }
-    if (this._lineStyle.width == 0) {
-      this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+    return this
+  }
+
+  public drawContour(segments: PathSegment[]): this {
+    let lastHome: Position | ArcPosition = [0, 0]
+    for (const [index, next] of segments.entries()) {
+      const previous = index > 0 ? segments[index - 1] : undefined
+      const { start, end } = next
+      if (previous === undefined) {
+        this.moveTo(0, 0)
+        this.lineTo(start[0] * scale, start[1] * scale)
+        lastHome = start
+      } else if (!positionsEqual(previous.end, start)) {
+        this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+        this.lineTo(0, 0)
+        this.lineTo(start[0] * scale, start[1] * scale)
+        lastHome = start
+      }
+      if (next.type === LINE) {
+        this.lineTo(end[0] * scale, end[1] * scale)
+      } else {
+        const { start, end, radius, center } = next
+        const c = start[2] - end[2]
+        this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
+      }
     }
+    this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
     return this
   }
 
@@ -278,19 +327,19 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
   }
 }
 
-function onClickDown(object: CustomGraphics) {
+function onClickDown(object: GerberGraphics) {
   console.log('CLICKED DOWN: ', object)
   object.tint = 0x333333
 }
 
-function onClickUp(object: CustomGraphics) {
+function onClickUp(object: GerberGraphics) {
   object.tint = 0x666666
 }
 
-function onPointerOver(object: CustomGraphics) {
+function onPointerOver(object: GerberGraphics) {
   object.tint = 0x666666
 }
 
-function onPointerOut(object: CustomGraphics) {
+function onPointerOut(object: GerberGraphics) {
   object.tint = 0xffffff
 }
