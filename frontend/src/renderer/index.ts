@@ -35,6 +35,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   viewport: PIXI_Viewport.Viewport
   cull: Cull
   containerObserver: ResizeObserver
+  origin: PIXI.ObservablePoint
   constructor(ref: React.RefObject<HTMLDivElement>, options?: Partial<PIXI.IApplicationOptions>) {
     super(options)
     this.reactRef = ref
@@ -90,6 +91,9 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       }
       checkintersect(this.stage)
     }
+
+    // origin
+    this.origin = new PIXI.ObservablePoint(() => {}, this.viewport, 0, this.renderer.height / this.renderer.resolution)
   }
 
   private _setupCulling(): void {
@@ -155,7 +159,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     const mainContainer = new PIXI.Container()
     mainContainer.filters = [new PIXI.AlphaFilter(0.5)]
     mainContainer.scale = { x: 1, y: -1 }
-    mainContainer.position.y = this.renderer.height / this.renderer.resolution
+    // mainContainer.position.y = this.renderer.height / this.renderer.resolution
+    mainContainer.position = this.origin
     mainContainer.interactiveChildren = false
 
     // TODO: How to use worker with pixi?
