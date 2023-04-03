@@ -26,7 +26,8 @@ import {
   LINE,
 } from '@hpcreery/tracespace-plotter'
 // import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
-import * as PIXI from 'pixi.js'
+// import * as PIXI from 'pixi.js'
+import * as PIXI from '@pixi/webworker'
 import * as Tess2 from 'tess2-ts'
 import type { ViewBox } from './types'
 
@@ -184,45 +185,6 @@ export class GerberGraphics extends PIXI.Graphics {
       }
     }
   }
-
-  // TODO: deprecated
-  // public drawPath(segments: PathSegment[]): this {
-  //   let lastHome: Position | ArcPosition = [0, 0]
-  //   for (const [index, next] of segments.entries()) {
-  //     const previous = index > 0 ? segments[index - 1] : undefined
-  //     const { start, end } = next
-
-  //     if (this._lineStyle.width != 0) {
-  //       if (previous === undefined) {
-  //         this.moveTo(start[0] * scale, start[1] * scale)
-  //       } else if (!positionsEqual(previous.end, start)) {
-  //         this.moveTo(start[0] * scale, start[1] * scale)
-  //       }
-  //     } else {
-  //       if (previous === undefined) {
-  //         this.moveTo(0, 0)
-  //         this.lineTo(start[0] * scale, start[1] * scale)
-  //         lastHome = start
-  //       } else if (!positionsEqual(previous.end, start)) {
-  //         this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
-  //         this.lineTo(0, 0)
-  //         this.lineTo(start[0] * scale, start[1] * scale)
-  //         lastHome = start
-  //       }
-  //     }
-  //     if (next.type === LINE) {
-  //       this.lineTo(end[0] * scale, end[1] * scale)
-  //     } else {
-  //       const { start, end, radius, center } = next
-  //       const c = start[2] - end[2]
-  //       this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
-  //     }
-  //   }
-  //   if (this._lineStyle.width == 0) {
-  //     this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
-  //   }
-  //   return this
-  // }
 
   public drawPolyLine(segments: PathSegment[]): this {
     for (const [index, next] of segments.entries()) {

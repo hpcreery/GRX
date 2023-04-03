@@ -1,23 +1,21 @@
 import './App.css'
-// import Test from './components/test'
-import * as PIXI from 'pixi.js'
 import React, { useRef, useEffect, useState, useLayoutEffect, useMemo } from 'react'
-import { PixiGerberApplication } from './renderer'
 import gerberpath from './gerbers/gerber.txt'
 import l7spath from './gerbers/l7s.gbr'
 import l4spath from './gerbers/l4s.gbr'
 import bvgerber from './gerbers/bv_1-5.gbr'
 import sample1 from './gerbers/sample1.gbr'
 import sample2 from './gerbers/sample2.gbr'
+import OffscreenGerberApplication from './renderer/offscreen'
 
 function App() {
   const inputRef = useRef<HTMLDivElement>(document.createElement('div'))
 
   useEffect(() => {
-    const pixi = insertPixiCanvas()
+    let pixi = insertPixiCanvas(inputRef.current)
     return () => {
-      pixi.destroy(true)
-      // inputRef.current.innerHTML = ''
+      pixi.destroy()
+      inputRef.current.innerHTML = ''
     }
   }, [])
 
@@ -26,30 +24,30 @@ function App() {
     return gerber
   }
 
-  function insertPixiCanvas() {
-    const pixi = new PixiGerberApplication(inputRef, {
-      width: inputRef.current.clientWidth,
-      height: inputRef.current.clientHeight,
+  function insertPixiCanvas(element: HTMLDivElement) {
+    let pixi = new OffscreenGerberApplication({
+      element: element,
+      width: element.clientWidth,
+      height: element.clientHeight,
       antialias: false,
-      autoDensity: true,
+      // autoDensity: true,
       backgroundColor: 0x0,
-      resolution: devicePixelRatio,
+      // resolution: devicePixelRatio,
     })
+    // getGerber(gerberpath).then((Pgerber) => pixi.addGerber(gerber))
+    // let gerber1 = await getGerber(l7spath)
+    // let gerber2 = await getGerber(l4spath)
+    // let gerber3 = await getGerber(bvgerber)
+    // pixi.addGerber(gerber1)
+    // pixi.addGerber(gerber2)
+    // pixi.addGerber(gerber3)
+    // let gerber4 = await getGerber(sample1)
+    // let gerber5 = await getGerber(sample2)
+    // pixi.addGerber(gerber4)
+    // pixi.addGerber(gerber5)
 
-    inputRef.current.appendChild(pixi.view as HTMLCanvasElement)
-    // getGerber(gerberpath).then(gerber => pixi.addGerber(gerber))
-    // getGerber(l7spath).then(gerber => pixi.addGerber(gerber))
-    // getGerber(l4spath).then(gerber => pixi.addGerber(gerber))
-    // getGerber(bvgerber).then(gerber => pixi.addGerber(gerber))
     getGerber(sample1).then((gerber) => pixi.addGerber(gerber))
     getGerber(sample2).then((gerber) => pixi.addGerber(gerber))
-
-    if (pixi.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
-      console.log('Using WebGL')
-    } else {
-      console.log('Using Canvas')
-    }
-
     return pixi
   }
 

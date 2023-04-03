@@ -1,87 +1,47 @@
-import { renderTreeGraphicsContainer, GerberGraphics } from './render_chroma_key'
+import { renderTreeGraphicsContainer } from './chroma_key_render'
 
 import { parse, GerberTree } from '@hpcreery/tracespace-parser'
 import { ImageTree, plot } from '@hpcreery/tracespace-plotter'
 
-import * as PIXI from 'pixi.js'
-import * as PIXI_Viewport from 'pixi-viewport'
+import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
 
-import * as Comlink from 'comlink'
-
-/* eslint-disable import/no-webpack-loader-syntax */
-import gerberParserWorker from 'worker-loader!../workers/gerberparser'
-import { WorkerMethods as GerberParserWorker } from '../workers/gerberparser'
-import { DisplayObject } from 'pixi.js'
-
-export { renderGraphic } from './render_mask'
-
-class CustomRootBoundary extends PIXI.EventBoundary {
-  constructor() {
-    super()
-  }
-  all(
-    e: PIXI.FederatedEvent<UIEvent>,
-    type?: string | undefined,
-    target?: PIXI.FederatedEventTarget | undefined
-  ): void {
-    return
-  }
-}
-
 export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
-  reactRef: React.RefObject<HTMLDivElement>
-  viewport: PIXI_Viewport.Viewport
+  viewport: PIXI.Container
   cull: Cull
-  containerObserver: ResizeObserver
   origin: PIXI.ObservablePoint
-  constructor(ref: React.RefObject<HTMLDivElement>, options?: Partial<PIXI.IApplicationOptions>) {
-    super(options)
-    this.reactRef = ref
+  cachedGerberGraphics: boolean = true
 
-    // Add viewport
-    this.viewport = new PIXI_Viewport.Viewport({
-      worldWidth: 100,
-      worldHeight: 100,
-      screenWidth: options?.width,
-      screenHeight: options?.height,
-      events: this.renderer.events,
-      stopPropagation: true,
-      threshold: 1,
-    })
-      .drag()
-      .pinch({ percent: 2 })
-      .wheel()
-    // .decelerate()
+  constructor(options?: Partial<PIXI.IApplicationOptions>) {
+    console.log('PixiGerberApplication', options)
+    super(options)
+
+    if (this.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
+      console.log('Using WebGL')
+    } else {
+      console.log('Using Canvas')
+    }
+
+    this.viewport = new PIXI.Container()
     this.stage.addChild(this.viewport)
 
-    // Adapt viewport to container size
-    this.containerObserver = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect
-      this.renderer.resize(width, height)
-      this.viewport.resize(width, height)
-    })
-    this.containerObserver.observe(this.reactRef.current as HTMLDivElement)
-
-    // Hack to prevent viewport from propagating events to the stage for speed
-    // @ts-ignore
-    this.renderer.events.rootBoundary = new CustomRootBoundary()
-
     // Culling
-    this.cull = new Cull()
-    this._setupCulling()
+    this.cull = new Cull({
+      recursive: true,
+      toggle: "visible"
+    })
 
-    this.stage.onrightclick = (e) => {
-      const checkintersect = (obj: DisplayObject) => {
-        if (obj instanceof GerberGraphics) {
+    this.viewport.onrightclick = (e) => {
+      const checkintersect = (obj: PIXI.DisplayObject) => {
+        if (obj instanceof PIXI.DisplayObject && obj.children) {
           obj.children.forEach((child) => {
-            checkintersect(child)
+            checkintersect(child as PIXI.DisplayObject)
           })
-          if (obj.containsPoint(new PIXI.Point(e.clientX, e.clientY)) && !obj.isMask) {
-            // console.log('hit')
-            console.log(obj)
-          }
+          // if (obj.containsPoint(new PIXI.Point(e.clientX, e.clientY)) && !obj.isMask) {
+          //   // console.log('hit')
+          //   console.log(obj)
+          // }
         }
         if (obj instanceof PIXI.Container) {
           obj.children.forEach((child) => {
@@ -89,65 +49,57 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
           })
         }
       }
-      checkintersect(this.stage)
+      checkintersect(this.viewport)
     }
 
     // origin
-    this.origin = new PIXI.ObservablePoint(() => {}, this.viewport, 0, this.renderer.height / this.renderer.resolution)
+    this.origin = new PIXI.ObservablePoint(
+      () => {},
+      this.viewport,
+      0,
+      this.renderer.height / this.renderer.resolution
+    )
   }
 
-  private _setupCulling(): void {
-    // console.log('setting up culling')
-
-    let cachedState = true
-    let cullDisabled = true
-    this.viewport.on('moved', async (e) => {
-      // console.log(e.viewport.transform.scale)
-      if (e.viewport.transform.scale.x < 2) {
-        if (!cachedState) {
-          // console.log('caching')
-          cullDisabled = true
-          cachedState = true
-          this.cull.uncull()
-          this.viewport.children.forEach(async (child) => {
-            child.cacheAsBitmap = true
-          })
-        }
-      } else {
-        if (cachedState) {
-          // console.log('uncaching')
-          cullDisabled = false
-          cachedState = false
-          this.viewport.children.forEach(async (child) => {
-            child.cacheAsBitmap = false
-          })
-        }
+  cullViewport() {
+    if (this.viewport.transform.scale.x < 2) {
+      if (!this.cachedGerberGraphics) {
+        // console.log('caching')
+        this.cachedGerberGraphics = true
+        this.cull.uncull()
+        this.viewport.children.forEach(async (child) => {
+          child.cacheAsBitmap = true
+        })
       }
-    })
-
-    let cullDirty = false
-
-    this.viewport.on('frame-end', () => {
-      if (cullDisabled === true) {
-        // console.log('culling disabled')
-      } else if (this.viewport.dirty || cullDirty) {
-        // console.log('culling')
-        this.cull.cull(this.renderer.screen)
-        this.viewport.dirty = false
-        cullDirty = false
+    } else {
+      if (this.cachedGerberGraphics) {
+        // console.log('uncaching')
+        this.cachedGerberGraphics = false
+        this.viewport.children.forEach(async (child) => {
+          child.cacheAsBitmap = false
+        })
       }
-    })
+    }
+    if (this.cachedGerberGraphics !== true) {
+      // console.log('culling')
+      // this.cull.uncull()
+      this.cull.cull(this.renderer.screen as PIXI.Rectangle)
+    } else {
+      // console.log('culling disabled')
+    }
+  }
+
+  resizeViewport(width: number, height: number) {
+    this.renderer.resize(width, height)
   }
 
   async addGerber(gerber: string): Promise<PIXI.Container> {
-    const worker = new gerberParserWorker()
-    const thread = Comlink.wrap<GerberParserWorker>(worker)
-    const image = await thread.parserGerber(gerber)
+    const image = await this.parseGerber(gerber)
     const layer = await this.addLayer(image)
     return layer
   }
 
-  async parserGerber(gerber: string): Promise<ImageTree> {
+  async parseGerber(gerber: string): Promise<ImageTree> {
     const syntaxTree = parse(gerber)
     console.log('Syntax Tree:', syntaxTree)
     const imagetree = plot(syntaxTree)
@@ -156,33 +108,29 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   async addLayer(image: ImageTree) {
-    const mainContainer = new PIXI.Container()
-    mainContainer.filters = [new PIXI.AlphaFilter(0.5)]
-    mainContainer.scale = { x: 1, y: -1 }
-    // mainContainer.position.y = this.renderer.height / this.renderer.resolution
-    mainContainer.position = this.origin
-    mainContainer.interactiveChildren = false
+    const layerContainer = new PIXI.Container()
+    layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
+    layerContainer.scale = { x: 1, y: -1 }
+    layerContainer.position = this.origin
+    layerContainer.interactiveChildren = false
+    // layerContainer.eventMode = 'none'
 
-    // TODO: How to use worker with pixi?
-    // const worker = new gerberParserWorker()
-    // const thread = Comlink.wrap<GerberParserWorker>(worker)
-    // mainContainer.addChild(await thread.renderTreeGraphicsContainer(image))
-
-    mainContainer.addChild(renderTreeGraphicsContainer(image))
-    mainContainer.cacheAsBitmapResolution = 5
-    mainContainer.cacheAsBitmap = true
-    this.viewport.addChild(mainContainer)
-    this.cull.addAll(mainContainer.children)
-    // @ts-ignore
-    // window.mainContainer = mainContainer
-    return mainContainer
+    layerContainer.addChild(renderTreeGraphicsContainer(image))
+    layerContainer.cacheAsBitmapResolution = 5
+    layerContainer.cacheAsBitmap = this.cachedGerberGraphics
+    this.viewport.addChild(layerContainer)
+    this.cull.addAll(layerContainer.children)
+    return layerContainer
   }
+
+  // render(): void {
+  //   super.render()
+  // }
 
   destroy(
     removeView?: boolean | undefined,
     stageOptions?: boolean | PIXI.IDestroyOptions | undefined
   ): void {
-    this.containerObserver.unobserve(this.reactRef.current as HTMLDivElement)
     this.viewport.removeAllListeners()
     super.destroy(removeView, stageOptions)
   }

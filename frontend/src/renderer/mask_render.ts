@@ -43,7 +43,7 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
 }
 
 /**
- * ## DEPRECATED
+ * @deprecated Use chromaKeyFilter instead
  * @param tree ImageTree
  * @returns PIXI.Container
  */
