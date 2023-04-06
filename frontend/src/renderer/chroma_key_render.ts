@@ -26,8 +26,8 @@ import {
   LINE,
 } from '@hpcreery/tracespace-plotter'
 // import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
-// import * as PIXI from 'pixi.js'
 import * as PIXI from '@pixi/webworker'
+import { Bounds } from '@pixi/webworker'
 import * as Tess2 from 'tess2-ts'
 import type { ViewBox } from './types'
 
@@ -89,14 +89,57 @@ export function renderGraphic(node: ImageGraphic): GerberGraphics {
   return graphic
 }
 
+/**
+ * @deprecated
+ * @param {ImageGraphic} node 
+ * @returns {GerberGraphics} 
+ */
+export function renderGraphicsSeperate(node: ImageGraphic): GerberGraphics {
+  if (node.type === IMAGE_SHAPE) {
+    const graphic = new GerberGraphics()
+    graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
+    graphic.renderShape(node)
+    graphic.endFill()
+    return graphic
+  } else {
+    if (node.type === IMAGE_PATH) {
+      const parentgraphic = new GerberGraphics()
+      for (const segment of node.segments) {
+        const graphic = new GerberGraphics()
+        graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, 0)
+        graphic.lineStyle({
+          width: node.width * scale,
+          color: node.polarity == DARK ? darkColor : clearColor,
+          alpha: alpha,
+          cap: PIXI.LINE_CAP.ROUND,
+          join: PIXI.LINE_JOIN.ROUND,
+        })
+        graphic.drawPolyLine([segment])
+        graphic.endFill()
+        parentgraphic.addChild(graphic)
+      }
+      return parentgraphic
+    } else {
+      const graphic = new GerberGraphics()
+      graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
+      graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
+      graphic.lineStyle({
+        width: 0,
+        color: node.polarity == DARK ? darkColor : clearColor,
+        alpha: 0,
+        cap: PIXI.LINE_CAP.ROUND,
+        join: PIXI.LINE_JOIN.ROUND,
+      })
+      graphic.drawContour(node.segments)
+      graphic.endFill()
+      return graphic
+    }
+  }
+}
+
 export class GerberGraphics extends PIXI.Graphics {
   constructor() {
     super()
-    // this.interactive = true
-    // this.on('pointerdown', (event) => onClickDown(this))
-    // this.on('pointerup', (event) => onClickUp(this))
-    // this.on('pointerover', (event) => onPointerOver(this))
-    // this.on('pointerout', (event) => onPointerOut(this))
   }
 
   renderGraphic(node: ImageGraphic): this {
@@ -227,9 +270,13 @@ export class GerberGraphics extends PIXI.Graphics {
         this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
       }
     }
+    // this.geometry.bounds
     this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
     return this
   }
+
+
+
 
   render(r: PIXI.Renderer) {
     super.render(r)
@@ -287,21 +334,4 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
   for (let i = 0; i < vrt.length; i++) {
     verts.push(vrt[i])
   }
-}
-
-function onClickDown(object: GerberGraphics) {
-  console.log('CLICKED DOWN: ', object)
-  object.tint = 0x333333
-}
-
-function onClickUp(object: GerberGraphics) {
-  object.tint = 0x666666
-}
-
-function onPointerOver(object: GerberGraphics) {
-  object.tint = 0x666666
-}
-
-function onPointerOut(object: GerberGraphics) {
-  object.tint = 0xffffff
 }

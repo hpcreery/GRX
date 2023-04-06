@@ -7,7 +7,7 @@ import gerberRendererWorker from 'worker-loader!../workers/workers'
 import type { WorkerMethods as GerberRendererWorker } from '../workers/workers'
 
 class VirtualViewport extends PIXI_Viewport.Viewport {
-  public virtualDirty: boolean
+  public virtualDirty?: boolean
   constructor(options: PIXI_Viewport.IViewportOptions) {
     super(options)
     this.virtualDirty = false
@@ -39,10 +39,9 @@ export default class OffscreenGerberApplication {
     // Create virtual viewport and add to virtual PIXI application
     // The purpose of the virtual viewport is to provide a viewport that is attached not to the DOM but to the virtual PIXI application
     // events are then passed to the real viewport
-    // @ts-ignore
     this.virtualViewport = new VirtualViewport({
-      worldWidth: 100,
-      worldHeight: 100,
+      worldWidth: 1000,
+      worldHeight: 1000,
       screenWidth: options?.width,
       screenHeight: options?.height,
       canvasElement: this.canvas,
@@ -67,13 +66,26 @@ export default class OffscreenGerberApplication {
     })
     this.resizeObserver.observe(element as HTMLElement)
 
-    // listen to viewport events and pass them to the real viewport
+    // Listen to viewport events and pass them to the real viewport
     this.virtualViewport.on('moved', (e) => {
       this.moveViewport()
       if (!this.virtualViewport.virtualDirty) {
         this.cullViewport()
       }
     })
+
+    this.virtualViewport.on('clicked', async (e) => {
+      let intersected = await this.renderer.featuresAtPosition(e.screen.x, e.screen.y)
+      console.log(intersected)
+    })
+
+    // this.virtualViewport.addEventListener('contextmenu', (e) => {
+    //   console.log('contextmenu')
+    //   if (e instanceof MouseEvent) {
+    //     console.log(e.clientX, e.clientY)
+    //     this.renderer.featuresAtPosition(e.clientX, e.clientY)
+    //   }
+    // })
   }
 
   async moveViewport(): Promise<void> {
@@ -94,15 +106,17 @@ export default class OffscreenGerberApplication {
   async addGerber(gerber: string): Promise<void> {
     const thread = Comlink.wrap<GerberRendererWorker>(new gerberRendererWorker())
     const image = await thread.parserGerber(gerber)
+    thread[Comlink.releaseProxy]()
     await this.renderer.addLayer(image)
   }
 
   destroy(): void {
     this.resizeObserver.disconnect()
     this.element.removeChild(this.canvas)
-    this.virtualViewport.removeAllListeners()
     this.virtualAppliction.destroy(true)
+    this.virtualViewport.removeAllListeners()
     this.virtualViewport.destroy()
     this.renderer.destroy(true)
+    this.renderer[Comlink.releaseProxy]()
   }
 }

@@ -1,4 +1,5 @@
-import { renderTreeGraphicsContainer } from './chroma_key_render'
+import { GerberGraphics, renderTreeGraphicsContainer } from './chroma_key_render'
+import geometry from './geometry_math'
 
 import { parse, GerberTree } from '@hpcreery/tracespace-parser'
 import { ImageTree, plot } from '@hpcreery/tracespace-plotter'
@@ -29,28 +30,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     // Culling
     this.cull = new Cull({
       recursive: true,
-      toggle: "visible"
+      toggle: 'renderable',
     })
-
-    this.viewport.onrightclick = (e) => {
-      const checkintersect = (obj: PIXI.DisplayObject) => {
-        if (obj instanceof PIXI.DisplayObject && obj.children) {
-          obj.children.forEach((child) => {
-            checkintersect(child as PIXI.DisplayObject)
-          })
-          // if (obj.containsPoint(new PIXI.Point(e.clientX, e.clientY)) && !obj.isMask) {
-          //   // console.log('hit')
-          //   console.log(obj)
-          // }
-        }
-        if (obj instanceof PIXI.Container) {
-          obj.children.forEach((child) => {
-            checkintersect(child)
-          })
-        }
-      }
-      checkintersect(this.viewport)
-    }
 
     // origin
     this.origin = new PIXI.ObservablePoint(
@@ -59,6 +40,42 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       0,
       this.renderer.height / this.renderer.resolution
     )
+  }
+
+  featuresAtPosition(clientX: number, clientY: number): any[] {
+    const checkintersect = (obj: PIXI.DisplayObject): GerberGraphics[] => {
+      let intersected: GerberGraphics[] = []
+      if (obj instanceof GerberGraphics) {
+        obj.tint = 0xffffff
+        obj.children.forEach((child) => {
+          intersected = intersected.concat(checkintersect(child))
+        })
+        if (obj.containsPoint(new PIXI.Point(clientX, clientY)) && !obj.isMask) {
+          intersected.push(obj)
+        }
+        if (obj.line.width != 0) {
+          let point = obj.worldTransform.applyInverse(new PIXI.Point(clientX, clientY))
+          let intersect = geometry.pointInsidePolygon(point.x, point.y, obj.geometry.points)
+          if (intersect) {
+            intersected.push(obj)
+          }
+        }
+      }
+      if (obj instanceof PIXI.Container) {
+        obj.children.forEach((child) => {
+          intersected = intersected.concat(checkintersect(child))
+        })
+      }
+      return intersected
+    }
+    let intersected = []
+    intersected = checkintersect(this.viewport).map((obj) => {
+      console.log(obj)
+      obj.tint = 0x00ff00
+      return { bounds: { ...obj._bounds } }
+    })
+    console.log(intersected)
+    return intersected
   }
 
   cullViewport() {
@@ -82,7 +99,6 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     }
     if (this.cachedGerberGraphics !== true) {
       // console.log('culling')
-      // this.cull.uncull()
       this.cull.cull(this.renderer.screen as PIXI.Rectangle)
     } else {
       // console.log('culling disabled')
@@ -116,7 +132,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     // layerContainer.eventMode = 'none'
 
     layerContainer.addChild(renderTreeGraphicsContainer(image))
-    layerContainer.cacheAsBitmapResolution = 5
+    // layerContainer.cacheAsBitmapMultisample = PIXI.MSAA_QUALITY.LOW
+    layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
     this.viewport.addChild(layerContainer)
     this.cull.addAll(layerContainer.children)
