@@ -37,7 +37,8 @@ function App() {
       width: element.clientWidth,
       height: element.clientHeight,
       antialias: false,
-      backgroundColor: 0x0,
+      backgroundColor: 0x0E0E0E,
+      // backgroundColor: 0xFFFFFF,
     })
 
     // getGerber(l7spath).then((gerber) => pixi.addGerber(gerber))
@@ -53,6 +54,13 @@ function App() {
     // getGerber(f_mask).then((gerber) => pixi.addGerber(gerber))
     // getGerber(f_paste).then((gerber) => pixi.addGerber(gerber))
     // getGerber(edge_cuts).then((gerber) => pixi.addGerber(gerber))
+
+    pixi.renderer.then((renderer) => {
+      // change background color
+      // @ts-ignore
+      // renderer.renderer.backgroundColor = 0xFFFFFF
+    })
+
 
     return pixi
   }
