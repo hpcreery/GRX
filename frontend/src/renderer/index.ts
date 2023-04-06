@@ -13,6 +13,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   cull: Cull
   origin: PIXI.ObservablePoint
   cachedGerberGraphics: boolean = true
+  cullDirty: boolean = true
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
     console.log('PixiGerberApplication', options)
@@ -78,12 +79,13 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return intersected
   }
 
-  cullViewport() {
+  cullViewport(force: boolean = false) {
     if (this.viewport.transform.scale.x < 2) {
       if (!this.cachedGerberGraphics) {
         // console.log('caching')
         this.cachedGerberGraphics = true
         this.cull.uncull()
+        this.cullDirty = true
         this.viewport.children.forEach(async (child) => {
           child.cacheAsBitmap = true
         })
@@ -92,21 +94,26 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       if (this.cachedGerberGraphics) {
         // console.log('uncaching')
         this.cachedGerberGraphics = false
+        this.cullDirty = true
         this.viewport.children.forEach(async (child) => {
           child.cacheAsBitmap = false
         })
       }
     }
     if (this.cachedGerberGraphics !== true) {
-      // console.log('culling')
-      this.cull.cull(this.renderer.screen as PIXI.Rectangle)
-    } else {
-      // console.log('culling disabled')
+      if (this.cullDirty === true || force === true) {
+        this.cullDirty = false
+        this.cull.cull(this.renderer.screen as PIXI.Rectangle)
+        setTimeout(() => {
+          this.cullDirty = true
+        }, 40)
+      }
     }
   }
 
   resizeViewport(width: number, height: number) {
     this.renderer.resize(width, height)
+    this.cullViewport()
   }
 
   async addGerber(gerber: string): Promise<PIXI.Container> {

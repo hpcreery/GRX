@@ -32,18 +32,23 @@ const workerMethods: WorkerMethods = {
   moveViewport(x: number, y: number, scale: number): void {
     renderer.viewport.position.set(x, y)
     renderer.viewport.scale.set(scale)
-  },
-  cullViewport(): void {
     renderer.cullViewport()
+  },
+  cullViewport(force: boolean = false): void {
+    renderer.cullViewport(force)
   },
   resizeViewport(width: number, height: number): void {
     renderer.resizeViewport(width, height)
+    renderer.cullViewport()
   },
   featuresAtPosition(x: number, y: number): any[] {
     return renderer.featuresAtPosition(x, y)
   },
   get rendererAvailable(): boolean{
     return renderer ? true : false
+  },
+  get renderer(): PixiGerberApplication {
+    return Comlink.proxy(renderer)
   }
 }
 
@@ -58,8 +63,9 @@ export interface WorkerMethods {
   parserGerber(gerber: string): ImageTree
   destroy(removeView?: boolean | undefined, stageOptions?: boolean | PIXI.IDestroyOptions | undefined): void
   moveViewport(x: number, y: number, scale: number): void
-  cullViewport(): void
+  cullViewport(force: boolean): void
   resizeViewport(width: number, height: number): void
   featuresAtPosition(x: number, y: number): any[]
   rendererAvailable: boolean
+  renderer: PixiGerberApplication
 }
