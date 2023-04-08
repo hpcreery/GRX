@@ -35,6 +35,7 @@ const clearColor = 0x000000
 const clearAlpha: number = 1
 
 const scale: number = 100
+const outlineMode = false
 
 const ChromaFilter = new PIXI.Filter(
   undefined,
@@ -62,7 +63,6 @@ ChromaFilter.uniforms.thresholdSensitivity = 0
 ChromaFilter.uniforms.smoothing = 0.2
 ChromaFilter.uniforms.colorToReplace = [0, 0, 0]
 
-
 export function renderGraphics(tree: ImageTree): GerberGraphics {
   darkColor = Math.floor(Math.random() * 16777215)
   const { size, children } = tree
@@ -88,15 +88,24 @@ export class GerberGraphics extends PIXI.Graphics {
 
   renderGraphic(node: ImageGraphic): this {
     if (node.type === IMAGE_SHAPE) {
-      if (node.polarity == DARK) {
-        this.beginFill(darkColor, darkAlpha)
+      if (outlineMode) {
+        this.beginFill(darkColor, 0)
+        this.lineStyle({
+          color: darkColor,
+          width: 0.05,
+          alpha: 1,
+        })
       } else {
-        this.beginFill(clearColor, clearAlpha)
+        if (node.polarity == DARK) {
+          this.beginFill(darkColor, darkAlpha)
+        } else {
+          this.beginFill(clearColor, clearAlpha)
+        }
+        this.lineStyle({
+          width: 0,
+          alpha: 0,
+        })
       }
-      this.lineStyle({
-        width: 0,
-        alpha: 0,
-      })
       this.renderShape(node)
     } else {
       if (node.type === IMAGE_PATH) {

@@ -43,11 +43,11 @@ function App() {
       // backgroundColor: 0xFFFFFF,
     })
 
-    getGerber(l7spath).then((gerber) => pixi.addGerber(gerber))
-    getGerber(l4spath).then((gerber) => pixi.addGerber(gerber))
-    getGerber(bvgerber).then((gerber) => pixi.addGerber(gerber))
-    // getGerber(sample1).then((gerber) => pixi.addGerber(gerber))
-    // getGerber(sample2).then((gerber) => pixi.addGerber(gerber))
+    // getGerber(l7spath).then((gerber) => pixi.addGerber(gerber))
+    // getGerber(l4spath).then((gerber) => pixi.addGerber(gerber))
+    // getGerber(bvgerber).then((gerber) => pixi.addGerber(gerber))
+    getGerber(sample1).then((gerber) => pixi.addGerber(gerber))
+    getGerber(sample2).then((gerber) => pixi.addGerber(gerber))
 
     // getGerber(b_cu).then((gerber) => pixi.addGerber(gerber))
     // getGerber(b_mask).then((gerber) => pixi.addGerber(gerber))
