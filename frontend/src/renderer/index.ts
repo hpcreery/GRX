@@ -1,4 +1,4 @@
-import { GerberGraphics, renderTreeGraphicsContainer } from './chroma_key_render'
+import { GerberGraphics, renderTreeGraphicsContainer, renderTreeGraphicsUnifiedContainer } from './chroma_key_render'
 import geometry from './geometry_math'
 
 import { parse, GerberTree } from '@hpcreery/tracespace-parser'
@@ -80,7 +80,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   cullViewport(force: boolean = false) {
-    if (this.viewport.transform.scale.x < 2) {
+    if (this.viewport.transform.scale.x < 1) {
       if (!this.cachedGerberGraphics) {
         // console.log('caching')
         this.cachedGerberGraphics = true
@@ -138,7 +138,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layerContainer.interactiveChildren = false
     // layerContainer.eventMode = 'none'
 
-    layerContainer.addChild(renderTreeGraphicsContainer(image))
+    layerContainer.addChild(renderTreeGraphicsUnifiedContainer(image))
     // layerContainer.cacheAsBitmapMultisample = PIXI.MSAA_QUALITY.LOW
     layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics

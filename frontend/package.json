@@ -18,9 +18,9 @@
   },
   "dependencies": {
     "@hpcreery/pixi-viewport": "^5.0.1",
-    "@hpcreery/tracespace-parser": "^5.0.0-alpha.7",
-    "@hpcreery/tracespace-plotter": "^5.0.0-alpha.7",
-    "@hpcreery/tracespace-renderer": "^5.0.0-alpha.7",
+    "@hpcreery/tracespace-parser": "^5.0.0-alpha.8",
+    "@hpcreery/tracespace-plotter": "^5.0.0-alpha.8",
+    "@hpcreery/tracespace-renderer": "^5.0.0-alpha.8",
     "@pixi-essentials/cull": "^2.0.0",
     "@pixi/display": "^7.2.3",
     "@pixi/webworker": "^7.2.3",

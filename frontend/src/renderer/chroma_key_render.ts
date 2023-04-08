@@ -27,14 +27,15 @@ import {
 } from '@hpcreery/tracespace-plotter'
 // import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
 import * as PIXI from '@pixi/webworker'
-import { Bounds } from '@pixi/webworker'
 import * as Tess2 from 'tess2-ts'
 import type { ViewBox } from './types'
 
-// const darkColor = 0x00000f
+// const darkColor = 0xffffff
 let darkColor = Math.floor(Math.random() * 16777215)
+const darkAlpha: number = 1
 const clearColor = 0x000000
-const alpha: number = 1
+const clearAlpha: number = 1
+
 const scale: number = 100
 
 const ChromaFilter = new PIXI.Filter(
@@ -70,7 +71,7 @@ export function sizeToViewBox(size: SizeEnvelope): ViewBox {
 }
 
 export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
-  darkColor = Math.floor(Math.random() * 16777215)
+  // darkColor = Math.floor(Math.random() * 16777215)
   const { size, children } = tree
 
   let mainContainer: PIXI.Container = new PIXI.Container()
@@ -83,59 +84,29 @@ export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
   return mainContainer
 }
 
+export function renderTreeGraphicsUnifiedContainer(tree: ImageTree): PIXI.Container {
+  darkColor = Math.floor(Math.random() * 16777215)
+  const { size, children } = tree
+  const viewBox = sizeToViewBox(size)
+
+  const graphic = new GerberGraphics()
+  graphic.filters = [ChromaFilter]
+
+  for (const [index, child] of children.entries()) {
+    graphic.renderGraphic(child)
+    graphic.moveTo(0, 0)
+  }
+
+  console.log('Done rendering')
+  return graphic
+}
+
 export function renderGraphic(node: ImageGraphic): GerberGraphics {
   const graphic = new GerberGraphics()
   graphic.renderGraphic(node)
   return graphic
 }
 
-/**
- * @deprecated
- * @param {ImageGraphic} node 
- * @returns {GerberGraphics} 
- */
-export function renderGraphicsSeperate(node: ImageGraphic): GerberGraphics {
-  if (node.type === IMAGE_SHAPE) {
-    const graphic = new GerberGraphics()
-    graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
-    graphic.renderShape(node)
-    graphic.endFill()
-    return graphic
-  } else {
-    if (node.type === IMAGE_PATH) {
-      const parentgraphic = new GerberGraphics()
-      for (const segment of node.segments) {
-        const graphic = new GerberGraphics()
-        graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, 0)
-        graphic.lineStyle({
-          width: node.width * scale,
-          color: node.polarity == DARK ? darkColor : clearColor,
-          alpha: alpha,
-          cap: PIXI.LINE_CAP.ROUND,
-          join: PIXI.LINE_JOIN.ROUND,
-        })
-        graphic.drawPolyLine([segment])
-        graphic.endFill()
-        parentgraphic.addChild(graphic)
-      }
-      return parentgraphic
-    } else {
-      const graphic = new GerberGraphics()
-      graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
-      graphic.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
-      graphic.lineStyle({
-        width: 0,
-        color: node.polarity == DARK ? darkColor : clearColor,
-        alpha: 0,
-        cap: PIXI.LINE_CAP.ROUND,
-        join: PIXI.LINE_JOIN.ROUND,
-      })
-      graphic.drawContour(node.segments)
-      graphic.endFill()
-      return graphic
-    }
-  }
-}
 
 export class GerberGraphics extends PIXI.Graphics {
   constructor() {
@@ -143,22 +114,38 @@ export class GerberGraphics extends PIXI.Graphics {
   }
 
   renderGraphic(node: ImageGraphic): this {
-    this.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
     if (node.type === IMAGE_SHAPE) {
+      if (node.polarity == DARK) {
+        this.beginFill(darkColor, darkAlpha)
+      } else {
+        this.beginFill(clearColor, clearAlpha)
+      }
+      this.lineStyle({
+        width: 0,
+        alpha: 0,
+      })
       this.renderShape(node)
     } else {
       if (node.type === IMAGE_PATH) {
-        this.beginFill(node.polarity == DARK ? darkColor : clearColor, 0)
+        if (node.polarity == DARK) {
+          this.beginFill(darkColor, 0)
+        } else {
+          this.beginFill(clearColor, 0)
+        }
         this.lineStyle({
           width: node.width * scale,
           color: node.polarity == DARK ? darkColor : clearColor,
-          alpha: alpha,
+          alpha: node.polarity == DARK ? darkAlpha : clearAlpha,
           cap: PIXI.LINE_CAP.ROUND,
           join: PIXI.LINE_JOIN.ROUND,
         })
         this.drawPolyLine(node.segments)
       } else {
-        this.beginFill(node.polarity == DARK ? darkColor : clearColor, alpha)
+        if (node.polarity == DARK) {
+          this.beginFill(darkColor, darkAlpha)
+        } else {
+          this.beginFill(clearColor, clearAlpha)
+        }
         this.lineStyle({
           width: 0,
           color: node.polarity == DARK ? darkColor : clearColor,
@@ -204,21 +191,21 @@ export class GerberGraphics extends PIXI.Graphics {
       }
 
       case LAYERED_SHAPE: {
-        let container: PIXI.Container = new PIXI.Container()
+        const parentColor = this._fillStyle.color
         for (const [index, layerShape] of shape.shapes.entries()) {
-          let graphic = new GerberGraphics()
-          let color =
-            layerShape.erase === true
-              ? this._fillStyle.color == darkColor
+          const color =
+            parentColor == darkColor
+              ? layerShape.erase === true
                 ? clearColor
                 : darkColor
-              : this._fillStyle.color
-          graphic.beginFill(color, alpha)
-          graphic.shapeToElement(layerShape)
-          graphic.endFill()
-          container.addChild(graphic)
+              : layerShape.erase === true
+              ? darkColor
+              : clearColor
+          this.beginFill(color, parentColor == darkColor ? darkAlpha : clearAlpha)
+          this.shapeToElement(layerShape)
+          this.endFill()
+          this.moveTo(0, 0)
         }
-        this.addChild(container)
         return this
       }
 
@@ -274,9 +261,6 @@ export class GerberGraphics extends PIXI.Graphics {
     this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
     return this
   }
-
-
-
 
   render(r: PIXI.Renderer) {
     super.render(r)
