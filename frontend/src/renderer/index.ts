@@ -1,4 +1,4 @@
-import { GerberGraphics, renderTreeGraphicsContainer, renderTreeGraphicsUnifiedContainer } from './chroma_key_render'
+import { GerberGraphics, renderGraphics } from './graphics'
 import geometry from './geometry_math'
 
 import { parse, GerberTree } from '@hpcreery/tracespace-parser'
@@ -7,6 +7,23 @@ import { ImageTree, plot } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
+
+PIXI.BatchRenderer.canUploadSameBuffer = true
+// PIXI.Graphics.curves = {
+//   adaptive: true,
+//   maxLength: 10,
+//   minSegments: 0,
+//   maxSegments: 0,
+//   epsilon: 0.25,
+// }
+PIXI.Graphics.curves.adaptive = false
+PIXI.Graphics.curves.maxLength = 1
+// PIXI.Graphics.curves.minSegments = 200
+// PIXI.Graphics.curves.maxSegments = 2048
+// PIXI.Graphics.curves.epsilon = 0.0001
+
+
+// PIXI.Graphics.
 
 export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   viewport: PIXI.Container
@@ -138,7 +155,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layerContainer.interactiveChildren = false
     // layerContainer.eventMode = 'none'
 
-    layerContainer.addChild(renderTreeGraphicsUnifiedContainer(image))
+    layerContainer.addChild(renderGraphics(image))
     // layerContainer.cacheAsBitmapMultisample = PIXI.MSAA_QUALITY.LOW
     layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics

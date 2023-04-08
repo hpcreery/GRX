@@ -25,10 +25,8 @@ import {
   LAYERED_SHAPE,
   LINE,
 } from '@hpcreery/tracespace-plotter'
-// import { sizeToViewBox } from '@hpcreery/tracespace-renderer'
 import * as PIXI from '@pixi/webworker'
 import * as Tess2 from 'tess2-ts'
-import type { ViewBox } from './types'
 
 // const darkColor = 0xffffff
 let darkColor = Math.floor(Math.random() * 16777215)
@@ -64,30 +62,10 @@ ChromaFilter.uniforms.thresholdSensitivity = 0
 ChromaFilter.uniforms.smoothing = 0.2
 ChromaFilter.uniforms.colorToReplace = [0, 0, 0]
 
-export function sizeToViewBox(size: SizeEnvelope): ViewBox {
-  return BoundingBox.isEmpty(size)
-    ? [0, 0, 0, 0]
-    : [size[0], size[1], size[2] - size[0], size[3] - size[1]]
-}
 
-export function renderTreeGraphicsContainer(tree: ImageTree): PIXI.Container {
-  // darkColor = Math.floor(Math.random() * 16777215)
-  const { size, children } = tree
-
-  let mainContainer: PIXI.Container = new PIXI.Container()
-  mainContainer.filters = [ChromaFilter]
-
-  for (const [index, child] of children.entries()) {
-    mainContainer.addChild(renderGraphic(child))
-  }
-  console.log('Done rendering')
-  return mainContainer
-}
-
-export function renderTreeGraphicsUnifiedContainer(tree: ImageTree): PIXI.Container {
+export function renderGraphics(tree: ImageTree): GerberGraphics {
   darkColor = Math.floor(Math.random() * 16777215)
   const { size, children } = tree
-  const viewBox = sizeToViewBox(size)
 
   const graphic = new GerberGraphics()
   graphic.filters = [ChromaFilter]
@@ -101,16 +79,11 @@ export function renderTreeGraphicsUnifiedContainer(tree: ImageTree): PIXI.Contai
   return graphic
 }
 
-export function renderGraphic(node: ImageGraphic): GerberGraphics {
-  const graphic = new GerberGraphics()
-  graphic.renderGraphic(node)
-  return graphic
-}
-
-
 export class GerberGraphics extends PIXI.Graphics {
   constructor() {
     super()
+    // @ts-ignore
+    // console.log(this.curves)
   }
 
   renderGraphic(node: ImageGraphic): this {
@@ -289,7 +262,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     points.push(hole.points[0], hole.points[1])
   }
 
-  // console.log(points)
+  // TODO: offload this to a worker
   // Tesselate
   const res = Tess2.tesselate({
     contours: [points],
