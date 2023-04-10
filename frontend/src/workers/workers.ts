@@ -34,8 +34,17 @@ const workerMethods: WorkerMethods = {
     renderer.viewport.scale.set(scale)
     renderer.cullViewport()
   },
+  getViewportBounds(): PIXI.Rectangle {
+    return renderer.getViewportBounds()
+  },
+  getRendererBounds(): PIXI.Rectangle {
+    return renderer.getRendererBounds()
+  },
   cullViewport(force: boolean = false): void {
     renderer.cullViewport(force)
+  },
+  uncull(): void {
+    renderer.cull.uncull()
   },
   resizeViewport(width: number, height: number): void {
     renderer.resizeViewport(width, height)
@@ -63,7 +72,10 @@ export interface WorkerMethods {
   parserGerber(gerber: string): ImageTree
   destroy(removeView?: boolean | undefined, stageOptions?: boolean | PIXI.IDestroyOptions | undefined): void
   moveViewport(x: number, y: number, scale: number): void
+  getViewportBounds(): PIXI.Rectangle
+  getRendererBounds(): PIXI.Rectangle
   cullViewport(force: boolean): void
+  uncull(): void
   resizeViewport(width: number, height: number): void
   featuresAtPosition(x: number, y: number): any[]
   rendererAvailable: boolean

@@ -9,21 +9,11 @@ import * as PIXI from '@pixi/webworker'
 import { Cull } from '@pixi-essentials/cull'
 
 PIXI.BatchRenderer.canUploadSameBuffer = true
-// PIXI.Graphics.curves = {
-//   adaptive: true,
-//   maxLength: 10,
-//   minSegments: 0,
-//   maxSegments: 0,
-//   epsilon: 0.25,
-// }
-PIXI.Graphics.curves.adaptive = false
-PIXI.Graphics.curves.maxLength = 1
+// PIXI.Graphics.curves.adaptive = false
+// PIXI.Graphics.curves.maxLength = 1
 // PIXI.Graphics.curves.minSegments = 200
 // PIXI.Graphics.curves.maxSegments = 2048
 // PIXI.Graphics.curves.epsilon = 0.0001
-
-
-// PIXI.Graphics.
 
 export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   viewport: PIXI.Container
@@ -145,6 +135,14 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     const imagetree = plot(syntaxTree)
     console.log('Image Tree:', imagetree)
     return imagetree
+  }
+
+  getViewportBounds(): PIXI.Rectangle {
+    return this.viewport.getLocalBounds()
+  }
+
+  getRendererBounds(): PIXI.Rectangle {
+    return this.renderer.screen
   }
 
   async addLayer(image: ImageTree) {

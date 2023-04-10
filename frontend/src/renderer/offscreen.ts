@@ -7,16 +7,26 @@ import gerberRendererWorker from 'worker-loader!../workers/workers'
 import type { WorkerMethods as GerberRendererWorker } from '../workers/workers'
 import type { PixiGerberApplication } from '.'
 
+export interface OffscreenGerberApplicationProps {
+  element: HTMLElement
+  antialias?: boolean
+  backgroundColor?: PIXI.ColorSource
+}
+
 export default class OffscreenGerberApplication {
   private element: HTMLElement
   private canvas: HTMLCanvasElement
-  private virtualAppliction: PIXI.Application
-  private virtualViewport: VirtualViewport
   private resizeObserver: ResizeObserver
+  public virtualAppliction: PIXI.Application
+  public virtualViewport: VirtualViewport
   public worker: Comlink.Remote<GerberRendererWorker>
   public renderer: Promise<PixiGerberApplication>
-  constructor(optionsMeta: Partial<PIXI.IApplicationOptions> & { element: HTMLElement }) {
+  constructor(optionsMeta: OffscreenGerberApplicationProps) {
     let { element, ...options } = optionsMeta
+    Object.assign(options, {
+      width: element.clientWidth,
+      height: element.clientHeight,
+    })
     this.element = element
     this.canvas = document.createElement('canvas')
     this.element.appendChild(this.canvas)
@@ -24,10 +34,9 @@ export default class OffscreenGerberApplication {
 
     // Create virtual PIXI application
     this.virtualAppliction = new PIXI.Application({
-      width: options?.width,
-      height: options?.height,
+      width: element.clientWidth,
+      height: element.clientHeight,
       autoDensity: false,
-      resolution: options?.resolution,
     })
 
     // Create virtual viewport and add to virtual PIXI application
@@ -36,13 +45,14 @@ export default class OffscreenGerberApplication {
     this.virtualViewport = new VirtualViewport({
       worldWidth: 1000,
       worldHeight: 1000,
-      screenWidth: options?.width,
-      screenHeight: options?.height,
+      screenWidth: element.clientWidth,
+      screenHeight: element.clientHeight,
       canvasElement: this.canvas,
     })
       .drag()
       .pinch({ percent: 2 })
       .wheel()
+      .decelerate()
 
     this.virtualAppliction.stage.addChild(this.virtualViewport)
 
@@ -82,11 +92,35 @@ export default class OffscreenGerberApplication {
     // })
   }
 
-  private async moveViewport(): Promise<void> {
+  public async moveViewport(): Promise<void> {
     let x = this.virtualViewport.x
     let y = this.virtualViewport.y
     let scale = this.virtualViewport.scale.x
     await this.worker.moveViewport(x, y, scale)
+  }
+
+  public async zoomHome() {
+    this.worker.uncull()
+    const rendererBounds = await this.worker.getRendererBounds()
+    const bounds = await this.worker.getViewportBounds()
+    if (bounds.width === 0 || bounds.height === 0) {
+      return
+    }
+    const scale = Math.min(
+      rendererBounds.width / bounds.width,
+      rendererBounds.height / bounds.height
+    )
+    this.virtualViewport.scale = { x: scale, y: scale }
+    this.virtualViewport.position = {
+      x: rendererBounds.width / 2 - (bounds.x + bounds.width / 2) * scale,
+      y: rendererBounds.height / 2 - (bounds.y + bounds.height / 2) * scale,
+    }
+    await this.moveViewport()
+  }
+
+  public async zoom(pixels: number): Promise<void> {
+    this.virtualViewport.zoom(pixels, true)
+    await this.moveViewport()
   }
 
   public async addGerber(gerber: string): Promise<void> {
