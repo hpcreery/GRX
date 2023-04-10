@@ -44,6 +44,7 @@
     "pixi-viewport": "^5.0.1",
     "pixi.js": "^7.2.3",
     "react": "^18.2.0",
+    "react-color": "^2.19.3",
     "react-dom": "^18.2.0",
     "react-scripts": "5.0.1",
     "tess2-ts": "^1.0.8",
@@ -53,6 +54,7 @@
   "devDependencies": {
     "@tracespace/fixtures": "5.0.0-alpha.0",
     "@types/chroma-js": "^2.4.0",
+    "@types/react-color": "^3.0.6",
     "electron": "^23.1.0",
     "electron-builder": "^23.6.0",
     "electron-log": "^5.0.0-beta.16",

@@ -123,11 +123,11 @@ export default class OffscreenGerberApplication {
     await this.moveViewport()
   }
 
-  public async addGerber(gerber: string): Promise<void> {
+  public async addGerber(name: string, gerber: string): Promise<void> {
     const thread = Comlink.wrap<GerberRendererWorker>(new gerberRendererWorker())
     const image = await thread.parserGerber(gerber)
     thread[Comlink.releaseProxy]()
-    await this.worker.addLayer(image)
+    await this.worker.addLayer(name, image)
   }
 
   public destroy(): void {

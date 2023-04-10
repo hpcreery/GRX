@@ -20,11 +20,11 @@ const workerMethods: WorkerMethods = {
   initRenderer(canvas: OffscreenCanvas, options?: Partial<PIXI.IApplicationOptions>): void {
     renderer = new PixiGerberApplication({...options, view: canvas})
   },
-  addGerber(gerber: string): void {
-    renderer.addGerber(gerber)
+  addGerber(name: string, gerber: string): void {
+    renderer.addGerber(name, gerber)
   },
-  addLayer(image: ImageTree): void {
-    renderer.addLayer(image)
+  addLayer(name: string, image: ImageTree): void {
+    renderer.addLayer(name, image)
   },
   destroy(removeView?: boolean | undefined, stageOptions?: boolean | PIXI.IDestroyOptions | undefined): void {
     renderer.destroy(removeView, stageOptions)
@@ -67,8 +67,8 @@ Comlink.expose(workerMethods)
 
 export interface WorkerMethods {
   initRenderer(canvas: OffscreenCanvas, options?: Partial<PIXI.IApplicationOptions>): void
-  addGerber(gerber: string): void
-  addLayer(image: ImageTree): void
+  addGerber(name: string, gerber: string): void
+  addLayer(name: string, image: ImageTree): void
   parserGerber(gerber: string): ImageTree
   destroy(removeView?: boolean | undefined, stageOptions?: boolean | PIXI.IDestroyOptions | undefined): void
   moveViewport(x: number, y: number, scale: number): void

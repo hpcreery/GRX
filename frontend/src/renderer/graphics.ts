@@ -28,8 +28,8 @@ import {
 import * as PIXI from '@pixi/webworker'
 import * as Tess2 from 'tess2-ts'
 
-// const darkColor = 0xffffff
-let darkColor = Math.floor(Math.random() * 16777215)
+const darkColor = 0xffffff
+// let darkColor = Math.floor(Math.random() * 16777215)
 const darkAlpha: number = 1
 const clearColor = 0x000000
 const clearAlpha: number = 1
@@ -64,7 +64,7 @@ ChromaFilter.uniforms.smoothing = 0.2
 ChromaFilter.uniforms.colorToReplace = [0, 0, 0]
 
 export function renderGraphics(tree: ImageTree): GerberGraphics {
-  darkColor = Math.floor(Math.random() * 16777215)
+  // darkColor = Math.floor(Math.random() * 16777215)
   const { size, children } = tree
 
   const graphic = new GerberGraphics()

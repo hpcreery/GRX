@@ -123,9 +123,9 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  async addGerber(gerber: string): Promise<PIXI.Container> {
+  async addGerber(name: string, gerber: string): Promise<PIXI.Container> {
     const image = await this.parseGerber(gerber)
-    const layer = await this.addLayer(image)
+    const layer = await this.addLayer(name, image)
     return layer
   }
 
@@ -145,14 +145,17 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return this.renderer.screen
   }
 
-  async addLayer(image: ImageTree) {
-    const layerContainer = new PIXI.Container()
+  async addLayer(name: string, image: ImageTree) {
+    const layerContainer = new LayerContainer({ name })
+    // const tint = new PIXI.ColorMatrixFilter()
+    // tint.tint(0x00ff00, false)
     layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
     layerContainer.scale = { x: 1, y: -1 }
     layerContainer.position = this.origin
     layerContainer.interactiveChildren = false
     // layerContainer.eventMode = 'none'
-
+    // const child = renderGraphics(image)
+    // child.name = name
     layerContainer.addChild(renderGraphics(image))
     // layerContainer.cacheAsBitmapMultisample = PIXI.MSAA_QUALITY.LOW
     layerContainer.cacheAsBitmapResolution = 1
@@ -172,5 +175,13 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   ): void {
     this.viewport.removeAllListeners()
     super.destroy(removeView, stageOptions)
+  }
+}
+
+class LayerContainer extends PIXI.Container {
+  name: string
+  constructor(props: { name: string }) {
+    super()
+    this.name = props.name
   }
 }
