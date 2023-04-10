@@ -129,6 +129,30 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return layer
   }
 
+  tintLayer(name: string, color: PIXI.ColorSource) {
+    const layer = this.viewport.getChildByName(name, false) as PIXI.Container
+    console.log(layer)
+    if (layer) {
+      layer.children.forEach((child) => {
+        if (child instanceof GerberGraphics) {
+          child.tint = color
+        }
+      })
+    }
+  }
+
+  getLayerTintColor(name: string): PIXI.ColorSource {
+    const layer = this.viewport.getChildByName(name, false) as PIXI.Container
+    if (layer) {
+      const child = layer.children[0] as GerberGraphics
+      if (child) {
+        return child.tint
+      }
+    }
+    return 0xffffff
+  }
+
+
   async parseGerber(gerber: string): Promise<ImageTree> {
     const syntaxTree = parse(gerber)
     console.log('Syntax Tree:', syntaxTree)

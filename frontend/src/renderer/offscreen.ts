@@ -130,6 +130,12 @@ export default class OffscreenGerberApplication {
     await this.worker.addLayer(name, image)
   }
 
+  public async tintLayer(name: string, color: PIXI.ColorSource): Promise<void> {
+    this.renderer.then((renderer) => {
+      renderer.tintLayer(name, color)
+    })
+  }
+
   public destroy(): void {
     this.resizeObserver.disconnect()
     this.element.removeChild(this.canvas)

@@ -52,21 +52,26 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import { BlockPicker, CirclePicker } from 'react-color'
+import { useDrag } from '@use-gesture/react'
+import HelpModal from './components/HelpModal'
+import Toolbar from './components/Toolbar'
 
 const { useToken } = theme
 const { Dragger } = Upload
 const { Text, Link, Title } = Typography
-const uid = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+const uid = () =>
+  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-type ThemeContext = {
+interface ThemeContext {
   themeState: ThemeConfig
   setThemeState: React.Dispatch<React.SetStateAction<ThemeConfig>>
 }
 
-const ConfigEditorProvider = React.createContext<ThemeContext>({
+export const ConfigEditorProvider = React.createContext<ThemeContext>({
   themeState: { algorithm: theme.darkAlgorithm },
   setThemeState: () => {},
 })
+
 // export default App
 export default function Main() {
   const data = ['Top Soldermask', 'Top Copper', 'Layer 2', 'Layer 3', 'Layer 4']
@@ -80,26 +85,17 @@ export default function Main() {
   )
 }
 
+interface GerberLayers extends UploadFile {
+  color?: ColorSource
+}
+
 export function UIElements() {
   const data = ['Top Soldermask', 'Top Copper', 'Layer 2', 'Layer 3', 'Layer 4']
   const { token } = useToken()
   const { themeState, setThemeState } = React.useContext(ConfigEditorProvider)
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const gerberApp = useRef<OffscreenGerberApplication>()
-  const [settingsModalOpen, settingsSetModalOpen] = useState<boolean>(false)
-  const [layers, setLayers] = useState<UploadFile<any>[]>([])
-
-  const showModal = () => {
-    settingsSetModalOpen(true)
-  }
-
-  const handleSettingsModalOk = () => {
-    settingsSetModalOpen(false)
-  }
-
-  const handleSettingsModalCancel = () => {
-    settingsSetModalOpen(false)
-  }
+  const [layers, setLayers] = useState<GerberLayers[]>([])
 
   // Load in the gerber application
   useEffect(() => {
@@ -139,7 +135,11 @@ export function UIElements() {
     // getGerber(bvgerber).then((gerber) => app.addGerber(gerber))
     getGerber(sample1).then((gerber) => app.addGerber('sample1', gerber))
     getGerber(sample2).then((gerber) => app.addGerber('sample2', gerber))
-    setLayers([{ uid: uid(), name: 'sample1', status: 'done' }, { uid: uid(), name: 'sample2', status: 'done' }])
+    setLayers([
+      { uid: uid(), name: 'sample1', status: 'done' },
+      { uid: uid(), name: 'sample2', status: 'done' },
+    ])
+
     // getGerber('http://127.0.0.1:8080/sample1.gbr').then((gerber) => app.addGerber(gerber))
     // getGerber('http://127.0.0.1:8080/sample2.gbr').then((gerber) => app.addGerber(gerber))
 
@@ -246,7 +246,7 @@ export function UIElements() {
           <Space.Compact>
             <Popover placement='right' title={'Color'} content={<CirclePicker />} trigger='hover'>
               {/* <Button type='text'>C</Button> */}
-              <Badge color='#f50' style={{margin: '0px 10px'}} />
+              <Badge color='#f50' style={{ margin: '0px 10px' }} />
             </Popover>
             {file.name}
           </Space.Compact>
@@ -266,28 +266,6 @@ export function UIElements() {
           pointerEvents: 'none',
           zIndex: 10,
         }}>
-        {/* <List
-          style={{
-            width: 200,
-            height: '-webkit-fill-available',
-            margin: 10,
-            backdropFilter: 'blur(50px)',
-            backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-            pointerEvents: 'all',
-          }}
-          size='small'
-          header={<div>Layers</div>}
-          footer={
-            <div>
-              <Dragger {...props}>
-                <Button icon={<PlusOutlined />} type='text' />
-              </Dragger>
-            </div>
-          }
-          bordered
-          dataSource={data}
-          renderItem={(item) => <List.Item>{item}</List.Item>}
-        /> */}
         <Card
           style={{
             width: 200,
@@ -303,91 +281,9 @@ export function UIElements() {
             <PlusOutlined />
           </Dragger>
         </Card>
-        <Card
-          style={{
-            width: 'unset',
-            height: 'unset',
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-            backdropFilter: 'blur(50px)',
-            pointerEvents: 'all',
-          }}
-          bodyStyle={{ padding: 3 }}>
-          <Space size={1}>
-            <Button icon={<DragOutlined />} type='text' />
-            <Button icon={<LineOutlined />} type='text' />
-            <Divider type='vertical' style={{ margin: '0 3px' }} />
-            <Button
-              icon={<ZoomInOutlined />}
-              onClick={() => {
-                if (gerberApp.current) {
-                  gerberApp.current.zoom(-50)
-                }
-              }}
-              type='text'
-            />
-            <Button
-              icon={<ZoomOutOutlined />}
-              onClick={() => {
-                if (gerberApp.current) {
-                  gerberApp.current.zoom(50)
-                }
-              }}
-              type='text'
-            />
-            <Button
-              icon={<HomeOutlined />}
-              onClick={() => {
-                gerberApp.current && gerberApp.current.zoomHome()
-                gerberApp.current && gerberApp.current.virtualViewport.decelerate()
-              }}
-              type='text'
-            />
-            <Divider type='vertical' style={{ margin: '0 3px' }} />
-            <Button icon={<ToolOutlined />} onClick={() => showModal()} type='text' />
-            {/* <Button icon={<FullscreenOutlined />} type='text' /> */}
-            {/* <Button icon={<CloudDownloadOutlined />} type='text' /> */}
-            {/* <Button icon={<SearchOutlined />} type='text' /> */}
-          </Space>
-        </Card>
-        <Card
-          style={{
-            width: 'unset',
-            height: 'unset',
-            position: 'absolute',
-            bottom: 10,
-            right: 10,
-            backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-            backdropFilter: 'blur(50px)',
-            pointerEvents: 'all',
-          }}
-          bodyStyle={{ padding: 3 }}>
-          <Space size={1}>
-            <Button icon={<QuestionOutlined />} type='text' />
-          </Space>
-        </Card>
+        <Toolbar gerberApp={gerberApp} />
+        <HelpModal />
       </div>
-      <Modal
-        title='Settings'
-        open={settingsModalOpen}
-        onOk={handleSettingsModalOk}
-        onCancel={handleSettingsModalCancel}>
-        <Divider />
-        <Title level={5}>Dark Mode</Title>
-        <Switch
-          defaultChecked={themeState.algorithm === theme.darkAlgorithm}
-          // checkedChildren="light" unCheckedChildren="dark"
-          onChange={(checked) => {
-            if (checked) {
-              setThemeState({ algorithm: theme.darkAlgorithm })
-            } else {
-              setThemeState({ algorithm: theme.defaultAlgorithm })
-            }
-          }}
-        />
-      </Modal>
       <div id='GRX' style={{ width: '100%', height: '100%' }} ref={elementRef} />
     </>
   )

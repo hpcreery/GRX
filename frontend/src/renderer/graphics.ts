@@ -37,6 +37,8 @@ const clearAlpha: number = 1
 const scale: number = 100
 const outlineMode = false
 
+const randomColor = () => Math.floor(Math.random() * 16777215)
+
 const ChromaFilter = new PIXI.Filter(
   undefined,
   [
@@ -82,6 +84,7 @@ export function renderGraphics(tree: ImageTree): GerberGraphics {
 export class GerberGraphics extends PIXI.Graphics {
   constructor() {
     super()
+    this.tint = randomColor()
     // @ts-ignore
     // console.log(this.curves)
   }
