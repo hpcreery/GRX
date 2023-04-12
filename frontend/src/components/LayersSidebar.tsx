@@ -24,8 +24,6 @@ import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
 import { PlusOutlined } from '@ant-design/icons'
 
-import { useDrag, useScroll, useWheel } from '@use-gesture/react'
-import { animated, useSpring } from '@react-spring/web'
 import { Layers } from '../renderer/types'
 import * as Comlink from 'comlink'
 import LayerListItem from './sidebar/LayerListItem'
@@ -33,8 +31,6 @@ import LayerListItem from './sidebar/LayerListItem'
 const { useToken } = theme
 const { Dragger } = Upload
 const { Text, Link, Title } = Typography
-const uid = () =>
-  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface GerberLayers extends UploadFile {
   color: ColorSource
@@ -67,22 +63,6 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
     }
     return () => {}
   }, [gerberApp.current])
-
-  const [{ x, y }, api] = useSpring(() => ({ x: 0, y: 0 }))
-  const bind = useWheel(
-    ({ offset: [mx, my] }) => {
-      api.start({ x: -mx, y: my })
-    },
-    {
-      axis: 'x',
-      bounds: { left: 0, right: 40 },
-      // rubberband: true,
-      axisThreshold: 10,
-      // swipe: {
-      //   velocity: 10,
-      // },
-    }
-  )
 
   const props: UploadProps = {
     name: 'file',
@@ -131,7 +111,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
     },
     itemRender: (originNode, file, currFileList) => {
       const layer = layers.find((l) => l.uid === file.uid)
-      if (!layer) return
+      if (layer === undefined) return
       return <LayerListItem layer={layer} file={file} />
     },
   }
