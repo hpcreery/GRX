@@ -52,9 +52,12 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons'
 import { BlockPicker, CirclePicker } from 'react-color'
-import { useDrag } from '@use-gesture/react'
 import HelpModal from './components/HelpModal'
 import Toolbar from './components/Toolbar'
+
+import { useDrag, useScroll, useWheel } from '@use-gesture/react'
+import { animated, useSpring } from '@react-spring/web'
+import LayerSidebar from './components/LayersSidebar'
 
 const { useToken } = theme
 const { Dragger } = Upload
@@ -90,7 +93,6 @@ interface GerberLayers extends UploadFile {
 }
 
 export function UIElements() {
-  const data = ['Top Soldermask', 'Top Copper', 'Layer 2', 'Layer 3', 'Layer 4']
   const { token } = useToken()
   const { themeState, setThemeState } = React.useContext(ConfigEditorProvider)
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
@@ -158,20 +160,26 @@ export function UIElements() {
     return app
   }
 
+  const [{ x, y }, api] = useSpring(() => ({ x: 0, y: 0 }))
+  const bind = useWheel(
+    ({ offset: [mx, my] }) => {
+      api.start({ x: -mx, y: my })
+    },
+    {
+      axis: 'x',
+      bounds: { left: 0, right: 40 },
+      // rubberband: true,
+      axisThreshold: 10,
+      // swipe: {
+      //   velocity: 10,
+      // },
+    }
+  )
+
   const props: UploadProps = {
     name: 'file',
     listType: 'picture',
     multiple: true,
-    // defaultFileList: gerberApp.current?.renderer.then((renderer) => {
-    //   return renderer.viewport.children.map((layer) => {
-    //     return {
-    //       uid: layer.id,
-    //       name: layer.name,
-    //       status: 'done',
-    //       url: '',
-    //     }
-    //   })
-    // }),
     fileList: layers,
     customRequest: async (options) => {
       console.log(options)
@@ -227,30 +235,32 @@ export function UIElements() {
       // )
       return (
         // <Space.Compact style={{ marginTop: 3, width: '100%' }}>
-        <Button
-          style={{
-            // padding: '1px',
-            // margin: '3px 0px 0px 0px',
-            textAlign: 'left',
-            marginTop: 3,
-            width: '100%',
-            overflow: 'hidden',
-            padding: 0,
-          }}
-          // bodyStyle={{
-          //   padding: '3px',
-          //   // margin: '1px',
-          //   // lineHeight: '13px',
-          // }}
-          type='text'>
-          <Space.Compact>
-            <Popover placement='right' title={'Color'} content={<CirclePicker />} trigger='hover'>
-              {/* <Button type='text'>C</Button> */}
-              <Badge color='#f50' style={{ margin: '0px 10px' }} />
-            </Popover>
-            {file.name}
-          </Space.Compact>
-        </Button>
+        <animated.div {...bind()} style={{ x, y }}>
+          <Button
+            style={{
+              // padding: '1px',
+              // margin: '3px 0px 0px 0px',
+              textAlign: 'left',
+              marginTop: 3,
+              width: '100%',
+              overflow: 'hidden',
+              padding: 0,
+            }}
+            // bodyStyle={{
+            //   padding: '3px',
+            //   // margin: '1px',
+            //   // lineHeight: '13px',
+            // }}
+            type='text'>
+            <Space.Compact>
+              <Popover placement='right' title={'Color'} content={<CirclePicker />} trigger='hover'>
+                {/* <Button type='text'>C</Button> */}
+                <Badge color='#f50' style={{ margin: '0px 10px' }} />
+              </Popover>
+              {file.name}
+            </Space.Compact>
+          </Button>
+        </animated.div>
         // </Space.Compact>
       )
     },
@@ -266,21 +276,7 @@ export function UIElements() {
           pointerEvents: 'none',
           zIndex: 10,
         }}>
-        <Card
-          style={{
-            width: 200,
-            height: '-webkit-fill-available',
-            margin: 10,
-            backdropFilter: 'blur(50px)',
-            backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-            pointerEvents: 'all',
-          }}
-          bodyStyle={{ padding: 3 }}>
-          <Dragger {...props}>
-            {/* <Button icon={<PlusOutlined />} type='text' /> */}
-            <PlusOutlined />
-          </Dragger>
-        </Card>
+        <LayerSidebar gerberApp={gerberApp} />
         <Toolbar gerberApp={gerberApp} />
         <HelpModal />
       </div>

@@ -38,6 +38,8 @@ const scale: number = 100
 const outlineMode = false
 
 const randomColor = () => Math.floor(Math.random() * 16777215)
+const uid = () =>
+  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 const ChromaFilter = new PIXI.Filter(
   undefined,
@@ -82,9 +84,11 @@ export function renderGraphics(tree: ImageTree): GerberGraphics {
 }
 
 export class GerberGraphics extends PIXI.Graphics {
+  uid: string
   constructor() {
     super()
     this.tint = randomColor()
+    this.uid = uid()
     // @ts-ignore
     // console.log(this.curves)
   }

@@ -7,6 +7,8 @@ import { ImageTree, plot } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
+import { Layers } from './types'
+// import EventEmitter from 'events'
 
 PIXI.BatchRenderer.canUploadSameBuffer = true
 // PIXI.Graphics.curves.adaptive = false
@@ -21,10 +23,12 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   origin: PIXI.ObservablePoint
   cachedGerberGraphics: boolean = true
   cullDirty: boolean = true
+  // events: EventEmitter
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
     console.log('PixiGerberApplication', options)
     super(options)
+    // this.events = new EventEmitter()
 
     if (this.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
       console.log('Using WebGL')
@@ -50,7 +54,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     )
   }
 
-  featuresAtPosition(clientX: number, clientY: number): any[] {
+  public featuresAtPosition(clientX: number, clientY: number): any[] {
+    return []
     const checkintersect = (obj: PIXI.DisplayObject): GerberGraphics[] => {
       let intersected: GerberGraphics[] = []
       if (obj instanceof GerberGraphics) {
@@ -86,7 +91,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return intersected
   }
 
-  cullViewport(force: boolean = false) {
+  public cullViewport(force: boolean = false) {
     if (this.viewport.transform.scale.x < 1) {
       if (!this.cachedGerberGraphics) {
         // console.log('caching')
@@ -118,40 +123,40 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     }
   }
 
-  resizeViewport(width: number, height: number) {
+  public uncull(): void {
+    this.cull.uncull()
+  }
+
+  public moveViewport(x: number, y: number, scale: number): void {
+    this.viewport.position.set(x, y)
+    this.viewport.scale.set(scale)
+    this.cullViewport()
+  }
+
+  public resizeViewport(width: number, height: number) {
     this.renderer.resize(width, height)
     this.cullViewport()
   }
 
-  async addGerber(name: string, gerber: string): Promise<PIXI.Container> {
+  public async addGerber(name: string, gerber: string): Promise<void> {
     const image = await this.parseGerber(gerber)
-    const layer = await this.addLayer(name, image)
-    return layer
+    await this.addLayer(name, image)
   }
 
-  tintLayer(name: string, color: PIXI.ColorSource) {
-    const layer = this.viewport.getChildByName(name, false) as PIXI.Container
-    console.log(layer)
-    if (layer) {
-      layer.children.forEach((child) => {
-        if (child instanceof GerberGraphics) {
-          child.tint = color
-        }
-      })
+  public tintLayer(name: string, color: PIXI.ColorSource) {
+    const layer = this.viewport.getChildByName(name, false) as GerberGraphics
+    if (layer && layer instanceof GerberGraphics) {
+      layer.tint = color
     }
   }
 
-  getLayerTintColor(name: string): PIXI.ColorSource {
-    const layer = this.viewport.getChildByName(name, false) as PIXI.Container
+  public getLayerTintColor(name: string): PIXI.ColorSource {
+    const layer = this.viewport.getChildByName(name, true) as GerberGraphics
     if (layer) {
-      const child = layer.children[0] as GerberGraphics
-      if (child) {
-        return child.tint
-      }
+      return layer.tint
     }
     return 0xffffff
   }
-
 
   async parseGerber(gerber: string): Promise<ImageTree> {
     const syntaxTree = parse(gerber)
@@ -161,15 +166,34 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return imagetree
   }
 
-  getViewportBounds(): PIXI.Rectangle {
+  public getViewportBounds(): PIXI.Rectangle {
     return this.viewport.getLocalBounds()
   }
 
-  getRendererBounds(): PIXI.Rectangle {
+  public getRendererBounds(): PIXI.Rectangle {
     return this.renderer.screen
   }
 
-  async addLayer(name: string, image: ImageTree) {
+  public get layers(): Layers[] {
+    let gerberLayers: Layers[] = []
+    this.viewport.children.forEach((child) => {
+      if (child instanceof LayerContainer) {
+        const name = child.name
+        if (child.children[0] instanceof GerberGraphics) {
+          gerberLayers.push({
+            uid: child.children[0].uid,
+            name,
+            color: child.children[0].tint || 0xffffff,
+            visible: child.children[0].visible,
+            zIndex: child.children[0].zIndex,
+          })
+        }
+      }
+    })
+    return gerberLayers
+  }
+
+  public async addLayer(name: string, image: ImageTree): Promise<void> {
     const layerContainer = new LayerContainer({ name })
     // const tint = new PIXI.ColorMatrixFilter()
     // tint.tint(0x00ff00, false)
@@ -186,17 +210,24 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
     this.viewport.addChild(layerContainer)
     this.cull.addAll(layerContainer.children)
-    return layerContainer
+  }
+
+  addViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
+    function runCallback() {
+      listener()
+    }
+    this.viewport.on(event, runCallback)
   }
 
   // render(): void {
   //   super.render()
   // }
 
-  destroy(
+  public destroy(
     removeView?: boolean | undefined,
     stageOptions?: boolean | PIXI.IDestroyOptions | undefined
   ): void {
+    // this.events.removeAllListeners()
     this.viewport.removeAllListeners()
     super.destroy(removeView, stageOptions)
   }

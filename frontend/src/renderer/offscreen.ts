@@ -4,11 +4,15 @@ import * as PIXI from 'pixi.js'
 import * as Comlink from 'comlink'
 /* eslint-disable import/no-webpack-loader-syntax */
 import gerberRendererWorker from 'worker-loader!../workers/workers'
-import type { WorkerMethods as GerberRendererWorker } from '../workers/workers'
+import type { WorkerMethods } from '../workers/workers'
 import type { PixiGerberApplication } from '.'
+import EventEmitter from 'events'
 
-export interface OffscreenGerberApplicationProps {
+export interface OffscreenGerberApplicationProps extends OffscreenGerberPixiProps {
   element: HTMLElement
+}
+
+interface OffscreenGerberPixiProps {
   antialias?: boolean
   backgroundColor?: PIXI.ColorSource
 }
@@ -19,9 +23,10 @@ export default class OffscreenGerberApplication {
   private resizeObserver: ResizeObserver
   public virtualAppliction: PIXI.Application
   public virtualViewport: VirtualViewport
-  public worker: Comlink.Remote<GerberRendererWorker>
-  public renderer: Promise<PixiGerberApplication>
+  public worker: Comlink.Remote<WorkerMethods>
+  public renderer: Promise<Comlink.Remote<PixiGerberApplication>>
   constructor(optionsMeta: OffscreenGerberApplicationProps) {
+    // super()
     let { element, ...options } = optionsMeta
     Object.assign(options, {
       width: element.clientWidth,
@@ -56,10 +61,11 @@ export default class OffscreenGerberApplication {
 
     this.virtualAppliction.stage.addChild(this.virtualViewport)
 
-    this.worker = Comlink.wrap<GerberRendererWorker>(new gerberRendererWorker())
-    //await
-    this.worker.initRenderer(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), options)
-    this.renderer = this.worker.renderer
+    this.worker = Comlink.wrap<WorkerMethods>(new gerberRendererWorker())
+    this.renderer = new this.worker.PixiGerberApplicationWorker(
+      Comlink.transfer(offscreenCanvas, [offscreenCanvas]),
+      options
+    )
 
     // Adapt viewport to div size
     this.resizeObserver = new ResizeObserver((entries) => {
@@ -79,7 +85,8 @@ export default class OffscreenGerberApplication {
     })
 
     this.virtualViewport.on('clicked', async (e) => {
-      let intersected = await this.worker.featuresAtPosition(e.screen.x, e.screen.y)
+      const renderer = await this.renderer
+      let intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
       console.log(intersected)
     })
 
@@ -96,13 +103,16 @@ export default class OffscreenGerberApplication {
     let x = this.virtualViewport.x
     let y = this.virtualViewport.y
     let scale = this.virtualViewport.scale.x
-    await this.worker.moveViewport(x, y, scale)
+    const renderer = await this.renderer
+    await renderer.moveViewport(x, y, scale)
+    // this.emit('moved', { x, y, scale })
   }
 
   public async zoomHome() {
-    this.worker.uncull()
-    const rendererBounds = await this.worker.getRendererBounds()
-    const bounds = await this.worker.getViewportBounds()
+    const renderer = await this.renderer
+    await renderer.uncull()
+    const rendererBounds = await renderer.getRendererBounds()
+    const bounds = await renderer.getViewportBounds()
     if (bounds.width === 0 || bounds.height === 0) {
       return
     }
@@ -124,10 +134,13 @@ export default class OffscreenGerberApplication {
   }
 
   public async addGerber(name: string, gerber: string): Promise<void> {
-    const thread = Comlink.wrap<GerberRendererWorker>(new gerberRendererWorker())
-    const image = await thread.parserGerber(gerber)
+    const thread = Comlink.wrap<WorkerMethods>(new gerberRendererWorker())
+    const image = await thread.parseGerber(gerber)
     thread[Comlink.releaseProxy]()
-    await this.worker.addLayer(name, image)
+    const renderer = await this.renderer
+    // await renderer.addGerber(name, gerber)
+    await renderer.addLayer(name, image)
+    // this.emit('layerAdded', name)
   }
 
   public async tintLayer(name: string, color: PIXI.ColorSource): Promise<void> {
@@ -136,13 +149,15 @@ export default class OffscreenGerberApplication {
     })
   }
 
-  public destroy(): void {
+  public async destroy(): Promise<void> {
     this.resizeObserver.disconnect()
     this.element.removeChild(this.canvas)
     this.virtualAppliction.destroy(true)
     this.virtualViewport.removeAllListeners()
     this.virtualViewport.destroy()
-    this.worker.destroy(true)
-    this.worker[Comlink.releaseProxy]()
+    const renderer = await this.renderer
+    renderer.destroy(true)
+    renderer[Comlink.releaseProxy]()
+    // this.removeAllListeners()
   }
 }
