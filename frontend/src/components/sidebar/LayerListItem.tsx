@@ -72,7 +72,7 @@ export default function LayerListItem(props: LayerListItemProps) {
 
   return (
     <div style={{ display: 'flex' }}>
-      <animated.div {...bind()} style={{ width: '100%' }}>
+      <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
         <Button
           style={{
             textAlign: 'left',
