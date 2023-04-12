@@ -65,7 +65,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
   }, [gerberApp.current])
 
   const props: UploadProps = {
-    name: 'file',
+    // name: 'file',
     listType: 'picture',
     multiple: true,
     fileList: layers,
@@ -89,10 +89,14 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
         options.onProgress && options.onProgress({ percent })
       }
       reader.onload = () => {
-        gerberApp.current?.addGerber(options.filename || '', reader.result as string)
+        // @ts-ignore
+        gerberApp.current?.addGerber(options.file.name, reader.result as string)
         options.onSuccess && options.onSuccess(reader.result)
       }
     },
+    // onSuccess: (data, file, fileList) => {
+    //   console.log('onSuccess', data, file, fileList)
+    // },
     onChange(info) {
       const { status } = info.file
       if (status !== 'uploading') {
