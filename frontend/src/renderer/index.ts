@@ -23,17 +23,15 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   origin: PIXI.ObservablePoint
   cachedGerberGraphics: boolean = true
   cullDirty: boolean = true
-  // events: EventEmitter
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
     console.log('PixiGerberApplication', options)
     super(options)
-    // this.events = new EventEmitter()
 
     if (this.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
-      console.log('Using WebGL')
+      console.log('Gerber Renderer is using WebGL Canvas')
     } else {
-      console.log('Using Canvas')
+      console.log('Gerber Renderer is using HTML Canvas')
     }
 
     this.viewport = new PIXI.Container()
@@ -91,6 +89,9 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return intersected
   }
 
+  // Culling methods
+  // ---------------
+
   public cullViewport(force: boolean = false) {
     if (this.viewport.transform.scale.x < 1) {
       if (!this.cachedGerberGraphics) {
@@ -127,6 +128,9 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cull.uncull()
   }
 
+  // Viewport methods
+  // ----------------
+
   public moveViewport(x: number, y: number, scale: number): void {
     this.viewport.position.set(x, y)
     this.viewport.scale.set(scale)
@@ -138,24 +142,68 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  public async addGerber(name: string, gerber: string): Promise<void> {
-    const image = await this.parseGerber(gerber)
-    await this.addLayer(name, image)
+  public getViewportBounds(): PIXI.Rectangle {
+    return this.viewport.getLocalBounds()
   }
 
+  public getRendererBounds(): PIXI.Rectangle {
+    return this.renderer.screen
+  }
+
+  // Layer methods
+  // -------------
+
   public tintLayer(name: string, color: PIXI.ColorSource) {
-    const layer = this.viewport.getChildByName(name, false) as GerberGraphics
-    if (layer && layer instanceof GerberGraphics) {
+    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    if (layer) {
       layer.tint = color
     }
   }
 
   public getLayerTintColor(name: string): PIXI.ColorSource {
-    const layer = this.viewport.getChildByName(name, true) as GerberGraphics
+    const layer = this.viewport.getChildByName(name, false) as LayerContainer
     if (layer) {
       return layer.tint
     }
     return 0xffffff
+  }
+
+  public get layers(): Layers[] {
+    let gerberLayers: Layers[] = []
+    this.viewport.children.forEach((child) => {
+      if (child instanceof LayerContainer) {
+        gerberLayers.push({
+          uid: child.uid,
+          name: child.name,
+          color: child.tint,
+          visible: child.visible,
+          zIndex: child.zIndex,
+        })
+      }
+    })
+    return gerberLayers
+  }
+
+  public async addLayer(name: string, image: ImageTree): Promise<void> {
+    const layerContainer = new LayerContainer({ name })
+    layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
+    layerContainer.scale = { x: 1, y: -1 }
+    layerContainer.position = this.origin
+    layerContainer.interactiveChildren = false
+    // layerContainer.eventMode = 'none'
+    layerContainer.addChild(renderGraphics(image))
+    layerContainer.cacheAsBitmapResolution = 1
+    layerContainer.cacheAsBitmap = this.cachedGerberGraphics
+    this.viewport.addChild(layerContainer)
+    this.cull.addAll(layerContainer.children)
+  }
+
+  // Gerber methods
+  // --------------
+
+  public async addGerber(name: string, gerber: string): Promise<void> {
+    const image = await this.parseGerber(gerber)
+    await this.addLayer(name, image)
   }
 
   async parseGerber(gerber: string): Promise<ImageTree> {
@@ -166,51 +214,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return imagetree
   }
 
-  public getViewportBounds(): PIXI.Rectangle {
-    return this.viewport.getLocalBounds()
-  }
-
-  public getRendererBounds(): PIXI.Rectangle {
-    return this.renderer.screen
-  }
-
-  public get layers(): Layers[] {
-    let gerberLayers: Layers[] = []
-    this.viewport.children.forEach((child) => {
-      if (child instanceof LayerContainer) {
-        const name = child.name
-        if (child.children[0] instanceof GerberGraphics) {
-          gerberLayers.push({
-            uid: child.children[0].uid,
-            name,
-            color: child.children[0].tint || 0xffffff,
-            visible: child.children[0].visible,
-            zIndex: child.children[0].zIndex,
-          })
-        }
-      }
-    })
-    return gerberLayers
-  }
-
-  public async addLayer(name: string, image: ImageTree): Promise<void> {
-    const layerContainer = new LayerContainer({ name })
-    // const tint = new PIXI.ColorMatrixFilter()
-    // tint.tint(0x00ff00, false)
-    layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
-    layerContainer.scale = { x: 1, y: -1 }
-    layerContainer.position = this.origin
-    layerContainer.interactiveChildren = false
-    // layerContainer.eventMode = 'none'
-    // const child = renderGraphics(image)
-    // child.name = name
-    layerContainer.addChild(renderGraphics(image))
-    // layerContainer.cacheAsBitmapMultisample = PIXI.MSAA_QUALITY.LOW
-    layerContainer.cacheAsBitmapResolution = 1
-    layerContainer.cacheAsBitmap = this.cachedGerberGraphics
-    this.viewport.addChild(layerContainer)
-    this.cull.addAll(layerContainer.children)
-  }
+  // Event methods
+  // -------------
 
   addViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
     function runCallback() {
@@ -227,16 +232,30 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     removeView?: boolean | undefined,
     stageOptions?: boolean | PIXI.IDestroyOptions | undefined
   ): void {
-    // this.events.removeAllListeners()
     this.viewport.removeAllListeners()
     super.destroy(removeView, stageOptions)
   }
 }
 
 class LayerContainer extends PIXI.Container {
-  name: string
+  public name: string
+  public uid: string
   constructor(props: { name: string }) {
     super()
     this.name = props.name
+    this.uid = this.generateUid()
+  }
+  private generateUid(): string {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  }
+
+  get tint(): PIXI.ColorSource {
+    const child = this.children[0] as GerberGraphics
+    return child.tint
+  }
+
+  set tint(color: PIXI.ColorSource) {
+    const child = this.children[0] as GerberGraphics
+    child.tint = color
   }
 }

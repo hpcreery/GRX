@@ -17,7 +17,7 @@ export interface PathProps {
 
 export interface Layers {
   uid: string
-  name: string | null
+  name: string
   color: ColorSource
   visible: boolean
   zIndex: number

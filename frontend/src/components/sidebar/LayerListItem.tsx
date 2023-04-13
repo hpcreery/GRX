@@ -29,16 +29,19 @@ import { BlockPicker, CirclePicker } from 'react-color'
 import { useDrag, useScroll, useWheel, useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 import { Layers } from '../../renderer/types'
+import OffscreenGerberApplication from '../../renderer/offscreen'
 
 const { useToken } = theme
 interface LayerListItemProps {
   layer: Layers
   file: UploadFile
+  gerberApp: React.MutableRefObject<OffscreenGerberApplication | undefined>
 }
 
 export default function LayerListItem(props: LayerListItemProps) {
   const { token } = useToken()
   const [{ x, y, width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
+  const [color, setColor] = useState<ColorSource>(props.layer.color)
   let lastx = 0
   const bind = useGesture(
     {
@@ -83,9 +86,22 @@ export default function LayerListItem(props: LayerListItemProps) {
           }}
           type='text'>
           <Space.Compact>
-            <Popover placement='right' title={'Color'} content={<CirclePicker />} trigger='hover'>
-              {/* @ts-ignore */}
-              <Badge color={chroma(props.layer.color).hex()} style={{ margin: '0px 10px' }} />
+            <Popover
+              placement='right'
+              title={'Color'}
+              content={
+                <CirclePicker
+                  color={chroma(color as any).hex()}
+                  onChange={(color) => {
+                    setColor(color.hex)
+                    props.gerberApp.current?.renderer.then((r) => {
+                      r.tintLayer(props.layer.name, color.hex)
+                    })
+                  }}
+                />
+              }
+              trigger='hover'>
+              <Badge color={chroma(color as any).hex()} style={{ margin: '0px 10px' }} />
             </Popover>
             {props.file.name}
           </Space.Compact>

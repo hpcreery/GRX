@@ -116,7 +116,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
     itemRender: (originNode, file, currFileList) => {
       const layer = layers.find((l) => l.uid === file.uid)
       if (layer === undefined) return
-      return <LayerListItem layer={layer} file={file} />
+      return <LayerListItem layer={layer} file={file} gerberApp={gerberApp}/>
     },
   }
 
