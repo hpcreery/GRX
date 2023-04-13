@@ -95,22 +95,13 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   public cullViewport(force: boolean = false) {
     if (this.viewport.transform.scale.x < 1) {
       if (!this.cachedGerberGraphics) {
-        // console.log('caching')
-        this.cachedGerberGraphics = true
-        this.cull.uncull()
         this.cullDirty = true
-        this.viewport.children.forEach(async (child) => {
-          child.cacheAsBitmap = true
-        })
+        this.cacheViewport()
       }
     } else {
       if (this.cachedGerberGraphics) {
-        // console.log('uncaching')
-        this.cachedGerberGraphics = false
         this.cullDirty = true
-        this.viewport.children.forEach(async (child) => {
-          child.cacheAsBitmap = false
-        })
+        this.uncacheViewport()
       }
     }
     if (this.cachedGerberGraphics !== true) {
@@ -122,6 +113,21 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
         }, 40)
       }
     }
+  }
+
+  private cacheViewport() {
+    this.cull.uncull()
+    this.cachedGerberGraphics = true
+    this.viewport.children.forEach(async (child) => {
+      child.cacheAsBitmap = true
+    })
+  }
+
+  private uncacheViewport() {
+    this.cachedGerberGraphics = false
+    this.viewport.children.forEach(async (child) => {
+      child.cacheAsBitmap = false
+    })
   }
 
   public uncull(): void {
@@ -154,10 +160,12 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // -------------
 
   public tintLayer(name: string, color: PIXI.ColorSource) {
+    this.uncacheViewport()
     const layer = this.viewport.getChildByName(name, false) as LayerContainer
     if (layer) {
       layer.tint = color
     }
+    this.cullViewport()
   }
 
   public getLayerTintColor(name: string): PIXI.ColorSource {
@@ -196,6 +204,14 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
     this.viewport.addChild(layerContainer)
     this.cull.addAll(layerContainer.children)
+  }
+
+  public async removeLayer(name: string): Promise<void> {
+    const layerContainer = this.viewport.getChildByName(name, false) as LayerContainer
+    if (layerContainer) {
+      this.viewport.removeChild(layerContainer)
+      this.cull.removeAll(layerContainer.children)
+    }
   }
 
   // Gerber methods

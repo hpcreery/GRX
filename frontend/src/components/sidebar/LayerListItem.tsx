@@ -113,6 +113,11 @@ export default function LayerListItem(props: LayerListItemProps) {
           type='text'
           style={{ padding: 0, width: `100%`, overflow: 'hidden', marginTop: 3 }}
           icon={<DeleteOutlined style={{ color: token['red-5'] }} />}
+          onClick={() => {
+            props.gerberApp.current?.renderer.then((r) => {
+              r.removeLayer(props.layer.name)
+            })
+          }}
         />
       </animated.div>
     </div>

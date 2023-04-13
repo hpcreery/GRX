@@ -55,7 +55,13 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
           'childAdded',
           Comlink.proxy(async () => {
             const layers = (await r.layers) as GerberLayers[]
-            console.log('childAdded', layers)
+            setLayers(layers)
+          })
+        )
+        r.addViewportListener(
+          'childRemoved',
+          Comlink.proxy(async () => {
+            const layers = (await r.layers) as GerberLayers[]
             setLayers(layers)
           })
         )
