@@ -57,7 +57,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
             icon={<ZoomInOutlined />}
             onClick={() => {
               if (gerberApp.current) {
-                gerberApp.current.zoom(-300 / gerberApp.current.virtualViewport.scale.x)
+                gerberApp.current.zoom(-1000 / gerberApp.current.virtualViewport.scale.x)
               }
             }}
             type='text'
@@ -66,7 +66,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
             icon={<ZoomOutOutlined />}
             onClick={() => {
               if (gerberApp.current) {
-                gerberApp.current.zoom(300 / gerberApp.current.virtualViewport.scale.x)
+                gerberApp.current.zoom(1000 / gerberApp.current.virtualViewport.scale.x)
               }
             }}
             type='text'
