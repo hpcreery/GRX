@@ -1,4 +1,4 @@
-import { CLEAR, DARK } from '@hpcreery/tracespace-parser'
+import { CLEAR, DARK, IN, MM } from '@hpcreery/tracespace-parser'
 import type {
   ImageTree,
   ImageGraphic,
@@ -26,87 +26,68 @@ import {
   LINE,
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
+import chroma from 'chroma-js'
 import * as Tess2 from 'tess2-ts'
 
-const darkColor = 0xffffff
-// let darkColor = Math.floor(Math.random() * 16777215)
-const darkAlpha: number = 1
-const clearColor = 0x000000
-const clearAlpha: number = 1
+const DARK_COLOR: number = 0xffffff
+const DARK_ALPHA: number = 1
 
-const scale: number = 100
-const outlineMode = false
+const CLEAR_COLOR: number = 0x000000
+const CLEAR_ALPHA: number = 1
+
+const OUTLINE_MODE: boolean = false
+
+let scale: number = 100
 
 const randomColor = () => Math.floor(Math.random() * 16777215)
 const uid = () =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-const ChromaFilter = new PIXI.Filter(
-  undefined,
-  [
-    'varying vec2 vTextureCoord;',
-    'uniform float thresholdSensitivity;',
-    'uniform float smoothing;',
-    'uniform vec3 colorToReplace;',
-    'uniform sampler2D uSampler;',
-    'void main() {',
-    'vec4 textureColor = texture2D(uSampler, vTextureCoord);',
-    'float maskY = 0.2989 * colorToReplace.r + 0.5866 * colorToReplace.g + 0.1145 * colorToReplace.b;',
-    'float maskCr = 0.7132 * (colorToReplace.r - maskY);',
-
-    'float maskCb = 0.5647 * (colorToReplace.b - maskY);',
-    'float Y = 0.2989 * textureColor.r + 0.5866 * textureColor.g + 0.1145 * textureColor.b;',
-    'float Cr = 0.7132 * (textureColor.r - Y);',
-    'float Cb = 0.5647 * (textureColor.b - Y);',
-    'float blendValue = smoothstep(thresholdSensitivity, thresholdSensitivity + smoothing, distance(vec2(Cr, Cb), vec2(maskCr, maskCb)));',
-    'gl_FragColor = vec4(textureColor.rgb, textureColor.a * blendValue);',
-    '}',
-  ].join('\n')
-)
-ChromaFilter.uniforms.thresholdSensitivity = 0
-ChromaFilter.uniforms.smoothing = 0.2
-ChromaFilter.uniforms.colorToReplace = [0, 0, 0]
-
-export function renderGraphics(tree: ImageTree): GerberGraphics {
-  // darkColor = Math.floor(Math.random() * 16777215)
-  const { size, children } = tree
-
-  const graphic = new GerberGraphics()
-  graphic.filters = [ChromaFilter]
-
-  for (const [index, child] of children.entries()) {
-    graphic.renderGraphic(child)
-    graphic.moveTo(0, 0)
-  }
-
-  console.log('Done rendering')
-  return graphic
-}
-
 export class GerberGraphics extends PIXI.Graphics {
   uid: string
-  constructor() {
+  constructor(tree?: ImageTree) {
     super()
+    this.filters = [ChromaFilter]
     this.tint = randomColor()
     this.uid = uid()
-    // @ts-ignore
-    // console.log(this.curves)
+    if (tree) {
+      this.renderImageTree(tree)
+    }
   }
 
-  renderGraphic(node: ImageGraphic): this {
+  public renderImageTree(tree: ImageTree): this {
+    const { size, children, units } = tree
+    if (units === IN) {
+      scale = 100
+    } else if (units === MM) {
+      scale = 100 / 25.4
+    } else {
+      throw new Error(`Unknown units: ${units}`)
+    }
+
+    for (const [index, child] of children.entries()) {
+      this.renderGraphic(child)
+      this.moveTo(0, 0)
+    }
+
+    // console.log('Done Rendering ImageTree')
+    return this
+  }
+
+  private renderGraphic(node: ImageGraphic): this {
     if (node.type === IMAGE_SHAPE) {
-      if (outlineMode) {
-        this.beginFill(darkColor, 0)
+      if (OUTLINE_MODE) {
+        this.beginFill(DARK_COLOR, 0)
         this.lineStyle({
-          color: darkColor,
+          color: DARK_COLOR,
           width: 0.05,
           alpha: 1,
         })
       } else {
         if (node.polarity == DARK) {
-          this.beginFill(darkColor, darkAlpha)
+          this.beginFill(DARK_COLOR, DARK_ALPHA)
         } else {
-          this.beginFill(clearColor, clearAlpha)
+          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
         }
         this.lineStyle({
           width: 0,
@@ -117,27 +98,27 @@ export class GerberGraphics extends PIXI.Graphics {
     } else {
       if (node.type === IMAGE_PATH) {
         if (node.polarity == DARK) {
-          this.beginFill(darkColor, 0)
+          this.beginFill(DARK_COLOR, 0)
         } else {
-          this.beginFill(clearColor, 0)
+          this.beginFill(CLEAR_COLOR, 0)
         }
         this.lineStyle({
           width: node.width * scale,
-          color: node.polarity == DARK ? darkColor : clearColor,
-          alpha: node.polarity == DARK ? darkAlpha : clearAlpha,
+          color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+          alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
           cap: PIXI.LINE_CAP.ROUND,
           join: PIXI.LINE_JOIN.ROUND,
         })
         this.drawPolyLine(node.segments)
       } else {
         if (node.polarity == DARK) {
-          this.beginFill(darkColor, darkAlpha)
+          this.beginFill(DARK_COLOR, DARK_ALPHA)
         } else {
-          this.beginFill(clearColor, clearAlpha)
+          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
         }
         this.lineStyle({
           width: 0,
-          color: node.polarity == DARK ? darkColor : clearColor,
+          color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
           alpha: 0,
           cap: PIXI.LINE_CAP.ROUND,
           join: PIXI.LINE_JOIN.ROUND,
@@ -149,12 +130,12 @@ export class GerberGraphics extends PIXI.Graphics {
     return this
   }
 
-  renderShape(node: ImageShape): this {
+  private renderShape(node: ImageShape): this {
     const { shape } = node
     return this.shapeToElement(shape)
   }
 
-  shapeToElement(shape: Shape): this {
+  private shapeToElement(shape: Shape): this {
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
@@ -183,14 +164,14 @@ export class GerberGraphics extends PIXI.Graphics {
         const parentColor = this._fillStyle.color
         for (const [index, layerShape] of shape.shapes.entries()) {
           const color =
-            parentColor == darkColor
+            parentColor == DARK_COLOR
               ? layerShape.erase === true
-                ? clearColor
-                : darkColor
+                ? CLEAR_COLOR
+                : DARK_COLOR
               : layerShape.erase === true
-              ? darkColor
-              : clearColor
-          this.beginFill(color, parentColor == darkColor ? darkAlpha : clearAlpha)
+              ? DARK_COLOR
+              : CLEAR_COLOR
+          this.beginFill(color, parentColor == DARK_COLOR ? DARK_ALPHA : CLEAR_ALPHA)
           this.shapeToElement(layerShape)
           this.endFill()
           this.moveTo(0, 0)
@@ -205,7 +186,7 @@ export class GerberGraphics extends PIXI.Graphics {
     }
   }
 
-  public drawPolyLine(segments: PathSegment[]): this {
+  private drawPolyLine(segments: PathSegment[]): this {
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
@@ -223,7 +204,7 @@ export class GerberGraphics extends PIXI.Graphics {
     return this
   }
 
-  public drawContour(segments: PathSegment[]): this {
+  private drawContour(segments: PathSegment[]): this {
     let lastHome: Position | ArcPosition = [0, 0]
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
@@ -308,3 +289,30 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     verts.push(vrt[i])
   }
 }
+
+// Custom filter to replace a color with transparency
+const ChromaFilter = new PIXI.Filter(
+  undefined,
+  [
+    'varying vec2 vTextureCoord;',
+    'uniform float thresholdSensitivity;',
+    'uniform float smoothing;',
+    'uniform vec3 colorToReplace;',
+    'uniform sampler2D uSampler;',
+    'void main() {',
+    'vec4 textureColor = texture2D(uSampler, vTextureCoord);',
+    'float maskY = 0.2989 * colorToReplace.r + 0.5866 * colorToReplace.g + 0.1145 * colorToReplace.b;',
+    'float maskCr = 0.7132 * (colorToReplace.r - maskY);',
+
+    'float maskCb = 0.5647 * (colorToReplace.b - maskY);',
+    'float Y = 0.2989 * textureColor.r + 0.5866 * textureColor.g + 0.1145 * textureColor.b;',
+    'float Cr = 0.7132 * (textureColor.r - Y);',
+    'float Cb = 0.5647 * (textureColor.b - Y);',
+    'float blendValue = smoothstep(thresholdSensitivity, thresholdSensitivity + smoothing, distance(vec2(Cr, Cb), vec2(maskCr, maskCb)));',
+    'gl_FragColor = vec4(textureColor.rgb, textureColor.a * blendValue);',
+    '}',
+  ].join('\n')
+)
+ChromaFilter.uniforms.thresholdSensitivity = 0
+ChromaFilter.uniforms.smoothing = 0.2
+ChromaFilter.uniforms.colorToReplace = chroma(CLEAR_COLOR).rgb() // [0, 0, 0] black

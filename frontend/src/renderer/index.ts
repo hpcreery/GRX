@@ -1,4 +1,4 @@
-import { GerberGraphics, renderGraphics } from './graphics'
+import { GerberGraphics } from './graphics'
 import geometry from './geometry_math'
 
 import { parse, GerberTree } from '@hpcreery/tracespace-parser'
@@ -199,7 +199,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layerContainer.position = this.origin
     layerContainer.interactiveChildren = false
     // layerContainer.eventMode = 'none'
-    layerContainer.addChild(renderGraphics(image))
+    layerContainer.addChild(new GerberGraphics(image))
     layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
     this.viewport.addChild(layerContainer)
