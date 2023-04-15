@@ -176,6 +176,24 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return 0xffffff
   }
 
+  showLayer(name: string) {
+    this.uncacheViewport()
+    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    if (layer) {
+      layer.visible = true
+    }
+    this.cullViewport()
+  }
+
+  hideLayer(name: string) {
+    this.uncacheViewport()
+    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    if (layer) {
+      layer.visible = false
+    }
+    this.cullViewport()
+  }
+
   public get layers(): Layers[] {
     let gerberLayers: Layers[] = []
     this.viewport.children.forEach((child) => {

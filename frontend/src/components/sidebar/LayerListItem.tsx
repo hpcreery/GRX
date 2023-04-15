@@ -42,10 +42,19 @@ export default function LayerListItem(props: LayerListItemProps) {
   const { token } = useToken()
   const [{ x, y, width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<ColorSource>(props.layer.color)
+  const [visible, setVisible] = useState<boolean>(props.layer.visible)
+  const [activeGesture, setActiveGesture] = useState<'drag' | 'wheel' | 'none'>('none')
   let lastx = 0
   const bind = useGesture(
     {
-      onDrag: ({ down, offset: [mx, my] }) => {
+      onDrag: ({ down, offset: [mx, my], first, last, event }) => {
+        if (first) {
+          setActiveGesture('drag')
+        }
+        if (last) {
+          setActiveGesture('none')
+        }
+        event.stopPropagation()
         if (down) {
           api.start({ x: mx, y: my, width: -mx })
           lastx = mx
@@ -53,9 +62,18 @@ export default function LayerListItem(props: LayerListItemProps) {
           api.start({ x: lastx < -20 ? -40 : 0, y: 0, width: lastx < -20 ? 40 : 0 })
         }
       },
-      onWheel: ({ down, offset: [mx, my] }) => {
+      onWheel: ({ down, offset: [mx, my], first, last }) => {
+        if (first) {
+          setActiveGesture('wheel')
+        }
+        if (last) {
+          setActiveGesture('none')
+        }
         api.start({ x: -mx, y: my, width: mx })
       },
+      onClick: () => {
+        // console.log('click')
+      }
     },
     {
       drag: {
@@ -69,22 +87,41 @@ export default function LayerListItem(props: LayerListItemProps) {
     }
   )
 
-  useEffect(() => {
-    console.log('x', x)
-  }, [x])
-
   return (
     <div style={{ display: 'flex' }}>
       <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
         <Button
           style={{
             textAlign: 'left',
-            marginTop: 3,
+            marginTop: 5,
             width: '100%',
             overflow: 'hidden',
             padding: 0,
           }}
-          type='text'>
+          type='text'
+          onClick={(e) => {
+            if (
+              !(
+                e.target instanceof HTMLDivElement &&
+                e.target.parentNode instanceof HTMLButtonElement
+              )
+            ) {
+              return
+            }
+
+            console.log(activeGesture)
+            props.gerberApp.current?.renderer.then((r) => {
+              // r.toggleLayer(props.layer.name)
+              console.log('visible', e)
+              if (visible) {
+                r.hideLayer(props.layer.name)
+                setVisible(false)
+              } else {
+                r.showLayer(props.layer.name)
+                setVisible(true)
+              }
+            })
+          }}>
           <Space.Compact>
             <Popover
               placement='right'
@@ -100,8 +137,11 @@ export default function LayerListItem(props: LayerListItemProps) {
                   }}
                 />
               }
-              trigger='hover'>
-              <Badge color={chroma(color as any).hex()} style={{ margin: '0px 10px' }} />
+              trigger='click'>
+              <Badge
+                color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
+                style={{ margin: '0px 10px' }}
+              />
             </Popover>
             {props.file.name}
           </Space.Compact>

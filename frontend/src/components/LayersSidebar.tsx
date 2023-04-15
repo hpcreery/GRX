@@ -145,7 +145,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
           pointerEvents: 'all',
           overflow: 'hidden',
         }}
-        bodyStyle={{ padding: 3 }}>
+        bodyStyle={{ padding: 5 }}>
         <Dragger {...props}>
           <PlusOutlined />
         </Dragger>
