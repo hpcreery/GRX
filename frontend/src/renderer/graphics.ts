@@ -232,9 +232,9 @@ export class GerberGraphics extends PIXI.Graphics {
     return this
   }
 
-  render(r: PIXI.Renderer) {
-    super.render(r)
-  }
+  // render(r: PIXI.Renderer) {
+  //   super.render(r)
+  // }
 }
 
 // This is a hack to get PIXI to use the Tess2 library for triangulation. REQUIRED

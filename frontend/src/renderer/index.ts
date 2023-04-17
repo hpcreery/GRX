@@ -8,7 +8,11 @@ import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
 import { Layers } from './types'
-// import EventEmitter from 'events'
+
+import * as Comlink from 'comlink'
+/* eslint-disable import/no-webpack-loader-syntax */
+import gerberParserWorker from 'worker-loader!../workers/gerber_parser'
+import type { WorkerMethods as GerberParserMethods } from '../workers/gerber_parser'
 
 PIXI.BatchRenderer.canUploadSameBuffer = true
 // PIXI.Graphics.curves.adaptive = false
@@ -50,6 +54,10 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       0,
       this.renderer.height / this.renderer.resolution
     )
+  }
+
+  public getOrigin(): {x: number, y: number} {
+    return {x: this.origin.x, y: this.origin.y}
   }
 
   public featuresAtPosition(clientX: number, clientY: number): any[] {
@@ -176,7 +184,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return 0xffffff
   }
 
-  showLayer(name: string) {
+  public showLayer(name: string) {
     this.uncacheViewport()
     const layer = this.viewport.getChildByName(name, false) as LayerContainer
     if (layer) {
@@ -185,7 +193,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  hideLayer(name: string) {
+  public hideLayer(name: string) {
     this.uncacheViewport()
     const layer = this.viewport.getChildByName(name, false) as LayerContainer
     if (layer) {
@@ -210,7 +218,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return gerberLayers
   }
 
-  public async addLayer(name: string, image: ImageTree): Promise<void> {
+  public addLayer(name: string, image: ImageTree): void {
     const layerContainer = new LayerContainer({ name })
     layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
     layerContainer.scale = { x: 1, y: -1 }
@@ -236,16 +244,10 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // --------------
 
   public async addGerber(name: string, gerber: string): Promise<void> {
-    const image = await this.parseGerber(gerber)
-    await this.addLayer(name, image)
-  }
-
-  async parseGerber(gerber: string): Promise<ImageTree> {
-    const syntaxTree = parse(gerber)
-    console.log('Syntax Tree:', syntaxTree)
-    const imagetree = plot(syntaxTree)
-    console.log('Image Tree:', imagetree)
-    return imagetree
+    const thread = Comlink.wrap<GerberParserMethods>(new gerberParserWorker())
+    const image = await thread.parseGerber(gerber)
+    thread[Comlink.releaseProxy]()
+    this.addLayer(name, image)
   }
 
   // Event methods

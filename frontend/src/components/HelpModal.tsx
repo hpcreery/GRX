@@ -2,10 +2,12 @@ import React from 'react'
 import { QuestionOutlined } from '@ant-design/icons'
 import { Button, Card, Space, theme } from 'antd'
 import chroma from 'chroma-js'
+import { ConfigEditorProvider } from '../App'
 const { useToken } = theme
 
 export default function HelpModal() {
   const { token } = useToken()
+  const { transparency, blur } = React.useContext(ConfigEditorProvider)
   return (
     <Card
       style={{
@@ -14,8 +16,8 @@ export default function HelpModal() {
         position: 'absolute',
         bottom: 10,
         right: 10,
-        backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-        backdropFilter: 'blur(50px)',
+        backgroundColor: transparency ? chroma(token.colorBgElevated).alpha(0.7).css() : chroma(token.colorBgElevated).css(),
+        backdropFilter: transparency ? `blur(${blur}px)` : '',
         pointerEvents: 'all',
       }}
       bodyStyle={{ padding: 3 }}>

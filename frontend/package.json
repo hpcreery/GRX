@@ -17,6 +17,7 @@
     "test": "react-scripts test"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.6",
     "@hpcreery/pixi-viewport": "^5.0.1",
     "@hpcreery/tracespace-parser": "^5.0.0-alpha.11",
     "@hpcreery/tracespace-plotter": "^5.0.0-alpha.11",
@@ -41,6 +42,7 @@
     "comlink": "^4.4.1",
     "hast": "^1.0.0",
     "hastscript": "^7.2.0",
+    "localforage": "^1.10.0",
     "pixi-graphpaper": "^2.0.1",
     "pixi-viewport": "^5.0.1",
     "pixi.js": "^7.2.3",

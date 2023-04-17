@@ -24,9 +24,9 @@ import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
 import { PlusOutlined } from '@ant-design/icons'
 
-import { Layers } from '../renderer/types'
 import * as Comlink from 'comlink'
 import LayerListItem from './sidebar/LayerListItem'
+import { ConfigEditorProvider } from '../App'
 
 const { useToken } = theme
 const { Dragger } = Upload
@@ -41,34 +41,38 @@ interface GerberLayers extends UploadFile {
 // import type { Layers as GerberLayers } from '../renderer/types'
 
 interface SidebarProps {
-  gerberApp: React.MutableRefObject<OffscreenGerberApplication | undefined>
+  gerberApp: OffscreenGerberApplication
 }
 
 export default function LayerSidebar({ gerberApp }: SidebarProps) {
+  // const { current: app } = gerberApp
   const { token } = useToken()
   const [layers, setLayers] = useState<GerberLayers[]>([])
+  const { transparency, blur } = React.useContext(ConfigEditorProvider)
 
   useEffect(() => {
-    if (gerberApp.current) {
-      gerberApp.current.renderer.then(async (r) => {
-        r.addViewportListener(
-          'childAdded',
-          Comlink.proxy(async () => {
-            const layers = (await r.layers) as GerberLayers[]
-            setLayers(layers)
-          })
-        )
-        r.addViewportListener(
-          'childRemoved',
-          Comlink.proxy(async () => {
-            const layers = (await r.layers) as GerberLayers[]
-            setLayers(layers)
-          })
-        )
-      })
-    }
+    gerberApp.renderer.then(async (r) => {
+      const layers = (await r.layers) as GerberLayers[]
+      setLayers(layers)
+      r.addViewportListener(
+        'childAdded',
+        Comlink.proxy(async () => {
+          console.log('childAdded')
+          const layers = (await r.layers) as GerberLayers[]
+          setLayers(layers)
+        })
+      )
+      r.addViewportListener(
+        'childRemoved',
+        Comlink.proxy(async () => {
+          console.log('childRemoved')
+          const layers = (await r.layers) as GerberLayers[]
+          setLayers(layers)
+        })
+      )
+    })
     return () => {}
-  }, [gerberApp.current])
+  }, [])
 
   const props: UploadProps = {
     // name: 'file',
@@ -94,9 +98,10 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
         const percent = Math.round((e.loaded / e.total) * 100)
         options.onProgress && options.onProgress({ percent })
       }
-      reader.onload = () => {
+      reader.onload = async () => {
+        const renderer = await gerberApp.renderer
         // @ts-ignore
-        gerberApp.current?.addGerber(options.file.name, reader.result as string)
+        await renderer.addGerber(options.file.name, reader.result as string)
         options.onSuccess && options.onSuccess(reader.result)
       }
     },
@@ -122,9 +127,21 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
     itemRender: (originNode, file, currFileList) => {
       const layer = layers.find((l) => l.uid === file.uid)
       if (layer === undefined) return
-      return <LayerListItem layer={layer} file={file} gerberApp={gerberApp}/>
+      return <LayerListItem key={layer.uid} layer={layer} file={file} gerberApp={gerberApp} />
     },
   }
+
+  // const transparencyCSS = useMemo(() => {
+  //   return {
+  //     backdropFilter: 'blur(50px)',
+  //     backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
+  //   }
+  // }, [])
+  const transparencyCSS = {
+    backdropFilter: transparency ? `blur(${blur}px)` : '',
+    backgroundColor: transparency ? chroma(token.colorBgElevated).alpha(0.7).css() : chroma(token.colorBgElevated).css(),
+  }
+
 
   return (
     <div
@@ -140,10 +157,11 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
           width: 200,
           height: '-webkit-fill-available',
           margin: 10,
-          backdropFilter: 'blur(50px)',
-          backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
+          // backdropFilter: 'blur(50px)',
+          // backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
           pointerEvents: 'all',
           overflow: 'hidden',
+          ...transparencyCSS,
         }}
         bodyStyle={{ padding: 5 }}>
         <Dragger {...props}>

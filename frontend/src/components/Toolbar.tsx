@@ -7,7 +7,7 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons'
-import { Button, Card, Divider, Modal, Space, Switch, theme, Typography } from 'antd'
+import { Button, Card, Divider, Modal, Segmented, Space, Switch, theme, Typography } from 'antd'
 import chroma from 'chroma-js'
 import OffscreenGerberApplication from '../renderer/offscreen'
 import { ConfigEditorProvider } from '../App'
@@ -15,13 +15,14 @@ const { useToken } = theme
 const { Title } = Typography
 
 interface ToolbarProps {
-  gerberApp: React.MutableRefObject<OffscreenGerberApplication | undefined>
+  gerberApp: OffscreenGerberApplication
 }
 
 export default function Toolbar({ gerberApp }: ToolbarProps) {
   const { token } = useToken()
   const [settingsModalOpen, settingsSetModalOpen] = React.useState<boolean>(false)
-  const { themeState, setThemeState } = React.useContext(ConfigEditorProvider)
+  const { themeState, setThemeState, transparency, setTransparency, blur } =
+    React.useContext(ConfigEditorProvider)
 
   const showModal = () => {
     settingsSetModalOpen(true)
@@ -44,38 +45,52 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           position: 'absolute',
           top: 10,
           right: 10,
-          backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
-          backdropFilter: 'blur(50px)',
+          backgroundColor: transparency ? chroma(token.colorBgElevated).alpha(0.7).css() : chroma(token.colorBgElevated).css(),
+          backdropFilter: transparency ? `blur(${blur}px)` : '',
           pointerEvents: 'all',
         }}
         bodyStyle={{ padding: 3 }}>
         <Space size={1}>
-          <Button icon={<DragOutlined />} type='text' />
-          <Button icon={<LineOutlined />} type='text' />
+          {/* <Button icon={<DragOutlined />} type='text' /> */}
+          {/* <Button icon={<LineOutlined />} type='text' /> */}
+          <Segmented
+            style={{
+              backgroundColor: transparency ? chroma(token.colorBgLayout).alpha(0.3).css() : chroma(token.colorBgLayout).alpha(0.3).css(),
+              backdropFilter: transparency ? '' : '',
+            }}
+            options={[
+              {
+                label: '',
+                value: 'Move',
+                icon: <DragOutlined />,
+              },
+              {
+                label: '',
+                value: 'Measure',
+                icon: <LineOutlined />,
+              },
+            ]}
+          />
           <Divider type='vertical' style={{ margin: '0 3px' }} />
           <Button
             icon={<ZoomInOutlined />}
             onClick={() => {
-              if (gerberApp.current) {
-                gerberApp.current.zoom(-1000 / gerberApp.current.virtualViewport.scale.x)
-              }
+              gerberApp.zoom(-550 / gerberApp.virtualViewport.scale.x)
             }}
             type='text'
           />
           <Button
             icon={<ZoomOutOutlined />}
-            onClick={() => {
-              if (gerberApp.current) {
-                gerberApp.current.zoom(1000 / gerberApp.current.virtualViewport.scale.x)
-              }
+            onClick={async () => {
+              gerberApp.zoom(1000 / gerberApp.virtualViewport.scale.x)
             }}
             type='text'
           />
           <Button
             icon={<HomeOutlined />}
             onClick={() => {
-              gerberApp.current && gerberApp.current.zoomHome()
-              gerberApp.current && gerberApp.current.virtualViewport.decelerate()
+              gerberApp.zoomHome()
+              gerberApp.virtualViewport.decelerate()
             }}
             type='text'
           />
@@ -101,6 +116,13 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
             } else {
               setThemeState({ algorithm: theme.defaultAlgorithm })
             }
+          }}
+        />
+        <Title level={5}>Transparency</Title>
+        <Switch
+          defaultChecked={transparency}
+          onChange={(checked) => {
+            setTransparency(checked)
           }}
         />
       </Modal>
