@@ -12,7 +12,7 @@ import chroma from 'chroma-js'
 import OffscreenGerberApplication from '../renderer/offscreen'
 import { ConfigEditorProvider } from '../App'
 const { useToken } = theme
-const { Title } = Typography
+const { Title, Text } = Typography
 
 interface ToolbarProps {
   gerberApp: OffscreenGerberApplication
@@ -45,7 +45,9 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           position: 'absolute',
           top: 10,
           right: 10,
-          backgroundColor: transparency ? chroma(token.colorBgElevated).alpha(0.7).css() : chroma(token.colorBgElevated).css(),
+          backgroundColor: transparency
+            ? chroma(token.colorBgElevated).alpha(0.7).css()
+            : chroma(token.colorBgElevated).css(),
           backdropFilter: transparency ? `blur(${blur}px)` : '',
           pointerEvents: 'all',
         }}
@@ -55,7 +57,9 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           {/* <Button icon={<LineOutlined />} type='text' /> */}
           <Segmented
             style={{
-              backgroundColor: transparency ? chroma(token.colorBgLayout).alpha(0.3).css() : chroma(token.colorBgLayout).alpha(0.3).css(),
+              backgroundColor: transparency
+                ? chroma(token.colorBgLayout).alpha(0.3).css()
+                : chroma(token.colorBgLayout).alpha(0.3).css(),
               backdropFilter: transparency ? '' : '',
             }}
             options={[
@@ -107,24 +111,30 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
         onOk={handleSettingsModalOk}
         onCancel={handleSettingsModalCancel}>
         <Divider />
-        <Title level={5}>Dark Mode</Title>
-        <Switch
-          defaultChecked={themeState.algorithm === theme.darkAlgorithm}
-          onChange={(checked) => {
-            if (checked) {
-              setThemeState({ algorithm: theme.darkAlgorithm })
-            } else {
-              setThemeState({ algorithm: theme.defaultAlgorithm })
-            }
-          }}
-        />
-        <Title level={5}>Transparency</Title>
-        <Switch
-          defaultChecked={transparency}
-          onChange={(checked) => {
-            setTransparency(checked)
-          }}
-        />
+        <Space align='center' style={{width: '100%', justifyContent: 'space-between'}}>
+          <Text>Dark Mode</Text>
+          <Switch
+            defaultChecked={themeState.algorithm === theme.darkAlgorithm}
+            onChange={(checked) => {
+              if (checked) {
+                setThemeState({ algorithm: theme.darkAlgorithm })
+              } else {
+                setThemeState({ algorithm: theme.defaultAlgorithm })
+              }
+            }}
+          />
+        </Space>
+        <Divider />
+        <Space align='center' style={{width: '100%', justifyContent: 'space-between'}}>
+          <Text>Transparency</Text>
+          <Switch
+            defaultChecked={transparency}
+            onChange={(checked) => {
+              setTransparency(checked)
+            }}
+          />
+        </Space>
+        <Divider />
       </Modal>
     </>
   )
