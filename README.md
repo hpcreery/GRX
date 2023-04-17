@@ -1,42 +1,20 @@
 # GRX
 
-Gerber Viewer with 3d support and beautiful finished board rendering
+Fastest WEB Based Gerber Viewer
 
 #### !! DEVELOPMENT !!
 
-See the current build in production here => [GRX](http://grx.creery.org)
+See the current build in production here -> [GRX](http://grx.creery.org)
 
-![homepage](/doc/full.gif)
+![preview](/doc/screenshot.png)
 
 ## About
 
-Front-End & Back-End Repository for GRX.
+GRX is a web based gerber viewer utilizing WebGL and WebWorkers to parse and render gerber files. It is designed to be fast and easy to use.
 
-Front end is a single-page React App that utilizes advanced libraries including Three.js and TraceSpace. These combined create an awesome 3D gerber viewer.
+## Features
 
-## For All-In-One Production
-
-### Install Dependencies
-
-Install dependencies for both frontend and backend
-
-### Edit .env files for each side
-
-Frontend `/frontend/.env`
-Backend `/backend/.env`
-
-### Build Frontend into Production
-
-In `/frontend` run `npm run build`
-
-#### Install pm2
-
-```
-npm install pm2 -g
-```
-
-#### Start pm2
-
-```
-pm2 start pm2.config.json
-```
+* 🏃 Fast
+* 👍 Easy to use
+* 📄 Gerber RS274X
+* 🖥 Multi-Platform Electron App
