@@ -1,20 +1,27 @@
-# GRX
-
-Fastest WEB Based Gerber Viewer
-
-#### !! DEVELOPMENT !!
+<div align="center">
+  <h1>GRX</h1>
+  <p>Fastest Web Based Gerber Viewer</p>
+  <p>!! DEVELOPMENT !!</p>
+</div>
 
 See the current build in production here -> [GRX](http://grx.creery.org)
 
-![preview](/doc/screenshot.png)
+![preview](/resources/screenshot.png)
 
 ## About
 
-GRX is a web based gerber viewer utilizing WebGL and WebWorkers to parse and render gerber files. It is designed to be fast and easy to use.
+GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX uses WebGL for rendering at the best performance and WebWorkers for parsing on multiple cores, even isolating the Main DOM thread from the WebGL renderer thread.
 
 ## Features
 
 * 🏃 Fast
 * 👍 Easy to use
-* 📄 Gerber RS274X
+* 📄 Gerber RS-274X
 * 🖥 Multi-Platform Electron App
+
+## Tools
+* [Electron](https://electronjs.org/)
+* [React](https://reactjs.org/)
+* [PixiJS](https://www.pixijs.com/)
+* [Typescript](https://www.typescriptlang.org/)
+* [Tracespace](https://github.com/hpcreery/tracespace)
