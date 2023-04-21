@@ -18,7 +18,8 @@
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac --config",
     "build:linux": "npm run build && electron-builder --linux --config",
-    "create:icon": "electron-icon-builder --input=resources/icon.png --output=build --flatten"
+    "create:icon": "electron-icon-builder --input=resources/icon.png --output=build --flatten",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^1.0.3",
@@ -52,6 +53,8 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.6.1",
+    "@commitlint/config-conventional": "^17.6.1",
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@electron/notarize": "^1.2.3",
     "@testing-library/jest-dom": "^5.16.5",
@@ -77,6 +80,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.32.2",
     "generate-changelog": "^1.8.0",
+    "husky": "^8.0.3",
     "prettier": "^2.8.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
