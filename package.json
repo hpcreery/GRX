@@ -18,7 +18,8 @@
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac --config",
     "build:linux": "npm run build && electron-builder --linux --config",
-    "create:icon": "electron-icon-builder --input=resources/icon.png --output=build --flatten",
+    "build:all": "npm run build && electron-builder --win --mac --linux --config",
+    "create:icon": "electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons",
     "prepare": "husky install"
   },
   "dependencies": {
