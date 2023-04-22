@@ -25,3 +25,7 @@ GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX u
 * [PixiJS](https://www.pixijs.com/)
 * [Typescript](https://www.typescriptlang.org/)
 * [Tracespace](https://github.com/hpcreery/tracespace)
+
+```
+electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons
+```
