@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Button, Space, theme, Popover, Badge, UploadFile } from 'antd'
+import { useState, useEffect } from 'react'
+import { Button, Space, theme, Popover, Badge, UploadFile, Spin } from 'antd'
+import { LoadingOutlined } from '@ant-design/icons'
 import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
 import { DeleteOutlined } from '@ant-design/icons'
@@ -7,46 +8,85 @@ import { CirclePicker } from 'react-color'
 
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
-import { Layers } from '../../renderer/types'
-import OffscreenGerberApplication from '../../renderer/offscreen'
+import { RendererLayer } from '../../renderer/types'
+import VirtualGerberApplication from '../../renderer/virtual'
 // import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
+import * as Comlink from 'comlink'
 
 const { useToken } = theme
 interface LayerListItemProps {
-  layer: Layers
+  // layer: Layers
   file: UploadFile
-  gerberApp: OffscreenGerberApplication
+  gerberApp: VirtualGerberApplication
+  actions: {
+    download: () => void;
+    preview: () => void;
+    remove: () => void;
+  }
 }
 
 export default function LayerListItem(props: LayerListItemProps) {
-  const { gerberApp, layer } = props
+  const { gerberApp, file, actions } = props
+  const layer: RendererLayer = {
+    name: file.name,
+    uid: file.uid,
+    color: 0x000000,
+    visible: false,
+    zIndex: 0
+  }
   const { token } = useToken()
   // const { transparency, blur } = React.useContext(ConfigEditorProvider)
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<ColorSource>(layer.color)
   const [visible, setVisible] = useState<boolean>(layer.visible)
+  // const [zIndex, setzIndex] = useState<number>(layer.zIndex)
+  // const [progress, setProgress] = useState<number>(0)
+  const [loading, setLoading] = useState<boolean>(true)
+
+  function registerLayers(rendererLayers: RendererLayer[]) {
+    let newLayer = rendererLayers.find((l) => l.uid === layer.uid)
+    if (newLayer) {
+      setColor(newLayer.color)
+      setVisible(newLayer.visible)
+      // setzIndex(newLayer.zIndex)
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    gerberApp.renderer.then(async (r) => {
+      registerLayers(await r.layers)
+      r.addViewportListener(
+        'childAdded',
+        Comlink.proxy(async () => {
+          console.log('childAdded')
+          registerLayers(await r.layers)
+        })
+      )
+    })
+    return () => {}
+  }, [])
 
   async function deleteLayer() {
-    const renderer = await gerberApp.renderer
-    if (!renderer) return
-    await renderer.removeLayer(layer.name)
+    actions.remove()
   }
 
   async function changeColor(color: ColorSource) {
     const renderer = await gerberApp.renderer
     if (!renderer) return
-    await renderer.tintLayer(layer.name, color)
+    await renderer.tintLayer(layer.uid, color)
     setColor(color)
   }
 
   async function toggleVisible() {
+    // setLoading(!loading)
     const renderer = await gerberApp.renderer
     if (!renderer) return
     if (visible) {
-      renderer.hideLayer(layer.name)
+      renderer.hideLayer(layer.uid)
       setVisible(false)
     } else {
-      renderer.showLayer(layer.name)
+      renderer.showLayer(layer.uid)
       setVisible(true)
     }
   }
@@ -105,23 +145,29 @@ export default function LayerListItem(props: LayerListItemProps) {
           }}
         >
           <Space.Compact>
-            <Popover
-              placement="right"
-              title={'Color'}
-              content={
-                <CirclePicker
-                  color={chroma(color as any).hex()}
-                  onChange={(color) => changeColor(color.hex)}
-                />
-              }
-              trigger="click"
-            >
-              <Badge
-                color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
-                style={{ margin: '0px 10px' }}
+            {loading ? (
+              <Spin
+                indicator={<LoadingOutlined style={{ fontSize: 14, margin: '0px 6px' }} spin />}
               />
-            </Popover>
-            {props.file.name}
+            ) : (
+              <Popover
+                placement="right"
+                title={'Color'}
+                content={
+                  <CirclePicker
+                    color={chroma(color as any).hex()}
+                    onChange={(color) => changeColor(color.hex)}
+                  />
+                }
+                trigger="click"
+              >
+                <Badge
+                  color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
+                  style={{ margin: '0px 10px' }}
+                />
+              </Popover>
+            )}
+            {file.name}
           </Space.Compact>
         </Button>
       </animated.div>

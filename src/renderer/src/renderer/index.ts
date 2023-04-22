@@ -5,7 +5,7 @@ import type { ImageTree } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
-import { Layers } from './types'
+import { RendererLayer } from './types'
 
 import * as Comlink from 'comlink'
 /* eslint-disable import/no-webpack-loader-syntax */
@@ -20,7 +20,7 @@ PIXI.BatchRenderer.canUploadSameBuffer = true
 // PIXI.Graphics.curves.epsilon = 0.0001
 
 export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
-  viewport: PIXI.Container
+  viewport: GerberViewport
   cull: Cull
   origin: PIXI.ObservablePoint
   cachedGerberGraphics: boolean = true
@@ -36,13 +36,13 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       console.log('Gerber Renderer is using HTML Canvas')
     }
 
-    this.viewport = new PIXI.Container()
+    this.viewport = new GerberViewport()
     this.stage.addChild(this.viewport)
 
     // Culling
     this.cull = new Cull({
       recursive: true,
-      toggle: 'renderable',
+      toggle: 'renderable'
     })
 
     // origin
@@ -54,8 +54,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     )
   }
 
-  public getOrigin(): {x: number, y: number} {
-    return {x: this.origin.x, y: this.origin.y}
+  public getOrigin(): { x: number; y: number } {
+    return { x: this.origin.x, y: this.origin.y }
   }
 
   public featuresAtPosition(clientX: number, clientY: number): any[] {
@@ -166,43 +166,43 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // Layer methods
   // -------------
 
-  public tintLayer(name: string, color: PIXI.ColorSource) {
+  public tintLayer(uid: string, color: PIXI.ColorSource) {
     this.uncacheViewport()
-    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    const layer = this.viewport.getChildByUID(uid)
     if (layer) {
       layer.tint = color
     }
     this.cullViewport()
   }
 
-  public getLayerTintColor(name: string): PIXI.ColorSource {
-    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+  public getLayerTintColor(uid: string): PIXI.ColorSource {
+    const layer = this.viewport.getChildByUID(uid)
     if (layer) {
       return layer.tint
     }
     return 0xffffff
   }
 
-  public showLayer(name: string) {
+  public showLayer(uid: string) {
     this.uncacheViewport()
-    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    const layer = this.viewport.getChildByUID(uid)
     if (layer) {
       layer.visible = true
     }
     this.cullViewport()
   }
 
-  public hideLayer(name: string) {
+  public hideLayer(uid: string) {
     this.uncacheViewport()
-    const layer = this.viewport.getChildByName(name, false) as LayerContainer
+    const layer = this.viewport.getChildByUID(uid)
     if (layer) {
       layer.visible = false
     }
     this.cullViewport()
   }
 
-  public get layers(): Layers[] {
-    let gerberLayers: Layers[] = []
+  public get layers(): RendererLayer[] {
+    let gerberLayers: RendererLayer[] = []
     this.viewport.children.forEach((child) => {
       if (child instanceof LayerContainer) {
         gerberLayers.push({
@@ -210,15 +210,15 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
           name: child.name,
           color: child.tint,
           visible: child.visible,
-          zIndex: child.zIndex,
+          zIndex: child.zIndex
         })
       }
     })
     return gerberLayers
   }
 
-  public addLayer(name: string, image: ImageTree): void {
-    const layerContainer = new LayerContainer({ name })
+  public addLayer(name: string, image: ImageTree, uid?: string): void {
+    const layerContainer = new LayerContainer({ name, uid })
     layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
     layerContainer.scale = { x: 1, y: -1 }
     layerContainer.position = this.origin
@@ -231,8 +231,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cull.addAll(layerContainer.children)
   }
 
-  public async removeLayer(name: string): Promise<void> {
-    const layerContainer = this.viewport.getChildByName(name, false) as LayerContainer
+  public async removeLayer(uid: string): Promise<void> {
+    const layerContainer = this.viewport.getChildByUID(uid)
     if (layerContainer) {
       this.viewport.removeChild(layerContainer)
       this.cull.removeAll(layerContainer.children)
@@ -242,11 +242,11 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // Gerber methods
   // --------------
 
-  public async addGerber(name: string, gerber: string): Promise<void> {
+  public async addGerber(name: string, gerber: string, uid?: string): Promise<void> {
     const thread = Comlink.wrap<GerberParserMethods>(new gerberParserWorker())
     const image = await thread.parseGerber(gerber)
     thread[Comlink.releaseProxy]()
-    this.addLayer(name, image)
+    this.addLayer(name, image, uid)
   }
 
   // Event methods
@@ -259,8 +259,11 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.viewport.on(event, runCallback)
   }
 
-  // render(): void {
-  //   super.render()
+  // removeViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
+  //   function runCallback() {
+  //     listener()
+  //   }
+  //   this.viewport.off(event, runCallback)
   // }
 
   public destroy(
@@ -275,10 +278,10 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
 class LayerContainer extends PIXI.Container {
   public name: string
   public uid: string
-  constructor(props: { name: string }) {
+  constructor(props: { name: string; uid?: string }) {
     super()
     this.name = props.name
-    this.uid = this.generateUid()
+    this.uid = props.uid ?? this.generateUid()
   }
   private generateUid(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -292,5 +295,22 @@ class LayerContainer extends PIXI.Container {
   set tint(color: PIXI.ColorSource) {
     const child = this.children[0] as GerberGraphics
     child.tint = color
+  }
+}
+
+class GerberViewport extends PIXI.Container {
+  constructor() {
+    super()
+  }
+  public getChildByUID(uid: string): LayerContainer | undefined {
+    let found: LayerContainer | undefined
+    this.children.forEach((child) => {
+      if (child instanceof LayerContainer) {
+        if (child.uid === uid) {
+          found = child
+        }
+      }
+    })
+    return found
   }
 }

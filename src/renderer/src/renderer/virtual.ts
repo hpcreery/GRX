@@ -7,9 +7,9 @@ import * as Comlink from 'comlink'
 /* eslint-disable import/no-webpack-loader-syntax */
 import gerberRendererWorker from '../workers/gerber_app?worker'
 import type { PixiGerberApplicationWorker } from '../workers/gerber_app'
-import type { PixiGerberApplication } from '.'
+import { PixiGerberApplication } from '.'
 
-export interface OffscreenGerberApplicationProps extends OffscreenGerberPixiProps {
+export interface ScreenGerberApplicationProps extends OffscreenGerberPixiProps {
   element: HTMLElement
 }
 
@@ -25,32 +25,31 @@ interface PointerCooridates {
 
 export interface PointerEvent extends CustomEvent<PointerCooridates> {}
 
-export default class OffscreenGerberApplication {
+export default class VirtualGerberApplication {
   private element: HTMLElement
   private canvas: HTMLCanvasElement
   private resizeObserver: ResizeObserver
   private origin?: { x: number; y: number }
   public virtualAppliction: PIXI.Application
   public virtualViewport: VirtualViewport
-  public renderer: Promise<Comlink.Remote<PixiGerberApplication>>
+  public renderer: Promise<Comlink.Remote<PixiGerberApplication>> // | Promise<PixiGerberApplication>
   public pointer: EventTarget
-  constructor(optionsMeta: OffscreenGerberApplicationProps) {
+  constructor(optionsMeta: ScreenGerberApplicationProps) {
     // super()
     let { element, ...options } = optionsMeta
     Object.assign(options, {
       width: element.clientWidth,
-      height: element.clientHeight,
+      height: element.clientHeight
     })
     this.element = element
     this.canvas = document.createElement('canvas')
     this.element.appendChild(this.canvas)
-    const offscreenCanvas = this.canvas.transferControlToOffscreen()
 
     // Create virtual PIXI application
     this.virtualAppliction = new PIXI.Application({
       width: element.clientWidth,
       height: element.clientHeight,
-      autoDensity: false,
+      autoDensity: false
     })
 
     // Create virtual viewport and add to virtual PIXI application
@@ -61,7 +60,7 @@ export default class OffscreenGerberApplication {
       worldHeight: 1000,
       screenWidth: element.clientWidth,
       screenHeight: element.clientHeight,
-      canvasElement: this.canvas,
+      canvasElement: this.canvas
     })
       .drag()
       .pinch({ percent: 2 })
@@ -70,8 +69,15 @@ export default class OffscreenGerberApplication {
 
     this.virtualAppliction.stage.addChild(this.virtualViewport)
 
+    // if (true) {
+    const offscreenCanvas = this.canvas.transferControlToOffscreen()
     const worker = Comlink.wrap<typeof PixiGerberApplicationWorker>(new gerberRendererWorker())
     this.renderer = new worker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), options)
+    // } else {
+    //   this.renderer = new Promise<PixiGerberApplication>((resolve) =>
+    //     resolve(new OnscreenPixiGerberApplicationWrapper(this.canvas, options))
+    //   )
+    // }
 
     this.renderer.then(async (renderer) => {
       this.origin = await renderer.getOrigin()
@@ -99,9 +105,15 @@ export default class OffscreenGerberApplication {
     this.virtualViewport.on('clicked', async (e) => {
       const renderer = await this.renderer
       let intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
-      if (e.event instanceof MouseEvent || e.event instanceof TouchEvent || e.event instanceof PointerEvent) {
+      if (
+        e.event instanceof MouseEvent ||
+        e.event instanceof TouchEvent ||
+        e.event instanceof PointerEvent
+      ) {
         const { x, y } = this.getPosition(e.event)
-        this.pointer.dispatchEvent(new CustomEvent<PointerCooridates>('pointerdown', { detail: { x, y } }))
+        this.pointer.dispatchEvent(
+          new CustomEvent<PointerCooridates>('pointerdown', { detail: { x, y } })
+        )
       }
       console.log(intersected)
     })
@@ -109,7 +121,9 @@ export default class OffscreenGerberApplication {
     this.virtualViewport.on('pointermove', async (e) => {
       if (!this.origin) return
       const { x, y } = this.getPosition(e)
-      this.pointer.dispatchEvent(new CustomEvent<PointerCooridates>('pointermove', { detail: { x, y } }))
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCooridates>('pointermove', { detail: { x, y } })
+      )
     })
 
     // this.virtualViewport.addEventListener('contextmenu', (e) => {
@@ -121,10 +135,17 @@ export default class OffscreenGerberApplication {
     // })
   }
 
-  private getPosition(e: MouseEvent | TouchEvent | PointerEvent | PIXI.FederatedPointerEvent): { x: number; y: number } {
+  private getPosition(e: MouseEvent | TouchEvent | PointerEvent | PIXI.FederatedPointerEvent): {
+    x: number
+    y: number
+  } {
     let px: number
     let py: number
-    if (e instanceof MouseEvent || e instanceof PointerEvent || e instanceof PIXI.FederatedPointerEvent) {
+    if (
+      e instanceof MouseEvent ||
+      e instanceof PointerEvent ||
+      e instanceof PIXI.FederatedPointerEvent
+    ) {
       px = e.clientX
       py = e.clientY
     } else if (e instanceof TouchEvent) {
@@ -167,7 +188,7 @@ export default class OffscreenGerberApplication {
     this.virtualViewport.scale = { x: scale, y: scale }
     this.virtualViewport.position = {
       x: rendererBounds.width / 2 - (bounds.x + bounds.width / 2) * scale,
-      y: rendererBounds.height / 2 - (bounds.y + bounds.height / 2) * scale,
+      y: rendererBounds.height / 2 - (bounds.y + bounds.height / 2) * scale
     }
     await this.moveViewport()
   }
@@ -176,22 +197,6 @@ export default class OffscreenGerberApplication {
     this.virtualViewport.zoom(pixels, true)
     await this.moveViewport()
   }
-
-  // public async addGerber(name: string, gerber: string): Promise<void> {
-  //   const thread = Comlink.wrap<WorkerMethods>(new gerberRendererWorker())
-  //   const image = await thread.parseGerber(gerber)
-  //   thread[Comlink.releaseProxy]()
-  //   const renderer = await this.renderer
-  //   // await renderer.addGerber(name, gerber)
-  //   await renderer.addLayer(name, image)
-  //   // this.emit('layerAdded', name)
-  // }
-
-  // public async tintLayer(name: string, color: PIXI.ColorSource): Promise<void> {
-  //   this.renderer.then((renderer) => {
-  //     renderer.tintLayer(name, color)
-  //   })
-  // }
 
   public async destroy(): Promise<void> {
     this.resizeObserver.disconnect()
@@ -202,6 +207,11 @@ export default class OffscreenGerberApplication {
     const renderer = await this.renderer
     renderer.destroy(true)
     renderer[Comlink.releaseProxy]()
-    // this.removeAllListeners()
   }
 }
+
+// class OnscreenPixiGerberApplicationWrapper extends PixiGerberApplication {
+//   constructor(canvas: HTMLCanvasElement, options?: Partial<PIXI.IApplicationOptions>) {
+//     super({ ...options, view: canvas })
+//   }
+// }

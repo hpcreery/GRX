@@ -15,13 +15,14 @@
     "dev": "electron-vite dev",
     "dev:web": "vite",
     "build": "npm run typecheck && electron-vite build",
-    "build:web": "vite build",
     "postinstall": "electron-builder install-app-deps",
+    "build:web": "vite build",
     "build:win": "npm run build && electron-builder --win --config",
     "build:mac": "npm run build && electron-builder --mac --config",
     "build:linux": "npm run build && electron-builder --linux --config",
     "build:all": "npm run build && electron-builder --win --mac --linux --config",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "create:icon": "electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^1.0.3",

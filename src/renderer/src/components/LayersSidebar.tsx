@@ -1,112 +1,116 @@
 import React, { useEffect, useState } from 'react'
-import OffscreenGerberApplication from '../renderer/offscreen'
+import VirtualGerberApplication from '../renderer/virtual'
 import { Card, theme, Upload, message, UploadFile } from 'antd'
 import type { UploadProps } from 'antd'
 import chroma from 'chroma-js'
-import { ColorSource } from 'pixi.js'
 import { PlusOutlined } from '@ant-design/icons'
 
-import * as Comlink from 'comlink'
+// import * as Comlink from 'comlink'
 import LayerListItem from './sidebar/LayerListItem'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
+import { RendererLayer } from '@renderer/renderer/types'
 
 const { useToken } = theme
 const { Dragger } = Upload
 
-interface GerberLayers extends UploadFile {
-  color: ColorSource
-  visible: boolean
-  zIndex: number
-}
-
 interface SidebarProps {
-  gerberApp: OffscreenGerberApplication
+  gerberApp: VirtualGerberApplication
 }
 
 export default function LayerSidebar({ gerberApp }: SidebarProps) {
   const { token } = useToken()
-  const [layers, setLayers] = useState<GerberLayers[]>([])
+  const [layers, setLayers] = useState<UploadFile[]>([])
   const { transparency, blur } = React.useContext(ConfigEditorProvider)
+  const [messageApi, contextHolder] = message.useMessage()
+
+  function registerLayers(rendererLayers: RendererLayer[]) {
+    let newLayers: UploadFile[] = []
+    rendererLayers.forEach((layer) => {
+      newLayers.push({
+        uid: layer.uid,
+        name: layer.name,
+        status: 'done',
+        percent: 100
+      })
+    })
+    setLayers(newLayers)
+  }
 
   useEffect(() => {
     gerberApp.renderer.then(async (r) => {
-      const layers = (await r.layers) as GerberLayers[]
-      setLayers(layers)
-      r.addViewportListener(
-        'childAdded',
-        Comlink.proxy(async () => {
-          console.log('childAdded')
-          const layers = (await r.layers) as GerberLayers[]
-          setLayers(layers)
-        })
-      )
-      r.addViewportListener(
-        'childRemoved',
-        Comlink.proxy(async () => {
-          console.log('childRemoved')
-          const layers = (await r.layers) as GerberLayers[]
-          setLayers(layers)
-        })
-      )
+      registerLayers(await r.layers)
+      // r.addViewportListener(
+      //   'childAdded',
+      //   Comlink.proxy(async () => {
+      //     console.log('childAdded')
+      //     // registerLayers(await r.layers)
+      //   })
+      // )
+      // r.addViewportListener(
+      //   'childRemoved',
+      //   Comlink.proxy(async () => {
+      //     console.log('childRemoved')
+      //     // registerLayers(await r.layers)
+      //   })
+      // )
     })
     return () => {}
   }, [])
 
   const props: UploadProps = {
-    // name: 'file',
     listType: 'picture',
     multiple: true,
     fileList: layers,
     customRequest: async (options) => {
-      console.log(options)
       const reader = new FileReader()
       if (!options.file) {
         options.onError && options.onError(new Error('No file provided'), options.file)
+        messageApi.error(`No file provided`)
         return
       }
-      const file = options.file as Blob
-      reader.readAsText(file)
       reader.onerror = (err) => {
         options.onError && options.onError(err, 'Error reading file')
+        messageApi.error(`${(options.file as File).name} Error reading file.`)
       }
       reader.onabort = (err) => {
         options.onError && options.onError(err, 'File read aborted')
+        messageApi.error(`${(options.file as File).name} File read aborted.`)
       }
       reader.onprogress = (e) => {
         const percent = Math.round((e.loaded / e.total) * 100)
         options.onProgress && options.onProgress({ percent })
       }
       reader.onload = async () => {
-        const renderer = await gerberApp.renderer
-        // @ts-ignore
-        await renderer.addGerber(options.file.name, reader.result as string)
         options.onSuccess && options.onSuccess(reader.result)
+        messageApi.success(`${(options.file as File).name} File uploaded successfully.`)
       }
+
+      const file = options.file as Blob
+      reader.readAsText(file)
     },
-    // onSuccess: (data, file, fileList) => {
-    //   console.log('onSuccess', data, file, fileList)
-    // },
-    onChange(info) {
-      const { status } = info.file
-      if (status !== 'uploading') {
-        console.log(info.file, info.fileList)
-      }
+    onChange: async (info) => {
+      console.log(info)
+      const { status, uid, name, response } = info.file
+      let newFileList = [...info.fileList]
+      setLayers(newFileList)
+      // type UploadFileStatus = 'error' | 'success' | 'done' | 'uploading' | 'removed';
       if (status === 'done') {
-        message.success(`${info.file.name} file uploaded successfully.`)
-        // console.log(info)
+        const renderer = await gerberApp.renderer
+        await renderer.addGerber(name, response, uid)
       } else if (status === 'error') {
-        message.error(`${info.file.name} file upload failed.`)
-        // console.log(info)
+        console.log(info)
       }
     },
-    onDrop(e) {
-      console.log('Dropped files', e.dataTransfer.files)
+    onRemove: async (file) => {
+      const renderer = await gerberApp.renderer
+      if (!renderer) return
+      await renderer.removeLayer(file.uid)
+      setLayers(layers.filter((l) => l.uid !== file.uid))
+      return true
     },
     // @ts-ignore
-    itemRender: (originNode, file, currFileList) => {
-      const layer = layers.find((l) => l.uid === file.uid)
-      if (layer === undefined) return
-      return <LayerListItem key={layer.uid} layer={layer} file={file} gerberApp={gerberApp} />
+    itemRender: (originNode, file, fileList, actions) => {
+      return <LayerListItem key={file.name} file={file} gerberApp={gerberApp} actions={actions} />
     }
   }
 
@@ -127,13 +131,12 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
         zIndex: 10
       }}
     >
+      {contextHolder}
       <Card
         style={{
           width: 200,
           height: '-webkit-fill-available',
           margin: 10,
-          // backdropFilter: 'blur(50px)',
-          // backgroundColor: chroma(token.colorBgElevated).alpha(0.7).css(),
           pointerEvents: 'all',
           overflow: 'hidden',
           ...transparencyCSS

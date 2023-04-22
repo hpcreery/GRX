@@ -15,7 +15,7 @@ export interface PathProps {
   fill: string
 }
 
-export interface Layers {
+export interface RendererLayer {
   uid: string
   name: string
   color: ColorSource

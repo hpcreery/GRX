@@ -12,11 +12,12 @@ import reportWebVitals from './reportWebVitals'
 function Main() {
   const [themeState, setThemeState] = useState<ThemeConfig>({ algorithm: theme.darkAlgorithm })
   const [transparency, setTransparency] = useState(true)
+  const [componentSize, setComponentSize] = useState<'small' | 'middle' | 'large'>('middle')
   const blur = 30
   return (
-    <ConfigProvider theme={themeState}>
+    <ConfigProvider theme={themeState} componentSize={componentSize}>
       <ConfigEditorProvider.Provider
-        value={{ themeState, setThemeState, transparency, setTransparency, blur }}>
+        value={{ themeState, setThemeState, transparency, setTransparency, blur, componentSize, setComponentSize }}>
         <App />
       </ConfigEditorProvider.Provider>
     </ConfigProvider>

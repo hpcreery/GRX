@@ -10,6 +10,8 @@ export interface ThemeContext {
   transparency: boolean
   setTransparency: React.Dispatch<React.SetStateAction<boolean>>
   blur: number
+  componentSize: 'small' | 'middle' | 'large'
+  setComponentSize: React.Dispatch<React.SetStateAction<'small' | 'middle' | 'large'>>
 }
 
 export const ConfigEditorProvider = React.createContext<ThemeContext>({
@@ -18,4 +20,6 @@ export const ConfigEditorProvider = React.createContext<ThemeContext>({
   transparency: true,
   setTransparency: () => {},
   blur: 30,
+  componentSize: 'middle',
+  setComponentSize: () => {},
 })

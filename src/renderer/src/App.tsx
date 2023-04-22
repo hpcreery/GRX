@@ -1,6 +1,6 @@
 import './App.css'
 import { useRef, useEffect, useState } from 'react'
-import OffscreenGerberApplication from './renderer/offscreen'
+import VirtualGerberApplication from './renderer/virtual'
 import { theme, Spin } from 'antd'
 import chroma from 'chroma-js'
 import HelpModal from './components/HelpModal'
@@ -13,12 +13,12 @@ const { useToken } = theme
 export default function App() {
   const { token } = useToken()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
-  const [gerberApp, setGerberApp] = useState<OffscreenGerberApplication>()
+  const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
 
   // Load in the gerber application
   useEffect(() => {
     setGerberApp(
-      new OffscreenGerberApplication({
+      new VirtualGerberApplication({
         element: elementRef.current,
         antialias: false,
         backgroundColor: chroma(token.colorBgContainer).num()

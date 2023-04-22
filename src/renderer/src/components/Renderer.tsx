@@ -1,6 +1,6 @@
 // import '../App.css'
 import React from 'react'
-import OffscreenGerberApplication, { OffscreenGerberApplicationProps } from '../renderer/offscreen'
+import VirtualGerberApplication, { ScreenGerberApplicationProps } from '../renderer/virtual'
 
 // interface RendererProps {
 //   backgroundColor?: ColorSource
@@ -61,14 +61,14 @@ import OffscreenGerberApplication, { OffscreenGerberApplicationProps } from '../
 
 // export default Renderer
 
-export default class Renderer extends React.Component<OffscreenGerberApplicationProps> {
+export default class Renderer extends React.Component<ScreenGerberApplicationProps> {
   rendererDiv: HTMLDivElement
-  constructor(props: OffscreenGerberApplicationProps) {
+  constructor(props: ScreenGerberApplicationProps) {
     super(props)
     // this.rendererDiv = () => <div id='GRX' style={{ width: '100%', height: '100%' }} />
     this.rendererDiv = document.createElement('div')
     // @ts-ignore
-    const app = new OffscreenGerberApplication({ ...props, element: this.rendererDiv })
+    const app = new VirtualGerberApplication({ ...props, element: this.rendererDiv })
   }
   render() {
     return (
