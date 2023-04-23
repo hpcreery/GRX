@@ -16,7 +16,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: resolve('out/dist-web')
+    outDir: resolve('out/web')
   },
   plugins: [react(), comlink()],
   worker: {

@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react'
 import VirtualGerberApplication from './renderer/virtual'
 import { theme, Spin } from 'antd'
 import chroma from 'chroma-js'
-import HelpModal from './components/HelpModal'
+import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
@@ -52,7 +52,7 @@ export default function App(): JSX.Element | null {
         >
           <LayerSidebar gerberApp={gerberApp} />
           <Toolbar gerberApp={gerberApp} />
-          <HelpModal />
+          <InfoModal />
           <MousePosition gerberApp={gerberApp} />
         </div>
       ) : (
