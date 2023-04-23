@@ -79,6 +79,9 @@ export default function App(): JSX.Element | null {
           width: '100%',
           height: '100%',
           cursor: 'crosshair',
+          WebkitUserSelect: 'none',
+          MozUserSelect: 'none',
+          userSelect: 'none',
           backgroundColor: chroma(token.colorBgContainer).css()
         }}
         ref={elementRef}

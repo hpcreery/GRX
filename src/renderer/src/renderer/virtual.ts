@@ -150,6 +150,7 @@ export default class VirtualGerberApplication {
     } else if (e instanceof TouchEvent) {
       px = e.touches[0].clientX
       py = e.touches[0].clientY
+      // e.preventDefault()
     } else {
       throw new Error('Unknown event type')
     }
