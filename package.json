@@ -1,6 +1,6 @@
 {
   "name": "grx",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Fastest Web Geber Viewer",
   "main": "./out/main/index.js",
   "author": "Hunter Creery",
