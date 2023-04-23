@@ -1,27 +1,26 @@
-name: Publish to gh-pages
+# name: Publish to gh-pages
 
-on:
-  workflow_dispatch:
-  repository_dispatch:
-  push:
-    branches:
-      - master
+# on:
+#   workflow_dispatch:
+#   repository_dispatch:
+#   push:
+#     branches:
+#       - master
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Use Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: latest
-      - run: npm ci
-      - run: npm run build:web
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./out/dist-web
-4
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
+#       - name: Use Node.js
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: latest
+#       - run: npm ci
+#       - run: npm run build:web
+#       - name: Deploy
+#         uses: peaceiris/actions-gh-pages@v3
+#         with:
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
+#           publish_dir: ./out/web

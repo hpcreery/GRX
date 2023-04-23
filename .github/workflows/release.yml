@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 
 jobs:
-  build:
+  executables:
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -29,15 +29,25 @@ jobs:
             dist/*.AppImage
             dist/*.snap
             dist/*.deb
-  publish:
+  web-page:
     runs-on: macos-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: latest
+      - name: Install Dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build:web
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: './out/dist-web/*'
+          path: './out/web/*'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
