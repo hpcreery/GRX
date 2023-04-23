@@ -31,6 +31,10 @@ jobs:
             dist/*.deb
   web-page:
     runs-on: macos-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
