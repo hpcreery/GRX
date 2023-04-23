@@ -6,7 +6,7 @@ import type {
   PathSegment,
   Shape,
   Position,
-  ArcPosition,
+  ArcPosition
 } from '@hpcreery/tracespace-plotter'
 import {
   positionsEqual,
@@ -17,24 +17,24 @@ import {
   POLYGON,
   OUTLINE,
   LAYERED_SHAPE,
-  LINE,
+  LINE
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
 import * as Tess2 from 'tess2-ts'
 
-const DARK_COLOR: number = 0xffffff
-const DARK_ALPHA: number = 1
+const DARK_COLOR = 0xffffff
+const DARK_ALPHA = 1
 
-const CLEAR_COLOR: number = 0x000000
-const CLEAR_ALPHA: number = 1
+const CLEAR_COLOR = 0x000000
+const CLEAR_ALPHA = 1
 
-const OUTLINE_MODE: boolean = false
+const OUTLINE_MODE = false
 
-let scale: number = 100
+let scale = 100
 
-const randomColor = () => Math.floor(Math.random() * 16777215)
-const uid = () =>
+const randomColor = (): number => Math.floor(Math.random() * 16777215)
+const uid = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 export class GerberGraphics extends PIXI.Graphics {
@@ -75,7 +75,7 @@ export class GerberGraphics extends PIXI.Graphics {
         this.lineStyle({
           color: DARK_COLOR,
           width: 0.05,
-          alpha: 1,
+          alpha: 1
         })
       } else {
         if (node.polarity == DARK) {
@@ -87,7 +87,7 @@ export class GerberGraphics extends PIXI.Graphics {
         }
         this.lineStyle({
           width: 0,
-          alpha: 0,
+          alpha: 0
         })
       }
       this.renderShape(node)
@@ -103,7 +103,7 @@ export class GerberGraphics extends PIXI.Graphics {
           color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
           alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
           cap: PIXI.LINE_CAP.ROUND,
-          join: PIXI.LINE_JOIN.ROUND,
+          join: PIXI.LINE_JOIN.ROUND
         })
         this.drawPolyLine(node.segments)
       } else {
@@ -117,7 +117,7 @@ export class GerberGraphics extends PIXI.Graphics {
           color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
           alpha: 0,
           cap: PIXI.LINE_CAP.ROUND,
-          join: PIXI.LINE_JOIN.ROUND,
+          join: PIXI.LINE_JOIN.ROUND
         })
         this.drawContour(node.segments)
       }
@@ -239,7 +239,10 @@ export class GerberGraphics extends PIXI.Graphics {
 // PIXI.graphicsUtils.buildPoly.triangulate = triangulate
 // ```
 PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.GraphicsGeometry) {
+function triangulate(
+  graphicsData: PIXI.GraphicsData,
+  graphicsGeometry: PIXI.GraphicsGeometry
+): void {
   let points = graphicsData.points
   const holes = graphicsData.holes
   const verts = graphicsGeometry.points
@@ -262,7 +265,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
     windingRule: Tess2.WINDING_ODD,
     elementType: Tess2.POLYGONS,
     polySize: 3,
-    vertexSize: 2,
+    vertexSize: 2
   })
 
   if (res == undefined) {
@@ -277,7 +280,7 @@ function triangulate(graphicsData: PIXI.GraphicsData, graphicsGeometry: PIXI.Gra
 
   const vertPos = verts.length / 2
 
-  for (var i = 0; i < res.elements.length; i++) {
+  for (let i = 0; i < res.elements.length; i++) {
     indices.push(res.elements[i] + vertPos)
   }
 
@@ -306,7 +309,7 @@ const ChromaFilter = new PIXI.Filter(
     'float Cb = 0.5647 * (textureColor.b - Y);',
     'float blendValue = smoothstep(thresholdSensitivity, thresholdSensitivity + smoothing, distance(vec2(Cr, Cb), vec2(maskCr, maskCb)));',
     'gl_FragColor = vec4(textureColor.rgb, textureColor.a * blendValue);',
-    '}',
+    '}'
   ].join('\n')
 )
 ChromaFilter.uniforms.thresholdSensitivity = 0

@@ -19,13 +19,13 @@ interface LayerListItemProps {
   file: UploadFile
   gerberApp: VirtualGerberApplication
   actions: {
-    download: () => void;
-    preview: () => void;
-    remove: () => void;
+    download: () => void
+    preview: () => void
+    remove: () => void
   }
 }
 
-export default function LayerListItem(props: LayerListItemProps) {
+export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
   const { gerberApp, file, actions } = props
   const layer: RendererLayer = {
     name: file.name,
@@ -43,8 +43,8 @@ export default function LayerListItem(props: LayerListItemProps) {
   // const [progress, setProgress] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
 
-  function registerLayers(rendererLayers: RendererLayer[]) {
-    let newLayer = rendererLayers.find((l) => l.uid === layer.uid)
+  function registerLayers(rendererLayers: RendererLayer[]): void {
+    const newLayer = rendererLayers.find((l) => l.uid === layer.uid)
     if (newLayer) {
       setColor(newLayer.color)
       setVisible(newLayer.visible)
@@ -64,21 +64,21 @@ export default function LayerListItem(props: LayerListItemProps) {
         })
       )
     })
-    return () => {}
+    return (): void => {}
   }, [])
 
-  async function deleteLayer() {
+  async function deleteLayer(): Promise<void> {
     actions.remove()
   }
 
-  async function changeColor(color: ColorSource) {
+  async function changeColor(color: ColorSource): Promise<void> {
     const renderer = await gerberApp.renderer
     if (!renderer) return
     await renderer.tintLayer(layer.uid, color)
     setColor(color)
   }
 
-  async function toggleVisible() {
+  async function toggleVisible(): Promise<void> {
     // setLoading(!loading)
     const renderer = await gerberApp.renderer
     if (!renderer) return
@@ -132,7 +132,7 @@ export default function LayerListItem(props: LayerListItemProps) {
             padding: 0
           }}
           type="text"
-          onClick={(e) => {
+          onClick={(e): void => {
             if (
               !(
                 e.target instanceof HTMLDivElement &&
@@ -156,7 +156,7 @@ export default function LayerListItem(props: LayerListItemProps) {
                 content={
                   <CirclePicker
                     color={chroma(color as any).hex()}
-                    onChange={(color) => changeColor(color.hex)}
+                    onChange={(color): Promise<void> => changeColor(color.hex)}
                   />
                 }
                 trigger="click"

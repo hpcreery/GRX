@@ -4,7 +4,6 @@ import * as PIXI from 'pixi.js'
 import '@pixi/unsafe-eval'
 
 import * as Comlink from 'comlink'
-/* eslint-disable import/no-webpack-loader-syntax */
 import gerberRendererWorker from '../workers/gerber_app?worker'
 import type { PixiGerberApplicationWorker } from '../workers/gerber_app'
 import { PixiGerberApplication } from '.'
@@ -18,12 +17,12 @@ interface OffscreenGerberPixiProps {
   backgroundColor?: PIXI.ColorSource
 }
 
-interface PointerCooridates {
+interface PointerCoordinates {
   x: number
   y: number
 }
 
-export interface PointerEvent extends CustomEvent<PointerCooridates> {}
+export type PointerEvent = CustomEvent<PointerCoordinates>
 
 export default class VirtualGerberApplication {
   private element: HTMLElement
@@ -36,7 +35,7 @@ export default class VirtualGerberApplication {
   public pointer: EventTarget
   constructor(optionsMeta: ScreenGerberApplicationProps) {
     // super()
-    let { element, ...options } = optionsMeta
+    const { element, ...options } = optionsMeta
     Object.assign(options, {
       width: element.clientWidth,
       height: element.clientHeight
@@ -104,7 +103,7 @@ export default class VirtualGerberApplication {
 
     this.virtualViewport.on('clicked', async (e) => {
       const renderer = await this.renderer
-      let intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
+      const intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
       if (
         e.event instanceof MouseEvent ||
         e.event instanceof TouchEvent ||
@@ -112,7 +111,7 @@ export default class VirtualGerberApplication {
       ) {
         const { x, y } = this.getPosition(e.event)
         this.pointer.dispatchEvent(
-          new CustomEvent<PointerCooridates>('pointerdown', { detail: { x, y } })
+          new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
         )
       }
       console.log(intersected)
@@ -122,7 +121,7 @@ export default class VirtualGerberApplication {
       if (!this.origin) return
       const { x, y } = this.getPosition(e)
       this.pointer.dispatchEvent(
-        new CustomEvent<PointerCooridates>('pointermove', { detail: { x, y } })
+        new CustomEvent<PointerCoordinates>('pointermove', { detail: { x, y } })
       )
     })
 
@@ -165,15 +164,15 @@ export default class VirtualGerberApplication {
   }
 
   public async moveViewport(): Promise<void> {
-    let x = this.virtualViewport.x
-    let y = this.virtualViewport.y
-    let scale = this.virtualViewport.scale.x
+    const x = this.virtualViewport.x
+    const y = this.virtualViewport.y
+    const scale = this.virtualViewport.scale.x
     const renderer = await this.renderer
     await renderer.moveViewport(x, y, scale)
     // this.emit('moved', { x, y, scale })
   }
 
-  public async zoomHome() {
+  public async zoomHome(): Promise<void> {
     const renderer = await this.renderer
     await renderer.uncull()
     const rendererBounds = await renderer.getRendererBounds()

@@ -10,7 +10,7 @@ import LayerSidebar from './components/LayersSidebar'
 
 const { useToken } = theme
 
-export default function App() {
+export default function App(): JSX.Element | null {
   const { token } = useToken()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
@@ -32,9 +32,8 @@ export default function App() {
   // Update the background color of the gerber application
   useEffect(() => {
     if (gerberApp) {
-      gerberApp.renderer.then((renderer) => {
-        // @ts-ignore
-        renderer.renderer.background.color = chroma(token.colorBgContainer).num()
+      gerberApp.renderer.then(async (renderer) => {
+        ;(await renderer.renderer).background.color = chroma(token.colorBgContainer).num()
       })
     }
   }, [token.colorBgContainer])

@@ -1,8 +1,5 @@
 import React from 'react'
-import {
-  ThemeConfig,
-  theme,
-} from 'antd'
+import { ThemeConfig, theme } from 'antd'
 
 export interface ThemeContext {
   themeState: ThemeConfig
@@ -21,5 +18,5 @@ export const ConfigEditorProvider = React.createContext<ThemeContext>({
   setTransparency: () => {},
   blur: 30,
   componentSize: 'middle',
-  setComponentSize: () => {},
+  setComponentSize: () => {}
 })

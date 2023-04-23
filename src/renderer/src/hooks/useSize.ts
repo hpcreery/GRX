@@ -5,7 +5,9 @@ interface Size {
   width: number
   height: number
 }
-export default function useSize<T extends HTMLElement>(target: React.MutableRefObject<T>) {
+export default function useSize<T extends HTMLElement>(
+  target: React.MutableRefObject<T>
+): Size | undefined {
   const [size, setSize] = useState<Size>()
 
   useLayoutEffect(() => {

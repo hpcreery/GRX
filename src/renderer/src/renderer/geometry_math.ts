@@ -1,5 +1,4 @@
 const geometry = {
-
   pointInsidePolygon(x: number, y: number, poly: number[]): boolean {
     let inside = false
     let angle = 0
@@ -7,7 +6,7 @@ const geometry = {
       const p1 = { x: poly[i] - x, y: poly[i + 1] - y }
       const p2 = {
         x: poly[(i + 2) % poly.length] - x,
-        y: poly[(i + 3) % poly.length] - y,
+        y: poly[(i + 3) % poly.length] - y
       }
       angle += this.angle2D(p1.x, p1.y, p2.x, p2.y)
     }
@@ -18,12 +17,9 @@ const geometry = {
   },
 
   angle2D(x1: number, y1: number, x2: number, y2: number): number {
-    let dtheta: number
-    let theta1: number
-    let theta2: number
-    theta1 = Math.atan2(y1, x1)
-    theta2 = Math.atan2(y2, x2)
-    dtheta = theta2 - theta1
+    const theta1 = Math.atan2(y1, x1)
+    const theta2 = Math.atan2(y2, x2)
+    let dtheta = theta2 - theta1
     while (dtheta > Math.PI) {
       dtheta -= 2 * Math.PI
     }

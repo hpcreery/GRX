@@ -8,7 +8,6 @@ import { Cull } from '@pixi-essentials/cull'
 import { RendererLayer } from './types'
 
 import * as Comlink from 'comlink'
-/* eslint-disable import/no-webpack-loader-syntax */
 import gerberParserWorker from '../workers/gerber_parser?worker'
 import type { WorkerMethods as GerberParserMethods } from '../workers/gerber_parser'
 
@@ -23,8 +22,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   viewport: GerberViewport
   cull: Cull
   origin: PIXI.ObservablePoint
-  cachedGerberGraphics: boolean = true
-  cullDirty: boolean = true
+  cachedGerberGraphics = true
+  cullDirty = true
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
     console.log('PixiGerberApplication', options)
@@ -58,7 +57,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return { x: this.origin.x, y: this.origin.y }
   }
 
-  public featuresAtPosition(clientX: number, clientY: number): any[] {
+  public featuresAtPosition(clientX: number, clientY: number): [] {
     console.log('featuresAtPosition', clientX, clientY)
     return []
     // const checkintersect = (obj: PIXI.DisplayObject): GerberGraphics[] => {
@@ -99,7 +98,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // Culling methods
   // ---------------
 
-  public cullViewport(force: boolean = false) {
+  public cullViewport(force = false): void {
     if (this.viewport.transform.scale.x < 1) {
       if (!this.cachedGerberGraphics) {
         this.cullDirty = true
@@ -122,7 +121,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     }
   }
 
-  private cacheViewport() {
+  private cacheViewport(): void {
     this.cull.uncull()
     this.cachedGerberGraphics = true
     this.viewport.children.forEach(async (child) => {
@@ -130,7 +129,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     })
   }
 
-  private uncacheViewport() {
+  private uncacheViewport(): void {
     this.cachedGerberGraphics = false
     this.viewport.children.forEach(async (child) => {
       child.cacheAsBitmap = false
@@ -150,7 +149,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  public resizeViewport(width: number, height: number) {
+  public resizeViewport(width: number, height: number): void {
     this.renderer.resize(width, height)
     this.cullViewport()
   }
@@ -166,7 +165,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // Layer methods
   // -------------
 
-  public tintLayer(uid: string, color: PIXI.ColorSource) {
+  public tintLayer(uid: string, color: PIXI.ColorSource): void {
     this.uncacheViewport()
     const layer = this.viewport.getChildByUID(uid)
     if (layer) {
@@ -183,7 +182,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return 0xffffff
   }
 
-  public showLayer(uid: string) {
+  public showLayer(uid: string): void {
     this.uncacheViewport()
     const layer = this.viewport.getChildByUID(uid)
     if (layer) {
@@ -192,7 +191,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  public hideLayer(uid: string) {
+  public hideLayer(uid: string): void {
     this.uncacheViewport()
     const layer = this.viewport.getChildByUID(uid)
     if (layer) {
@@ -202,7 +201,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   public get layers(): RendererLayer[] {
-    let gerberLayers: RendererLayer[] = []
+    const gerberLayers: RendererLayer[] = []
     this.viewport.children.forEach((child) => {
       if (child instanceof LayerContainer) {
         gerberLayers.push({
@@ -253,7 +252,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // -------------
 
   addViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
-    function runCallback() {
+    function runCallback(): void {
       listener()
     }
     this.viewport.on(event, runCallback)
