@@ -1,5 +1,5 @@
 import React from 'react'
-import { ThemeConfig, theme } from 'antd'
+import { ThemeConfig } from 'antd'
 
 export interface ThemeContext {
   themeState: ThemeConfig

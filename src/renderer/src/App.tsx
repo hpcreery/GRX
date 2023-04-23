@@ -33,8 +33,7 @@ export default function App(): JSX.Element | null {
   useEffect(() => {
     if (gerberApp) {
       gerberApp.renderer.then(async (renderer) => {
-        const r = await renderer.renderer
-        r.background.color = chroma(token.colorBgContainer).num()
+        renderer.changeBackgroundColor(chroma(token.colorBgContainer).num())
       })
     }
   }, [token.colorBgContainer])
