@@ -6,7 +6,7 @@ import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import reportWebVitals from './reportWebVitals'
 
 function Main(): JSX.Element | null {
-  const [themeState, setThemeState] = useState<ThemeConfig>({ algorithm: theme.darkAlgorithm })
+  const [themeState, setThemeState] = useState<ThemeConfig>({ algorithm: theme.defaultAlgorithm })
   const [transparency, setTransparency] = useState(true)
   const [componentSize, setComponentSize] = useState<'small' | 'middle' | 'large'>('middle')
   const blur = 30

@@ -12,7 +12,7 @@ export interface ThemeContext {
 }
 
 export const ConfigEditorProvider = React.createContext<ThemeContext>({
-  themeState: { algorithm: theme.darkAlgorithm },
+  themeState: { algorithm: theme.defaultAlgorithm },
   setThemeState: () => {},
   transparency: true,
   setTransparency: () => {},
