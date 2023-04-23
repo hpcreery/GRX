@@ -17,14 +17,14 @@ interface SidebarProps {
   gerberApp: VirtualGerberApplication
 }
 
-export default function LayerSidebar({ gerberApp }: SidebarProps) {
+export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element | null {
   const { token } = useToken()
   const [layers, setLayers] = useState<UploadFile[]>([])
   const { transparency, blur } = React.useContext(ConfigEditorProvider)
   const [messageApi, contextHolder] = message.useMessage()
 
-  function registerLayers(rendererLayers: RendererLayer[]) {
-    let newLayers: UploadFile[] = []
+  function registerLayers(rendererLayers: RendererLayer[]): void {
+    const newLayers: UploadFile[] = []
     rendererLayers.forEach((layer) => {
       newLayers.push({
         uid: layer.uid,
@@ -68,19 +68,19 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
         messageApi.error(`No file provided`)
         return
       }
-      reader.onerror = (err) => {
+      reader.onerror = (err): void => {
         options.onError && options.onError(err, 'Error reading file')
         messageApi.error(`${(options.file as File).name} Error reading file.`)
       }
-      reader.onabort = (err) => {
+      reader.onabort = (err): void => {
         options.onError && options.onError(err, 'File read aborted')
         messageApi.error(`${(options.file as File).name} File read aborted.`)
       }
-      reader.onprogress = (e) => {
+      reader.onprogress = (e): void => {
         const percent = Math.round((e.loaded / e.total) * 100)
         options.onProgress && options.onProgress({ percent })
       }
-      reader.onload = async () => {
+      reader.onload = async (): Promise<void> => {
         options.onSuccess && options.onSuccess(reader.result)
         messageApi.success(`${(options.file as File).name} File uploaded successfully.`)
       }
@@ -91,7 +91,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
     onChange: async (info) => {
       console.log(info)
       const { status, uid, name, response } = info.file
-      let newFileList = [...info.fileList]
+      const newFileList = [...info.fileList]
       setLayers(newFileList)
       // type UploadFileStatus = 'error' | 'success' | 'done' | 'uploading' | 'removed';
       if (status === 'done') {
@@ -108,8 +108,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps) {
       setLayers(layers.filter((l) => l.uid !== file.uid))
       return true
     },
-    // @ts-ignore
-    itemRender: (originNode, file, fileList, actions) => {
+    itemRender: (_originNode, file, _fileList, actions) => {
       return <LayerListItem key={file.name} file={file} gerberApp={gerberApp} actions={actions} />
     }
   }

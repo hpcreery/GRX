@@ -29,7 +29,7 @@ export default class VirtualGerberApplication {
   private canvas: HTMLCanvasElement
   private resizeObserver: ResizeObserver
   private origin?: { x: number; y: number }
-  public virtualAppliction: PIXI.Application
+  public virtualApplication: PIXI.Application
   public virtualViewport: VirtualViewport
   public renderer: Promise<Comlink.Remote<PixiGerberApplication>> // | Promise<PixiGerberApplication>
   public pointer: EventTarget
@@ -45,7 +45,7 @@ export default class VirtualGerberApplication {
     this.element.appendChild(this.canvas)
 
     // Create virtual PIXI application
-    this.virtualAppliction = new PIXI.Application({
+    this.virtualApplication = new PIXI.Application({
       width: element.clientWidth,
       height: element.clientHeight,
       autoDensity: false
@@ -66,7 +66,7 @@ export default class VirtualGerberApplication {
       .wheel()
       .decelerate()
 
-    this.virtualAppliction.stage.addChild(this.virtualViewport)
+    this.virtualApplication.stage.addChild(this.virtualViewport)
 
     // if (true) {
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
@@ -86,7 +86,7 @@ export default class VirtualGerberApplication {
     this.resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect
       this.virtualViewport.resize(width, height)
-      this.virtualAppliction.renderer.resize(width, height)
+      this.virtualApplication.renderer.resize(width, height)
       // this.worker.resizeViewport(width, height)
       this.renderer.then((renderer) => {
         renderer.resizeViewport(width, height)
@@ -200,7 +200,7 @@ export default class VirtualGerberApplication {
   public async destroy(): Promise<void> {
     this.resizeObserver.disconnect()
     this.element.removeChild(this.canvas)
-    this.virtualAppliction.destroy(true)
+    this.virtualApplication.destroy(true)
     this.virtualViewport.removeAllListeners()
     this.virtualViewport.destroy()
     const renderer = await this.renderer

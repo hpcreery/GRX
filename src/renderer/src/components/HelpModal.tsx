@@ -5,7 +5,7 @@ import chroma from 'chroma-js'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 const { useToken } = theme
 
-export default function HelpModal() {
+export default function HelpModal(): JSX.Element | null {
   const { token } = useToken()
   const { transparency, blur } = React.useContext(ConfigEditorProvider)
   return (
@@ -16,13 +16,16 @@ export default function HelpModal() {
         position: 'absolute',
         bottom: 10,
         right: 10,
-        backgroundColor: transparency ? chroma(token.colorBgElevated).alpha(0.7).css() : chroma(token.colorBgElevated).css(),
+        backgroundColor: transparency
+          ? chroma(token.colorBgElevated).alpha(0.7).css()
+          : chroma(token.colorBgElevated).css(),
         backdropFilter: transparency ? `blur(${blur}px)` : '',
-        pointerEvents: 'all',
+        pointerEvents: 'all'
       }}
-      bodyStyle={{ padding: 3 }}>
+      bodyStyle={{ padding: 3 }}
+    >
       <Space size={1}>
-        <Button icon={<QuestionOutlined />} type='text' />
+        <Button icon={<QuestionOutlined />} type="text" />
       </Space>
     </Card>
   )

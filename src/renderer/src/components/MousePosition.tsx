@@ -11,7 +11,7 @@ interface MousePositionProps {
   gerberApp: VirtualGerberApplication
 }
 
-export default function MousePosition(props: MousePositionProps) {
+export default function MousePosition(props: MousePositionProps): JSX.Element | null {
   const { gerberApp } = props
   const { token } = useToken()
   const { transparency, blur, componentSize } = React.useContext(ConfigEditorProvider)
@@ -20,7 +20,7 @@ export default function MousePosition(props: MousePositionProps) {
   const [y, setY] = React.useState<number>(0)
 
   React.useEffect(() => {
-    const handleMouseMove = (e: PointerEvent) => {
+    const handleMouseMove = (e: PointerEvent): void => {
       setX(e.detail.x)
       setY(e.detail.y)
     }

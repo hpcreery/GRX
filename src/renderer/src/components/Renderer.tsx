@@ -67,13 +67,12 @@ export default class Renderer extends React.Component<ScreenGerberApplicationPro
     super(props)
     // this.rendererDiv = () => <div id='GRX' style={{ width: '100%', height: '100%' }} />
     this.rendererDiv = document.createElement('div')
-    // @ts-ignore
-    const app = new VirtualGerberApplication({ ...props, element: this.rendererDiv })
+    new VirtualGerberApplication({ ...props, element: this.rendererDiv })
   }
-  render() {
+  render(): JSX.Element {
     return (
       <div
-        id='GRX'
+        id="GRX"
         style={{ width: '100%', height: '100%' }}
         dangerouslySetInnerHTML={{ __html: this.rendererDiv.innerHTML }}
       />

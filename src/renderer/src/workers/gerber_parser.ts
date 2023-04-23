@@ -9,7 +9,7 @@ const workerMethods: WorkerMethods = {
     const imagetree = plot(syntaxTree)
     // console.log('imagetree', imagetree)
     return imagetree
-  },
+  }
 }
 
 Comlink.expose(workerMethods)

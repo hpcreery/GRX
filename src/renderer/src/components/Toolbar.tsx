@@ -18,7 +18,7 @@ interface ToolbarProps {
   gerberApp: VirtualGerberApplication
 }
 
-export default function Toolbar({ gerberApp }: ToolbarProps) {
+export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null {
   const { token } = useToken()
   const [settingsModalOpen, settingsSetModalOpen] = React.useState<boolean>(false)
   const {
@@ -31,15 +31,15 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
     setComponentSize
   } = React.useContext(ConfigEditorProvider)
 
-  const showModal = () => {
+  const showModal = (): void => {
     settingsSetModalOpen(true)
   }
 
-  const handleSettingsModalOk = () => {
+  const handleSettingsModalOk = (): void => {
     settingsSetModalOpen(false)
   }
 
-  const handleSettingsModalCancel = () => {
+  const handleSettingsModalCancel = (): void => {
     settingsSetModalOpen(false)
   }
 
@@ -87,28 +87,28 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           <Divider type="vertical" style={{ margin: '0 3px' }} />
           <Button
             icon={<ZoomInOutlined />}
-            onClick={() => {
+            onClick={(): void => {
               gerberApp.zoom(-550 / gerberApp.virtualViewport.scale.x)
             }}
             type="text"
           />
           <Button
             icon={<ZoomOutOutlined />}
-            onClick={async () => {
+            onClick={async (): Promise<void> => {
               gerberApp.zoom(1000 / gerberApp.virtualViewport.scale.x)
             }}
             type="text"
           />
           <Button
             icon={<HomeOutlined />}
-            onClick={() => {
+            onClick={(): void => {
               gerberApp.zoomHome()
               gerberApp.virtualViewport.decelerate()
             }}
             type="text"
           />
           <Divider type="vertical" style={{ margin: '0 3px' }} />
-          <Button icon={<ToolOutlined />} onClick={() => showModal()} type="text" />
+          <Button icon={<ToolOutlined />} onClick={(): void => showModal()} type="text" />
           {/* <Button icon={<FullscreenOutlined />} type='text' /> */}
           {/* <Button icon={<CloudDownloadOutlined />} type='text' /> */}
           {/* <Button icon={<SearchOutlined />} type='text' /> */}
@@ -140,7 +140,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
                 value: 'large'
               }
             ]}
-            onChange={(value) => {
+            onChange={(value): void => {
               setComponentSize(value as 'small' | 'middle' | 'large')
             }}
           />
@@ -150,7 +150,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           <Text>Dark Mode</Text>
           <Switch
             defaultChecked={themeState.algorithm === theme.darkAlgorithm}
-            onChange={(checked) => {
+            onChange={(checked): void => {
               if (checked) {
                 setThemeState({ algorithm: theme.darkAlgorithm })
               } else {
@@ -164,7 +164,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps) {
           <Text>Transparency</Text>
           <Switch
             defaultChecked={transparency}
-            onChange={(checked) => {
+            onChange={(checked): void => {
               setTransparency(checked)
             }}
           />

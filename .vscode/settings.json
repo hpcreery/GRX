@@ -10,5 +10,5 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
-  "cSpell.words": ["Pixi"]
+  "cSpell.words": ["Comlink", "Pixi", "uncull"]
 }
