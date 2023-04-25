@@ -82,7 +82,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       }
       reader.onload = async (): Promise<void> => {
         options.onSuccess && options.onSuccess(reader.result)
-        messageApi.success(`${(options.file as File).name} File uploaded successfully.`)
+        // messageApi.success(`${(options.file as File).name} File uploaded successfully.`)
       }
 
       const file = options.file as Blob
