@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react'
 import VirtualGerberApplication from '../renderer/virtual'
 import { Card, theme, Upload, message, UploadFile } from 'antd'
@@ -140,10 +141,23 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           overflow: 'hidden',
           ...transparencyCSS
         }}
-        bodyStyle={{ padding: 5 }}
+        bodyStyle={{ padding: 5, height: '100%', overflow: 'auto' }}
       >
-        <Dragger {...props}>
-          <PlusOutlined />
+        <Dragger
+          key="dragger"
+          {...props}
+          css={{
+            '.ant-upload': {
+              height: layers.length > 0 ? '50px' : '100%',
+              transitionProperty: 'height',
+              transition: 'border-color 0.3s, height 0.5s'
+            },
+            '.ant-upload .ant-upload-btn': {
+              padding: 0
+            }
+          }}
+        >
+          <PlusOutlined /> Add Artwork
         </Dragger>
       </Card>
     </div>
