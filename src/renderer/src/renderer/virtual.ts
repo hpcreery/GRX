@@ -62,8 +62,8 @@ export default class VirtualGerberApplication {
       canvasElement: this.canvas
     })
       .drag()
-      .pinch({ percent: 2 })
       .wheel()
+      // .pinch() // pinch is bugged, idk why
       .decelerate()
 
     this.virtualApplication.stage.addChild(this.virtualViewport)
@@ -101,29 +101,30 @@ export default class VirtualGerberApplication {
       this.moveViewport()
     })
 
-    this.virtualViewport.on('clicked', async (e) => {
+    this.virtualViewport.on('pointertap', async (e) => {
       const renderer = await this.renderer
       const intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
-      if (
-        e.event instanceof MouseEvent ||
-        e.event instanceof TouchEvent ||
-        e.event instanceof PointerEvent
-      ) {
-        const { x, y } = this.getPosition(e.event)
-        this.pointer.dispatchEvent(
-          new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
-        )
-      }
+      const { x, y } = this.getPosition(e)
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
+      )
       console.log(intersected)
     })
 
-    this.virtualViewport.on('pointermove', async (e) => {
-      if (!this.origin) return
-      const { x, y } = this.getPosition(e)
-      this.pointer.dispatchEvent(
-        new CustomEvent<PointerCoordinates>('pointermove', { detail: { x, y } })
-      )
-    })
+    // this.virtualViewport.on('pointermove', async (e) => {
+    //   if (!this.origin) return
+    //   const { x, y } = this.getPosition(e)
+    //   this.pointer.dispatchEvent(
+    //     new CustomEvent<PointerCoordinates>('pointermove', { detail: { x, y } })
+    //   )
+    // })
+
+    // this.virtualViewport.on('zoomed', (e) => {
+    //   console.log('zoom', e)
+    //   if (e.type === 'pinch') {
+    //     console.log('pinch', e.center)
+    //   }
+    // })
 
     // this.virtualViewport.addEventListener('contextmenu', (e) => {
     //   console.log('contextmenu')
@@ -138,19 +139,18 @@ export default class VirtualGerberApplication {
     x: number
     y: number
   } {
+    // console.log(e)
     let px: number
     let py: number
-    if (
-      e instanceof MouseEvent ||
-      e instanceof PointerEvent ||
-      e instanceof PIXI.FederatedPointerEvent
-    ) {
+    if (e instanceof PIXI.FederatedPointerEvent) {
+      px = e.client.x
+      py = e.client.y
+    } else if (e instanceof MouseEvent || e instanceof PointerEvent) {
       px = e.clientX
       py = e.clientY
     } else if (e instanceof TouchEvent) {
       px = e.touches[0].clientX
       py = e.touches[0].clientY
-      // e.preventDefault()
     } else {
       throw new Error('Unknown event type')
     }
@@ -171,6 +171,7 @@ export default class VirtualGerberApplication {
     const renderer = await this.renderer
     await renderer.moveViewport(x, y, scale)
     // this.emit('moved', { x, y, scale })
+    // console.log('moved', x, y)
   }
 
   public async zoomHome(): Promise<void> {
