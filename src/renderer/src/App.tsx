@@ -81,6 +81,7 @@ export default function App(): JSX.Element | null {
           WebkitUserSelect: 'none',
           MozUserSelect: 'none',
           userSelect: 'none',
+          touchAction: 'none',
           backgroundColor: chroma(token.colorBgContainer).css()
         }}
         ref={elementRef}

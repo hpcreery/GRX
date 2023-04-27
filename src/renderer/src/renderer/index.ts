@@ -53,7 +53,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     )
   }
 
-  public changeBackgroundColor(color: number) {
+  public changeBackgroundColor(color: number): void {
     this.renderer.background.color = color
   }
 
