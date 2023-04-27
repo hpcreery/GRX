@@ -111,13 +111,29 @@ export default class VirtualGerberApplication {
       console.log(intersected)
     })
 
-    // this.virtualViewport.on('pointermove', async (e) => {
-    //   if (!this.origin) return
-    //   const { x, y } = this.getPosition(e)
-    //   this.pointer.dispatchEvent(
-    //     new CustomEvent<PointerCoordinates>('pointermove', { detail: { x, y } })
-    //   )
-    // })
+    this.virtualViewport.on('clicked', async (e) => {
+      const renderer = await this.renderer
+      const intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
+      if (
+        e.event instanceof MouseEvent ||
+        e.event instanceof TouchEvent ||
+        e.event instanceof PointerEvent
+      ) {
+        const { x, y } = this.getPosition(e.event)
+        this.pointer.dispatchEvent(
+          new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
+        )
+      }
+      console.log(intersected)
+    })
+
+    this.virtualViewport.on('pointermove', async (e) => {
+      if (!this.origin) return
+      const { x, y } = this.getPosition(e)
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCoordinates>('pointermove', { detail: { x, y } })
+      )
+    })
 
     // this.virtualViewport.on('zoomed', (e) => {
     //   console.log('zoom', e)

@@ -25,8 +25,10 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
       setY(e.detail.y)
     }
     gerberApp.pointer.addEventListener('pointermove', handleMouseMove as EventListener)
+    gerberApp.pointer.addEventListener('pointerdown', handleMouseMove as EventListener)
     return () => {
       gerberApp.pointer.removeEventListener('pointermove', handleMouseMove as EventListener)
+      gerberApp.pointer.removeEventListener('pointerdown', handleMouseMove as EventListener)
     }
   }, [])
 
