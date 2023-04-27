@@ -1,5 +1,5 @@
 import './App.css'
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useContext } from 'react'
 import VirtualGerberApplication from './renderer/virtual'
 import { theme, Spin } from 'antd'
 import chroma from 'chroma-js'
@@ -7,6 +7,8 @@ import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
+import { Global, css } from '@emotion/react'
+import { ConfigEditorProvider } from './contexts/ConfigEditor'
 
 const { useToken } = theme
 
@@ -14,6 +16,7 @@ export default function App(): JSX.Element | null {
   const { token } = useToken()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
+  const { transparency, blur } = useContext(ConfigEditorProvider)
 
   // Load in the gerber application
   useEffect(() => {
@@ -84,6 +87,22 @@ export default function App(): JSX.Element | null {
           backgroundColor: chroma(token.colorBgContainer).css()
         }}
         ref={elementRef}
+      />
+      <Global
+        styles={css`
+          .ant-dropdown > ul {
+            backdrop-filter: ${transparency ? `blur(${blur}px)` : ''} !important;
+            background-color: ${transparency
+              ? chroma(token.colorBgElevated).alpha(0.7).css()
+              : chroma(token.colorBgElevated).css()} !important;
+          }
+          .ant-popover-content > div {
+            backdrop-filter: ${transparency ? `blur(${blur}px)` : ''} !important;
+            background-color: ${transparency
+              ? chroma(token.colorBgElevated).alpha(0.7).css()
+              : chroma(token.colorBgElevated).css()} !important;
+          }
+        `}
       />
     </>
   )

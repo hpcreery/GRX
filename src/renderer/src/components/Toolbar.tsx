@@ -22,8 +22,10 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
   const { token } = useToken()
   const [settingsModalOpen, settingsSetModalOpen] = React.useState<boolean>(false)
   const {
-    themeState,
-    setThemeState,
+    // themeState,
+    // setThemeState,
+    themeMode,
+    setThemeMode,
     transparency,
     setTransparency,
     blur,
@@ -149,12 +151,12 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
         <Space align="center" style={{ width: '100%', justifyContent: 'space-between' }}>
           <Text>Dark Mode</Text>
           <Switch
-            defaultChecked={themeState.algorithm === theme.darkAlgorithm}
+            defaultChecked={themeMode === 'dark'}
             onChange={(checked): void => {
               if (checked) {
-                setThemeState({ algorithm: theme.darkAlgorithm })
+                setThemeMode('dark')
               } else {
-                setThemeState({ algorithm: theme.defaultAlgorithm })
+                setThemeMode('light')
               }
             }}
           />

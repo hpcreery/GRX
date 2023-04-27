@@ -1,6 +1,12 @@
+/** @jsxImportSource @emotion/react */
 import { useState, useEffect } from 'react'
-import { Button, Space, theme, Popover, Badge, UploadFile, Spin } from 'antd'
-import { LoadingOutlined } from '@ant-design/icons'
+import { Button, Space, theme, Popover, Badge, UploadFile, Spin, Dropdown, MenuProps } from 'antd'
+import {
+  BgColorsOutlined,
+  EyeInvisibleOutlined,
+  LoadingOutlined,
+  EyeOutlined
+} from '@ant-design/icons'
 import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
 import { DeleteOutlined } from '@ant-design/icons'
@@ -10,8 +16,8 @@ import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 import { RendererLayer } from '../../renderer/types'
 import VirtualGerberApplication from '../../renderer/virtual'
-// import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
 import * as Comlink from 'comlink'
+// import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
 
 const { useToken } = theme
 interface LayerListItemProps {
@@ -42,13 +48,14 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   // const [zIndex, setzIndex] = useState<number>(layer.zIndex)
   // const [progress, setProgress] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
+  const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
 
   function registerLayers(rendererLayers: RendererLayer[]): void {
-    const newLayer = rendererLayers.find((l) => l.uid === layer.uid)
-    if (newLayer) {
-      setColor(newLayer.color)
-      setVisible(newLayer.visible)
-      // setzIndex(newLayer.zIndex)
+    const thisLayer = rendererLayers.find((l) => l.uid === layer.uid)
+    if (thisLayer) {
+      setColor(thisLayer.color)
+      setVisible(thisLayer.visible)
+      // setzIndex(thisLayer.zIndex)
       setLoading(false)
     }
   }
@@ -120,57 +127,101 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     }
   )
 
+  const items: MenuProps['items'] = [
+    {
+      label: 'Change Color',
+      key: '1',
+      icon: <BgColorsOutlined />,
+      onClick: (): void => {
+        setTimeout(() => {
+          setShowColorPicker(true)
+        }, 100)
+      }
+    },
+    {
+      label: visible ? 'Hide Layer' : 'Show Layer',
+      key: '3',
+      icon: visible ? <EyeInvisibleOutlined /> : <EyeOutlined />,
+      onClick: toggleVisible
+    },
+    {
+      type: 'divider'
+    },
+    {
+      label: 'Delete Layer',
+      key: '0',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: deleteLayer
+    }
+  ]
+
+  // const transparencyCSS = {
+  //   backdropFilter: transparency ? `blur(${blur}px)` : '',
+  //   backgroundColor: transparency
+  //     ? chroma(token.colorBgElevated).alpha(0.7).css()
+  //     : chroma(token.colorBgElevated).css()
+  // }
+
+  const handleOpenChange = (open: boolean): void => {
+    setShowColorPicker(open)
+  }
+
   return (
     <div style={{ display: 'flex' }}>
-      <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
-        <Button
-          style={{
-            textAlign: 'left',
-            marginTop: 5,
-            width: '100%',
-            overflow: 'hidden',
-            padding: 0
-          }}
-          type="text"
-          onClick={(e): void => {
-            if (
-              !(
-                e.target instanceof HTMLDivElement &&
-                e.target.parentNode instanceof HTMLButtonElement
-              )
-            ) {
-              return
-            }
-            toggleVisible()
-          }}
-        >
-          <Space.Compact>
-            {loading ? (
-              <Spin
-                indicator={<LoadingOutlined style={{ fontSize: 14, margin: '0px 6px' }} spin />}
-              />
-            ) : (
-              <Popover
-                placement="right"
-                title={'Color'}
-                content={
-                  <CirclePicker
-                    color={chroma(color as any).hex()}
-                    onChange={(color): Promise<void> => changeColor(color.hex)}
-                  />
-                }
-                trigger="click"
-              >
-                <Badge
-                  color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
-                  style={{ margin: '0px 10px' }}
+      <Dropdown menu={{ items }} trigger={['contextMenu']}>
+        <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
+          <Button
+            style={{
+              textAlign: 'left',
+              marginTop: 5,
+              width: '100%',
+              overflow: 'hidden',
+              padding: 0
+            }}
+            type="text"
+            onClick={(e): void => {
+              if (
+                !(
+                  e.target instanceof HTMLDivElement &&
+                  e.target.parentNode instanceof HTMLButtonElement
+                )
+              ) {
+                return
+              }
+              toggleVisible()
+            }}
+          >
+            <Space.Compact>
+              {loading ? (
+                <Spin
+                  indicator={<LoadingOutlined style={{ fontSize: 14, margin: '0px 6px' }} spin />}
                 />
-              </Popover>
-            )}
-            {file.name}
-          </Space.Compact>
-        </Button>
-      </animated.div>
+              ) : (
+                <Popover
+                  open={showColorPicker}
+                  onOpenChange={handleOpenChange}
+                  placement="right"
+                  title={'Color'}
+                  content={
+                    <CirclePicker
+                      color={chroma(color as any).hex()}
+                      onChange={(color): Promise<void> => changeColor(color.hex)}
+                    />
+                  }
+                  trigger="click"
+                >
+                  <Badge
+                    color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
+                    style={{ margin: '0px 10px' }}
+                  />
+                </Popover>
+              )}
+              {file.name}
+            </Space.Compact>
+          </Button>
+        </animated.div>
+      </Dropdown>
       <animated.div {...bind()} style={{ width }}>
         <Button
           // danger

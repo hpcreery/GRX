@@ -6,16 +6,29 @@ import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import reportWebVitals from './reportWebVitals'
 
 function Main(): JSX.Element | null {
-  const [themeState, setThemeState] = useState<ThemeConfig>({ algorithm: theme.darkAlgorithm })
+  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark')
+  const [themeState, setThemeState] = useState<ThemeConfig>({
+    token: {
+      colorPrimary: '#355E3B'
+    }
+  })
   const [transparency, setTransparency] = useState(true)
   const [componentSize, setComponentSize] = useState<'small' | 'middle' | 'large'>('middle')
   const blur = 30
   return (
-    <ConfigProvider theme={themeState} componentSize={componentSize}>
+    <ConfigProvider
+      theme={{
+        ...themeState,
+        algorithm: themeMode == 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm
+      }}
+      componentSize={componentSize}
+    >
       <ConfigEditorProvider.Provider
         value={{
           themeState,
           setThemeState,
+          themeMode,
+          setThemeMode,
           transparency,
           setTransparency,
           blur,
