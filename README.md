@@ -1,10 +1,16 @@
 <div align="center">
+  <a title="GRX" href="https://grx.creery.org">
+    <img src="./resources/icon.png" width="120" height="120">
+  </a>
   <h1>GRX</h1>
   <p>Fastest Web Based Gerber Viewer</p>
-  <p>!! DEVELOPMENT !!</p>
+  <a title="GRX" href="https://grx.creery.org">
+    <img src="https://img.shields.io/website?label=grx.creery.org&url=https%3A%2F%2Fgrx.creery.org%2F">
+  </a>
+  <img src="https://img.shields.io/github/package-json/v/hpcreery/grx">
+  <img src="https://img.shields.io/github/actions/workflow/status/hpcreery/grx/release.yml">
+  <img src="https://img.shields.io/github/license/hpcreery/grx">
 </div>
-
-See the current build in production here -> [GRX](http://grx.creery.org)
 
 ![preview](/resources/screenshot.png)
 
@@ -14,18 +20,14 @@ GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX u
 
 ## Features
 
-* 🏃 Fast
-* 👍 Easy to use
-* 📄 Gerber RS-274X
-* 🖥 Multi-Platform Electron App
+- 🏃 Fast
+- 👍 Easy to use
+- 🖥 Multi-Platform
 
 ## Tools
-* [Electron](https://electronjs.org/)
-* [React](https://reactjs.org/)
-* [PixiJS](https://www.pixijs.com/)
-* [Typescript](https://www.typescriptlang.org/)
-* [Tracespace](https://github.com/hpcreery/tracespace)
 
-```
-electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons
-```
+- [Electron](https://electronjs.org/)
+- [React](https://reactjs.org/)
+- [PixiJS](https://www.pixijs.com/)
+- [Typescript](https://www.typescriptlang.org/)
+- [Tracespace](https://github.com/hpcreery/tracespace)
