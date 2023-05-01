@@ -68,15 +68,11 @@ export default class VirtualGerberApplication {
 
     this.virtualApplication.stage.addChild(this.virtualViewport)
 
-    // if (true) {
+    // All major browsers now support transferControlToOffscreen
+    // https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/transferControlToOffscreen
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
     const worker = Comlink.wrap<typeof PixiGerberApplicationWorker>(new gerberRendererWorker())
     this.renderer = new worker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), options)
-    // } else {
-    //   this.renderer = new Promise<PixiGerberApplication>((resolve) =>
-    //     resolve(new OnscreenPixiGerberApplicationWrapper(this.canvas, options))
-    //   )
-    // }
 
     this.renderer.then(async (renderer) => {
       this.origin = await renderer.getOrigin()
@@ -114,16 +110,10 @@ export default class VirtualGerberApplication {
     this.virtualViewport.on('clicked', async (e) => {
       const renderer = await this.renderer
       const intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
-      if (
-        e.event instanceof MouseEvent ||
-        e.event instanceof TouchEvent ||
-        e.event instanceof PointerEvent
-      ) {
-        const { x, y } = this.getPosition(e.event)
-        this.pointer.dispatchEvent(
-          new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
-        )
-      }
+      const { x, y } = this.getPosition(e.event)
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
+      )
       console.log(intersected)
     })
 
