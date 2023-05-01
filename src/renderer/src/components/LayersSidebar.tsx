@@ -90,16 +90,21 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       reader.readAsText(file)
     },
     onChange: async (info) => {
-      console.log(info)
       const { status, uid, name, response } = info.file
       const newFileList = [...info.fileList]
       setLayers(newFileList)
       // type UploadFileStatus = 'error' | 'success' | 'done' | 'uploading' | 'removed';
       if (status === 'done') {
         const renderer = await gerberApp.renderer
-        await renderer.addGerber(name, response, uid)
+        try {
+          await renderer.addGerber(name, response, uid)
+        } catch (err) {
+          messageApi.error(`${name} file upload failed. ${err}`)
+          setLayers(layers.filter((l) => l.uid !== uid))
+        }
       } else if (status === 'error') {
-        console.log(info)
+        messageApi.error(`${name} file upload failed. ${info}`)
+        setLayers(layers.filter((l) => l.uid !== uid))
       }
     },
     onRemove: async (file) => {
@@ -110,7 +115,8 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       return true
     },
     itemRender: (_originNode, file, _fileList, actions) => {
-      return <LayerListItem key={file.name} file={file} gerberApp={gerberApp} actions={actions} />
+      // console.log('itemRender', file.name)
+      return <LayerListItem key={file.uid} file={file} gerberApp={gerberApp} actions={actions} />
     }
   }
 

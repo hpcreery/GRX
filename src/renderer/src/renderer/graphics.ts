@@ -64,7 +64,6 @@ export class GerberGraphics extends PIXI.Graphics {
       this.moveTo(0, 0)
     }
 
-    // console.log('Done Rendering ImageTree')
     return this
   }
 

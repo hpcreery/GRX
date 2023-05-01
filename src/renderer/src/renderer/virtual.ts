@@ -145,7 +145,6 @@ export default class VirtualGerberApplication {
     x: number
     y: number
   } {
-    // console.log(e)
     let px: number
     let py: number
     if (e instanceof PIXI.FederatedPointerEvent) {
@@ -166,7 +165,6 @@ export default class VirtualGerberApplication {
     const yOffset = this.virtualViewport.y
     const x = ((px - xOffset) / scale - this.origin.x) * 10
     const y = -((py - yOffset) / scale - this.origin.y) * 10
-    // console.log(x, y)
     return { x, y }
   }
 
@@ -176,8 +174,6 @@ export default class VirtualGerberApplication {
     const scale = this.virtualViewport.scale.x
     const renderer = await this.renderer
     await renderer.moveViewport(x, y, scale)
-    // this.emit('moved', { x, y, scale })
-    // console.log('moved', x, y)
   }
 
   public async zoomHome(): Promise<void> {

@@ -66,7 +66,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       r.addViewportListener(
         'childAdded',
         Comlink.proxy(async () => {
-          console.log('childAdded')
           registerLayers(await r.layers)
         })
       )

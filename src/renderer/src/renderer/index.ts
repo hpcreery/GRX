@@ -26,7 +26,6 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   cullDirty = true
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
-    console.log('PixiGerberApplication', options)
     super(options)
 
     if (this.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
