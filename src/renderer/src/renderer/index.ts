@@ -1,6 +1,7 @@
 import { GerberGraphics } from './graphics'
 
 import type { ImageTree } from '@hpcreery/tracespace-plotter'
+import type { Tool } from '@hpcreery/tracespace-plotter/src/tool-store'
 
 import * as PIXI from '@pixi/webworker'
 
@@ -10,6 +11,7 @@ import { RendererLayer } from './types'
 import * as Comlink from 'comlink'
 import gerberParserWorker from '../workers/gerber_parser?worker'
 import type { WorkerMethods as GerberParserMethods } from '../workers/gerber_parser'
+// import geometry from './geometry_math'
 
 PIXI.BatchRenderer.canUploadSameBuffer = true
 // PIXI.Graphics.curves.adaptive = false
@@ -60,42 +62,25 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return { x: this.origin.x, y: this.origin.y }
   }
 
-  public featuresAtPosition(clientX: number, clientY: number): [] {
-    console.log('featuresAtPosition', clientX, clientY)
-    return []
-    // const checkintersect = (obj: PIXI.DisplayObject): GerberGraphics[] => {
-    //   let intersected: GerberGraphics[] = []
-    //   if (obj instanceof GerberGraphics) {
-    //     obj.tint = 0xffffff
-    //     obj.children.forEach((child) => {
-    //       intersected = intersected.concat(checkintersect(child))
-    //     })
-    //     if (obj.containsPoint(new PIXI.Point(clientX, clientY)) && !obj.isMask) {
-    //       intersected.push(obj)
-    //     }
-    //     if (obj.line.width != 0) {
-    //       let point = obj.worldTransform.applyInverse(new PIXI.Point(clientX, clientY))
-    //       let intersect = geometry.pointInsidePolygon(point.x, point.y, obj.geometry.points)
-    //       if (intersect) {
-    //         intersected.push(obj)
-    //       }
-    //     }
-    //   }
-    //   if (obj instanceof PIXI.Container) {
-    //     obj.children.forEach((child) => {
-    //       intersected = intersected.concat(checkintersect(child))
-    //     })
-    //   }
-    //   return intersected
-    // }
-    // let intersected = []
-    // intersected = checkintersect(this.viewport).map((obj) => {
-    //   console.log(obj)
-    //   obj.tint = 0x00ff00
-    //   return { bounds: { ...obj._bounds } }
-    // })
-    // console.log(intersected)
-    // return intersected
+  public featuresAtPosition(
+    clientX: number,
+    clientY: number
+  ): { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] {
+    // console.log('featuresAtPosition', clientX, clientY)
+    let intersected: { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] = []
+    this.viewport.children.forEach((child) => {
+      if (child instanceof LayerContainer) {
+        if (child.visible == false) return
+        child.children.forEach((child) => {
+          if (child instanceof GerberGraphics) {
+            intersected = intersected.concat(child.featuresAtPosition(clientX, clientY))
+          }
+        })
+      }
+    })
+
+    console.log(intersected)
+    return intersected
   }
 
   // Culling methods
@@ -220,7 +205,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   public addLayer(name: string, image: ImageTree, uid?: string): void {
-    const layerContainer = new LayerContainer({ name, uid })
+    console.log(image)
+    const layerContainer = new LayerContainer({ name, uid, tools: image.tools })
     layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
     layerContainer.scale = { x: 1, y: -1 }
     layerContainer.position = this.origin
@@ -280,10 +266,12 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
 class LayerContainer extends PIXI.Container {
   public name: string
   public uid: string
-  constructor(props: { name: string; uid?: string }) {
+  public tools: Partial<Record<string, Tool>>
+  constructor(props: { name: string; uid?: string; tools: Partial<Record<string, Tool>> }) {
     super()
     this.name = props.name
     this.uid = props.uid ?? this.generateUid()
+    this.tools = props.tools
   }
   private generateUid(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)

@@ -1,4 +1,4 @@
-import { CLEAR, DARK, IN, MM } from '@hpcreery/tracespace-parser'
+import { CLEAR, DARK, IN, MM, UnitsType } from '@hpcreery/tracespace-parser'
 import type {
   ImageTree,
   ImageGraphic,
@@ -22,6 +22,7 @@ import {
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
 import * as Tess2 from 'tess2-ts'
+// import geometry from './geometry_math'
 
 const DARK_COLOR = 0xffffff
 const DARK_ALPHA = 1
@@ -37,37 +38,23 @@ const randomColor = (): number => Math.floor(Math.random() * 16777215)
 const uid = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-export class GerberGraphics extends PIXI.Graphics {
-  uid: string
-  constructor(tree?: ImageTree) {
+export class Graphics extends PIXI.Graphics {
+  units: UnitsType
+  unitScale: number
+  constructor(units: UnitsType) {
     super()
-    this.filters = [ChromaFilter]
-    this.tint = randomColor()
-    this.uid = uid()
-    if (tree) {
-      this.renderImageTree(tree)
-    }
-  }
-
-  public renderImageTree(tree: ImageTree): this {
-    const { children, units } = tree
+    this.units = units
     if (units === IN) {
-      scale = 100
+      this.unitScale = scale
     } else if (units === MM) {
-      scale = 100 / 25.4
+      this.unitScale = scale / 25.4
     } else {
       throw new Error(`Unknown units: ${units}`)
     }
-
-    for (const child of children) {
-      this.renderGraphic(child)
-      this.moveTo(0, 0)
-    }
-
-    return this
   }
 
-  private renderGraphic(node: ImageGraphic): this {
+  public renderGraphic(node: ImageGraphic): this {
+    const SCALE = this.unitScale
     if (node.type === IMAGE_SHAPE) {
       if (OUTLINE_MODE) {
         this.beginFill(DARK_COLOR, 0)
@@ -98,7 +85,7 @@ export class GerberGraphics extends PIXI.Graphics {
           this.beginFill(CLEAR_COLOR, 0)
         }
         this.lineStyle({
-          width: node.width * scale,
+          width: node.width * SCALE,
           color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
           alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
           cap: PIXI.LINE_CAP.ROUND,
@@ -131,22 +118,23 @@ export class GerberGraphics extends PIXI.Graphics {
   }
 
   private shapeToElement(shape: Shape): this {
+    const SCALE = this.unitScale
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
         // TODO: use conic. https://www.npmjs.com/package/@pixi-essentials/conic
-        this.drawCircle(cx * scale, cy * scale, r * scale)
+        this.drawCircle(cx * SCALE, cy * SCALE, r * SCALE)
         return this
       }
 
       case RECTANGLE: {
         const { x, y, xSize: width, ySize: height, r } = shape
-        this.drawRoundedRect(x * scale, y * scale, width * scale, height * scale, r ? r * scale : 0)
+        this.drawRoundedRect(x * SCALE, y * SCALE, width * SCALE, height * SCALE, r ? r * SCALE : 0)
         return this
       }
 
       case POLYGON: {
-        this.drawPolygon(shape.points.flat().map((point) => point * scale))
+        this.drawPolygon(shape.points.flat().map((point) => point * SCALE))
         return this
       }
 
@@ -182,49 +170,118 @@ export class GerberGraphics extends PIXI.Graphics {
   }
 
   private drawPolyLine(segments: PathSegment[]): this {
+    const SCALE = this.unitScale
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
       if (previous === undefined || !positionsEqual(previous.end, start)) {
-        this.moveTo(start[0] * scale, start[1] * scale)
+        this.moveTo(start[0] * SCALE, start[1] * SCALE)
       }
       if (next.type === LINE) {
-        this.lineTo(end[0] * scale, end[1] * scale)
+        this.lineTo(end[0] * SCALE, end[1] * SCALE)
       } else {
         const { start, end, radius, center } = next
         const c = start[2] - end[2]
-        this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
+        this.arc(center[0] * SCALE, center[1] * SCALE, radius * SCALE, start[2], end[2], c > 0)
       }
     }
     return this
   }
 
   private drawContour(segments: PathSegment[]): this {
+    const SCALE = this.unitScale
     let lastHome: Position | ArcPosition = [0, 0]
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
       if (previous === undefined) {
         this.moveTo(0, 0)
-        this.lineTo(start[0] * scale, start[1] * scale)
+        this.lineTo(start[0] * SCALE, start[1] * SCALE)
         lastHome = start
       } else if (!positionsEqual(previous.end, start)) {
-        this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+        this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
         this.lineTo(0, 0)
-        this.lineTo(start[0] * scale, start[1] * scale)
+        this.lineTo(start[0] * SCALE, start[1] * SCALE)
         lastHome = start
       }
       if (next.type === LINE) {
-        this.lineTo(end[0] * scale, end[1] * scale)
+        this.lineTo(end[0] * SCALE, end[1] * SCALE)
       } else {
         const { start, end, radius, center } = next
         const c = start[2] - end[2]
-        this.arc(center[0] * scale, center[1] * scale, radius * scale, start[2], end[2], c > 0)
+        this.arc(center[0] * SCALE, center[1] * SCALE, radius * SCALE, start[2], end[2], c > 0)
       }
     }
     // this.geometry.bounds
-    this.lineTo(lastHome[0] * scale, lastHome[1] * scale)
+    this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
     return this
+  }
+}
+
+export class GerberGraphics extends Graphics {
+  uid: string
+  constructor(tree: ImageTree) {
+    super(tree.units)
+    this.filters = [ChromaFilter]
+    this.tint = randomColor()
+    this.uid = uid()
+    this.renderImageTree(tree)
+  }
+
+  public renderImageTree(tree: ImageTree): this {
+    const { children } = tree
+    for (const child of children) {
+      this.renderGraphic(child)
+      this.moveTo(0, 0)
+      const childGraphic = new Graphics(this.units)
+      childGraphic.visible = false
+      childGraphic.renderGraphic(child)
+      this.addChild(childGraphic)
+    }
+    return this
+  }
+
+  public featuresAtPosition(
+    clientX: number,
+    clientY: number
+  ): { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] {
+    const checkintersect = (obj: Graphics): Graphics[] => {
+      let intersected: Graphics[] = []
+      obj.visible = true
+      obj.updateTransform()
+      if (obj.containsPoint(new PIXI.Point(clientX, clientY))) {
+        intersected.push(obj)
+      } else {
+        obj.visible = false
+      }
+      // TODO: check if point is inside lines
+      // if (obj.line.width != 0) {
+      //   let point = obj.worldTransform.applyInverse(new PIXI.Point(clientX, clientY))
+      //   let intersect = geometry.pointInsidePolygon(point.x, point.y, obj.geometry.points)
+      //   if (intersect) {
+      //     intersected.push(obj)
+      //   }
+      // }
+      return intersected
+    }
+    let intersected: { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] = []
+    let intersectedchildren: Graphics[] = []
+    this.children.forEach((child) => {
+      if (child instanceof Graphics) {
+        intersectedchildren = intersectedchildren.concat(checkintersect(child))
+      }
+    })
+    intersected = intersectedchildren.map((obj) => {
+      return {
+        bounds: {
+          minX: obj._bounds.minX,
+          minY: obj._bounds.minY,
+          maxX: obj._bounds.maxX,
+          maxY: obj._bounds.maxY
+        }
+      }
+    })
+    return intersected
   }
 
   // render(r: PIXI.Renderer) {
