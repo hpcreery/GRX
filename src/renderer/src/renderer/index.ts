@@ -78,7 +78,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
         })
       }
     })
-
+    this.cullViewport(true)
     console.log(intersected)
     return intersected
   }
