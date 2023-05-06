@@ -138,7 +138,12 @@ export class Graphics extends PIXI.Graphics {
 
   private renderShape(node: ImageShape): this {
     const { shape } = node
-    return this.shapeToElement(shape)
+    // return this.shapeToElement(shape)
+    if (OUTLINE_MODE) {
+      return this.shapeToOutline(shape)
+    } else {
+      return this.shapeToElement(shape)
+    }
   }
 
   private shapeToElement(shape: Shape): this {
@@ -182,6 +187,91 @@ export class Graphics extends PIXI.Graphics {
           this.shapeToElement(layerShape)
           this.endFill()
           this.moveTo(0, 0)
+        }
+        return this
+      }
+
+      default: {
+        console.log('RENDERING (UNKNOWN): ', shape)
+        return this
+      }
+    }
+  }
+
+  private shapeToOutline(shape: Shape): this {
+    const SCALE = this.unitScale
+    switch (shape.type) {
+      case CIRCLE: {
+        const { cx, cy, r } = shape
+        this.moveTo(cx * SCALE + r * SCALE, cy * SCALE)
+        this.arc(cx * SCALE, cy * SCALE, r * SCALE, 0, 2 * Math.PI)
+        return this
+      }
+
+      case RECTANGLE: {
+        const { x, y, xSize: width, ySize: height, r } = shape
+        if (r) {
+          this.moveTo(x * SCALE, y * SCALE + r * SCALE)
+          this.arc(
+            x * SCALE + r * SCALE,
+            y * SCALE + r * SCALE,
+            r * SCALE,
+            Math.PI,
+            (3 * Math.PI) / 2
+          )
+          this.lineTo(x * SCALE + width * SCALE - r * SCALE, y * SCALE)
+          this.arc(
+            x * SCALE + width * SCALE - r * SCALE,
+            y * SCALE + r * SCALE,
+            r * SCALE,
+            (3 * Math.PI) / 2,
+            2 * Math.PI
+          )
+          this.lineTo(x * SCALE + width * SCALE, y * SCALE + height * SCALE - r * SCALE)
+          this.arc(
+            x * SCALE + width * SCALE - r * SCALE,
+            y * SCALE + height * SCALE - r * SCALE,
+            r * SCALE,
+            0,
+            Math.PI / 2
+          )
+          this.lineTo(x * SCALE + r * SCALE, y * SCALE + height * SCALE)
+          this.arc(
+            x * SCALE + r * SCALE,
+            y * SCALE + height * SCALE - r * SCALE,
+            r * SCALE,
+            Math.PI / 2,
+            Math.PI
+          )
+          this.lineTo(x * SCALE, y * SCALE + r * SCALE)
+        } else {
+          this.moveTo(x * SCALE, y * SCALE)
+          this.lineTo(x * SCALE + width * SCALE, y * SCALE)
+          this.lineTo(x * SCALE + width * SCALE, y * SCALE + height * SCALE)
+          this.lineTo(x * SCALE, y * SCALE + height * SCALE)
+          this.lineTo(x * SCALE, y * SCALE)
+        }
+        return this
+      }
+
+      case POLYGON: {
+        const [firstPoint, ...restPoints] = shape.points
+        this.moveTo(firstPoint[0] * SCALE, firstPoint[1] * SCALE)
+        for (const point of restPoints) {
+          this.lineTo(point[0] * SCALE, point[1] * SCALE)
+        }
+        this.lineTo(firstPoint[0] * SCALE, firstPoint[1] * SCALE)
+        return this
+      }
+
+      case OUTLINE: {
+        this.drawPolyLine(shape.segments)
+        return this
+      }
+
+      case LAYERED_SHAPE: {
+        for (const layerShape of shape.shapes) {
+          this.shapeToOutline(layerShape)
         }
         return this
       }
