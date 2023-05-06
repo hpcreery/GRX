@@ -101,15 +101,16 @@ export default function InfoModal(): JSX.Element | null {
               <Text strong>DISCLAIMER</Text>
               <br />
               <Text>
-                This software is provided "as is" and without any express or implied warranties,
-                including, without limitation, the implied warranties of merchantability and fitness
-                for a particular purpose. The entire risk arising out of the use or performance of
-                the software remains with you. In no event shall the authors or copyright holders be
-                liable for any damages whatsoever (including, without limitation, damages for loss
-                of business profits, business interruption, loss of business information, or other
-                pecuniary loss) arising out of the use of or inability to use this software. Because
-                some states/jurisdictions do not allow the exclusion or limitation of liability for
-                consequential or incidental damages, the above limitation may not apply to you.
+                This software is provided &quot;as is&quot; and without any express or implied
+                warranties, including, without limitation, the implied warranties of merchantability
+                and fitness for a particular purpose. The entire risk arising out of the use or
+                performance of the software remains with you. In no event shall the authors or
+                copyright holders be liable for any damages whatsoever (including, without
+                limitation, damages for loss of business profits, business interruption, loss of
+                business information, or other pecuniary loss) arising out of the use of or
+                inability to use this software. Because some states/jurisdictions do not allow the
+                exclusion or limitation of liability for consequential or incidental damages, the
+                above limitation may not apply to you.
               </Text>
             </Paragraph>
             <Paragraph type="danger">
