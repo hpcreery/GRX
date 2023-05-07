@@ -20,6 +20,7 @@ import {
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
 import * as Tess2 from 'tess2-ts'
+import { TIntersectItem } from './types'
 
 const DARK_COLOR = 0xffffff
 const DARK_ALPHA = 1
@@ -30,29 +31,68 @@ const CLEAR_ALPHA = 1
 const OUTLINE_WIDTH = 0.25
 const OUTLINE_MODE = false
 
-const scale = 100
+const SCALE = 100
 
 const randomColor = (): number => Math.floor(Math.random() * 16777215)
 const uid = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-export class Graphics extends PIXI.Graphics {
+export interface GraphicsOptions {
   units: UnitsType
-  unitScale: number
-  constructor(units: UnitsType) {
+  polarity: string
+  darkColor: number
+  darkAlpha: number
+  clearColor: number
+  clearAlpha: number
+  outlineWidth: number
+  outlineMode: boolean
+  scale: number
+  index: number
+  dcode?: string
+}
+
+const GraphicsOptionsDefaults: GraphicsOptions = {
+  units: IN,
+  polarity: DARK,
+  darkColor: DARK_COLOR,
+  darkAlpha: DARK_ALPHA,
+  clearColor: CLEAR_COLOR,
+  clearAlpha: CLEAR_ALPHA,
+  outlineWidth: OUTLINE_WIDTH,
+  outlineMode: OUTLINE_MODE,
+  scale: SCALE,
+  dcode: undefined,
+  index: 0
+}
+
+export class Graphics extends PIXI.Graphics {
+  public properties: GraphicsOptions
+  constructor(options: Partial<GraphicsOptions> = {}) {
     super()
-    this.units = units
-    if (units === IN) {
-      this.unitScale = scale
-    } else if (units === MM) {
-      this.unitScale = scale / 25.4
+
+    this.properties = { ...GraphicsOptionsDefaults, ...options }
+
+    if (this.properties.units === IN) {
+      this.properties.scale = SCALE
+    } else if (this.properties.units === MM) {
+      this.properties.scale = SCALE / 25.4
     } else {
-      throw new Error(`Unknown units: ${units}`)
+      throw new Error(`Unknown units: ${this.properties.units}`)
     }
   }
 
   public renderGraphic(node: ImageGraphic): this {
-    const SCALE = this.unitScale
+    this.properties.polarity = node.polarity
+
+    const {
+      scale: SCALE,
+      darkAlpha: DARK_ALPHA,
+      clearAlpha: CLEAR_ALPHA,
+      darkColor: DARK_COLOR,
+      clearColor: CLEAR_COLOR,
+      outlineMode: OUTLINE_MODE,
+      outlineWidth: OUTLINE_WIDTH,
+    } = this.properties
     if (node.type === IMAGE_SHAPE) {
       if (OUTLINE_MODE) {
         this.beginFill(DARK_COLOR, 0)
@@ -138,7 +178,7 @@ export class Graphics extends PIXI.Graphics {
 
   private renderShape(node: ImageShape): this {
     const { shape } = node
-    // return this.shapeToElement(shape)
+    const { outlineMode: OUTLINE_MODE } = this.properties
     if (OUTLINE_MODE) {
       return this.shapeToOutline(shape)
     } else {
@@ -147,7 +187,13 @@ export class Graphics extends PIXI.Graphics {
   }
 
   private shapeToElement(shape: Shape): this {
-    const SCALE = this.unitScale
+    const {
+      scale: SCALE,
+      darkAlpha: DARK_ALPHA,
+      clearAlpha: CLEAR_ALPHA,
+      darkColor: DARK_COLOR,
+      clearColor: CLEAR_COLOR
+    } = this.properties
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
@@ -199,7 +245,7 @@ export class Graphics extends PIXI.Graphics {
   }
 
   private shapeToOutline(shape: Shape): this {
-    const SCALE = this.unitScale
+    const { scale: SCALE } = this.properties
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
@@ -284,7 +330,7 @@ export class Graphics extends PIXI.Graphics {
   }
 
   private drawPolyLine(segments: PathSegment[]): this {
-    const SCALE = this.unitScale
+    const { scale: SCALE } = this.properties
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
@@ -303,7 +349,7 @@ export class Graphics extends PIXI.Graphics {
   }
 
   private drawContour(segments: PathSegment[]): this {
-    const SCALE = this.unitScale
+    const { scale: SCALE } = this.properties
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
       const { start, end } = next
@@ -328,7 +374,7 @@ export class Graphics extends PIXI.Graphics {
    */
   // @ts-ignore - unused param.
   private drawTesselatedContour(segments: PathSegment[]): this {
-    const SCALE = this.unitScale
+    const { scale: SCALE } = this.properties
     let lastHome: Position | ArcPosition = [0, 0]
     for (const [index, next] of segments.entries()) {
       const previous = index > 0 ? segments[index - 1] : undefined
@@ -359,7 +405,7 @@ export class Graphics extends PIXI.Graphics {
 export class GerberGraphics extends Graphics {
   uid: string
   constructor(tree: ImageTree) {
-    super(tree.units)
+    super({ units: tree.units })
     this.filters = [ChromaFilter]
     this.tint = randomColor()
     this.uid = uid()
@@ -368,10 +414,18 @@ export class GerberGraphics extends Graphics {
 
   public renderImageTree(tree: ImageTree): this {
     const { children } = tree
-    for (const child of children) {
+    for (const [index, child] of children.entries()) {
       this.renderGraphic(child)
       this.moveTo(0, 0)
-      const childGraphic = new Graphics(this.units)
+      const childGraphic = new Graphics({
+        units: this.properties.units,
+        darkColor: DARK_COLOR,
+        darkAlpha: 0.5,
+        clearColor: DARK_COLOR,
+        clearAlpha: 0.5,
+        index,
+        dcode: child.dcode
+      })
       childGraphic.visible = false
       childGraphic.renderGraphic(child)
       this.addChild(childGraphic)
@@ -379,22 +433,20 @@ export class GerberGraphics extends Graphics {
     return this
   }
 
-  public featuresAtPosition(
-    clientX: number,
-    clientY: number
-  ): { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] {
+  public featuresAtPosition(clientX: number, clientY: number): TIntersectItem[] {
     const checkintersect = (obj: Graphics): Graphics[] => {
       const intersected: Graphics[] = []
       obj.visible = true
       obj.updateTransform()
       if (obj.containsPoint(new PIXI.Point(clientX, clientY))) {
         intersected.push(obj)
+        console.log(obj.properties.dcode, obj.properties.index)
       } else {
         obj.visible = false
       }
       return intersected
     }
-    let intersected: { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] = []
+    let intersected: TIntersectItem[] = []
     let intersectedchildren: Graphics[] = []
     this.children.forEach((child) => {
       if (child instanceof Graphics) {
@@ -408,15 +460,19 @@ export class GerberGraphics extends Graphics {
           minY: obj._bounds.minY,
           maxX: obj._bounds.maxX,
           maxY: obj._bounds.maxY
-        }
+        },
+        dcode: obj.properties.dcode,
+        index: obj.properties.index
       }
     })
     return intersected
   }
 
-  // render(r: PIXI.Renderer) {
-  //   super.render(r)
-  // }
+  getElementByIndex(index: number): Graphics | undefined {
+    return this.children.find((child) => {
+      return child instanceof Graphics && child.properties.index === index
+    }) as Graphics
+  }
 }
 
 // This is a hack to get PIXI to use the Tess2 library for triangulation.

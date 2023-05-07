@@ -1,4 +1,4 @@
-import { GerberGraphics } from './graphics'
+import { GerberGraphics, Graphics } from './graphics'
 
 import type { ImageTree } from '@hpcreery/tracespace-plotter'
 import type { Tool } from '@hpcreery/tracespace-plotter/src/tool-store'
@@ -6,7 +6,7 @@ import type { Tool } from '@hpcreery/tracespace-plotter/src/tool-store'
 import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
-import { RendererLayer } from './types'
+import { THistogram, TIntersectItem, TRendererLayer } from './types'
 
 import * as Comlink from 'comlink'
 import gerberParserWorker from '../workers/gerber_parser?worker'
@@ -62,12 +62,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     return { x: this.origin.x, y: this.origin.y }
   }
 
-  public featuresAtPosition(
-    clientX: number,
-    clientY: number
-  ): { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] {
-    // console.log('featuresAtPosition', clientX, clientY)
-    let intersected: { bounds: { minX: number; minY: number; maxX: number; maxY: number } }[] = []
+  public featuresAtPosition(clientX: number, clientY: number): TIntersectItem[] {
+    let intersected: TIntersectItem[] = []
     this.viewport.children.forEach((child) => {
       if (child instanceof LayerContainer) {
         if (child.visible == false) return
@@ -79,7 +75,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
       }
     })
     this.cullViewport(true)
-    console.log(intersected)
+    // console.log(intersected)
     return intersected
   }
 
@@ -188,8 +184,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
-  public get layers(): RendererLayer[] {
-    const gerberLayers: RendererLayer[] = []
+  public get layers(): TRendererLayer[] {
+    const gerberLayers: TRendererLayer[] = []
     this.viewport.children.forEach((child) => {
       if (child instanceof LayerContainer) {
         gerberLayers.push({
@@ -197,7 +193,8 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
           name: child.name,
           color: child.tint,
           visible: child.visible,
-          zIndex: child.zIndex
+          zIndex: child.zIndex,
+          tools: child.tools
         })
       }
     })
@@ -205,13 +202,16 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   public addLayer(name: string, image: ImageTree, uid?: string): void {
-    console.log(image)
-    const layerContainer = new LayerContainer({ name, uid, tools: image.tools })
+    const layerContainer = new LayerContainer({
+      name,
+      uid,
+      tools: image.tools,
+      extract: this.renderer.extract
+    })
     layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
     layerContainer.scale = { x: 1, y: -1 }
     layerContainer.position = this.origin
     layerContainer.interactiveChildren = false
-    // layerContainer.eventMode = 'none'
     layerContainer.addChild(new GerberGraphics(image))
     layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
@@ -254,6 +254,55 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   //   this.viewport.off(event, runCallback)
   // }
 
+  public async getLayerFeaturePng(uid: string, index: number): Promise<string> {
+    // this.cull.uncull()
+    const layer = this.viewport.getChildByUID(uid)
+    if (layer === undefined) {
+      throw new Error('Layer not found')
+    }
+    const element = layer.getElementByIndex(index)
+    if (element === undefined) {
+      throw new Error('Layer not found')
+    }
+    const cached = element.cacheAsBitmap
+    const visible = element.visible
+    element.visible = true
+    element.cacheAsBitmap = false
+    const image = await this.renderer.extract.base64(element, 'image/webp', 1) // 'image/png'
+    element.visible = visible
+    element.cacheAsBitmap = cached
+    return image
+  }
+
+  public async computeLayerFeaturesHistogram(uid: string): Promise<THistogram> {
+    let prehistogram: THistogram = []
+    const layer = this.viewport.getChildByUID(uid)
+    if (layer === undefined) {
+      throw new Error('Layer not found')
+    }
+    const tools = layer.tools
+    layer.graphic.children.forEach((element) => {
+      if (element instanceof Graphics) {
+        prehistogram.push({
+          dcode: element.properties.dcode,
+          tool: element.properties.dcode ? tools[element.properties.dcode] : undefined,
+          indexes: [element.properties.index],
+          polarity: element.properties.polarity
+        })
+      }
+    })
+    const histogram: THistogram = prehistogram.reduce((acc, cur) => {
+      const index = acc.findIndex((el) => el.dcode === cur.dcode && el.polarity === cur.polarity)
+      if (index === -1) {
+        acc.push(cur)
+      } else {
+        acc[index].indexes.push(...cur.indexes)
+      }
+      return acc
+    }, [] as THistogram)
+    return histogram
+  }
+
   public destroy(
     removeView?: boolean | undefined,
     stageOptions?: boolean | PIXI.IDestroyOptions | undefined
@@ -267,11 +316,18 @@ class LayerContainer extends PIXI.Container {
   public name: string
   public uid: string
   public tools: Partial<Record<string, Tool>>
-  constructor(props: { name: string; uid?: string; tools: Partial<Record<string, Tool>> }) {
+  public extract: PIXI.IExtract
+  constructor(props: {
+    name: string
+    uid?: string
+    tools: Partial<Record<string, Tool>>
+    extract: PIXI.IExtract
+  }) {
     super()
     this.name = props.name
     this.uid = props.uid ?? this.generateUid()
     this.tools = props.tools
+    this.extract = props.extract
   }
   private generateUid(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -285,6 +341,31 @@ class LayerContainer extends PIXI.Container {
   set tint(color: PIXI.ColorSource) {
     const child = this.children[0] as GerberGraphics
     child.tint = color
+  }
+
+  get graphic(): GerberGraphics {
+    const child = this.children[0] as GerberGraphics
+    return child
+  }
+
+  getElementByIndex(index: number): Graphics | undefined {
+    const child = this.children[0] as GerberGraphics
+    return child.getElementByIndex(index)
+  }
+
+  public async getLayerFeaturePng(index: number): Promise<string> {
+    const element = this.getElementByIndex(index)
+    if (element === undefined) {
+      throw new Error('Fearure not found')
+    }
+    const cached = element.cacheAsBitmap
+    const visible = element.visible
+    element.visible = true
+    element.cacheAsBitmap = false
+    const image = await this.extract.base64(element, 'image/webp', 1) // 'image/png'
+    element.visible = visible
+    element.cacheAsBitmap = cached
+    return image
   }
 }
 

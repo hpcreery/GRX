@@ -1,15 +1,15 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react'
 import VirtualGerberApplication from '../renderer/virtual'
-import { Card, theme, Upload, message, UploadFile } from 'antd'
+import { Card, theme, Upload, message, UploadFile, Dropdown, MenuProps } from 'antd'
 import type { UploadProps } from 'antd'
 import chroma from 'chroma-js'
-import { PlusOutlined } from '@ant-design/icons'
+import { PlusOutlined, ProfileOutlined } from '@ant-design/icons'
 
 // import * as Comlink from 'comlink'
 import LayerListItem from './sidebar/LayerListItem'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
-import { RendererLayer } from '@renderer/renderer/types'
+import { TRendererLayer } from '@renderer/renderer/types'
 
 const { useToken } = theme
 const { Dragger } = Upload
@@ -24,7 +24,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
   const { transparency, blur } = React.useContext(ConfigEditorProvider)
   const [messageApi, contextHolder] = message.useMessage()
 
-  function registerLayers(rendererLayers: RendererLayer[]): void {
+  function registerLayers(rendererLayers: TRendererLayer[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach((layer) => {
       newLayers.push({
@@ -127,6 +127,19 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       : chroma(token.colorBgElevated).css()
   }
 
+  const items: MenuProps['items'] = [
+    {
+      label: 'Refresh List',
+      key: '1',
+      icon: <ProfileOutlined />,
+      onClick: () => {
+        gerberApp.renderer.then(async (r) => {
+          registerLayers(await r.layers)
+        })
+      }
+    }
+  ]
+
   return (
     <div
       style={{
@@ -138,6 +151,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       }}
     >
       {contextHolder}
+      {/* <Dropdown menu={{ items }} trigger={['contextMenu']} placement="topLeft"> */}
       <Card
         style={{
           width: 200,
@@ -147,7 +161,10 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           overflow: 'hidden',
           ...transparencyCSS
         }}
-        bodyStyle={{ padding: 5, height: '100%', overflow: 'auto' }}
+        bodyStyle={{
+          padding: 5,
+          height: '100%'
+        }}
       >
         <Dragger
           key="dragger"
@@ -166,6 +183,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           <PlusOutlined /> Add Artwork
         </Dragger>
       </Card>
+      {/* </Dropdown> */}
     </div>
   )
 }

@@ -1,11 +1,12 @@
 /** @jsxImportSource @emotion/react */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button, Space, theme, Popover, Badge, UploadFile, Spin, Dropdown, MenuProps } from 'antd'
 import {
   BgColorsOutlined,
   EyeInvisibleOutlined,
   LoadingOutlined,
-  EyeOutlined
+  EyeOutlined,
+  BarChartOutlined
 } from '@ant-design/icons'
 import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
@@ -14,14 +15,14 @@ import { CirclePicker } from 'react-color'
 
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
-import { RendererLayer } from '../../renderer/types'
+import { TRendererLayer } from '../../renderer/types'
 import VirtualGerberApplication from '../../renderer/virtual'
 import * as Comlink from 'comlink'
+import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 // import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
 
 const { useToken } = theme
 interface LayerListItemProps {
-  // layer: Layers
   file: UploadFile
   gerberApp: VirtualGerberApplication
   actions: {
@@ -33,24 +34,22 @@ interface LayerListItemProps {
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
   const { gerberApp, file, actions } = props
-  const layer: RendererLayer = {
+  const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
     name: file.name,
-    uid: file.uid,
-    color: 0x000000,
-    visible: false,
-    zIndex: 0
+    uid: file.uid
   }
   const { token } = useToken()
   // const { transparency, blur } = React.useContext(ConfigEditorProvider)
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
-  const [color, setColor] = useState<ColorSource>(layer.color)
-  const [visible, setVisible] = useState<boolean>(layer.visible)
+  const [color, setColor] = useState<ColorSource>(0x000000)
+  const [visible, setVisible] = useState<boolean>(false)
   // const [zIndex, setzIndex] = useState<number>(layer.zIndex)
   // const [progress, setProgress] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
+  const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
-  function registerLayers(rendererLayers: RendererLayer[]): void {
+  function registerLayers(rendererLayers: TRendererLayer[]): void {
     const thisLayer = rendererLayers.find((l) => l.uid === layer.uid)
     if (thisLayer) {
       setColor(thisLayer.color)
@@ -73,7 +72,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     return (): void => {}
   }, [])
 
-  async function deleteLayer(): Promise<void> {
+  function deleteLayer(): void {
     actions.remove()
   }
 
@@ -144,6 +143,14 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       onClick: toggleVisible
     },
     {
+      label: 'Features Histogram',
+      key: '4',
+      icon: <BarChartOutlined />,
+      onClick: (): void => {
+        featureHistogramModalRef.current?.open()
+      }
+    },
+    {
       type: 'divider'
     },
     {
@@ -154,13 +161,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       onClick: deleteLayer
     }
   ]
-
-  // const transparencyCSS = {
-  //   backdropFilter: transparency ? `blur(${blur}px)` : '',
-  //   backgroundColor: transparency
-  //     ? chroma(token.colorBgElevated).alpha(0.7).css()
-  //     : chroma(token.colorBgElevated).css()
-  // }
 
   const handleOpenChange = (open: boolean): void => {
     setShowColorPicker(open)
@@ -230,6 +230,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           onClick={deleteLayer}
         />
       </animated.div>
+      <FeatureHistogramModal ref={featureHistogramModalRef} uid={layer.uid} gerberApp={gerberApp} />
     </div>
   )
 }
