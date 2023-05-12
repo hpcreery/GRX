@@ -1,22 +1,17 @@
 import './App.css'
-import { useRef, useEffect, useState, useContext } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import VirtualGerberApplication from './renderer/virtual'
-import { theme, Spin } from 'antd'
 import chroma from 'chroma-js'
 import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
-import { Global, css } from '@emotion/react'
-import { ConfigEditorProvider } from './contexts/ConfigEditor'
-
-const { useToken } = theme
+import { Center, Loader, useMantineTheme } from '@mantine/core'
 
 export default function App(): JSX.Element | null {
-  const { token } = useToken()
+  const theme = useMantineTheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
-  const { transparency, blur } = useContext(ConfigEditorProvider)
 
   // Load in the gerber application
   useEffect(() => {
@@ -24,7 +19,9 @@ export default function App(): JSX.Element | null {
       new VirtualGerberApplication({
         element: elementRef.current,
         antialias: false,
-        backgroundColor: chroma(token.colorBgContainer).num()
+        backgroundColor: chroma(
+          theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[2]
+        ).num()
       })
     )
     return () => {
@@ -36,10 +33,12 @@ export default function App(): JSX.Element | null {
   useEffect(() => {
     if (gerberApp) {
       gerberApp.renderer.then(async (renderer) => {
-        renderer.changeBackgroundColor(chroma(token.colorBgContainer).num())
+        renderer.changeBackgroundColor(
+          chroma(theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[2]).num()
+        )
       })
     }
-  }, [token.colorBgContainer])
+  }, [theme.colorScheme])
 
   return (
     <>
@@ -60,19 +59,9 @@ export default function App(): JSX.Element | null {
         </div>
       ) : (
         <>
-          <Spin
-            tip="LOADING..."
-            size="large"
-            style={{
-              width: '100vw',
-              height: '100vh',
-              position: 'fixed',
-              pointerEvents: 'none',
-              zIndex: 20,
-              marginTop: '45vh',
-              backgroundColor: chroma(token.colorBgContainer).css()
-            }}
-          />
+          <Center w={'100%'} h={'100%'} mx="auto">
+            <Loader />
+          </Center>
         </>
       )}
       <div
@@ -85,25 +74,9 @@ export default function App(): JSX.Element | null {
           MozUserSelect: 'none',
           userSelect: 'none',
           touchAction: 'none',
-          backgroundColor: chroma(token.colorBgContainer).css()
+          backgroundColor: theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
         }}
         ref={elementRef}
-      />
-      <Global
-        styles={css`
-          .ant-dropdown > ul {
-            backdrop-filter: ${transparency ? `blur(${blur}px)` : ''} !important;
-            background-color: ${transparency
-              ? chroma(token.colorBgElevated).alpha(0.7).css()
-              : chroma(token.colorBgElevated).css()} !important;
-          }
-          .ant-popover-content > div {
-            backdrop-filter: ${transparency ? `blur(${blur}px)` : ''} !important;
-            background-color: ${transparency
-              ? chroma(token.colorBgElevated).alpha(0.7).css()
-              : chroma(token.colorBgElevated).css()} !important;
-          }
-        `}
       />
     </>
   )

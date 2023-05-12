@@ -262,7 +262,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     }
     const element = layer.getElementByIndex(index)
     if (element === undefined) {
-      throw new Error('Layer not found')
+      throw new Error('Element not found')
     }
     const cached = element.cacheAsBitmap
     const visible = element.visible

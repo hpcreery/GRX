@@ -1,11 +1,6 @@
-/** @jsxImportSource @emotion/react */
 import React from 'react'
-import { Descriptions, theme, Tooltip } from 'antd'
-import chroma from 'chroma-js'
-import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import VirtualGerberApplication, { PointerEvent } from '../renderer/virtual'
-
-const { useToken } = theme
+import { Card, Group, Text, Tooltip } from '@mantine/core'
 
 interface MousePositionProps {
   gerberApp: VirtualGerberApplication
@@ -13,8 +8,6 @@ interface MousePositionProps {
 
 export default function MousePosition(props: MousePositionProps): JSX.Element | null {
   const { gerberApp } = props
-  const { token } = useToken()
-  const { transparency, blur, componentSize } = React.useContext(ConfigEditorProvider)
 
   const [x, setX] = React.useState<number>(0)
   const [y, setY] = React.useState<number>(0)
@@ -33,40 +26,31 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
   }, [])
 
   return (
-    <Tooltip title="Units: Mils" placement="left">
-      <Descriptions
-        bordered
-        // size="small"
+    <Tooltip label="Units: Mils" position="left" withArrow>
+      <Card
+        withBorder
         style={{
           position: 'absolute',
           bottom: 10,
           right: 60,
-          pointerEvents: 'all'
+          pointerEvents: 'all',
+          width: 260,
+          height: 40
         }}
-        labelStyle={{
-          width: 20,
-          padding: '0px 12px'
-        }}
-        contentStyle={{
-          width: 100,
-          height: componentSize === 'small' ? 32 : componentSize === 'middle' ? 38 : 46,
-          padding: '0px 12px'
-        }}
-        css={{
-          div: {
-            backgroundColor: transparency
-              ? chroma(token.colorBgElevated).alpha(0.7).css()
-              : chroma(token.colorBgElevated).css(),
-            backdropFilter: transparency ? `blur(${blur}px)` : ''
-          },
-          span: {
-            whiteSpace: 'nowrap'
-          }
-        }}
+        className={'transparency'}
+        padding={6.5}
       >
-        <Descriptions.Item label="X:">{x.toFixed(2)}</Descriptions.Item>
-        <Descriptions.Item label="Y:">{y.toFixed(2)}</Descriptions.Item>
-      </Descriptions>
+        <Group position="center" grow ml="xs" mr="xs">
+          <Group>
+            <Text c="dimmed">X: </Text>
+            {x.toFixed(2)}
+          </Group>
+          <Group>
+            <Text c="dimmed">Y: </Text>
+            {y.toFixed(2)}
+          </Group>
+        </Group>
+      </Card>
     </Tooltip>
   )
 }

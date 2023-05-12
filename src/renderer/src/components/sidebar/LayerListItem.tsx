@@ -1,45 +1,44 @@
-/** @jsxImportSource @emotion/react */
 import { useState, useEffect, useRef } from 'react'
-import { Button, Space, theme, Popover, Badge, UploadFile, Spin, Dropdown, MenuProps } from 'antd'
-import {
-  BgColorsOutlined,
-  EyeInvisibleOutlined,
-  LoadingOutlined,
-  EyeOutlined,
-  BarChartOutlined
-} from '@ant-design/icons'
+import { Button, Popover, ColorPicker, useMantineTheme, Tooltip } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import chroma from 'chroma-js'
 import { ColorSource } from 'pixi.js'
-import { DeleteOutlined } from '@ant-design/icons'
-import { CirclePicker } from 'react-color'
-
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 import { TRendererLayer } from '../../renderer/types'
 import VirtualGerberApplication from '../../renderer/virtual'
 import * as Comlink from 'comlink'
 import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
-// import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
+import { UploadFile } from '../LayersSidebar'
+import {
+  IconCircleFilled,
+  IconCircleDotted,
+  IconTrashX,
+  IconChartHistogram,
+  IconEye,
+  IconEyeOff,
+  IconColorPicker
+} from '@tabler/icons-react'
+import { useContextMenu } from 'mantine-contextmenu'
 
-const { useToken } = theme
 interface LayerListItemProps {
   file: UploadFile
   gerberApp: VirtualGerberApplication
   actions: {
     download: () => void
     preview: () => void
-    remove: () => void
+    remove: (file: UploadFile) => void
   }
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
+  const showContextMenu = useContextMenu()
+  const theme = useMantineTheme()
   const { gerberApp, file, actions } = props
   const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
     name: file.name,
     uid: file.uid
   }
-  const { token } = useToken()
-  // const { transparency, blur } = React.useContext(ConfigEditorProvider)
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<ColorSource>(0x000000)
   const [visible, setVisible] = useState<boolean>(false)
@@ -60,20 +59,65 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   }
 
   useEffect(() => {
-    gerberApp.renderer.then(async (r) => {
-      registerLayers(await r.layers)
-      r.addViewportListener(
+    gerberApp.renderer.then(async (renderer) => {
+      const layers = await renderer.layers
+      registerLayers(layers)
+      renderer.addViewportListener(
         'childAdded',
         Comlink.proxy(async () => {
-          registerLayers(await r.layers)
+          registerLayers(await renderer.layers)
         })
       )
+      if (layers.find((l) => l.uid === layer.uid)) {
+        console.log('layer already exists')
+        setLoading(false)
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onerror = (err): void => {
+        console.log(err, `${file.name} Error reading file.`)
+        notifications.show({
+          title: 'Error reading file',
+          message: `${file.name} Error reading file.`,
+          color: 'red',
+          autoClose: 5000
+        })
+      }
+      reader.onabort = (err): void => {
+        console.log(err, `${file.name} File read aborted.`)
+        notifications.show({
+          title: 'File read aborted',
+          message: `${file.name} File read aborted.`,
+          color: 'red',
+          autoClose: 5000
+        })
+      }
+      reader.onprogress = (e): void => {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        console.log(`${file.name} ${percent}% read`)
+      }
+      reader.onload = async (e): Promise<void> => {
+        if (e.target?.result !== null && e.target?.result !== undefined) {
+          await renderer.addGerber(file.name, e.target?.result as string, file.uid)
+          notifications.show({
+            title: 'File read',
+            message: `${file.name} file read.`,
+            color: 'green',
+            autoClose: 5000
+          })
+        } else {
+          // messageApi.error(`${file.name} file upload failed.`)
+        }
+      }
+      reader.readAsText(file)
     })
+
     return (): void => {}
   }, [])
 
   function deleteLayer(): void {
-    actions.remove()
+    actions.remove(file)
   }
 
   async function changeColor(color: ColorSource): Promise<void> {
@@ -125,11 +169,11 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     }
   )
 
-  const items: MenuProps['items'] = [
+  const items = [
     {
-      label: 'Change Color',
+      title: 'Change Color',
       key: '1',
-      icon: <BgColorsOutlined />,
+      icon: <IconColorPicker stroke={1.5} size={18} />,
       onClick: (): void => {
         setTimeout(() => {
           setShowColorPicker(true)
@@ -137,100 +181,166 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       }
     },
     {
-      label: visible ? 'Hide Layer' : 'Show Layer',
+      title: visible ? 'Hide Layer' : 'Show Layer',
       key: '3',
-      icon: visible ? <EyeInvisibleOutlined /> : <EyeOutlined />,
+      icon: visible ? <IconEyeOff stroke={1.5} size={18} /> : <IconEye stroke={1.5} size={18} />,
       onClick: toggleVisible
     },
     {
-      label: 'Features Histogram',
+      title: 'Features Histogram',
       key: '4',
-      icon: <BarChartOutlined />,
+      icon: <IconChartHistogram stroke={1.5} size={18} />,
       onClick: (): void => {
         featureHistogramModalRef.current?.open()
       }
     },
     {
-      type: 'divider'
+      key: 'divider'
     },
     {
-      label: 'Delete Layer',
+      title: 'Delete Layer',
       key: '0',
-      icon: <DeleteOutlined />,
-      danger: true,
+      icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: deleteLayer
     }
   ]
 
-  const handleOpenChange = (open: boolean): void => {
-    setShowColorPicker(open)
-  }
-
   return (
-    <div style={{ display: 'flex' }}>
-      <Dropdown menu={{ items }} trigger={['contextMenu']}>
-        <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
-          <Button
-            style={{
-              textAlign: 'left',
-              marginTop: 5,
-              width: '100%',
-              overflow: 'hidden',
-              padding: 0
-            }}
-            type="text"
-            onClick={(e): void => {
-              if (
-                !(
-                  e.target instanceof HTMLDivElement &&
-                  e.target.parentNode instanceof HTMLButtonElement
-                )
-              ) {
-                return
-              }
-              toggleVisible()
-            }}
-          >
-            <Space.Compact>
-              {loading ? (
-                <Spin
-                  indicator={<LoadingOutlined style={{ fontSize: 14, margin: '0px 6px' }} spin />}
-                />
-              ) : (
-                <Popover
-                  open={showColorPicker}
-                  onOpenChange={handleOpenChange}
-                  placement="right"
-                  title={'Color'}
-                  content={
-                    <CirclePicker
-                      color={chroma(color as any).hex()}
-                      onChange={(color): Promise<void> => changeColor(color.hex)}
-                    />
+    <Popover
+      width="target"
+      position="bottom"
+      withArrow
+      trapFocus
+      shadow="md"
+      opened={showColorPicker}
+      onChange={setShowColorPicker}
+    >
+      <Popover.Target>
+        <div
+          onContextMenu={showContextMenu(items, { className: 'transparency' })}
+          style={{
+            display: 'flex'
+          }}
+        >
+          <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
+            <Tooltip
+              label={file.name}
+              withArrow
+              openDelay={1000}
+              transitionProps={{ transition: 'slide-up', duration: 300 }}
+            >
+              <Button
+                style={{
+                  textAlign: 'left',
+                  width: '100%',
+                  overflow: 'hidden',
+                  padding: 0
+                }}
+                variant="subtle"
+                color="gray"
+                styles={(theme) => ({
+                  root: {
+                    color: theme.colorScheme == 'dark' ? theme.colors.gray[4] : theme.colors.gray[9]
+                  },
+                  inner: {
+                    justifyContent: 'flex-start',
+                    paddingLeft: 10
                   }
-                  trigger="click"
-                >
-                  <Badge
-                    color={visible ? chroma(color as any).hex() : 'rgba(0,0,0,0)'}
-                    style={{ margin: '0px 10px' }}
-                  />
-                </Popover>
-              )}
-              {file.name}
-            </Space.Compact>
-          </Button>
-        </animated.div>
-      </Dropdown>
-      <animated.div {...bind()} style={{ width }}>
-        <Button
-          // danger
-          type="text"
-          style={{ padding: 0, width: `100%`, overflow: 'hidden', marginTop: 3 }}
-          icon={<DeleteOutlined style={{ color: token['red-5'] }} />}
-          onClick={deleteLayer}
+                })}
+                leftIcon={
+                  visible ? (
+                    <IconCircleFilled
+                      size={18}
+                      style={{
+                        color: chroma(color as any).hex()
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowColorPicker(!showColorPicker)
+                      }}
+                    />
+                  ) : (
+                    <IconCircleDotted
+                      size={18}
+                      style={{
+                        color: chroma(color as any).hex()
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowColorPicker(!showColorPicker)
+                      }}
+                    />
+                  )
+                }
+                onClick={(): void => {
+                  toggleVisible()
+                }}
+                loading={loading}
+              >
+                {file.name}
+              </Button>
+            </Tooltip>
+          </animated.div>
+          <animated.div {...bind()} style={{ width }}>
+            <Button
+              style={{ padding: 0, width: `100%`, overflow: 'hidden' }}
+              leftIcon={
+                <IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />
+              }
+              onClick={deleteLayer}
+              variant="subtle"
+              color="gray"
+              styles={() => ({
+                icon: {
+                  margin: 0,
+                  marginRight: 0
+                },
+                leftIcon: {
+                  margin: 0,
+                  marginRight: 0
+                }
+              })}
+            />
+          </animated.div>
+          <FeatureHistogramModal
+            ref={featureHistogramModalRef}
+            uid={layer.uid}
+            gerberApp={gerberApp}
+          />
+        </div>
+      </Popover.Target>
+      <Popover.Dropdown
+        style={{
+          padding: '0.5rem'
+        }}
+      >
+        <ColorPicker
+          style={{ width: '100%' }}
+          value={chroma(color as any).hex()}
+          onChangeEnd={(color) => {
+            changeColor(color)
+            setShowColorPicker(false)
+          }}
+          swatchesPerRow={7}
+          format="hex"
+          swatches={[
+            '#25262b',
+            '#868e96',
+            '#fa5252',
+            '#e64980',
+            '#be4bdb',
+            '#7950f2',
+            '#4c6ef5',
+            '#228be6',
+            '#15aabf',
+            '#12b886',
+            '#40c057',
+            '#82c91e',
+            '#fab005',
+            '#fd7e14'
+          ]}
         />
-      </animated.div>
-      <FeatureHistogramModal ref={featureHistogramModalRef} uid={layer.uid} gerberApp={gerberApp} />
-    </div>
+      </Popover.Dropdown>
+    </Popover>
   )
 }

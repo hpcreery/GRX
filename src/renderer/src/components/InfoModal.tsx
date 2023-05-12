@@ -1,105 +1,81 @@
-import React from 'react'
 import { QuestionOutlined } from '@ant-design/icons'
-import { Button, Card, Space, theme, Modal, Typography, Collapse } from 'antd'
-import chroma from 'chroma-js'
-import { ConfigEditorProvider } from '../contexts/ConfigEditor'
-const { useToken } = theme
-const { Text, Title, Paragraph, Link } = Typography
-const { Panel } = Collapse
+import { Modal, ActionIcon, Accordion, Title, Text, Anchor } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 
 export default function InfoModal(): JSX.Element | null {
-  const { token } = useToken()
-  const { transparency, blur } = React.useContext(ConfigEditorProvider)
-  const [helpModalOpen, setHelpModalOpen] = React.useState<boolean>(false)
-
-  const showModal = (): void => {
-    setHelpModalOpen(true)
-  }
-
-  const handleHelpModalOk = (): void => {
-    setHelpModalOpen(false)
-  }
-
-  const handleHelpModalCancel = (): void => {
-    setHelpModalOpen(false)
-  }
+  const [helpModalOpen, { open, close }] = useDisclosure(false)
 
   return (
-    <Card
-      style={{
-        width: 'unset',
-        height: 'unset',
-        position: 'absolute',
-        bottom: 10,
-        right: 10,
-        backgroundColor: transparency
-          ? chroma(token.colorBgElevated).alpha(0.7).css()
-          : chroma(token.colorBgElevated).css(),
-        backdropFilter: transparency ? `blur(${blur}px)` : '',
-        pointerEvents: 'all'
-      }}
-      bodyStyle={{ padding: 3 }}
-    >
-      <Space size={1}>
-        <Button icon={<QuestionOutlined />} type="text" onClick={showModal} />
-      </Space>
-      <Modal
-        title="Information"
-        open={helpModalOpen}
-        onOk={handleHelpModalOk}
-        onCancel={handleHelpModalCancel}
+    <>
+      <ActionIcon
+        size="lg"
+        variant="default"
+        onClick={open}
+        style={{
+          width: 40,
+          height: 40,
+          position: 'absolute',
+          bottom: 10,
+          right: 10,
+          pointerEvents: 'all'
+        }}
+        className={'transparency'}
       >
-        <Title level={2}>Version: {__APP_VERSION__}</Title>
-        <Collapse defaultActiveKey={[]}>
-          <Panel header="Contributors" key="4">
-            <Paragraph>
-              <Text strong>GRX</Text> is a free and open source software for viewing Gerber files.
-              Built by{' '}
-              <Link href="https://github.com/hpcreery" target="_blank">
+        <QuestionOutlined />
+      </ActionIcon>
+      <Modal title="Information" opened={helpModalOpen} onClose={close}>
+        <Title order={2}>Version: {__APP_VERSION__}</Title>
+        <br />
+        <Accordion variant="contained" defaultValue="customization">
+          <Accordion.Item value="Contributors" key="4">
+            <Accordion.Control>Contributors</Accordion.Control>
+            <Accordion.Panel>
+              GRX is a free and open source software for viewing Gerber files. Built by{' '}
+              <Anchor href="https://github.com/hpcreery" target="_blank">
                 Hunter Creery
-              </Link>{' '}
+              </Anchor>{' '}
               and{' '}
-              <Link href="https://github.com/phcreery" target="_blank">
+              <Anchor href="https://github.com/phcreery" target="_blank">
                 Peyton Creery
-              </Link>
+              </Anchor>
               .
-            </Paragraph>
-          </Panel>
-          <Panel header="Software Toolchain" key="1">
-            <Paragraph>
-              <Text strong>GRX</Text> is built with{' '}
-              <Link href="https://electronjs.org/" target="_blank">
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="Software Toolchain" key="1">
+            <Accordion.Control>Software Toolchain</Accordion.Control>
+            <Accordion.Panel>
+              GRX is built with{' '}
+              <Anchor href="https://electronjs.org/" target="_blank">
                 Electron
-              </Link>
+              </Anchor>
               ,{' '}
-              <Link href="https://reactjs.org/" target="_blank">
+              <Anchor href="https://reactjs.org/" target="_blank">
                 React
-              </Link>
+              </Anchor>
               ,{' '}
-              <Link href="https://ant.design/" target="_blank">
-                Ant Design
-              </Link>
+              <Anchor href="https://ui.mantine.dev/" target="_blank">
+                Maintine UI
+              </Anchor>
               , and{' '}
-              <Link href="https://pixijs.com/" target="_blank">
+              <Anchor href="https://pixijs.com/" target="_blank">
                 PixiJS
-              </Link>
+              </Anchor>
               .
-            </Paragraph>
-          </Panel>
-          <Panel header="License" key="2">
-            <Paragraph>
-              <Text strong>GRX</Text> is licensed under the{' '}
-              <Link href="https://opensource.org/license/mit/" target="_blank">
-                MIT License
-              </Link>{' '}
-              and found <Link href="https://github.com/hpcreery/GRX/blob/master/LICENSE">here</Link>
-              .
-            </Paragraph>
-          </Panel>
-          <Panel header="Disclaimer" key="3">
-            <Paragraph>
-              <Text strong>DISCLAIMER</Text>
-              <br />
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="License" key="2">
+            <Accordion.Control>License</Accordion.Control>
+            <Accordion.Panel>
+              <Text>
+                GRX is licensed under the{' '}
+                <Anchor href="https://opensource.org/license/mit/">MIT License</Anchor> and found{' '}
+                <Anchor href="https://github.com/hpcreery/GRX/blob/master/LICENSE">here</Anchor>.
+              </Text>
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="Disclaimer" key="3">
+            <Accordion.Control>Disclaimer</Accordion.Control>
+            <Accordion.Panel>
               <Text>
                 This software is provided &quot;as is&quot; and without any express or implied
                 warranties, including, without limitation, the implied warranties of merchantability
@@ -112,14 +88,15 @@ export default function InfoModal(): JSX.Element | null {
                 exclusion or limitation of liability for consequential or incidental damages, the
                 above limitation may not apply to you.
               </Text>
-            </Paragraph>
-            <Paragraph type="danger">
-              All data is processed locally on your computer. No data is sent to any servers. Your
-              Data and Intellectual Property is not shared with anyone or any company.
-            </Paragraph>
-          </Panel>
-        </Collapse>
+              <br />
+              <Text c="red">
+                All data is processed locally on your computer. No data is sent to any servers. Your
+                Data and Intellectual Property is not shared with anyone or any company.
+              </Text>
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion>
       </Modal>
-    </Card>
+    </>
   )
 }

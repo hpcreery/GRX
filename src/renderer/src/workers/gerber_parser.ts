@@ -1,6 +1,7 @@
 import * as Comlink from 'comlink'
 import { parse } from '@hpcreery/tracespace-parser'
 import { ImageTree, plot } from '@hpcreery/tracespace-plotter'
+// import { ImageTree, plot } from '../packages/plotter/src/index'
 
 const workerMethods: WorkerMethods = {
   parseGerber(gerber) {

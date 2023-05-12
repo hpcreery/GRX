@@ -1,51 +1,91 @@
-import { useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import { ConfigProvider, ThemeConfig, theme } from 'antd'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
-import reportWebVitals from './reportWebVitals'
+import { ColorScheme, MantineProvider } from '@mantine/core'
+import { Notifications } from '@mantine/notifications'
+import { useLocalStorage } from '@mantine/hooks'
+import chroma from 'chroma-js'
+import { ContextMenuProvider } from 'mantine-contextmenu'
 
 function Main(): JSX.Element | null {
-  const [themeMode, setThemeMode] = useState<'light' | 'dark'>('dark')
-  const [themeState, setThemeState] = useState<ThemeConfig>({
-    token: {
-      colorPrimary: '#355E3B'
-    }
+  const [themeMode, setThemeMode] = useLocalStorage<ColorScheme>({
+    key: 'color-scheme',
+    defaultValue: 'dark'
   })
-  const [transparency, setTransparency] = useState(true)
-  const [componentSize, setComponentSize] = useState<'small' | 'middle' | 'large'>('middle')
+
+  const [transparency, setTransparency] = useLocalStorage<boolean>({
+    key: 'transparency',
+    defaultValue: true
+  })
+
   const blur = 30
+
   return (
-    <ConfigProvider
-      theme={{
-        ...themeState,
-        algorithm: themeMode == 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm
+    <ConfigEditorProvider.Provider
+      value={{
+        themeMode,
+        setThemeMode,
+        transparency,
+        setTransparency
       }}
-      componentSize={componentSize}
     >
-      <ConfigEditorProvider.Provider
-        value={{
-          themeState,
-          setThemeState,
-          themeMode,
-          setThemeMode,
-          transparency,
-          setTransparency,
-          blur,
-          componentSize,
-          setComponentSize
+      <MantineProvider
+        withGlobalStyles
+        withNormalizeCSS
+        theme={{
+          colorScheme: themeMode,
+          primaryColor: 'teal',
+          defaultRadius: 'md',
+          loader: 'bars',
+          colors: {
+            dark: [
+              '#C2C2C2',
+              '#A7A7A7',
+              '#919191',
+              '#5E5E5E',
+              '#393939',
+              '#2D2D2D',
+              '#262626',
+              '#1B1B1B',
+              '#141414',
+              '#101010'
+            ]
+          },
+          other: {},
+          components: {
+            Button: {
+              styles: {
+                root: { fontWeight: 50 }
+              }
+            }
+          },
+          globalStyles: (theme) => ({
+            '.transparency': {
+              backdropFilter: transparency ? `blur(${blur}px)` : '',
+              backgroundColor: transparency
+                ? chroma(theme.colorScheme == 'dark' ? theme.colors.dark[7] : theme.colors.gray[1])
+                    .alpha(0.7)
+                    .css()
+                : chroma(
+                    theme.colorScheme == 'dark' ? theme.colors.dark[7] : theme.colors.gray[1]
+                  ).css()
+            },
+            '.tabler-icon': {
+              strokeWidth: 1.5,
+              color: theme.colorScheme == 'dark' ? theme.colors.dark[0] : theme.colors.gray[9]
+            }
+          })
+          // primaryShade: 7
         }}
       >
-        <App />
-      </ConfigEditorProvider.Provider>
-    </ConfigProvider>
+        <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
+          <Notifications />
+          <App />
+        </ContextMenuProvider>
+      </MantineProvider>
+    </ConfigEditorProvider.Provider>
   )
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(<Main />)
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals()
