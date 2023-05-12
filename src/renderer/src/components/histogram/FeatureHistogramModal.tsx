@@ -15,7 +15,7 @@ export interface FeatureHistogramModalRef {
 }
 
 const FeatureHistogramModal = forwardRef<FeatureHistogramModalRef, FeatureHistogramModalProps>(
-  function (props: FeatureHistogramModalProps, ref: any) {
+  function FeatureHistogramModal(props: FeatureHistogramModalProps, ref: any) {
     const [isModalOpen, { open: openModal, close: closeModal }] = useDisclosure(false)
     const { gerberApp, uid } = props
     const [loading, setLoading] = useState(true)
@@ -63,7 +63,7 @@ const FeatureHistogramModal = forwardRef<FeatureHistogramModalRef, FeatureHistog
               </thead>
               <tbody>
                 {histogram.map((row) => (
-                  <tr>
+                  <tr key={row.dcode}>
                     <td>{row.dcode ?? 'contour'}</td>
                     <td>{row.indexes.length}</td>
                     <td>{row.polarity}</td>

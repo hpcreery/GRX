@@ -25,7 +25,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      let newfile: UploadFile = Object.assign(file, { uid: layer.uid })
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -36,7 +36,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
     const newLayers = [...layers]
     files.forEach(async (file) => {
       const uid = UID()
-      let newfile: UploadFile = Object.assign(file, { uid })
+      const newfile: UploadFile = Object.assign(file, { uid })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -50,14 +50,14 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
   }, [])
 
   const actions = {
-    download: () => {},
-    preview: () => {},
-    remove: async (file: UploadFile) => {
+    download: (): void => {},
+    preview: (): void => {},
+    remove: async (file: UploadFile): Promise<void> => {
       const renderer = await gerberApp.renderer
       if (!renderer) return
       await renderer.removeLayer(file.uid)
       setLayers(layers.filter((l) => l.uid !== file.uid))
-      return true
+      return
     }
   }
 
@@ -122,7 +122,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
       >
         <Group position="center" grow pb={5}>
           <FileButton onChange={uploadFiles} accept="*" multiple>
-            {(props) => (
+            {(props): JSX.Element => (
               <Button variant="default" {...props}>
                 Upload Gerbers
               </Button>

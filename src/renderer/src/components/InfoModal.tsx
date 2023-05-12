@@ -1,6 +1,6 @@
-import { QuestionOutlined } from '@ant-design/icons'
 import { Modal, ActionIcon, Accordion, Title, Text, Anchor } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { IconUserQuestion } from '@tabler/icons-react'
 
 export default function InfoModal(): JSX.Element | null {
   const [helpModalOpen, { open, close }] = useDisclosure(false)
@@ -21,7 +21,7 @@ export default function InfoModal(): JSX.Element | null {
         }}
         className={'transparency'}
       >
-        <QuestionOutlined />
+        <IconUserQuestion size={18} />
       </ActionIcon>
       <Modal title="Information" opened={helpModalOpen} onClose={close}>
         <Title order={2}>Version: {__APP_VERSION__}</Title>

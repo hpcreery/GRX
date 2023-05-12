@@ -91,7 +91,7 @@ export class Graphics extends PIXI.Graphics {
       darkColor: DARK_COLOR,
       clearColor: CLEAR_COLOR,
       outlineMode: OUTLINE_MODE,
-      outlineWidth: OUTLINE_WIDTH,
+      outlineWidth: OUTLINE_WIDTH
     } = this.properties
     if (node.type === IMAGE_SHAPE) {
       if (OUTLINE_MODE) {

@@ -275,7 +275,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   }
 
   public async computeLayerFeaturesHistogram(uid: string): Promise<THistogram> {
-    let prehistogram: THistogram = []
+    const prehistogram: THistogram = []
     const layer = this.viewport.getChildByUID(uid)
     if (layer === undefined) {
       throw new Error('Layer not found')
