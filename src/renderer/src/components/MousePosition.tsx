@@ -34,7 +34,7 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
           bottom: 10,
           right: 60,
           pointerEvents: 'all',
-          width: 260,
+          width: 275,
           height: 40
         }}
         className={'transparency'}
