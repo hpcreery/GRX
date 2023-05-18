@@ -224,6 +224,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     if (layerContainer) {
       this.viewport.removeChild(layerContainer)
       this.cull.removeAll(layerContainer.children)
+      layerContainer.destroy(true)
     }
   }
 
@@ -231,9 +232,11 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   // --------------
 
   public async addGerber(name: string, gerber: string, uid?: string): Promise<void> {
-    const thread = Comlink.wrap<GerberParserMethods>(new gerberParserWorker())
+    const worker = new gerberParserWorker()
+    const thread = Comlink.wrap<GerberParserMethods>(worker)
     const image = await thread.parseGerber(gerber)
     thread[Comlink.releaseProxy]()
+    worker.terminate()
     this.addLayer(name, image, uid)
   }
 
