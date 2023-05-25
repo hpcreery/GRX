@@ -15,7 +15,7 @@ function Main(): JSX.Element | null {
 
   const [transparency, setTransparency] = useLocalStorage<boolean>({
     key: 'transparency',
-    defaultValue: true
+    defaultValue: false
   })
 
   const blur = 30
