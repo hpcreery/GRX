@@ -66,6 +66,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         'childAdded',
         Comlink.proxy(async () => {
           registerLayers(await renderer.layers)
+          gerberApp.zoomHome()
         })
       )
       if (layers.find((l) => l.uid === layer.uid)) {
