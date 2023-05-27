@@ -63,7 +63,7 @@ export default class VirtualGerberApplication {
     })
       .drag()
       .wheel()
-      // .pinch() // pinch is bugged, idk why
+      .pinch()
       .decelerate()
 
     this.virtualApplication.stage.addChild(this.virtualViewport)
