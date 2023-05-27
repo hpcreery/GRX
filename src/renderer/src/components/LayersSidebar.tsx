@@ -1,38 +1,43 @@
-/** @jsxImportSource @emotion/react */
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import VirtualGerberApplication from '../renderer/virtual'
-import { Card, theme, Upload, message, UploadFile } from 'antd'
-import type { UploadProps } from 'antd'
-import chroma from 'chroma-js'
-import { PlusOutlined } from '@ant-design/icons'
-
-// import * as Comlink from 'comlink'
+import { Card, Group, Text, useMantineTheme, Button, FileButton, Stack } from '@mantine/core'
+import { Dropzone } from '@mantine/dropzone'
+import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
-import { ConfigEditorProvider } from '../contexts/ConfigEditor'
-import { RendererLayer } from '@renderer/renderer/types'
+import { TRendererLayer } from '@renderer/renderer/types'
 
-const { useToken } = theme
-const { Dragger } = Upload
+const UID = (): string =>
+  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {
   gerberApp: VirtualGerberApplication
 }
 
-export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element | null {
-  const { token } = useToken()
-  const [layers, setLayers] = useState<UploadFile[]>([])
-  const { transparency, blur } = React.useContext(ConfigEditorProvider)
-  const [messageApi, contextHolder] = message.useMessage()
+export interface UploadFile extends File {
+  uid: string
+}
 
-  function registerLayers(rendererLayers: RendererLayer[]): void {
+export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element | null {
+  const theme = useMantineTheme()
+  const [layers, setLayers] = useState<UploadFile[]>([])
+
+  function registerLayers(rendererLayers: TRendererLayer[]): void {
     const newLayers: UploadFile[] = []
-    rendererLayers.forEach((layer) => {
-      newLayers.push({
-        uid: layer.uid,
-        name: layer.name,
-        status: 'done',
-        percent: 100
-      })
+    rendererLayers.forEach(async (layer) => {
+      const file = new File([], layer.name)
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid })
+      newLayers.push(newfile)
+    })
+    setLayers(newLayers)
+  }
+
+  async function uploadFiles(files: File[]): Promise<void> {
+    console.log('uploadFiles')
+    const newLayers = [...layers]
+    files.forEach(async (file) => {
+      const uid = UID()
+      const newfile: UploadFile = Object.assign(file, { uid })
+      newLayers.push(newfile)
     })
     setLayers(newLayers)
   }
@@ -40,91 +45,20 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
   useEffect(() => {
     gerberApp.renderer.then(async (r) => {
       registerLayers(await r.layers)
-      // r.addViewportListener(
-      //   'childAdded',
-      //   Comlink.proxy(async () => {
-      //     console.log('childAdded')
-      //     // registerLayers(await r.layers)
-      //   })
-      // )
-      // r.addViewportListener(
-      //   'childRemoved',
-      //   Comlink.proxy(async () => {
-      //     console.log('childRemoved')
-      //     // registerLayers(await r.layers)
-      //   })
-      // )
     })
     return () => {}
   }, [])
 
-  const props: UploadProps = {
-    listType: 'picture',
-    multiple: true,
-    fileList: layers,
-    customRequest: async (options) => {
-      const reader = new FileReader()
-      if (!options.file) {
-        options.onError && options.onError(new Error('No file provided'), options.file)
-        messageApi.error(`No file provided`)
-        return
-      }
-      reader.onerror = (err): void => {
-        options.onError && options.onError(err, 'Error reading file')
-        messageApi.error(`${(options.file as File).name} Error reading file.`)
-      }
-      reader.onabort = (err): void => {
-        options.onError && options.onError(err, 'File read aborted')
-        messageApi.error(`${(options.file as File).name} File read aborted.`)
-      }
-      reader.onprogress = (e): void => {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        options.onProgress && options.onProgress({ percent })
-      }
-      reader.onload = async (): Promise<void> => {
-        options.onSuccess && options.onSuccess(reader.result)
-        // messageApi.success(`${(options.file as File).name} File uploaded successfully.`)
-      }
-
-      const file = options.file as Blob
-      reader.readAsText(file)
-    },
-    onChange: async (info) => {
-      const { status, uid, name, response } = info.file
-      const newFileList = [...info.fileList]
-      setLayers(newFileList)
-      // type UploadFileStatus = 'error' | 'success' | 'done' | 'uploading' | 'removed';
-      if (status === 'done') {
-        const renderer = await gerberApp.renderer
-        try {
-          await renderer.addGerber(name, response, uid)
-        } catch (err) {
-          messageApi.error(`${name} file upload failed. ${err}`)
-          setLayers(layers.filter((l) => l.uid !== uid))
-        }
-      } else if (status === 'error') {
-        messageApi.error(`${name} file upload failed. ${info}`)
-        setLayers(layers.filter((l) => l.uid !== uid))
-      }
-    },
-    onRemove: async (file) => {
+  const actions = {
+    download: (): void => {},
+    preview: (): void => {},
+    remove: async (file: UploadFile): Promise<void> => {
       const renderer = await gerberApp.renderer
       if (!renderer) return
       await renderer.removeLayer(file.uid)
       setLayers(layers.filter((l) => l.uid !== file.uid))
-      return true
-    },
-    itemRender: (_originNode, file, _fileList, actions) => {
-      // console.log('itemRender', file.name)
-      return <LayerListItem key={file.uid} file={file} gerberApp={gerberApp} actions={actions} />
+      return
     }
-  }
-
-  const transparencyCSS = {
-    backdropFilter: transparency ? `blur(${blur}px)` : '',
-    backgroundColor: transparency
-      ? chroma(token.colorBgElevated).alpha(0.7).css()
-      : chroma(token.colorBgElevated).css()
   }
 
   return (
@@ -137,34 +71,69 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
         zIndex: 10
       }}
     >
-      {contextHolder}
+      <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
+        <Group
+          position="center"
+          spacing="xl"
+          mih={220}
+          sx={{ pointerEvents: 'none' }}
+          style={{ zIndex: 40 }}
+        >
+          <Dropzone.Accept>
+            <IconFileVector
+              size="3.2rem"
+              stroke={1.5}
+              color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]}
+            />
+          </Dropzone.Accept>
+          <Dropzone.Reject>
+            <IconFileX
+              size="3.2rem"
+              stroke={1.5}
+              color={theme.colors.red[theme.colorScheme === 'dark' ? 4 : 6]}
+            />
+          </Dropzone.Reject>
+          <Dropzone.Idle>
+            <IconFileVector size="3.2rem" stroke={1.5} />
+          </Dropzone.Idle>
+
+          <div>
+            <Text size="xl" inline>
+              Drag gerbers here or click to select files
+            </Text>
+            <Text size="sm" color="dimmed" inline mt={7}>
+              Attach as many files as you like
+            </Text>
+          </div>
+        </Group>
+      </Dropzone.FullScreen>
       <Card
+        radius="12px"
+        withBorder
         style={{
-          width: 200,
+          width: 220,
           height: '-webkit-fill-available',
           margin: 10,
           pointerEvents: 'all',
-          overflow: 'hidden',
-          ...transparencyCSS
+          overflow: 'hidden'
         }}
-        bodyStyle={{ padding: 5, height: '100%', overflow: 'auto' }}
+        className={'transparency'}
+        padding={5}
       >
-        <Dragger
-          key="dragger"
-          {...props}
-          css={{
-            '.ant-upload': {
-              height: layers.length > 0 ? '50px' : '100%',
-              transitionProperty: 'height',
-              transition: 'border-color 0.3s, height 0.5s'
-            },
-            '.ant-upload .ant-upload-btn': {
-              padding: 0
-            }
-          }}
-        >
-          <PlusOutlined /> Add Artwork
-        </Dragger>
+        <Group position="center" grow pb={5}>
+          <FileButton onChange={uploadFiles} accept="*" multiple>
+            {(props): JSX.Element => (
+              <Button variant="default" {...props}>
+                Upload Gerbers
+              </Button>
+            )}
+          </FileButton>
+        </Group>
+        <Stack justify="flex-start" spacing="0px">
+          {layers.map((layer) => (
+            <LayerListItem key={layer.uid} file={layer} gerberApp={gerberApp} actions={actions} />
+          ))}
+        </Stack>
       </Card>
     </div>
   )

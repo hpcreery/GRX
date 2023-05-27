@@ -7,6 +7,7 @@ import * as Comlink from 'comlink'
 import gerberRendererWorker from '../workers/gerber_app?worker'
 import type { PixiGerberApplicationWorker } from '../workers/gerber_app'
 import { PixiGerberApplication } from '.'
+import { TIntersectItem } from './types'
 
 export interface ScreenGerberApplicationProps extends OffscreenGerberPixiProps {
   element: HTMLElement
@@ -102,7 +103,9 @@ export default class VirtualGerberApplication {
       const intersected = await renderer.featuresAtPosition(e.screen.x, e.screen.y)
       const { x, y } = this.getPosition(e)
       this.pointer.dispatchEvent(
-        new CustomEvent<PointerCoordinates>('pointerdown', { detail: { x, y } })
+        new CustomEvent<PointerCoordinates & { intersected: TIntersectItem[] }>('pointerdown', {
+          detail: { x, y, intersected }
+        })
       )
       console.log(intersected)
     })
