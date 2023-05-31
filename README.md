@@ -20,9 +20,12 @@ GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX u
 
 ## Features
 
-- 🏃 Fast
+- 🏃 Fast and Responsive
 - 👍 Easy to use
-- 🖥 Multi-Platform
+- 🤏 Touchscreen Friendly
+- 🖥 Cross Platform and Available Everywhere
+- 📄 Supports Gerber X2 (X3 coming soon!)
+- 📈 Supports Excellon
 
 ## Tools
 
@@ -30,4 +33,4 @@ GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX u
 - [React](https://reactjs.org/)
 - [PixiJS](https://www.pixijs.com/)
 - [Typescript](https://www.typescriptlang.org/)
-- [Tracespace](https://github.com/hpcreery/tracespace)
+- [Tracespace (forked)](https://github.com/hpcreery/tracespace)
