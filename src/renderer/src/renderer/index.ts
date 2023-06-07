@@ -287,10 +287,12 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     layer.graphic.children.forEach((element) => {
       if (element instanceof Graphics) {
         prehistogram.push({
-          dcode: element.properties.dcode,
-          tool: element.properties.dcode ? tools[element.properties.dcode] : undefined,
+          dcode: element.properties.shape?.dcode,
+          tool: element.properties.shape?.dcode
+            ? tools[element.properties.shape?.dcode]
+            : undefined,
           indexes: [element.properties.index],
-          polarity: element.properties.polarity
+          polarity: element.properties.shape?.polarity
         })
       }
     })

@@ -1,5 +1,21 @@
+import type { UnitsType } from '@hpcreery/tracespace-parser'
+import type { ImageGraphic, Position } from '@hpcreery/tracespace-plotter'
 import { Tool } from '@hpcreery/tracespace-plotter/lib/tool-store'
 import { ColorSource } from 'pixi.js'
+
+export interface TGraphicsOptions {
+  units: UnitsType
+  darkColor: number
+  darkAlpha: number
+  clearColor: number
+  clearAlpha: number
+  outlineWidth: number
+  outlineMode: boolean
+  scale: number
+  index: number
+  position?: Position
+  shape?: ImageGraphic
+}
 
 export interface TRendererLayer {
   uid: string
@@ -17,13 +33,16 @@ export interface TIntersectItem {
     maxX: number
     maxY: number
   }
-  dcode: string | undefined
-  index: number
+  properties: TGraphicsOptions
+  position: {
+    x: number
+    y: number
+  }
 }
 
 export type THistogram = Array<{
   dcode: string | undefined
   tool: Tool | undefined
-  polarity: string
+  polarity: string | undefined
   indexes: number[]
 }>

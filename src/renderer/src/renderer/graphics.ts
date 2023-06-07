@@ -1,5 +1,5 @@
-import { CLEAR, DARK, IN, MM, UnitsType } from '@hpcreery/tracespace-parser'
-import {
+import { CLEAR, DARK, IN, MM } from '@hpcreery/tracespace-parser'
+import type {
   ImageTree,
   ImageGraphic,
   ImageShape,
@@ -7,6 +7,13 @@ import {
   Shape,
   Position,
   ArcPosition,
+  Tool
+} from '@hpcreery/tracespace-plotter'
+import {
+  plotShape,
+  plotMacro,
+  MACRO_TOOL,
+  SIMPLE_TOOL,
   positionsEqual,
   IMAGE_SHAPE,
   IMAGE_PATH,
@@ -20,7 +27,7 @@ import {
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
 import * as Tess2 from 'tess2-ts'
-import { TIntersectItem } from './types'
+import type { TIntersectItem, TGraphicsOptions } from './types'
 
 const DARK_COLOR = 0xffffff
 const DARK_ALPHA = 1
@@ -37,23 +44,8 @@ const randomColor = (): number => Math.floor(Math.random() * 16777215)
 const uid = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-export interface GraphicsOptions {
-  units: UnitsType
-  polarity: string
-  darkColor: number
-  darkAlpha: number
-  clearColor: number
-  clearAlpha: number
-  outlineWidth: number
-  outlineMode: boolean
-  scale: number
-  index: number
-  dcode?: string
-}
-
-const GraphicsOptionsDefaults: GraphicsOptions = {
+const GraphicsOptionsDefaults: TGraphicsOptions = {
   units: IN,
-  polarity: DARK,
   darkColor: DARK_COLOR,
   darkAlpha: DARK_ALPHA,
   clearColor: CLEAR_COLOR,
@@ -61,14 +53,17 @@ const GraphicsOptionsDefaults: GraphicsOptions = {
   outlineWidth: OUTLINE_WIDTH,
   outlineMode: OUTLINE_MODE,
   scale: SCALE,
-  dcode: undefined,
-  index: 0
+  index: 0,
+  shape: undefined
 }
 
 export class Graphics extends PIXI.Graphics {
-  public properties: GraphicsOptions
-  constructor(options: Partial<GraphicsOptions> = {}) {
-    super()
+  public properties: TGraphicsOptions
+  constructor(
+    options: Partial<TGraphicsOptions> = {},
+    geometry: PIXI.GraphicsGeometry | undefined = undefined
+  ) {
+    super(geometry)
 
     this.properties = { ...GraphicsOptionsDefaults, ...options }
 
@@ -82,8 +77,6 @@ export class Graphics extends PIXI.Graphics {
   }
 
   public renderGraphic(node: ImageGraphic): this {
-    this.properties.polarity = node.polarity
-
     const {
       scale: SCALE,
       darkAlpha: DARK_ALPHA,
@@ -404,31 +397,95 @@ export class Graphics extends PIXI.Graphics {
 
 export class GerberGraphics extends Graphics {
   uid: string
+  geometryStore: { [dcode: string]: PIXI.GraphicsGeometry }
+  toolStore: Partial<Record<string, Tool>>
   constructor(tree: ImageTree) {
     super({ units: tree.units })
     this.filters = [ChromaFilter]
     this.tint = randomColor()
     this.uid = uid()
+    this.geometryStore = {}
+    this.toolStore = {}
     this.renderImageTree(tree)
   }
 
+  private retrieveGraphic(child: ImageGraphic, index: number): Graphics {
+    const originLocation = {
+      startPoint: { x: 0, y: 0 },
+      endPoint: { x: 0, y: 0 },
+      arcOffsets: { i: 0, j: 0, a: 0 }
+    }
+    const { dcode } = child
+    const graphicProps = {
+      units: this.properties.units,
+      darkColor: DARK_COLOR,
+      darkAlpha: 0.5,
+      clearColor: DARK_COLOR,
+      clearAlpha: 0.5,
+      index,
+      shape: child
+    }
+    if (dcode != undefined && child.type == IMAGE_SHAPE) {
+      const tool = this.toolStore[dcode]
+      if (dcode in this.geometryStore) {
+        const graphic = new Graphics(graphicProps, this.geometryStore[dcode])
+        graphic.x = child.location[0] * SCALE
+        graphic.y = child.location[1] * SCALE
+        return graphic
+      }
+      const newGraphic = new Graphics(graphicProps)
+      if (tool?.type === MACRO_TOOL) {
+        const imageGraphic: ImageGraphic = {
+          type: IMAGE_SHAPE,
+          shape: plotMacro(tool, originLocation),
+          polarity: DARK,
+          dcode: tool.dcode,
+          location: [originLocation.endPoint.x, originLocation.endPoint.y]
+        }
+        newGraphic.renderGraphic(imageGraphic)
+      } else if (tool?.type === SIMPLE_TOOL) {
+        const imageGraphic: ImageGraphic = {
+          type: IMAGE_SHAPE,
+          shape: plotShape(tool, originLocation),
+          polarity: DARK,
+          dcode: tool.dcode,
+          location: [originLocation.endPoint.x, originLocation.endPoint.y]
+        }
+        newGraphic.renderGraphic(imageGraphic)
+      }
+      this.geometryStore[dcode] = newGraphic.geometry
+      newGraphic.x = child.location[0] * SCALE
+      newGraphic.y = child.location[1] * SCALE
+      return newGraphic
+    } else {
+      const newGraphic = new Graphics(graphicProps)
+      newGraphic.renderGraphic(child)
+      return newGraphic
+    }
+  }
+
   public renderImageTree(tree: ImageTree): this {
-    const { children } = tree
+    const { children, tools } = tree
+    Object.assign(this.toolStore, tools)
     for (const [index, child] of children.entries()) {
       this.renderGraphic(child)
-      this.moveTo(0, 0)
-      const childGraphic = new Graphics({
-        units: this.properties.units,
-        darkColor: DARK_COLOR,
-        darkAlpha: 0.5,
-        clearColor: DARK_COLOR,
-        clearAlpha: 0.5,
-        index,
-        dcode: child.dcode
-      })
-      childGraphic.visible = false
-      childGraphic.renderGraphic(child)
-      this.addChild(childGraphic)
+
+      // const childGraphic = new Graphics({
+      //   units: this.properties.units,
+      //   darkColor: DARK_COLOR,
+      //   darkAlpha: 0.5,
+      //   clearColor: DARK_COLOR,
+      //   clearAlpha: 0.5,
+      //   index,
+      //   dcode: child.dcode
+      // })
+      // childGraphic.visible = true
+      // childGraphic.renderGraphic(child)
+      // this.addChild(childGraphic)
+
+      const graphic = this.retrieveGraphic(child, index)
+      graphic.visible = false
+      this.addChild(graphic)
     }
     return this
   }
@@ -440,7 +497,6 @@ export class GerberGraphics extends Graphics {
       obj.updateTransform()
       if (obj.containsPoint(new PIXI.Point(clientX, clientY))) {
         intersected.push(obj)
-        console.log(obj.properties.dcode, obj.properties.index)
       } else {
         obj.visible = false
       }
@@ -461,8 +517,8 @@ export class GerberGraphics extends Graphics {
           maxX: obj._bounds.maxX,
           maxY: obj._bounds.maxY
         },
-        dcode: obj.properties.dcode,
-        index: obj.properties.index
+        properties: obj.properties,
+        position: { x: obj.x, y: obj.y }
       }
     })
     return intersected

@@ -10,10 +10,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
-  "cSpell.words": [
-    "Comlink",
-    "Pixi",
-    "uncull"
-  ],
+  "cSpell.words": ["Comlink", "Pixi", "uncull"],
   "vue.codeActions.enabled": false
 }
