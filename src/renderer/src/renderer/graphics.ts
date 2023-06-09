@@ -22,7 +22,8 @@ import {
   POLYGON,
   OUTLINE,
   LAYERED_SHAPE,
-  LINE
+  LINE,
+  ARC
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
@@ -76,7 +77,10 @@ export class Graphics extends PIXI.Graphics {
     }
   }
 
-  public renderGraphic(node: ImageGraphic): this {
+  public renderGraphic(
+    node: ImageGraphic,
+    referenceGeometry: undefined | PIXI.GraphicsGeometry = undefined
+  ): this {
     const {
       scale: SCALE,
       darkAlpha: DARK_ALPHA,
@@ -87,31 +91,11 @@ export class Graphics extends PIXI.Graphics {
       outlineWidth: OUTLINE_WIDTH
     } = this.properties
     if (node.type === IMAGE_SHAPE) {
-      if (OUTLINE_MODE) {
-        this.beginFill(DARK_COLOR, 0)
-        this.lineStyle({
-          color: DARK_COLOR,
-          width: OUTLINE_WIDTH,
-          alpha: 1,
-          cap: PIXI.LINE_CAP.ROUND,
-          join: PIXI.LINE_JOIN.ROUND
-        })
+      if (referenceGeometry != undefined) {
+        this.position.x = node.location[0] * SCALE
+        this.position.y = node.location[1] * SCALE
+        referenceGeometry = undefined
       } else {
-        if (node.polarity == DARK) {
-          this.beginFill(DARK_COLOR, DARK_ALPHA)
-        } else if (node.polarity == CLEAR) {
-          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
-        } else {
-          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
-        }
-        this.lineStyle({
-          width: 0,
-          alpha: 0
-        })
-      }
-      this.renderShape(node)
-    } else {
-      if (node.type === IMAGE_PATH) {
         if (OUTLINE_MODE) {
           this.beginFill(DARK_COLOR, 0)
           this.lineStyle({
@@ -123,19 +107,73 @@ export class Graphics extends PIXI.Graphics {
           })
         } else {
           if (node.polarity == DARK) {
-            this.beginFill(DARK_COLOR, 0)
+            this.beginFill(DARK_COLOR, DARK_ALPHA)
+          } else if (node.polarity == CLEAR) {
+            this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
           } else {
-            this.beginFill(CLEAR_COLOR, 0)
+            this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
           }
           this.lineStyle({
-            width: node.width * SCALE,
-            color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
-            alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
-            cap: PIXI.LINE_CAP.ROUND,
-            join: PIXI.LINE_JOIN.ROUND
+            width: 0,
+            alpha: 0
           })
         }
-        this.drawPolyLine(node.segments)
+        this.renderShape(node)
+      }
+    } else {
+      if (node.type === IMAGE_PATH) {
+        if (referenceGeometry != undefined) {
+          for (const segment of node.segments) {
+            const startCircle = new Graphics(this.properties, referenceGeometry)
+            startCircle.x = segment.start[0] * SCALE
+            startCircle.y = segment.start[1] * SCALE
+            this.addChild(startCircle)
+            const endCircle = new Graphics(this.properties, referenceGeometry)
+            endCircle.x = segment.end[0] * SCALE
+            endCircle.y = segment.end[1] * SCALE
+            this.addChild(endCircle)
+            const pathGraphic = new Graphics(this.properties)
+            if (node.polarity == DARK) {
+              pathGraphic.beginFill(DARK_COLOR, DARK_ALPHA)
+            } else {
+              pathGraphic.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
+            }
+            pathGraphic.lineStyle({
+              width: 0,
+              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+              alpha: 0
+            })
+            const contour = pathGraphic.contourizeCirclePath(segment, node.width)
+            pathGraphic.drawContour(contour)
+            this.addChild(pathGraphic)
+          }
+          referenceGeometry = undefined
+        } else {
+          if (OUTLINE_MODE) {
+            this.beginFill(DARK_COLOR, 0)
+            this.lineStyle({
+              color: DARK_COLOR,
+              width: OUTLINE_WIDTH,
+              alpha: 1,
+              cap: PIXI.LINE_CAP.ROUND,
+              join: PIXI.LINE_JOIN.ROUND
+            })
+          } else {
+            if (node.polarity == DARK) {
+              this.beginFill(DARK_COLOR, 0)
+            } else {
+              this.beginFill(CLEAR_COLOR, 0)
+            }
+            this.lineStyle({
+              width: node.width * SCALE,
+              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+              alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
+              cap: PIXI.LINE_CAP.ROUND,
+              join: PIXI.LINE_JOIN.ROUND
+            })
+          }
+          this.drawPolyLine(node.segments)
+        }
       } else {
         if (OUTLINE_MODE) {
           this.beginFill(DARK_COLOR, 0)
@@ -362,6 +400,147 @@ export class Graphics extends PIXI.Graphics {
     return this
   }
 
+  private contourizeCirclePath(segment: PathSegment, width: number): PathSegment[] {
+    const { start, end } = segment
+    if (segment.type === LINE) {
+      const [x1, y1] = start
+      const [x2, y2] = end
+      const theta = Math.atan2(y2 - y1, x2 - x1)
+      const dx = -(width / 2) * Math.sin(theta)
+      const dy = (width / 2) * Math.cos(theta)
+      return [
+        {
+          type: LINE,
+          start: [x1 + dx, y1 + dy],
+          end: [x2 + dx, y2 + dy]
+        },
+        // {
+        //   type: ARC,
+        //   start: [x2 + dx, y2 + dy, theta + Math.PI / 2],
+        //   end: [x2 - dx, y2 - dy, theta - Math.PI / 2],
+        //   center: [x2, y2],
+        //   radius: width / 2,
+        // },
+        {
+          type: LINE,
+          start: [x2 + dx, y2 + dy],
+          end: [x2 - dx, y2 - dy]
+        },
+        {
+          type: LINE,
+          start: [x2 - dx, y2 - dy],
+          end: [x1 - dx, y1 - dy]
+        },
+        // {
+        //   type: ARC,
+        //   start: [x1 - dx, y1 - dy, theta + (Math.PI * 3) / 2],
+        //   end: [x1 + dx, y1 + dy, theta + Math.PI / 2],
+        //   center: [x1, y1],
+        //   radius: width / 2,
+        // },
+        {
+          type: LINE,
+          start: [x1 - dx, y1 - dy],
+          end: [x1 + dx, y1 + dy]
+        }
+      ]
+    } else {
+      const { start, end, radius, center } = segment
+      const [x1, y1] = start
+      const [x2, y2] = end
+      const [cx, cy] = center
+      const theta1 = start[2]
+      const theta2 = end[2]
+      const dx = -(width / 2) * Math.sin(theta1 - Math.PI / 2)
+      const dy = (width / 2) * Math.cos(theta1 - Math.PI / 2)
+      const dx2 = -(width / 2) * Math.sin(theta2 - Math.PI / 2)
+      const dy2 = (width / 2) * Math.cos(theta2 - Math.PI / 2)
+      if (theta1 > theta2) {
+        return [
+          {
+            type: ARC,
+            start: [x1 + dx, y1 + dy, theta1],
+            end: [x2 + dx2, y2 + dy2, theta2],
+            center: [cx, cy],
+            radius: radius + width / 2
+          },
+          // {
+          //   type: ARC,
+          //   start: [x2 + dx2, y2 + dy2, theta2],
+          //   end: [x2 - dx2, y2 - dy2, theta2 - Math.PI],
+          //   center: [x2, y2],
+          //   radius: width / 2,
+          // },
+          {
+            type: LINE,
+            start: [x2 + dx2, y2 + dy2],
+            end: [x2 - dx2, y2 - dy2]
+          },
+          {
+            type: ARC,
+            start: [x2 - dx2, y2 - dy2, theta2],
+            end: [x1 - dx, y1 - dy, theta1],
+            center: [cx, cy],
+            radius: radius - width / 2
+          },
+          // {
+          //   type: ARC,
+          //   start: [x1 - dx, y1 - dy, theta1 + Math.PI],
+          //   end: [x1 + dx, y1 + dy, theta1],
+          //   center: [x1, y1],
+          //   radius: width / 2,
+          // },
+          {
+            type: LINE,
+            start: [x1 - dx, y1 - dy],
+            end: [x1 + dx, y1 + dy]
+          }
+        ]
+      } else {
+        return [
+          {
+            type: ARC,
+            start: [x1 + dx, y1 + dy, theta1],
+            end: [x2 + dx2, y2 + dy2, theta2],
+            center: [cx, cy],
+            radius: radius + width / 2
+          },
+          // {
+          //   type: ARC,
+          //   start: [x2 + dx2, y2 + dy2, theta2],
+          //   end: [x2 - dx2, y2 - dy2, theta2 + Math.PI],
+          //   center: [x2, y2],
+          //   radius: width / 2,
+          // },
+          {
+            type: LINE,
+            start: [x2 + dx2, y2 + dy2],
+            end: [x2 - dx2, y2 - dy2]
+          },
+          {
+            type: ARC,
+            start: [x2 - dx2, y2 - dy2, theta2],
+            end: [x1 - dx, y1 - dy, theta1],
+            center: [cx, cy],
+            radius: radius - width / 2
+          },
+          // {
+          //   type: ARC,
+          //   start: [x1 - dx, y1 - dy, theta1 - Math.PI],
+          //   end: [x1 + dx, y1 + dy, theta1],
+          //   center: [x1, y1],
+          //   radius: width / 2,
+          // },
+          {
+            type: LINE,
+            start: [x1 - dx, y1 - dy],
+            end: [x1 + dx, y1 + dy]
+          }
+        ]
+      }
+    }
+  }
+
   /**
    * @deprecated Use drawContour instead
    */
@@ -409,12 +588,44 @@ export class GerberGraphics extends Graphics {
     this.renderImageTree(tree)
   }
 
-  private retrieveGraphic(child: ImageGraphic, index: number): Graphics {
+  private saveGeometry(dcode: string, tool: Tool) {
+    const graphicProps = {
+      units: this.properties.units,
+      darkColor: 0xffff00,
+      darkAlpha: 0.5,
+      clearColor: 0xffff00,
+      clearAlpha: 0.5
+    }
     const originLocation = {
       startPoint: { x: 0, y: 0 },
       endPoint: { x: 0, y: 0 },
       arcOffsets: { i: 0, j: 0, a: 0 }
     }
+    const newGraphic = new Graphics(graphicProps)
+    if (tool.type === MACRO_TOOL) {
+      const imageGraphic: ImageGraphic = {
+        type: IMAGE_SHAPE,
+        shape: plotMacro(tool, originLocation),
+        polarity: DARK,
+        dcode: tool.dcode,
+        location: [originLocation.endPoint.x, originLocation.endPoint.y]
+      }
+      newGraphic.renderGraphic(imageGraphic)
+    } else if (tool.type === SIMPLE_TOOL) {
+      const imageGraphic: ImageGraphic = {
+        type: IMAGE_SHAPE,
+        shape: plotShape(tool, originLocation),
+        polarity: DARK,
+        dcode: tool.dcode,
+        location: [originLocation.endPoint.x, originLocation.endPoint.y]
+      }
+      newGraphic.renderGraphic(imageGraphic)
+    }
+    this.geometryStore[dcode] = newGraphic.geometry
+    newGraphic.destroy()
+  }
+
+  private retrieveGraphic(child: ImageGraphic, index: number): Graphics {
     const { dcode } = child
     const graphicProps = {
       units: this.properties.units,
@@ -427,78 +638,70 @@ export class GerberGraphics extends Graphics {
     }
     if (dcode != undefined && child.type == IMAGE_SHAPE) {
       const tool = this.toolStore[dcode]
-      if (dcode in this.geometryStore) {
-        const graphic = new Graphics(graphicProps, this.geometryStore[dcode])
-        graphic.x = child.location[0] * SCALE
-        graphic.y = child.location[1] * SCALE
-        return graphic
+      if (!(dcode in this.geometryStore) && tool) {
+        this.saveGeometry(dcode, tool)
       }
-      const newGraphic = new Graphics(graphicProps)
-      if (tool?.type === MACRO_TOOL) {
-        const imageGraphic: ImageGraphic = {
-          type: IMAGE_SHAPE,
-          shape: plotMacro(tool, originLocation),
-          polarity: DARK,
-          dcode: tool.dcode,
-          location: [originLocation.endPoint.x, originLocation.endPoint.y]
-        }
-        newGraphic.renderGraphic(imageGraphic)
-      } else if (tool?.type === SIMPLE_TOOL) {
-        const imageGraphic: ImageGraphic = {
-          type: IMAGE_SHAPE,
-          shape: plotShape(tool, originLocation),
-          polarity: DARK,
-          dcode: tool.dcode,
-          location: [originLocation.endPoint.x, originLocation.endPoint.y]
-        }
-        newGraphic.renderGraphic(imageGraphic)
+      // const graphic = new Graphics(graphicProps, this.geometryStore[dcode])
+      // graphic.renderGraphic(child)
+      // graphic.position.x = child.location[0] * SCALE
+      // graphic.position.y = child.location[1] * SCALE
+      const graphic = new Graphics(graphicProps)
+      graphic.renderGraphic(child, this.geometryStore[dcode])
+      return graphic
+    } else if (dcode != undefined && child.type == IMAGE_PATH) {
+      const tool = this.toolStore[dcode]
+      if (!(dcode in this.geometryStore) && tool) {
+        this.saveGeometry(dcode, tool)
       }
-      this.geometryStore[dcode] = newGraphic.geometry
-      newGraphic.x = child.location[0] * SCALE
-      newGraphic.y = child.location[1] * SCALE
-      return newGraphic
+      const graphic = new Graphics(graphicProps)
+      graphic.renderGraphic(child, this.geometryStore[dcode])
+      return graphic
     } else {
-      const newGraphic = new Graphics(graphicProps)
-      newGraphic.renderGraphic(child)
-      return newGraphic
+      const graphic = new Graphics(graphicProps)
+      graphic.renderGraphic(child)
+      return graphic
     }
   }
 
   public renderImageTree(tree: ImageTree): this {
     const { children, tools } = tree
     Object.assign(this.toolStore, tools)
+    console.time('render')
     for (const [index, child] of children.entries()) {
+      //* BATCH GEOMETRY RENDERING
       this.renderGraphic(child)
 
+      //* RENDERING GRAPHICS FROM GEOMETRY STORE TO SAVE GEOMETRY CREATING TIME
       // const childGraphic = new Graphics({
       //   units: this.properties.units,
       //   darkColor: DARK_COLOR,
       //   darkAlpha: 0.5,
       //   clearColor: DARK_COLOR,
       //   clearAlpha: 0.5,
-      //   index,
-      //   dcode: child.dcode
+      //   index
       // })
       // childGraphic.visible = true
       // childGraphic.renderGraphic(child)
       // this.addChild(childGraphic)
 
-      const graphic = this.retrieveGraphic(child, index)
-      graphic.visible = false
-      this.addChild(graphic)
+      //* RENDERING GRAPHICS FROM GEOMETRY STORE TO SAVE GEOMETRY CREATING TIME
+      // const graphic = this.retrieveGraphic(child, index)
+      // graphic.visible = true
+      // this.addChild(graphic)
     }
+    console.timeEnd('render')
     return this
   }
 
   public featuresAtPosition(clientX: number, clientY: number): TIntersectItem[] {
     const checkintersect = (obj: Graphics): Graphics[] => {
       const intersected: Graphics[] = []
-      obj.visible = true
+      // obj.visible = true
       obj.updateTransform()
       if (obj.containsPoint(new PIXI.Point(clientX, clientY))) {
         intersected.push(obj)
       } else {
-        obj.visible = false
+        // obj.visible = false
       }
       return intersected
     }

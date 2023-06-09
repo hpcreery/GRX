@@ -224,7 +224,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     if (layerContainer) {
       this.viewport.removeChild(layerContainer)
       this.cull.removeAll(layerContainer.children)
-      layerContainer.destroy(true)
+      layerContainer.destroy({ children: true })
     }
   }
 
