@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import VirtualGerberApplication from '../renderer/virtual'
-import { Card, Group, Text, useMantineTheme, Button, FileButton, Stack } from '@mantine/core'
+import {
+  Card,
+  Group,
+  Text,
+  useMantineTheme,
+  Button,
+  FileButton,
+  Stack,
+  ScrollArea
+} from '@mantine/core'
 import { Dropzone } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
@@ -115,25 +124,47 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           height: '-webkit-fill-available',
           margin: 10,
           pointerEvents: 'all',
-          overflow: 'hidden'
+          overflowY: 'auto',
+          overflowX: 'hidden'
         }}
         className={'transparency'}
         padding={5}
       >
-        <Group position="center" grow pb={5}>
-          <FileButton onChange={uploadFiles} accept="*" multiple>
-            {(props): JSX.Element => (
-              <Button variant="default" {...props}>
-                Upload Gerbers
-              </Button>
-            )}
-          </FileButton>
-        </Group>
-        <Stack justify="flex-start" spacing="0px">
-          {layers.map((layer) => (
-            <LayerListItem key={layer.uid} file={layer} gerberApp={gerberApp} actions={actions} />
-          ))}
-        </Stack>
+        <ScrollArea
+          // offsetScrollbars
+          type="scroll"
+          h={'100%'}
+          viewportProps={{
+            style: {
+              overflowX: 'hidden'
+              // overflowY: 'auto',
+              // width: '100%'
+              // display: 'block'
+            }
+          }}
+          styles={{
+            viewport: {
+              '&& > div': {
+                display: 'block !important'
+              }
+            }
+          }}
+        >
+          <Group position="center" grow pb={5}>
+            <FileButton onChange={uploadFiles} accept="*" multiple>
+              {(props): JSX.Element => (
+                <Button variant="default" {...props}>
+                  Upload Gerbers
+                </Button>
+              )}
+            </FileButton>
+          </Group>
+          <Stack justify="flex-start" spacing="0px">
+            {layers.map((layer) => (
+              <LayerListItem key={layer.uid} file={layer} gerberApp={gerberApp} actions={actions} />
+            ))}
+          </Stack>
+        </ScrollArea>
       </Card>
     </div>
   )

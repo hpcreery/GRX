@@ -193,7 +193,8 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       icon: <IconChartHistogram stroke={1.5} size={18} />,
       onClick: (): void => {
         featureHistogramModalRef.current?.open()
-      }
+      },
+      disabled: true
     },
     {
       key: 'divider'
