@@ -625,6 +625,7 @@ export class GerberGraphics extends Graphics {
     newGraphic.destroy()
   }
 
+  // @ts-ignore - unused param.
   private retrieveGraphic(child: ImageGraphic, index: number): Graphics {
     const { dcode } = child
     const graphicProps = {
@@ -667,6 +668,7 @@ export class GerberGraphics extends Graphics {
     const { children, tools } = tree
     Object.assign(this.toolStore, tools)
     console.time('render')
+    // @ts-ignore - unused param.
     for (const [index, child] of children.entries()) {
       //* BATCH GEOMETRY RENDERING
       this.renderGraphic(child)
