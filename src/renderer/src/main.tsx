@@ -7,6 +7,9 @@ import { useLocalStorage } from '@mantine/hooks'
 import chroma from 'chroma-js'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 
+import GlApp from './rendererv2/GLApp'
+import REGLApp from './rendererv2/REGLApp'
+
 function Main(): JSX.Element | null {
   const [themeMode, setThemeMode] = useLocalStorage<ColorScheme>({
     key: 'color-scheme',
@@ -80,7 +83,10 @@ function Main(): JSX.Element | null {
       >
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Notifications />
-          <App />
+          {/* <App /> */}
+          {/* <div>Hello</div> */}
+          {/* <GlApp /> */}
+          <REGLApp />
         </ContextMenuProvider>
       </MantineProvider>
     </ConfigEditorProvider.Provider>

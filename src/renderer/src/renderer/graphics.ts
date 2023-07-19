@@ -27,7 +27,6 @@ import {
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
-import * as Tess2 from 'tess2-ts'
 import type { TIntersectItem, TGraphicsOptions } from './types'
 
 const DARK_COLOR = 0xffffff
@@ -77,10 +76,7 @@ export class Graphics extends PIXI.Graphics {
     }
   }
 
-  public renderGraphic(
-    node: ImageGraphic,
-    referenceGeometry: undefined | PIXI.GraphicsGeometry = undefined
-  ): this {
+  public renderGraphic(node: ImageGraphic): this {
     const {
       scale: SCALE,
       darkAlpha: DARK_ALPHA,
@@ -91,11 +87,31 @@ export class Graphics extends PIXI.Graphics {
       outlineWidth: OUTLINE_WIDTH
     } = this.properties
     if (node.type === IMAGE_SHAPE) {
-      if (referenceGeometry != undefined) {
-        this.position.x = node.location[0] * SCALE
-        this.position.y = node.location[1] * SCALE
-        referenceGeometry = undefined
+      if (OUTLINE_MODE) {
+        this.beginFill(DARK_COLOR, 0)
+        this.lineStyle({
+          color: DARK_COLOR,
+          width: OUTLINE_WIDTH,
+          alpha: 1,
+          cap: PIXI.LINE_CAP.ROUND,
+          join: PIXI.LINE_JOIN.ROUND
+        })
       } else {
+        if (node.polarity == DARK) {
+          this.beginFill(DARK_COLOR, DARK_ALPHA)
+        } else if (node.polarity == CLEAR) {
+          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
+        } else {
+          this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
+        }
+        this.lineStyle({
+          width: 0,
+          alpha: 0
+        })
+      }
+      this.renderShape(node)
+    } else {
+      if (node.type === IMAGE_PATH) {
         if (OUTLINE_MODE) {
           this.beginFill(DARK_COLOR, 0)
           this.lineStyle({
@@ -107,73 +123,19 @@ export class Graphics extends PIXI.Graphics {
           })
         } else {
           if (node.polarity == DARK) {
-            this.beginFill(DARK_COLOR, DARK_ALPHA)
-          } else if (node.polarity == CLEAR) {
-            this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
+            this.beginFill(DARK_COLOR, 0)
           } else {
-            this.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
+            this.beginFill(CLEAR_COLOR, 0)
           }
           this.lineStyle({
-            width: 0,
-            alpha: 0
+            width: node.width * SCALE,
+            color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+            alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
+            cap: PIXI.LINE_CAP.ROUND,
+            join: PIXI.LINE_JOIN.ROUND
           })
         }
-        this.renderShape(node)
-      }
-    } else {
-      if (node.type === IMAGE_PATH) {
-        if (referenceGeometry != undefined) {
-          for (const segment of node.segments) {
-            const startCircle = new Graphics(this.properties, referenceGeometry)
-            startCircle.x = segment.start[0] * SCALE
-            startCircle.y = segment.start[1] * SCALE
-            this.addChild(startCircle)
-            const endCircle = new Graphics(this.properties, referenceGeometry)
-            endCircle.x = segment.end[0] * SCALE
-            endCircle.y = segment.end[1] * SCALE
-            this.addChild(endCircle)
-            const pathGraphic = new Graphics(this.properties)
-            if (node.polarity == DARK) {
-              pathGraphic.beginFill(DARK_COLOR, DARK_ALPHA)
-            } else {
-              pathGraphic.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
-            }
-            pathGraphic.lineStyle({
-              width: 0,
-              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
-              alpha: 0
-            })
-            const contour = pathGraphic.contourizeCirclePath(segment, node.width)
-            pathGraphic.drawContour(contour)
-            this.addChild(pathGraphic)
-          }
-          referenceGeometry = undefined
-        } else {
-          if (OUTLINE_MODE) {
-            this.beginFill(DARK_COLOR, 0)
-            this.lineStyle({
-              color: DARK_COLOR,
-              width: OUTLINE_WIDTH,
-              alpha: 1,
-              cap: PIXI.LINE_CAP.ROUND,
-              join: PIXI.LINE_JOIN.ROUND
-            })
-          } else {
-            if (node.polarity == DARK) {
-              this.beginFill(DARK_COLOR, 0)
-            } else {
-              this.beginFill(CLEAR_COLOR, 0)
-            }
-            this.lineStyle({
-              width: node.width * SCALE,
-              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
-              alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
-              cap: PIXI.LINE_CAP.ROUND,
-              join: PIXI.LINE_JOIN.ROUND
-            })
-          }
-          this.drawPolyLine(node.segments)
-        }
+        this.drawPolyLine(node.segments)
       } else {
         if (OUTLINE_MODE) {
           this.beginFill(DARK_COLOR, 0)
@@ -540,38 +502,6 @@ export class Graphics extends PIXI.Graphics {
       }
     }
   }
-
-  /**
-   * @deprecated Use drawContour instead
-   */
-  // @ts-ignore - unused param.
-  private drawTesselatedContour(segments: PathSegment[]): this {
-    const { scale: SCALE } = this.properties
-    let lastHome: Position | ArcPosition = [0, 0]
-    for (const [index, next] of segments.entries()) {
-      const previous = index > 0 ? segments[index - 1] : undefined
-      const { start, end } = next
-      if (previous === undefined) {
-        this.moveTo(0, 0)
-        this.lineTo(start[0] * SCALE, start[1] * SCALE)
-        lastHome = start
-      } else if (!positionsEqual(previous.end, start)) {
-        this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
-        this.lineTo(0, 0)
-        this.lineTo(start[0] * SCALE, start[1] * SCALE)
-        lastHome = start
-      }
-      if (next.type === LINE) {
-        this.lineTo(end[0] * SCALE, end[1] * SCALE)
-      } else {
-        const { start, end, radius, center } = next
-        const c = start[2] - end[2]
-        this.arc(center[0] * SCALE, center[1] * SCALE, radius * SCALE, start[2], end[2], c > 0)
-      }
-    }
-    this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
-    return this
-  }
 }
 
 export class GerberGraphics extends Graphics {
@@ -647,7 +577,7 @@ export class GerberGraphics extends Graphics {
       // graphic.position.x = child.location[0] * SCALE
       // graphic.position.y = child.location[1] * SCALE
       const graphic = new Graphics(graphicProps)
-      graphic.renderGraphic(child, this.geometryStore[dcode])
+      // graphic.renderGraphic(child, this.geometryStore[dcode])
       return graphic
     } else if (dcode != undefined && child.type == IMAGE_PATH) {
       const tool = this.toolStore[dcode]
@@ -655,7 +585,7 @@ export class GerberGraphics extends Graphics {
         this.saveGeometry(dcode, tool)
       }
       const graphic = new Graphics(graphicProps)
-      graphic.renderGraphic(child, this.geometryStore[dcode])
+      // graphic.renderGraphic(child, this.geometryStore[dcode])
       return graphic
     } else {
       const graphic = new Graphics(graphicProps)
@@ -736,66 +666,6 @@ export class GerberGraphics extends Graphics {
   }
 }
 
-// This is a hack to get PIXI to use the Tess2 library for triangulation.
-// implemented by extending the graphics library and overriding the triangulate function
-// ``` js
-// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-// ```
-// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-/**
- * @deprecated
- */
-// @ts-ignore no longer need tess2
-function triangulate(
-  graphicsData: PIXI.GraphicsData,
-  graphicsGeometry: PIXI.GraphicsGeometry
-): void {
-  let points = graphicsData.points
-  const holes = graphicsData.holes
-  const verts = graphicsGeometry.points
-  const indices = graphicsGeometry.indices
-
-  const holeArray: number[] = []
-
-  for (let i = 0; i < holes.length; i++) {
-    const hole = holes[i]
-    holeArray.push(points.length / 2)
-    points.push(points[0], points[1])
-    points = points.concat(hole.points)
-    points.push(hole.points[0], hole.points[1])
-  }
-
-  // TODO: offload this to a worker
-  // Tesselate
-  const res = Tess2.tesselate({
-    contours: [points],
-    windingRule: Tess2.WINDING_ODD,
-    elementType: Tess2.POLYGONS,
-    polySize: 3,
-    vertexSize: 2
-  })
-
-  if (res == undefined) {
-    return
-  }
-  if (!res.elements.length) {
-    return
-  }
-
-  const vrt = res.vertices
-  // const elm = res.elements
-
-  const vertPos = verts.length / 2
-
-  for (let i = 0; i < res.elements.length; i++) {
-    indices.push(res.elements[i] + vertPos)
-  }
-
-  for (let i = 0; i < vrt.length; i++) {
-    verts.push(vrt[i])
-  }
-}
-
 // Custom filter to replace a color with transparency
 const ChromaFilter = new PIXI.Filter(
   undefined,
@@ -822,3 +692,6 @@ const ChromaFilter = new PIXI.Filter(
 ChromaFilter.uniforms.thresholdSensitivity = 0
 ChromaFilter.uniforms.smoothing = 0.2
 ChromaFilter.uniforms.colorToReplace = chroma(CLEAR_COLOR).rgb() // [0, 0, 0] black
+
+// PIXI.Graphics.curves.adaptive = true
+// PIXI.Graphics.curves.maxLength = 0.001

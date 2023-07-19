@@ -2,6 +2,7 @@ import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { comlink } from 'vite-plugin-comlink'
+import glsl from 'vite-plugin-glsl'
 
 export default defineConfig({
   base: './',
@@ -18,9 +19,9 @@ export default defineConfig({
   build: {
     outDir: resolve('out/web')
   },
-  plugins: [react(), comlink()],
+  plugins: [react(), comlink(), glsl()],
   worker: {
     format: 'es',
-    plugins: [comlink()]
+    plugins: [comlink(), glsl()]
   }
 })

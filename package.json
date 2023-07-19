@@ -5,6 +5,7 @@
   "main": "./out/main/index.js",
   "author": "Hunter Creery",
   "homepage": "https://grx.creery.org",
+  "type": "module",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
@@ -58,7 +59,7 @@
     "pixi-viewport": "^5.0.1",
     "pixi.js": "^7.2.4",
     "react-color": "^2.19.3",
-    "tess2-ts": "^1.0.8",
+    "regl": "^2.1.0",
     "web-vitals": "^3.3.1"
   },
   "devDependencies": {
@@ -93,6 +94,7 @@
     "react-dom": "^18.2.0",
     "typescript": "^5.0.4",
     "vite": "^4.3.1",
-    "vite-plugin-comlink": "^3.0.5"
+    "vite-plugin-comlink": "^3.0.5",
+    "vite-plugin-glsl": "^1.1.2"
   }
 }
