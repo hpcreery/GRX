@@ -27,7 +27,6 @@ import {
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
 import chroma from 'chroma-js'
-import * as Tess2 from 'tess2-ts'
 import type { TIntersectItem, TGraphicsOptions } from './types'
 
 const DARK_COLOR = 0xffffff
@@ -578,8 +577,8 @@ export class GerberGraphics extends Graphics {
   uid: string
   geometryStore: { [dcode: string]: PIXI.GraphicsGeometry }
   toolStore: Partial<Record<string, Tool>>
-  constructor(tree: ImageTree) {
-    super({ units: tree.units })
+  constructor(tree: ImageTree, options: Partial<TGraphicsOptions> = {}) {
+    super({ units: tree.units, ...options })
     this.filters = [ChromaFilter]
     this.tint = randomColor()
     this.uid = uid()
@@ -688,7 +687,7 @@ export class GerberGraphics extends Graphics {
 
       //* RENDERING GRAPHICS FROM GEOMETRY STORE TO SAVE GEOMETRY CREATING TIME
       // const graphic = this.retrieveGraphic(child, index)
-      // graphic.visible = true
+      // graphic.visible = false
       // this.addChild(graphic)
     }
     console.timeEnd('render')
@@ -698,12 +697,12 @@ export class GerberGraphics extends Graphics {
   public featuresAtPosition(clientX: number, clientY: number): TIntersectItem[] {
     const checkintersect = (obj: Graphics): Graphics[] => {
       const intersected: Graphics[] = []
-      // obj.visible = true
+      obj.visible = true
       obj.updateTransform()
       if (obj.containsPoint(new PIXI.Point(clientX, clientY))) {
         intersected.push(obj)
       } else {
-        // obj.visible = false
+        obj.visible = false
       }
       return intersected
     }
@@ -733,66 +732,6 @@ export class GerberGraphics extends Graphics {
     return this.children.find((child) => {
       return child instanceof Graphics && child.properties.index === index
     }) as Graphics
-  }
-}
-
-// This is a hack to get PIXI to use the Tess2 library for triangulation.
-// implemented by extending the graphics library and overriding the triangulate function
-// ``` js
-// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-// ```
-// PIXI.graphicsUtils.buildPoly.triangulate = triangulate
-/**
- * @deprecated
- */
-// @ts-ignore no longer need tess2
-function triangulate(
-  graphicsData: PIXI.GraphicsData,
-  graphicsGeometry: PIXI.GraphicsGeometry
-): void {
-  let points = graphicsData.points
-  const holes = graphicsData.holes
-  const verts = graphicsGeometry.points
-  const indices = graphicsGeometry.indices
-
-  const holeArray: number[] = []
-
-  for (let i = 0; i < holes.length; i++) {
-    const hole = holes[i]
-    holeArray.push(points.length / 2)
-    points.push(points[0], points[1])
-    points = points.concat(hole.points)
-    points.push(hole.points[0], hole.points[1])
-  }
-
-  // TODO: offload this to a worker
-  // Tesselate
-  const res = Tess2.tesselate({
-    contours: [points],
-    windingRule: Tess2.WINDING_ODD,
-    elementType: Tess2.POLYGONS,
-    polySize: 3,
-    vertexSize: 2
-  })
-
-  if (res == undefined) {
-    return
-  }
-  if (!res.elements.length) {
-    return
-  }
-
-  const vrt = res.vertices
-  // const elm = res.elements
-
-  const vertPos = verts.length / 2
-
-  for (let i = 0; i < res.elements.length; i++) {
-    indices.push(res.elements[i] + vertPos)
-  }
-
-  for (let i = 0; i < vrt.length; i++) {
-    verts.push(vrt[i])
   }
 }
 

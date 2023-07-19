@@ -7,7 +7,9 @@ import {
   IconZoomIn,
   IconZoomOut,
   IconHome,
-  IconAdjustments
+  IconAdjustments,
+  IconDiamond,
+  IconDiamondFilled
 } from '@tabler/icons-react'
 import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
@@ -17,9 +19,18 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null {
+  const [isOutlineMode, setIsOutlineMode] = React.useState(false)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const { themeMode, setThemeMode, transparency, setTransparency } =
     React.useContext(ConfigEditorProvider)
+
+
+  const setOutlineMode = (mode: boolean): void => {
+    gerberApp.renderer.then(async (renderer) => {
+      renderer.setAllOutlineMode(mode)
+    })
+    setIsOutlineMode(mode)
+  }
 
   return (
     <>
@@ -37,10 +48,15 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
         className={'transparency'}
       >
         <Group spacing={1}>
-          <ActionIcon size="lg" onClick={(): void => {}}>
+          <ActionIcon size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
+            {isOutlineMode ? <IconDiamond size={18} /> : <IconDiamondFilled size={18} />}
+          </ActionIcon>
+
+          <Divider my="xs" orientation="vertical" />
+          <ActionIcon size="lg" onClick={(): void => { }}>
             <IconArrowsMove size={18} />
           </ActionIcon>
-          <ActionIcon size="lg" onClick={(): void => {}}>
+          <ActionIcon size="lg" onClick={(): void => { }}>
             <IconRulerMeasure size={18} />
           </ActionIcon>
           <Divider my="xs" orientation="vertical" />

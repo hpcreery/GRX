@@ -6,7 +6,7 @@ import type { Tool } from '@hpcreery/tracespace-plotter/src/tool-store'
 import * as PIXI from '@pixi/webworker'
 
 import { Cull } from '@pixi-essentials/cull'
-import { THistogram, TIntersectItem, TRendererLayer } from './types'
+import { THistogram, TIntersectItem, TRendererLayer, TGraphicsOptions } from './types'
 
 import * as Comlink from 'comlink'
 import gerberParserWorker from '../workers/gerber_parser?worker'
@@ -26,6 +26,7 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
   origin: PIXI.ObservablePoint
   cachedGerberGraphics = true
   cullDirty = true
+  outlineMode = false
 
   constructor(options?: Partial<PIXI.IApplicationOptions>) {
     super(options)
@@ -158,6 +159,26 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
     this.cullViewport()
   }
 
+  public setLayerOutlineMode(uid: string, outline: boolean): void {
+    this.uncacheViewport()
+    const layer = this.viewport.getChildByUID(uid)
+    if (layer) {
+      layer.outLineMode = outline
+    }
+    this.cullViewport()
+  }
+
+  public setAllOutlineMode(outline: boolean): void {
+    this.uncacheViewport()
+    this.outlineMode = outline
+    this.viewport.children.forEach((child) => {
+      if (child instanceof LayerContainer) {
+        child.outLineMode = outline
+      }
+    })
+    this.cullViewport()
+  }
+
   public getLayerTintColor(uid: string): PIXI.ColorSource {
     const layer = this.viewport.getChildByUID(uid)
     if (layer) {
@@ -203,16 +224,14 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
 
   public addLayer(name: string, image: ImageTree, uid?: string): void {
     const layerContainer = new LayerContainer({
+      image,
+      position: this.origin,
       name,
       uid,
       tools: image.tools,
       extract: this.renderer.extract
     })
-    layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
-    layerContainer.scale = { x: 1, y: -1 }
-    layerContainer.position = this.origin
-    layerContainer.interactiveChildren = false
-    layerContainer.addChild(new GerberGraphics(image))
+    layerContainer.addChild(new GerberGraphics(image, { outlineMode: this.outlineMode }))
     layerContainer.cacheAsBitmapResolution = 1
     layerContainer.cacheAsBitmap = this.cachedGerberGraphics
     this.viewport.addChild(layerContainer)
@@ -318,22 +337,35 @@ export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
 }
 
 class LayerContainer extends PIXI.Container {
+  public image: ImageTree
   public name: string
   public uid: string
   public tools: Partial<Record<string, Tool>>
   public extract: PIXI.IExtract
   constructor(props: {
+    image: ImageTree
+    position: PIXI.ObservablePoint
     name: string
     uid?: string
     tools: Partial<Record<string, Tool>>
     extract: PIXI.IExtract
   }) {
     super()
+    this.image = props.image
+    this.position = props.position
     this.name = props.name
     this.uid = props.uid ?? this.generateUid()
     this.tools = props.tools
     this.extract = props.extract
+    this.filters = [new PIXI.AlphaFilter(0.5)]
+    this.scale = { x: 1, y: -1 }
+    this.interactiveChildren = false
   }
+
+  public addImage(image: ImageTree, props: Partial<TGraphicsOptions> = {}): void {
+    this.addChild(new GerberGraphics(image, props))
+  }
+
   private generateUid(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
@@ -346,6 +378,13 @@ class LayerContainer extends PIXI.Container {
   set tint(color: PIXI.ColorSource) {
     const child = this.children[0] as GerberGraphics
     child.tint = color
+  }
+
+  set outLineMode(outline: boolean) {
+    let tint = this.tint
+    this.removeChildren()
+    this.addChild(new GerberGraphics(this.image, { outlineMode: outline }))
+    this.tint = tint
   }
 
   get graphic(): GerberGraphics {
