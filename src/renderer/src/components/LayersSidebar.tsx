@@ -14,19 +14,21 @@ import { Dropzone } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
 import { TRendererLayer } from '@renderer/renderer/types'
+import { useGerberAppContext } from '../contexts/GerberApp'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {
-  gerberApp: VirtualGerberApplication
+  // gerberApp: VirtualGerberApplication
 }
 
 export interface UploadFile extends File {
   uid: string
 }
 
-export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element | null {
+export default function LayerSidebar(props: SidebarProps): JSX.Element | null {
+  const gerberApp = useGerberAppContext()
   const theme = useMantineTheme()
   const [layers, setLayers] = useState<UploadFile[]>([])
 
@@ -161,7 +163,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           </Group>
           <Stack justify="flex-start" spacing="0px">
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid} file={layer} gerberApp={gerberApp} actions={actions} />
+              <LayerListItem key={layer.uid} file={layer} actions={actions} />
             ))}
           </Stack>
         </ScrollArea>

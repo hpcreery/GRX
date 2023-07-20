@@ -6,7 +6,6 @@ import { ColorSource } from 'pixi.js'
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 import { TRendererLayer } from '../../renderer/types'
-import VirtualGerberApplication from '../../renderer/virtual'
 import * as Comlink from 'comlink'
 import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from '../LayersSidebar'
@@ -20,10 +19,10 @@ import {
   IconColorPicker
 } from '@tabler/icons-react'
 import { useContextMenu } from 'mantine-contextmenu'
+import { useGerberAppContext } from '@renderer/contexts/GerberApp'
 
 interface LayerListItemProps {
   file: UploadFile
-  gerberApp: VirtualGerberApplication
   actions: {
     download: () => void
     preview: () => void
@@ -32,9 +31,10 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
+  const gerberApp = useGerberAppContext()
   const showContextMenu = useContextMenu()
   const theme = useMantineTheme()
-  const { gerberApp, file, actions } = props
+  const { file, actions } = props
   const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
     name: file.name,
     uid: file.uid

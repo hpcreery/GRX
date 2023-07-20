@@ -7,8 +7,10 @@ import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
 import { Center, Loader, useMantineTheme } from '@mantine/core'
+import { GerberAppContextProvider } from './contexts/GerberApp'
 
 export default function App(): JSX.Element | null {
+
   const theme = useMantineTheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
@@ -52,10 +54,12 @@ export default function App(): JSX.Element | null {
             zIndex: 10
           }}
         >
-          <LayerSidebar gerberApp={gerberApp} />
-          <Toolbar gerberApp={gerberApp} />
-          <InfoModal />
-          <MousePosition gerberApp={gerberApp} />
+          <GerberAppContextProvider value={gerberApp}>
+            <LayerSidebar />
+            <Toolbar />
+            <InfoModal />
+            <MousePosition />
+          </GerberAppContextProvider>
         </div>
       ) : (
         <>

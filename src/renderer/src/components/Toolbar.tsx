@@ -1,5 +1,4 @@
 import React from 'react'
-import VirtualGerberApplication from '../renderer/virtual'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import {
   IconArrowsMove,
@@ -13,23 +12,28 @@ import {
 } from '@tabler/icons-react'
 import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { useGerberAppContext } from '../contexts/GerberApp'
 
 interface ToolbarProps {
-  gerberApp: VirtualGerberApplication
 }
 
-export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null {
+export default function Toolbar(props: ToolbarProps): JSX.Element | null {
+  const gerberApp = useGerberAppContext()
   const [isOutlineMode, setIsOutlineMode] = React.useState(false)
+  const [outlineModeLoading, setOutlineModeLoading] = React.useState(false)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const { themeMode, setThemeMode, transparency, setTransparency } =
     React.useContext(ConfigEditorProvider)
 
 
   const setOutlineMode = (mode: boolean): void => {
+    setOutlineModeLoading(true)
     gerberApp.renderer.then(async (renderer) => {
-      renderer.setAllOutlineMode(mode)
+      await renderer.setAllOutlineMode(mode)
+      setIsOutlineMode(mode)
+      setOutlineModeLoading(false)
+
     })
-    setIsOutlineMode(mode)
   }
 
   return (
@@ -48,7 +52,7 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
         className={'transparency'}
       >
         <Group spacing={1}>
-          <ActionIcon size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
+          <ActionIcon loading={outlineModeLoading} size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
             {isOutlineMode ? <IconDiamond size={18} /> : <IconDiamondFilled size={18} />}
           </ActionIcon>
 
