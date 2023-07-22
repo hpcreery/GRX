@@ -382,7 +382,11 @@ class LayerContainer extends PIXI.Container {
 
   set outLineMode(outline: boolean) {
     let tint = this.tint
-    this.removeChildren()
+    this.children.forEach((child) => {
+      if (child instanceof GerberGraphics) {
+        child.destroy()
+      }
+    })
     this.addChild(new GerberGraphics(this.image, { outlineMode: outline }))
     this.tint = tint
   }

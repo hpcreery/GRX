@@ -30,9 +30,9 @@ export default function Toolbar(props: ToolbarProps): JSX.Element | null {
     setOutlineModeLoading(true)
     gerberApp.renderer.then(async (renderer) => {
       await renderer.setAllOutlineMode(mode)
+      console.log('setOutlineMode', mode)
       setIsOutlineMode(mode)
       setOutlineModeLoading(false)
-
     })
   }
 
