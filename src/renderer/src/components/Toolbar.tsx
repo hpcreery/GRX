@@ -14,10 +14,10 @@ import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex } from '@ma
 import { useDisclosure } from '@mantine/hooks'
 import { useGerberAppContext } from '../contexts/GerberApp'
 
-interface ToolbarProps {
-}
+// interface ToolbarProps {
+// }
 
-export default function Toolbar(props: ToolbarProps): JSX.Element | null {
+export default function Toolbar(): JSX.Element | null {
   const gerberApp = useGerberAppContext()
   const [isOutlineMode, setIsOutlineMode] = React.useState(false)
   const [outlineModeLoading, setOutlineModeLoading] = React.useState(false)
@@ -52,11 +52,12 @@ export default function Toolbar(props: ToolbarProps): JSX.Element | null {
         className={'transparency'}
       >
         <Group spacing={1}>
-          <ActionIcon loading={outlineModeLoading} size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
+          {/* <ActionIcon loading={outlineModeLoading} size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
             {isOutlineMode ? <IconDiamond size={18} /> : <IconDiamondFilled size={18} />}
-          </ActionIcon>
+          </ActionIcon> */}
 
-          <Divider my="xs" orientation="vertical" />
+          {/* <Divider my="xs" orientation="vertical" /> */}
+
           <ActionIcon size="lg" onClick={(): void => { }}>
             <IconArrowsMove size={18} />
           </ActionIcon>

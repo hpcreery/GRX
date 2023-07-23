@@ -2,6 +2,7 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { comlink } from 'vite-plugin-comlink'
+import glsl from 'vite-plugin-glsl'
 
 export default defineConfig({
   main: {
@@ -19,10 +20,10 @@ export default defineConfig({
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
     },
-    plugins: [react(), comlink()],
+    plugins: [react(), comlink(), glsl()],
     worker: {
       format: 'es',
-      plugins: [comlink()]
+      plugins: [comlink(), glsl()]
     }
   }
 })

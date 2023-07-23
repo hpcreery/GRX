@@ -378,6 +378,13 @@ class LayerContainer extends PIXI.Container {
   set tint(color: PIXI.ColorSource) {
     const child = this.children[0] as GerberGraphics
     child.tint = color
+    child.children.forEach((child) => {
+      // if (child instanceof Graphics) {
+      //   child.tint = color
+      // }
+      // @ts-ignore
+      child.tint = color
+    })
   }
 
   set outLineMode(outline: boolean) {

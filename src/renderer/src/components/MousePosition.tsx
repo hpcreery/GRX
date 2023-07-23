@@ -3,10 +3,10 @@ import { PointerEvent } from '../renderer/virtual'
 import { Card, Group, Text, Tooltip } from '@mantine/core'
 import { useGerberAppContext } from '../contexts/GerberApp'
 
-interface MousePositionProps {
-}
+// interface MousePositionProps {
+// }
 
-export default function MousePosition(props: MousePositionProps): JSX.Element | null {
+export default function MousePosition(): JSX.Element | null {
   const gerberApp = useGerberAppContext()
 
   const [x, setX] = React.useState<number>(0)

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import VirtualGerberApplication from '../renderer/virtual'
 import {
   Card,
   Group,
@@ -19,15 +18,14 @@ import { useGerberAppContext } from '../contexts/GerberApp'
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-interface SidebarProps {
-  // gerberApp: VirtualGerberApplication
-}
+// interface SidebarProps {
+// }
 
 export interface UploadFile extends File {
   uid: string
 }
 
-export default function LayerSidebar(props: SidebarProps): JSX.Element | null {
+export default function LayerSidebar(): JSX.Element | null {
   const gerberApp = useGerberAppContext()
   const theme = useMantineTheme()
   const [layers, setLayers] = useState<UploadFile[]>([])

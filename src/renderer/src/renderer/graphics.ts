@@ -26,6 +26,9 @@ import {
   ARC
 } from '@hpcreery/tracespace-plotter'
 import * as PIXI from '@pixi/webworker'
+// import { Conic, ConicDisplay } from '@pixi-essentials/conic'
+import { Conic } from './modules/conic/Conic'
+import { ConicDisplay } from './modules/conic/ConicDisplay'
 import chroma from 'chroma-js'
 import type { TIntersectItem, TGraphicsOptions } from './types'
 
@@ -41,6 +44,14 @@ const OUTLINE_MODE = false
 const SCALE = 100
 
 const randomColor = (): number => Math.floor(Math.random() * 16777215)
+function colorToShaderRgb(color: string | number | chroma.Color): [number, number, number] {
+  // copilot is so smart
+  // return [(hex >> 16) / 255, ((hex >> 8) & 0xff) / 255, (hex & 0xff) / 255]
+  return chroma(color)
+    .rgb()
+    .map((x) => x / 255) as [number, number, number]
+}
+
 const uid = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
@@ -121,58 +132,79 @@ export class Graphics extends PIXI.Graphics {
       }
     } else {
       if (node.type === IMAGE_PATH) {
-        if (referenceGeometry != undefined) {
-          for (const segment of node.segments) {
-            const startCircle = new Graphics(this.properties, referenceGeometry)
-            startCircle.x = segment.start[0] * SCALE
-            startCircle.y = segment.start[1] * SCALE
-            this.addChild(startCircle)
-            const endCircle = new Graphics(this.properties, referenceGeometry)
-            endCircle.x = segment.end[0] * SCALE
-            endCircle.y = segment.end[1] * SCALE
-            this.addChild(endCircle)
-            const pathGraphic = new Graphics(this.properties)
-            if (node.polarity == DARK) {
-              pathGraphic.beginFill(DARK_COLOR, DARK_ALPHA)
-            } else {
-              pathGraphic.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
-            }
-            pathGraphic.lineStyle({
-              width: 0,
-              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
-              alpha: 0
-            })
-            const contour = pathGraphic.contourizeCirclePath(segment, node.width)
-            pathGraphic.drawContour(contour)
-            this.addChild(pathGraphic)
-          }
-          referenceGeometry = undefined
-        } else {
-          if (OUTLINE_MODE) {
-            this.beginFill(DARK_COLOR, 0)
-            this.lineStyle({
-              color: DARK_COLOR,
-              width: OUTLINE_WIDTH,
-              alpha: 1,
-              cap: PIXI.LINE_CAP.ROUND,
-              join: PIXI.LINE_JOIN.ROUND
-            })
+        // console.log('RENDERING PATH: ', node)
+        // if (referenceGeometry != undefined) {
+        for (const segment of node.segments) {
+          // const startCircle = new Graphics(this.properties, referenceGeometry)
+          // startCircle.x = segment.start[0] * SCALE
+          // startCircle.y = segment.start[1] * SCALE
+          // this.addChild(startCircle)
+          const { start, end } = segment
+          const [cx, cy] = start
+          const r = node.width / 2
+          const circleShape = Conic.createCircle(r * SCALE)
+          const circleDisplay = new ConicDisplay(circleShape)
+          // circleDisplay.color = colorToShaderRgb(this.fill.color)
+          circleDisplay.color = colorToShaderRgb(0xff0000)
+          circleDisplay.tint = colorToShaderRgb(this.tint as number)
+          circleDisplay.drawRect(0, 0, r * SCALE * 2, r * SCALE * 2)
+          circleDisplay.position.set(cx * SCALE - r * SCALE, cy * SCALE - r * SCALE)
+          this.addChild(circleDisplay)
+          // const endCircle = new Graphics(this.properties, referenceGeometry)
+          // endCircle.x = segment.end[0] * SCALE
+          // endCircle.y = segment.end[1] * SCALE
+          // this.addChild(endCircle)
+          const [cx2, cy2] = end
+          const circleShape2 = Conic.createCircle(r * SCALE)
+          const circleDisplay2 = new ConicDisplay(circleShape2)
+          // circleDisplay2.color = colorToShaderRgb(this.fill.color)
+          circleDisplay.color = colorToShaderRgb(0xff0000)
+          circleDisplay2.tint = colorToShaderRgb(this.tint as number)
+          circleDisplay2.drawRect(0, 0, r * SCALE * 2, r * SCALE * 2)
+          circleDisplay2.position.set(cx2 * SCALE - r * SCALE, cy2 * SCALE - r * SCALE)
+          this.addChild(circleDisplay2)
+          const pathGraphic = new Graphics(this.properties)
+          if (node.polarity == DARK) {
+            pathGraphic.beginFill(DARK_COLOR, DARK_ALPHA)
           } else {
-            if (node.polarity == DARK) {
-              this.beginFill(DARK_COLOR, 0)
-            } else {
-              this.beginFill(CLEAR_COLOR, 0)
-            }
-            this.lineStyle({
-              width: node.width * SCALE,
-              color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
-              alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
-              cap: PIXI.LINE_CAP.ROUND,
-              join: PIXI.LINE_JOIN.ROUND
-            })
+            pathGraphic.beginFill(CLEAR_COLOR, CLEAR_ALPHA)
           }
-          this.drawPolyLine(node.segments)
+          pathGraphic.lineStyle({
+            width: 0,
+            color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+            alpha: 0
+          })
+          const contour = pathGraphic.contourizeCirclePath(segment, node.width)
+          pathGraphic.drawContour(contour)
+          this.addChild(pathGraphic)
         }
+        referenceGeometry = undefined
+        // } else {
+        //   if (OUTLINE_MODE) {
+        //     this.beginFill(DARK_COLOR, 0)
+        //     this.lineStyle({
+        //       color: DARK_COLOR,
+        //       width: OUTLINE_WIDTH,
+        //       alpha: 1,
+        //       cap: PIXI.LINE_CAP.ROUND,
+        //       join: PIXI.LINE_JOIN.ROUND
+        //     })
+        //   } else {
+        //     if (node.polarity == DARK) {
+        //       this.beginFill(DARK_COLOR, 0)
+        //     } else {
+        //       this.beginFill(CLEAR_COLOR, 0)
+        //     }
+        //     this.lineStyle({
+        //       width: node.width * SCALE,
+        //       color: node.polarity == DARK ? DARK_COLOR : CLEAR_COLOR,
+        //       alpha: node.polarity == DARK ? DARK_ALPHA : CLEAR_ALPHA,
+        //       cap: PIXI.LINE_CAP.ROUND,
+        //       join: PIXI.LINE_JOIN.ROUND
+        //     })
+        //   }
+        //   this.drawPolyLine(node.segments)
+        // }
       } else {
         if (OUTLINE_MODE) {
           this.beginFill(DARK_COLOR, 0)
@@ -227,8 +259,15 @@ export class Graphics extends PIXI.Graphics {
     switch (shape.type) {
       case CIRCLE: {
         const { cx, cy, r } = shape
-        // TODO: use conic. https://www.npmjs.com/package/@pixi-essentials/conic
-        this.drawCircle(cx * SCALE, cy * SCALE, r * SCALE)
+        // this.drawCircle(cx * SCALE, cy * SCALE, r * SCALE)
+        // use conic. https://www.npmjs.com/package/@pixi-essentials/conic
+        const circleShape = Conic.createCircle(r * SCALE)
+        const circleDisplay = new ConicDisplay(circleShape)
+        circleDisplay.color = colorToShaderRgb(this.fill.color)
+        circleDisplay.tint = colorToShaderRgb(this.tint as number)
+        circleDisplay.drawRect(0, 0, r * SCALE * 2, r * SCALE * 2)
+        circleDisplay.position.set(cx * SCALE - r * SCALE, cy * SCALE - r * SCALE)
+        this.addChild(circleDisplay)
         return this
       }
 
@@ -538,38 +577,6 @@ export class Graphics extends PIXI.Graphics {
         ]
       }
     }
-  }
-
-  /**
-   * @deprecated Use drawContour instead
-   */
-  // @ts-ignore - unused param.
-  private drawTesselatedContour(segments: PathSegment[]): this {
-    const { scale: SCALE } = this.properties
-    let lastHome: Position | ArcPosition = [0, 0]
-    for (const [index, next] of segments.entries()) {
-      const previous = index > 0 ? segments[index - 1] : undefined
-      const { start, end } = next
-      if (previous === undefined) {
-        this.moveTo(0, 0)
-        this.lineTo(start[0] * SCALE, start[1] * SCALE)
-        lastHome = start
-      } else if (!positionsEqual(previous.end, start)) {
-        this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
-        this.lineTo(0, 0)
-        this.lineTo(start[0] * SCALE, start[1] * SCALE)
-        lastHome = start
-      }
-      if (next.type === LINE) {
-        this.lineTo(end[0] * SCALE, end[1] * SCALE)
-      } else {
-        const { start, end, radius, center } = next
-        const c = start[2] - end[2]
-        this.arc(center[0] * SCALE, center[1] * SCALE, radius * SCALE, start[2], end[2], c > 0)
-      }
-    }
-    this.lineTo(lastHome[0] * SCALE, lastHome[1] * SCALE)
-    return this
   }
 }
 

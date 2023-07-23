@@ -4,6 +4,7 @@
   "description": "Fastest Web Geber Viewer",
   "main": "./out/main/index.js",
   "author": "Hunter Creery",
+  "type": "module",
   "homepage": "https://grx.creery.org",
   "scripts": {
     "format": "prettier --write .",
@@ -40,6 +41,7 @@
     "@mantine/nprogress": "^6.0.10",
     "@mantine/prism": "^6.0.10",
     "@mantine/spotlight": "^6.0.10",
+    "@pixi-essentials/conic": "^2.0.1",
     "@pixi-essentials/cull": "^2.0.0",
     "@pixi/display": "^7.2.3",
     "@pixi/unsafe-eval": "^7.2.4",
@@ -93,6 +95,7 @@
     "react-dom": "^18.2.0",
     "typescript": "^5.0.4",
     "vite": "^4.3.1",
-    "vite-plugin-comlink": "^3.0.5"
+    "vite-plugin-comlink": "^3.0.5",
+    "vite-plugin-glsl": "^1.1.2"
   }
 }
