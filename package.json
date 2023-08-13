@@ -54,6 +54,7 @@
     "comlink": "^4.4.1",
     "electron-updater": "^5.3.0",
     "embla-carousel-react": "^7.1.0",
+    "gl-matrix": "^3.4.3",
     "mantine-contextmenu": "^1.2.5",
     "pixi-graphpaper": "^2.0.1",
     "pixi-viewport": "^5.0.1",
