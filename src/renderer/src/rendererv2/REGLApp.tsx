@@ -13,7 +13,9 @@ import { mat3, mat4, vec2, vec3 } from "gl-matrix";
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
-  const N = 50 // N triangles on the width, N triangles on the height.
+  // 225 ~ 100,000 triangles ~ 50,000 shapes
+  // 700 ~ 1,000,000 triangles ~ 500,000 shapes
+  const N = 30 // N triangles on the width, N triangles on the height.
   console.log('render')
 
 
@@ -21,28 +23,28 @@ function REGLApp(): JSX.Element {
   mat3.identity(transform);
   var identity = mat3.create();
   mat3.identity(identity);
-  var scale = 1
+
+  var dirty = true
+  var scale = 0.1
   var postion = vec2.create()
+  var velocity = vec2.create()
   var dragging = false
+
+
   function updateTransform(x: number, y: number) {
+    // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
     const s = scale
-    mat3.projection(transform, reglRef.current.clientWidth, reglRef.current.clientHeight);
+    const { width, height } = reglRef.current.getBoundingClientRect()
+    mat3.projection(transform, width, height);
     mat3.translate(transform, transform, [x, y]);
     mat3.scale(transform, transform, [s, s]);
-    mat3.translate(transform, transform, [
-      reglRef.current.clientWidth / 2,
-      reglRef.current.clientHeight / 2
-    ]);
-    mat3.scale(transform, transform, [
-      reglRef.current.clientWidth / 2,
-      reglRef.current.clientHeight / 2
-    ]);
-    mat3.scale(transform, transform, [1, -1]);
+    mat3.translate(transform, transform, [width / 2, height / 2]);
+    mat3.scale(transform, transform, [width / 2, - height / 2]);
+    // mat3.scale(transform, transform, [1, -1]);
 
-    // Fix apsect ratio
-    // const aspect = reglRef.current.clientWidth / reglRef.current.clientHeight
+    // Fix apsect ratio, done in shader
+    // const aspect = width / height
     // mat3.scale(transform, transform, [1, -aspect])
-    // console.log(transform)
   }
 
   function scaleAtPoint(x: number, y: number, s: number) {
@@ -73,10 +75,34 @@ function REGLApp(): JSX.Element {
 
     const instanceOffset = REGL.buffer(
       Array(N * N).fill(0).map((_, i) => {
-        var x = -1 + 2 * Math.random() + 0.1
-        var y = -1 + 2 * Math.random() + 0.1
+        var x = 20 * Math.random() - 1
+        var y = -20 * Math.random() + 1
         return [x, y]
       }))
+
+    const instanceOffset2 = REGL.buffer(
+      Array(N * N).fill(0).map((_, i) => {
+        var x = 20 * Math.random() - 1
+        var y = -20 * Math.random() + 1
+        return [x, y]
+      }))
+
+    var colorBuffer = REGL.buffer({
+      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: N * N * 3 * 4
+    })
+    colorBuffer.subdata(Array(N * N).fill(0).map((_, i) => {
+      var r = Math.floor(i / N) / N
+      var g = (i % N) / N
+      return [r, g, r * g + 0.9]
+    }))
+    // var colorBuffer = REGL.buffer(
+    //   Array(N * N).fill(0).map((_, i) => {
+    //     var r = Math.floor(i / N) / N
+    //     var g = (i % N) / N
+    //     return [r, g, r * g + 0.9]
+    //   }))
 
     const draw = REGL({
       frag: `
@@ -84,7 +110,12 @@ function REGLApp(): JSX.Element {
 
       varying vec3 vColor;
       void main() {
-        gl_FragColor = vec4(vColor, 1.0);
+        // if color is black, draw transparent
+        float alpha = 1.0;
+        if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
+          alpha = 0.0;
+        }
+        gl_FragColor = vec4(vColor, alpha);
       }`,
 
       vert: `
@@ -104,11 +135,10 @@ function REGLApp(): JSX.Element {
 
 
       void main() {
-        float aspect = resolution.x / resolution.y;
+        float aspect = resolution.y / resolution.x;
 
-        // vec3 final = transform * vec3(position + offset, 1);
         // fix apsect ratio
-        vec3 final = transform * vec3(vec2(position.x + offset.x, (position.y + offset.y) * aspect), 1);
+        vec3 final = transform * vec3(vec2((position.x + offset.x) * aspect, (position.y + offset.y)), 1);
         gl_Position = vec4(final.xy, index, 1);
 
         vColor = color;
@@ -157,11 +187,110 @@ function REGLApp(): JSX.Element {
         },
 
         color: {
+          buffer: colorBuffer,
+          divisor: 1 // one separate color for every triangle
+        },
+      },
+
+      // Every triangle is just three vertices.
+      // However, every such triangle are drawn N * N times,
+      // through instancing.
+      primitive: 'triangle strip',
+      // primitive: 'line strip',
+      count: 6,
+      offset: 0,
+      // frontFace: 'cw',
+      instances: N * N
+    })
+
+    const draw2 = REGL({
+      frag: `
+      precision mediump float;
+
+      varying vec3 vColor;
+      void main() {
+        // if color is black, draw transparent
+        float alpha = 1.0;
+        if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
+          alpha = 0.0;
+        }
+        gl_FragColor = vec4(vColor, alpha);
+      }`,
+
+      vert: `
+      precision mediump float;
+
+      attribute vec2 position;
+
+      // These three are instanced attributes.
+      attribute vec3 color;
+      attribute vec2 offset;
+      attribute float index;
+
+      // This is a static uniform.
+      uniform mat3 transform;
+      uniform vec2 resolution;
+      varying vec3 vColor;
+
+
+      void main() {
+        float aspect = resolution.y / resolution.x;
+
+        // fix apsect ratio
+        vec3 final = transform * vec3(vec2((position.x + offset.x) * aspect, (position.y + offset.y)), 1);
+        gl_Position = vec4(final.xy, index, 1);
+
+        vColor = color;
+      }`,
+
+      cull: {
+        enable: true,
+        face: 'front'
+      },
+
+      depth: {
+        enable: true,
+        mask: true,
+        func: 'less',
+        range: [0, 1]
+      },
+
+      uniforms: {
+        // This is a static uniform.
+        transform: (context, props: any) => transform,
+        resolution: (context, props: any) => [context.viewportWidth, context.viewportHeight],
+      },
+
+      attributes: {
+        position: [
+          [-0.1, -0.1],
+          [+0.1, -0.1],
+          [-0.1, +0.1],
+          [+0.1, +0.1],
+          [-0.1, -0.1],
+          [+0.1, -0.1],
+        ],
+
+        index: {
+          buffer: REGL.buffer(
+            Array(N * N).fill(0).map((_, i) => {
+              return i / (N * N)
+            }
+            )),
+          divisor: 1 // one separate scale for every triangle
+        },
+
+        offset: {
+          buffer: instanceOffset2,
+          divisor: 1 // one separate offset for every triangle.
+        },
+
+        color: {
           buffer: REGL.buffer(
             Array(N * N).fill(0).map((_, i) => {
               var r = Math.floor(i / N) / N
               var g = (i % N) / N
-              return [r, g, r * g + 0.9]
+              return [0, 0, 0]
             })),
           divisor: 1 // one separate color for every triangle
         },
@@ -183,41 +312,91 @@ function REGLApp(): JSX.Element {
     //     color: [0, 0, 0, 1]
     //   })
 
+    function fixedDraw() {
+      if (!dirty) return
+      dirty = false
+      // REGL.clear({
+      //   color: [0, 0, 0, 1],
+      //   depth: 1
+      // })
+      draw()
+      draw2()
+      setTimeout(() => dirty = true, 1000 / 120)
+    }
 
+    // REGL.clear({
+    //   color: [0, 0, 0, 1],
+    //   depth: 1
+    // })
+    scaleAtPoint(0, 0, scale)
     draw()
+    draw2()
 
     reglRef.current.onwheel = (e) => {
       scaleAtPoint(e.clientX, e.clientY, e.deltaY)
-      draw()
+      fixedDraw()
     }
 
     reglRef.current.onmousedown = (e) => {
       dragging = true
     }
 
+    function randomizeColors() {
+      // grab random color index
+      const colorIndex = Math.floor(Math.random() * N * N) * 3 * 4
+      // grab random color
+      const color = [Math.random(), Math.random(), Math.random()]
+      // set color
+      colorBuffer.subdata(color, colorIndex)
+      fixedDraw()
+      setTimeout(randomizeColors, 1000 / 10)
+    }
+
+    // randomizeColors()
+
+
+
+
+
+    function toss() {
+      if (velocity[0] === 0 && velocity[1] === 0) return
+      if (dragging) return
+      vec2.add(postion, postion, velocity)
+      vec2.scale(velocity, velocity, 0.9)
+      updateTransform(postion[0], postion[1])
+      // REGL.clear({
+      //   color: [0, 0, 0, 1],
+      //   depth: 1
+      // })
+      draw()
+      draw2()
+      if (Math.abs(velocity[0]) < 0.05 && Math.abs(velocity[1]) < 0.05) {
+        velocity[0] = 0
+        velocity[1] = 0
+      } else {
+        setTimeout(toss, 1000 / 120)
+      }
+    }
+
     reglRef.current.onmouseup = (e) => {
       dragging = false
+      toss()
     }
+
 
     reglRef.current.onmousemove = (e) => {
       if (!dragging) return
-      postion[0] += e.movementX
-      postion[1] += e.movementY
+      velocity = [e.movementX, e.movementY]
+      vec2.add(postion, postion, velocity)
+
       updateTransform(postion[0], postion[1])
-      draw()
+      fixedDraw()
     }
 
-    // reglRef.current.onresize = (e) => {
-    //   console.log(e)
-    // }
-    // (entries: ResizeObserverEntry[], observer: ResizeObserver): void
     const resize = (entries: ResizeObserverEntry[], observer: ResizeObserver): void => {
       REGL.poll()
       updateTransform(postion[0], postion[1])
-      // REGL.resize()
-      // console.log(entries[0].contentRect)
-      // console.log(reglRef.current.clientWidth)
-      draw()
+      fixedDraw()
     }
 
     new ResizeObserver(resize).observe(reglRef.current)
