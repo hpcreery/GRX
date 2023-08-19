@@ -15,7 +15,7 @@ function REGLApp(): JSX.Element {
 
   // 225 ~ 100,000 triangles ~ 50,000 shapes
   // 700 ~ 1,000,000 triangles ~ 500,000 shapes
-  const N = 30 // N triangles on the width, N triangles on the height.
+  const N = 50 // N triangles on the width, N triangles on the height.
   console.log('render')
 
 
@@ -73,29 +73,51 @@ function REGLApp(): JSX.Element {
       extensions: ['angle_instanced_arrays']
     })
 
-    const instanceOffset = REGL.buffer(
+    const offsetBuffer1 = REGL.buffer(
       Array(N * N).fill(0).map((_, i) => {
         var x = 20 * Math.random() - 1
         var y = -20 * Math.random() + 1
         return [x, y]
       }))
 
-    const instanceOffset2 = REGL.buffer(
+    const offsetBuffer2 = REGL.buffer(
       Array(N * N).fill(0).map((_, i) => {
         var x = 20 * Math.random() - 1
         var y = -20 * Math.random() + 1
         return [x, y]
       }))
 
-    var colorBuffer = REGL.buffer({
+    const colorBuffer1 = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
       length: N * N * 3 * 4
     })
-    colorBuffer.subdata(Array(N * N).fill(0).map((_, i) => {
+    colorBuffer1.subdata(Array(N * N).fill(0).map((_, i) => {
       var r = Math.floor(i / N) / N
       var g = (i % N) / N
       return [r, g, r * g + 0.9]
+    }))
+
+    const colorBuffer2 = REGL.buffer({
+      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: N * N * 3 * 4
+    })
+    colorBuffer2.subdata(Array(N * N).fill(0))
+    // .map((_, i) => {
+    //   return [0,0,0]
+    // }))
+
+    var dimBuffer = REGL.buffer({
+      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: N * N * 2 * 4
+    })
+    dimBuffer.subdata(Array(N * N).fill(0).map((_, i) => {
+      // number from 0-10
+      var w = Math.floor(i / N) / N * 10
+      var h = (i % N) / N * 10
+      return [w, w]
     }))
     // var colorBuffer = REGL.buffer(
     //   Array(N * N).fill(0).map((_, i) => {
@@ -109,11 +131,20 @@ function REGLApp(): JSX.Element {
       precision mediump float;
 
       varying vec3 vColor;
+      varying vec2 vCenter;
+      varying float vRadius;
+      varying vec2 vPosition;
+
       void main() {
         // if color is black, draw transparent
         float alpha = 1.0;
         if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
           alpha = 0.0;
+        }
+        // draw a circle
+        float d = distance(vPosition, vCenter);
+        if (d > vRadius) {
+          discard;
         }
         gl_FragColor = vec4(vColor, alpha);
       }`,
@@ -127,22 +158,52 @@ function REGLApp(): JSX.Element {
       attribute vec3 color;
       attribute vec2 offset;
       attribute float index;
+      attribute vec2 dim;
 
       // This is a static uniform.
       uniform mat3 transform;
       uniform vec2 resolution;
-      varying vec3 vColor;
+      uniform float scale;
 
+      varying vec3 vColor;
+      varying vec2 vCenter;
+      varying float vRadius;
+      varying vec2 vPosition;
+      varying float vAspect;
+      varying float vScale;
 
       void main() {
-        float aspect = resolution.y / resolution.x;
 
-        // fix apsect ratio
-        vec3 final = transform * vec3(vec2((position.x + offset.x) * aspect, (position.y + offset.y)), 1);
-        gl_Position = vec4(final.xy, index, 1);
+        float aspect = resolution.y / resolution.x;
+        vec2 finaldim = position * dim;
+        vec3 final = transform * vec3(vec2((finaldim.x + offset.x) * aspect, (finaldim.y + offset.y)), 1);
+
+        vec2 finalcenter = vec2(0, 0) * dim;
+        vec3 finalcenter3 = transform * vec3(vec2((finalcenter.x + offset.x) * aspect, (finalcenter.y + offset.y)), 1);
 
         vColor = color;
+        vRadius = (dim.x / 2.0) * scale * 0.2;
+        vCenter = vec2(finalcenter3.x / aspect, finalcenter3.y);
+        vPosition = vec2(final.x / aspect, final.y);
+
+        gl_Position = vec4(final.xy, index, 1);
+
       }`,
+
+      // blend: {
+      //   enable: true,
+      //   func: {
+      //     srcRGB: 'src alpha',
+      //     srcAlpha: 1,
+      //     dstRGB: 'one minus src alpha',
+      //     dstAlpha: 1
+      //   },
+      //   equation: {
+      //     rgb: 'add',
+      //     alpha: 'subtract'
+      //   },
+      //   color: [0, 0, 1, 1]
+      // },
 
       cull: {
         enable: true,
@@ -158,12 +219,13 @@ function REGLApp(): JSX.Element {
 
       uniforms: {
         // This is a static uniform.
-        transform: (context, props: any) => transform,
-        resolution: (context, props: any) => [context.viewportWidth, context.viewportHeight],
+        transform: () => transform,
+        resolution: (context) => [context.viewportWidth, context.viewportHeight],
+        scale: () => scale,
       },
 
       attributes: {
-        position: [
+        position: () => [
           [-0.1, -0.1],
           [+0.1, -0.1],
           [-0.1, +0.1],
@@ -182,128 +244,28 @@ function REGLApp(): JSX.Element {
         },
 
         offset: {
-          buffer: instanceOffset,
+          // buffer: offsetBuffer1,
+          // buffer: REGL.prop('offset'),
+          buffer: (context, props: any) => props.offset,
           divisor: 1 // one separate offset for every triangle.
         },
 
         color: {
-          buffer: colorBuffer,
+          // buffer: colorBuffer1,
+          // buffer: REGL.prop('color'),
+          buffer: (context, props: any) => props.color,
           divisor: 1 // one separate color for every triangle
         },
-      },
 
-      // Every triangle is just three vertices.
-      // However, every such triangle are drawn N * N times,
-      // through instancing.
-      primitive: 'triangle strip',
-      // primitive: 'line strip',
-      count: 6,
-      offset: 0,
-      // frontFace: 'cw',
-      instances: N * N
-    })
-
-    const draw2 = REGL({
-      frag: `
-      precision mediump float;
-
-      varying vec3 vColor;
-      void main() {
-        // if color is black, draw transparent
-        float alpha = 1.0;
-        if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
-          alpha = 0.0;
+        dim: {
+          buffer: dimBuffer,
+          divisor: 1 // one dim for every triangle
         }
-        gl_FragColor = vec4(vColor, alpha);
-      }`,
-
-      vert: `
-      precision mediump float;
-
-      attribute vec2 position;
-
-      // These three are instanced attributes.
-      attribute vec3 color;
-      attribute vec2 offset;
-      attribute float index;
-
-      // This is a static uniform.
-      uniform mat3 transform;
-      uniform vec2 resolution;
-      varying vec3 vColor;
-
-
-      void main() {
-        float aspect = resolution.y / resolution.x;
-
-        // fix apsect ratio
-        vec3 final = transform * vec3(vec2((position.x + offset.x) * aspect, (position.y + offset.y)), 1);
-        gl_Position = vec4(final.xy, index, 1);
-
-        vColor = color;
-      }`,
-
-      cull: {
-        enable: true,
-        face: 'front'
       },
 
-      depth: {
-        enable: true,
-        mask: true,
-        func: 'less',
-        range: [0, 1]
-      },
-
-      uniforms: {
-        // This is a static uniform.
-        transform: (context, props: any) => transform,
-        resolution: (context, props: any) => [context.viewportWidth, context.viewportHeight],
-      },
-
-      attributes: {
-        position: [
-          [-0.1, -0.1],
-          [+0.1, -0.1],
-          [-0.1, +0.1],
-          [+0.1, +0.1],
-          [-0.1, -0.1],
-          [+0.1, -0.1],
-        ],
-
-        index: {
-          buffer: REGL.buffer(
-            Array(N * N).fill(0).map((_, i) => {
-              return i / (N * N)
-            }
-            )),
-          divisor: 1 // one separate scale for every triangle
-        },
-
-        offset: {
-          buffer: instanceOffset2,
-          divisor: 1 // one separate offset for every triangle.
-        },
-
-        color: {
-          buffer: REGL.buffer(
-            Array(N * N).fill(0).map((_, i) => {
-              var r = Math.floor(i / N) / N
-              var g = (i % N) / N
-              return [0, 0, 0]
-            })),
-          divisor: 1 // one separate color for every triangle
-        },
-      },
-
-      // Every triangle is just three vertices.
-      // However, every such triangle are drawn N * N times,
-      // through instancing.
       primitive: 'triangle strip',
-      // primitive: 'line strip',
       count: 6,
       offset: 0,
-      // frontFace: 'cw',
       instances: N * N
     })
 
@@ -312,15 +274,23 @@ function REGLApp(): JSX.Element {
     //     color: [0, 0, 0, 1]
     //   })
 
-    function fixedDraw() {
-      if (!dirty) return
+    function redraw(force: boolean = false) {
+      if (!dirty && !force) return
       dirty = false
       // REGL.clear({
       //   color: [0, 0, 0, 1],
       //   depth: 1
       // })
-      draw()
-      draw2()
+      draw([
+        {
+          offset: offsetBuffer1,
+          color: colorBuffer1
+        },
+        {
+          offset: offsetBuffer2,
+          color: colorBuffer2
+        }
+      ])
       setTimeout(() => dirty = true, 1000 / 120)
     }
 
@@ -329,12 +299,18 @@ function REGLApp(): JSX.Element {
     //   depth: 1
     // })
     scaleAtPoint(0, 0, scale)
-    draw()
-    draw2()
+    draw({
+      offset: offsetBuffer1,
+      color: colorBuffer1
+    })
+    draw({
+      offset: offsetBuffer2,
+      color: colorBuffer2
+    })
 
     reglRef.current.onwheel = (e) => {
       scaleAtPoint(e.clientX, e.clientY, e.deltaY)
-      fixedDraw()
+      redraw()
     }
 
     reglRef.current.onmousedown = (e) => {
@@ -346,10 +322,11 @@ function REGLApp(): JSX.Element {
       const colorIndex = Math.floor(Math.random() * N * N) * 3 * 4
       // grab random color
       const color = [Math.random(), Math.random(), Math.random()]
+      // const color = [1, 0, 0]
       // set color
-      colorBuffer.subdata(color, colorIndex)
-      fixedDraw()
-      setTimeout(randomizeColors, 1000 / 10)
+      colorBuffer1.subdata(color, colorIndex)
+      redraw()
+      setTimeout(randomizeColors, 1000 / 1000)
     }
 
     // randomizeColors()
@@ -364,12 +341,19 @@ function REGLApp(): JSX.Element {
       vec2.add(postion, postion, velocity)
       vec2.scale(velocity, velocity, 0.9)
       updateTransform(postion[0], postion[1])
-      // REGL.clear({
-      //   color: [0, 0, 0, 1],
-      //   depth: 1
+      redraw(true)
+      // // REGL.clear({
+      // //   color: [0, 0, 0, 1],
+      // //   depth: 1
+      // // })
+      // draw({
+      //   offset: offsetBuffer1,
+      //   color: colorBuffer1
       // })
-      draw()
-      draw2()
+      // draw({
+      //   offset: offsetBuffer2,
+      //   color: colorBuffer2
+      // })
       if (Math.abs(velocity[0]) < 0.05 && Math.abs(velocity[1]) < 0.05) {
         velocity[0] = 0
         velocity[1] = 0
@@ -388,15 +372,14 @@ function REGLApp(): JSX.Element {
       if (!dragging) return
       velocity = [e.movementX, e.movementY]
       vec2.add(postion, postion, velocity)
-
       updateTransform(postion[0], postion[1])
-      fixedDraw()
+      redraw()
     }
 
     const resize = (entries: ResizeObserverEntry[], observer: ResizeObserver): void => {
       REGL.poll()
       updateTransform(postion[0], postion[1])
-      fixedDraw()
+      redraw(true)
     }
 
     new ResizeObserver(resize).observe(reglRef.current)
