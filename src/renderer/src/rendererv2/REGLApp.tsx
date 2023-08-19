@@ -1,23 +1,23 @@
 import React from 'react'
 import '../App.css'
-import BasicFrag from '../shaders/ReBasic.frag'
-import BasicVert from '../shaders/ReBasic.vert'
-import CircleFrag from '../shaders/Circle.frag'
-import CircleVert from '../shaders/Circle.vert'
+// import BasicFrag from '../shaders/ReBasic.frag'
+// import BasicVert from '../shaders/ReBasic.vert'
+// import CircleFrag from '../shaders/Circle.frag'
+// import CircleVert from '../shaders/Circle.vert'
 import regl from 'regl'
-import { Viewport as VirtualViewport } from '@hpcreery/pixi-viewport'
 import { mat3, mat4, vec2, vec3 } from "gl-matrix";
-
-// const PREREGL = regl()
 
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
-  // 225 ~ 100,000 triangles ~ 50,000 shapes
-  // 700 ~ 1,000,000 triangles ~ 500,000 shapes
-  const N = 50 // N triangles on the width, N triangles on the height.
-  console.log('render')
-
+  // N == Number of Shapes ^ 2
+  // 50 ~ 2,500 shapes
+  // 100 ~ 10,000 shapes
+  // 225 ~ 50,000 shapes
+  // 320 ~ 100,000 shapes
+  // 700 ~ 500,000 shapes
+  // 1000 ~ 1,000,000 shapes
+  const N = 100
 
   var transform = mat3.create();
   mat3.identity(transform);
@@ -96,6 +96,7 @@ function REGLApp(): JSX.Element {
       var r = Math.floor(i / N) / N
       var g = (i % N) / N
       return [r, g, r * g + 0.9]
+      // return [0.6, 0.6, 0.6]
     }))
 
     const colorBuffer2 = REGL.buffer({
@@ -104,9 +105,6 @@ function REGLApp(): JSX.Element {
       length: N * N * 3 * 4
     })
     colorBuffer2.subdata(Array(N * N).fill(0))
-    // .map((_, i) => {
-    //   return [0,0,0]
-    // }))
 
     var dimBuffer = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
@@ -115,7 +113,7 @@ function REGLApp(): JSX.Element {
     })
     dimBuffer.subdata(Array(N * N).fill(0).map((_, i) => {
       // number from 0-10
-      var w = Math.floor(i / N) / N * 10
+      var w = Math.floor(i / N) / N * 2
       var h = (i % N) / N * 10
       return [w, w]
     }))
@@ -137,9 +135,10 @@ function REGLApp(): JSX.Element {
 
       void main() {
         // if color is black, draw transparent
-        float alpha = 1.0;
+        float alpha = 0.5;
         if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
           alpha = 0.0;
+          // discard;
         }
         // draw a circle
         float d = distance(vPosition, vCenter);
@@ -190,21 +189,6 @@ function REGLApp(): JSX.Element {
 
       }`,
 
-      // blend: {
-      //   enable: true,
-      //   func: {
-      //     srcRGB: 'src alpha',
-      //     srcAlpha: 1,
-      //     dstRGB: 'one minus src alpha',
-      //     dstAlpha: 1
-      //   },
-      //   equation: {
-      //     rgb: 'add',
-      //     alpha: 'subtract'
-      //   },
-      //   color: [0, 0, 1, 1]
-      // },
-
       cull: {
         enable: true,
         face: 'front'
@@ -215,6 +199,21 @@ function REGLApp(): JSX.Element {
         mask: true,
         func: 'less',
         range: [0, 1]
+      },
+
+      blend: {
+        enable: true,
+        func: {
+          srcRGB: 'src alpha',
+          srcAlpha: 1,
+          dstRGB: 'one minus src alpha',
+          dstAlpha: 1
+        },
+        equation: {
+          rgb: 'subtract',
+          alpha: 'subtract'
+        },
+        color: [0, 0, 0, 0]
       },
 
       uniforms: {
@@ -339,7 +338,7 @@ function REGLApp(): JSX.Element {
       if (velocity[0] === 0 && velocity[1] === 0) return
       if (dragging) return
       vec2.add(postion, postion, velocity)
-      vec2.scale(velocity, velocity, 0.9)
+      vec2.scale(velocity, velocity, 0.95)
       updateTransform(postion[0], postion[1])
       redraw(true)
       // // REGL.clear({
