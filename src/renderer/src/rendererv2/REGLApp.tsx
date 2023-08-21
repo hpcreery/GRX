@@ -1,7 +1,7 @@
 import React from 'react'
 import '../App.css'
-// import BasicFrag from '../shaders/ReBasic.frag'
-// import BasicVert from '../shaders/ReBasic.vert'
+import SymbolFrag from '../shaders/Symbol.frag'
+import SymbolVert from '../shaders/Symbol.vert'
 // import CircleFrag from '../shaders/Circle.frag'
 // import CircleVert from '../shaders/Circle.vert'
 import regl from 'regl'
@@ -17,7 +17,12 @@ function REGLApp(): JSX.Element {
   // 320 ~ 100,000 shapes
   // 700 ~ 500,000 shapes
   // 1000 ~ 1,000,000 shapes
-  const N = 100
+  const N = 200
+
+  const FPS = 60
+  const FPSMS = 1000 / FPS
+
+  const FLOAT_SIZE = 4
 
   var transform = mat3.create();
   mat3.identity(transform);
@@ -73,24 +78,10 @@ function REGLApp(): JSX.Element {
       extensions: ['angle_instanced_arrays']
     })
 
-    const offsetBuffer1 = REGL.buffer(
-      Array(N * N).fill(0).map((_, i) => {
-        var x = 20 * Math.random() - 1
-        var y = -20 * Math.random() + 1
-        return [x, y]
-      }))
-
-    const offsetBuffer2 = REGL.buffer(
-      Array(N * N).fill(0).map((_, i) => {
-        var x = 20 * Math.random() - 1
-        var y = -20 * Math.random() + 1
-        return [x, y]
-      }))
-
     const colorBuffer1 = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: N * N * 3 * 4
+      length: N * N * 3 * FLOAT_SIZE
     })
     colorBuffer1.subdata(Array(N * N).fill(0).map((_, i) => {
       var r = Math.floor(i / N) / N
@@ -99,95 +90,74 @@ function REGLApp(): JSX.Element {
       // return [0.6, 0.6, 0.6]
     }))
 
-    const colorBuffer2 = REGL.buffer({
+    const NUM_PARAMETERS = 6
+    const FEATURES_BUFFER = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: N * N * 3 * 4
+      length: N * N * NUM_PARAMETERS * FLOAT_SIZE
     })
-    colorBuffer2.subdata(Array(N * N).fill(0))
+    FEATURES_BUFFER.subdata(Array(N * N).fill(0).map((_, i) => {
+      const index = i / (N * N)// index
+      const polarity = (i % 2) // polarity
+      const x = 200 * Math.random() // x position
+      const y = 200 * Math.random() - 100 // y position
+      const width = Math.floor(i / N) / N * 0.5 // width, square side, diameter
+      const height = width // (i % N) / N * 10 // height
+      // const corner_radius = 0 // corner radius
+      // const corners = 0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+      // const inner_dia = 0 // — Inner diameter of the shape
+      // const line_width = 0 // — Line width of the shape (applies to the whole shape)
+      // const angle = 0 // — Gap angle from 0 degrees
+      // const gap = 0 // — Size of spoke gap
+      // const num_spokes = 0 // — Number of spokes
+      // const round = 0 // —r|s == 1|0 — Support for rounded or straight corners
+      // const cut_size = 0 // — Size of the cut ( see corner radius )
 
-    var dimBuffer = REGL.buffer({
-      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: N * N * 2 * 4
-    })
-    dimBuffer.subdata(Array(N * N).fill(0).map((_, i) => {
-      // number from 0-10
-      var w = Math.floor(i / N) / N * 2
-      var h = (i % N) / N * 10
-      return [w, w]
+      // LENGTH OF NUM_PARAMETERS
+      return [index, polarity, x, y, width, height]
     }))
-    // var colorBuffer = REGL.buffer(
-    //   Array(N * N).fill(0).map((_, i) => {
-    //     var r = Math.floor(i / N) / N
-    //     var g = (i % N) / N
-    //     return [r, g, r * g + 0.9]
-    //   }))
 
-    const draw = REGL({
-      frag: `
-      precision mediump float;
+    // Uniforms extends {} = {},
+    // Attributes extends {} = {},
+    // Props extends {} = {},
+    // OwnContext extends {} = {},
+    // ParentContext extends REGL.DefaultContext = REGL.DefaultContext
 
-      varying vec3 vColor;
-      varying vec2 vCenter;
-      varying float vRadius;
-      varying vec2 vPosition;
+    interface Uniforms {
+      u_Transform: mat3,
+      u_Resolution: vec2,
+      u_Screen: vec2,
+      u_Scale: number,
+      u_PixelSize: number,
+      u_OutlineMode: number,
+      u_Color: vec3
+    }
 
-      void main() {
-        // if color is black, draw transparent
-        float alpha = 0.5;
-        if (vColor.r == 0.0, vColor.g == 0.0, vColor.b == 0.0) {
-          alpha = 0.0;
-          // discard;
-        }
-        // draw a circle
-        float d = distance(vPosition, vCenter);
-        if (d > vRadius) {
-          discard;
-        }
-        gl_FragColor = vec4(vColor, alpha);
-      }`,
+    interface DrawProps {
+      features: regl.Buffer
+    }
 
-      vert: `
-      precision mediump float;
+    // interface CustomAttributeConfig extends regl.AttributeConfig {}
 
-      attribute vec2 position;
+    type CustomAttributeConfig = Omit<regl.AttributeConfig, 'buffer'> & {
+      buffer: regl.Buffer | undefined | null | false | ((context: regl.DefaultContext, props: DrawProps) => regl.Buffer) | regl.DynamicVariable<regl.Buffer>
+    }
 
-      // These three are instanced attributes.
-      attribute vec3 color;
-      attribute vec2 offset;
-      attribute float index;
-      attribute vec2 dim;
+    interface Attributes {
+      a_Position: vec2[],
+      a_Index: CustomAttributeConfig,
+      a_Polarity: CustomAttributeConfig,
+      a_X: CustomAttributeConfig,
+      a_Y: CustomAttributeConfig,
+      a_Width: CustomAttributeConfig,
+      a_Height: CustomAttributeConfig,
+      a_Color: CustomAttributeConfig,
+    }
 
-      // This is a static uniform.
-      uniform mat3 transform;
-      uniform vec2 resolution;
-      uniform float scale;
+    const draw = REGL<Uniforms, Attributes, DrawProps>({
+      frag: SymbolFrag,
 
-      varying vec3 vColor;
-      varying vec2 vCenter;
-      varying float vRadius;
-      varying vec2 vPosition;
-      varying float vAspect;
-      varying float vScale;
-
-      void main() {
-
-        float aspect = resolution.y / resolution.x;
-        vec2 finaldim = position * dim;
-        vec3 final = transform * vec3(vec2((finaldim.x + offset.x) * aspect, (finaldim.y + offset.y)), 1);
-
-        vec2 finalcenter = vec2(0, 0) * dim;
-        vec3 finalcenter3 = transform * vec3(vec2((finalcenter.x + offset.x) * aspect, (finalcenter.y + offset.y)), 1);
-
-        vColor = color;
-        vRadius = (dim.x / 2.0) * scale * 0.2;
-        vCenter = vec2(finalcenter3.x / aspect, finalcenter3.y);
-        vPosition = vec2(final.x / aspect, final.y);
-
-        gl_Position = vec4(final.xy, index, 1);
-
-      }`,
+      vert: SymbolVert,
 
       cull: {
         enable: true,
@@ -217,49 +187,83 @@ function REGLApp(): JSX.Element {
       },
 
       uniforms: {
-        // This is a static uniform.
-        transform: () => transform,
-        resolution: (context) => [context.viewportWidth, context.viewportHeight],
-        scale: () => scale,
+        u_Transform: () => transform,
+        u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
+        u_Screen: () => [window.screen.width * window.devicePixelRatio, window.screen.height * window.devicePixelRatio],
+        u_Scale: () => scale,
+        u_PixelSize: () => 3.9 / Math.pow(window.screen.width * window.devicePixelRatio * window.screen.height * window.devicePixelRatio, 0.5),
+        u_OutlineMode: () => 0,
+        u_Color: [0.5, 0, 0.9]
       },
 
       attributes: {
-        position: () => [
-          [-0.1, -0.1],
-          [+0.1, -0.1],
-          [-0.1, +0.1],
-          [+0.1, +0.1],
-          [-0.1, -0.1],
-          [+0.1, -0.1],
+        a_Position: () => [
+          [-1, -1],
+          [+1, -1],
+          [-1, +1],
+          [+1, +1],
+          [-1, -1],
+          [+1, -1],
         ],
 
-        index: {
-          buffer: REGL.buffer(
-            Array(N * N).fill(0).map((_, i) => {
-              return i / (N * N)
-            }
-            )),
-          divisor: 1 // one separate scale for every triangle
+        a_Index: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          // buffer: REGL.prop<DrawProps, 'features'>('features'),
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 0 * FLOAT_SIZE,
+          divisor: 1
         },
 
-        offset: {
-          // buffer: offsetBuffer1,
-          // buffer: REGL.prop('offset'),
-          buffer: (context, props: any) => props.offset,
-          divisor: 1 // one separate offset for every triangle.
+        a_Polarity: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 1 * FLOAT_SIZE,
+          divisor: 1
         },
 
-        color: {
-          // buffer: colorBuffer1,
+        a_X: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 2 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Y: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 3 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Width: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 4 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Height: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          // buffer: REGL.prop<DrawProps, 'features'>('features'),
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 5 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Color: {
+          buffer: colorBuffer1,
           // buffer: REGL.prop('color'),
-          buffer: (context, props: any) => props.color,
+          // buffer: (context, props: any) => props.color,
           divisor: 1 // one separate color for every triangle
         },
 
-        dim: {
-          buffer: dimBuffer,
-          divisor: 1 // one dim for every triangle
-        }
+        // a_Polarity: (context, props: any) => props.polarity
       },
 
       primitive: 'triangle strip',
@@ -280,17 +284,13 @@ function REGLApp(): JSX.Element {
       //   color: [0, 0, 0, 1],
       //   depth: 1
       // })
-      draw([
-        {
-          offset: offsetBuffer1,
-          color: colorBuffer1
-        },
-        {
-          offset: offsetBuffer2,
-          color: colorBuffer2
-        }
-      ])
-      setTimeout(() => dirty = true, 1000 / 120)
+      draw({
+        features: FEATURES_BUFFER,
+      })
+      // REGL.clear({
+      //   depth: 1,
+      // })
+      setTimeout(() => dirty = true, FPSMS)
     }
 
     // REGL.clear({
@@ -299,39 +299,22 @@ function REGLApp(): JSX.Element {
     // })
     scaleAtPoint(0, 0, scale)
     draw({
-      offset: offsetBuffer1,
-      color: colorBuffer1
-    })
-    draw({
-      offset: offsetBuffer2,
-      color: colorBuffer2
+      features: FEATURES_BUFFER,
     })
 
-    reglRef.current.onwheel = (e) => {
-      scaleAtPoint(e.clientX, e.clientY, e.deltaY)
-      redraw()
-    }
-
-    reglRef.current.onmousedown = (e) => {
-      dragging = true
-    }
-
-    function randomizeColors() {
+    function randomizeColorBuffer1() {
       // grab random color index
-      const colorIndex = Math.floor(Math.random() * N * N) * 3 * 4
+      const colorIndex = Math.floor(Math.random() * N * N) * 3 * FLOAT_SIZE
       // grab random color
       const color = [Math.random(), Math.random(), Math.random()]
       // const color = [1, 0, 0]
       // set color
       colorBuffer1.subdata(color, colorIndex)
       redraw()
-      setTimeout(randomizeColors, 1000 / 1000)
+      setTimeout(randomizeColorBuffer1, 1000 / 1000)
     }
 
-    // randomizeColors()
-
-
-
+    // randomizeColorBuffer1()
 
 
     function toss() {
@@ -341,31 +324,27 @@ function REGLApp(): JSX.Element {
       vec2.scale(velocity, velocity, 0.95)
       updateTransform(postion[0], postion[1])
       redraw(true)
-      // // REGL.clear({
-      // //   color: [0, 0, 0, 1],
-      // //   depth: 1
-      // // })
-      // draw({
-      //   offset: offsetBuffer1,
-      //   color: colorBuffer1
-      // })
-      // draw({
-      //   offset: offsetBuffer2,
-      //   color: colorBuffer2
-      // })
       if (Math.abs(velocity[0]) < 0.05 && Math.abs(velocity[1]) < 0.05) {
         velocity[0] = 0
         velocity[1] = 0
       } else {
-        setTimeout(toss, 1000 / 120)
+        setTimeout(toss, FPSMS)
       }
     }
 
-    reglRef.current.onmouseup = (e) => {
+    reglRef.current.onwheel = (e) => {
+      scaleAtPoint(e.clientX, e.clientY, e.deltaY)
+      redraw()
+    }
+
+    reglRef.current.onmousedown = (_e) => {
+      dragging = true
+    }
+
+    reglRef.current.onmouseup = (_e) => {
       dragging = false
       toss()
     }
-
 
     reglRef.current.onmousemove = (e) => {
       if (!dragging) return
@@ -375,7 +354,7 @@ function REGLApp(): JSX.Element {
       redraw()
     }
 
-    const resize = (entries: ResizeObserverEntry[], observer: ResizeObserver): void => {
+    const resize = (): void => {
       REGL.poll()
       updateTransform(postion[0], postion[1])
       redraw(true)
