@@ -2,10 +2,56 @@ import React from 'react'
 import '../App.css'
 import SymbolFrag from '../shaders/Symbol.frag'
 import SymbolVert from '../shaders/Symbol.vert'
-// import CircleFrag from '../shaders/Circle.frag'
-// import CircleVert from '../shaders/Circle.vert'
 import regl from 'regl'
-import { mat3, mat4, vec2, vec3 } from "gl-matrix";
+import { mat2, mat2d, mat3, mat4, vec2, vec3 } from "gl-matrix";
+
+const STANDARD_SYMBOLS = {
+  Round: 0,
+  Square: 1,
+  Rectangle: 2,
+  Rounded_Rectangle: 3,
+  Chamfered_Rectangle: 4,
+  Oval: 5,
+  Diamond: 6,
+  Octagon: 7,
+  Round_Donut: 8,
+  Square_Donut: 9,
+  SquareRound_Donut: 10,
+  Rounded_Square_Donut: 11,
+  Rectange_Donut: 12,
+  Rounded_Rectangle_Donut: 13,
+  Oval_Donut: 14,
+  Horizontal_Hexagon: 15,
+  Vertical_Hexagon: 16,
+  Butterfly: 17,
+  Square_Butterfly: 18,
+  Triangle: 19,
+  Half_Oval: 20,
+  Rounded_Round_Thermal: 21,
+  Squared_Round_Thermal: 22,
+  Square_Thermal: 23,
+  Open_Cornders_Square_Thermal: 24,
+  Line_Thermal: 25,
+  Square_Round_Thermal: 26,
+  Rectangular_Thermal: 27,
+  Rectangular_thermal_Open_Corners: 28,
+  Rounded_Square_Thermal: 29,
+  Rounded_Square_Thermal_Open_Corners: 30,
+  Rounded_Rectangular_Thermal: 31,
+  Oval_Thermal: 32,
+  Oblong_Thermal: 33,
+  Home_Plate: 34,
+  Inverted_Home_Plate: 35,
+  Flat_Home_Plate: 36,
+  Radiused_Inverted_Home_Plate: 37,
+  Radiused_Home_Plate: 38,
+  Cross: 39,
+  Dogbone: 40,
+  DPack: 41,
+  Ellipse: 42,
+  Moire: 43,
+  Hole: 44,
+} as const;
 
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
@@ -17,7 +63,7 @@ function REGLApp(): JSX.Element {
   // 320 ~ 100,000 shapes
   // 700 ~ 500,000 shapes
   // 1000 ~ 1,000,000 shapes
-  const N = 200
+  const N = 300
 
   const FPS = 60
   const FPSMS = 1000 / FPS
@@ -26,11 +72,15 @@ function REGLApp(): JSX.Element {
 
   var transform = mat3.create();
   mat3.identity(transform);
-  var identity = mat3.create();
-  mat3.identity(identity);
+
+  var inverseTransform = mat3.create();
+  mat3.identity(inverseTransform);
+
+  var identity = mat2d.create();
+  mat2d.identity(identity);
 
   var dirty = true
-  var scale = 0.1
+  var scale = 1
   var postion = vec2.create()
   var velocity = vec2.create()
   var dragging = false
@@ -45,11 +95,22 @@ function REGLApp(): JSX.Element {
     mat3.scale(transform, transform, [s, s]);
     mat3.translate(transform, transform, [width / 2, height / 2]);
     mat3.scale(transform, transform, [width / 2, - height / 2]);
-    // mat3.scale(transform, transform, [1, -1]);
+    // console.log(
+    //   'transform \n' +
+    //   `${Math.round(transform[0] * 100) / 100}, ${Math.round(transform[1] * 100) / 100}, ${Math.round(transform[2] * 100) / 100},\n` +
+    //   `${Math.round(transform[3] * 100) / 100}, ${Math.round(transform[4] * 100) / 100}, ${Math.round(transform[5] * 100) / 100},\n` +
+    //   `${Math.round(transform[6] * 100) / 100}, ${Math.round(transform[7] * 100) / 100}, ${Math.round(transform[8] * 100) / 100
+    //   }`
+    // )
 
-    // Fix apsect ratio, done in shader
-    // const aspect = width / height
-    // mat3.scale(transform, transform, [1, -aspect])
+    mat3.invert(inverseTransform, transform);
+    // console.log(
+    //   'inverseTransform \n' +
+    //   `${Math.round(inverseTransform[0] * 100) / 100}, ${Math.round(inverseTransform[1] * 100) / 100}, ${Math.round(inverseTransform[2] * 100) / 100},\n` +
+    //   `${Math.round(inverseTransform[3] * 100) / 100}, ${Math.round(inverseTransform[4] * 100) / 100}, ${Math.round(inverseTransform[5] * 100) / 100},\n` +
+    //   `${Math.round(inverseTransform[6] * 100) / 100}, ${Math.round(inverseTransform[7] * 100) / 100}, ${Math.round(inverseTransform[8] * 100) / 100
+    //   }`
+    // )
   }
 
   function scaleAtPoint(x: number, y: number, s: number) {
@@ -78,6 +139,8 @@ function REGLApp(): JSX.Element {
       extensions: ['angle_instanced_arrays']
     })
 
+    // console.log(REGL.limits)
+
     const colorBuffer1 = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
@@ -87,22 +150,25 @@ function REGLApp(): JSX.Element {
       var r = Math.floor(i / N) / N
       var g = (i % N) / N
       return [r, g, r * g + 0.9]
-      // return [0.6, 0.6, 0.6]
     }))
 
-    const NUM_PARAMETERS = 6
+    const NUM_PARAMETERS = 9
     const FEATURES_BUFFER = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
       length: N * N * NUM_PARAMETERS * FLOAT_SIZE
     })
     FEATURES_BUFFER.subdata(Array(N * N).fill(0).map((_, i) => {
+      const symbol = (i % 2) == 1 ? STANDARD_SYMBOLS.Round : STANDARD_SYMBOLS.Square // symbol
       const index = i / (N * N)// index
       const polarity = (i % 2) // polarity
       const x = 200 * Math.random() // x position
       const y = 200 * Math.random() - 100 // y position
       const width = Math.floor(i / N) / N * 0.5 // width, square side, diameter
+      // const width = 2 / ((i % 2) + 1) // width, square side, diameter
       const height = width // (i % N) / N * 10 // height
+      const rotation = 0 // rotation
+      const mirror = 0 // mirror
       // const corner_radius = 0 // corner radius
       // const corners = 0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
       // const inner_dia = 0 // — Inner diameter of the shape
@@ -114,7 +180,7 @@ function REGLApp(): JSX.Element {
       // const cut_size = 0 // — Size of the cut ( see corner radius )
 
       // LENGTH OF NUM_PARAMETERS
-      return [index, polarity, x, y, width, height]
+      return [symbol, index, polarity, x, y, width, height, rotation, mirror]
     }))
 
     // Uniforms extends {} = {},
@@ -125,6 +191,7 @@ function REGLApp(): JSX.Element {
 
     interface Uniforms {
       u_Transform: mat3,
+      u_InverseTransform: mat3,
       u_Resolution: vec2,
       u_Screen: vec2,
       u_Scale: number,
@@ -145,6 +212,7 @@ function REGLApp(): JSX.Element {
 
     interface Attributes {
       a_Position: vec2[],
+      a_Symbol: CustomAttributeConfig,
       a_Index: CustomAttributeConfig,
       a_Polarity: CustomAttributeConfig,
       a_X: CustomAttributeConfig,
@@ -152,6 +220,8 @@ function REGLApp(): JSX.Element {
       a_Width: CustomAttributeConfig,
       a_Height: CustomAttributeConfig,
       a_Color: CustomAttributeConfig,
+      a_Rotation: CustomAttributeConfig,
+      a_Mirror: CustomAttributeConfig,
     }
 
     const draw = REGL<Uniforms, Attributes, DrawProps>({
@@ -188,12 +258,14 @@ function REGLApp(): JSX.Element {
 
       uniforms: {
         u_Transform: () => transform,
+        u_InverseTransform: () => inverseTransform,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
         u_Screen: () => [window.screen.width * window.devicePixelRatio, window.screen.height * window.devicePixelRatio],
         u_Scale: () => scale,
         u_PixelSize: () => 3.9 / Math.pow(window.screen.width * window.devicePixelRatio * window.screen.height * window.devicePixelRatio, 0.5),
         u_OutlineMode: () => 0,
-        u_Color: [0.5, 0, 0.9]
+        u_Color: [0.5, 0, 0.9],
+        ...Object.entries(STANDARD_SYMBOLS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {})
       },
 
       attributes: {
@@ -206,7 +278,7 @@ function REGLApp(): JSX.Element {
           [+1, -1],
         ],
 
-        a_Index: {
+        a_Symbol: {
           // buffer: FEATURES_BUFFER,
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
           // buffer: REGL.prop<DrawProps, 'features'>('features'),
@@ -215,15 +287,16 @@ function REGLApp(): JSX.Element {
           divisor: 1
         },
 
-        a_Polarity: {
+        a_Index: {
           // buffer: FEATURES_BUFFER,
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          // buffer: REGL.prop<DrawProps, 'features'>('features'),
           stride: NUM_PARAMETERS * FLOAT_SIZE,
           offset: 1 * FLOAT_SIZE,
           divisor: 1
         },
 
-        a_X: {
+        a_Polarity: {
           // buffer: FEATURES_BUFFER,
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
           stride: NUM_PARAMETERS * FLOAT_SIZE,
@@ -231,7 +304,7 @@ function REGLApp(): JSX.Element {
           divisor: 1
         },
 
-        a_Y: {
+        a_X: {
           // buffer: FEATURES_BUFFER,
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
           stride: NUM_PARAMETERS * FLOAT_SIZE,
@@ -239,11 +312,19 @@ function REGLApp(): JSX.Element {
           divisor: 1
         },
 
-        a_Width: {
+        a_Y: {
           // buffer: FEATURES_BUFFER,
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
           stride: NUM_PARAMETERS * FLOAT_SIZE,
           offset: 4 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Width: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 5 * FLOAT_SIZE,
           divisor: 1
         },
 
@@ -252,7 +333,26 @@ function REGLApp(): JSX.Element {
           buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
           // buffer: REGL.prop<DrawProps, 'features'>('features'),
           stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 5 * FLOAT_SIZE,
+          offset: 6 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+
+        a_Rotation: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          // buffer: REGL.prop<DrawProps, 'features'>('features'),
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 7 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Mirror: {
+          // buffer: FEATURES_BUFFER,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          // buffer: REGL.prop<DrawProps, 'features'>('features'),
+          stride: NUM_PARAMETERS * FLOAT_SIZE,
+          offset: 8 * FLOAT_SIZE,
           divisor: 1
         },
 
@@ -262,7 +362,6 @@ function REGLApp(): JSX.Element {
           // buffer: (context, props: any) => props.color,
           divisor: 1 // one separate color for every triangle
         },
-
         // a_Polarity: (context, props: any) => props.polarity
       },
 
@@ -278,6 +377,7 @@ function REGLApp(): JSX.Element {
     //   })
 
     function redraw(force: boolean = false) {
+      // console.log(scale)
       if (!dirty && !force) return
       dirty = false
       // REGL.clear({
