@@ -4,6 +4,8 @@ import SymbolFrag from '../shaders/Symbol.frag'
 import SymbolVert from '../shaders/Symbol.vert'
 import regl from 'regl'
 import { mat2, mat2d, mat3, mat4, vec2, vec3 } from "gl-matrix";
+import ndarray from 'ndarray'
+// import glsl from 'glslify'
 
 const STANDARD_SYMBOLS = {
   Round: 0,
@@ -53,17 +55,33 @@ const STANDARD_SYMBOLS = {
   Hole: 44,
 } as const;
 
+const PARAMETERS = {
+  symbol: 0,
+  index: 1,
+  polarity: 2,
+  x: 3,
+  y: 4,
+  width: 5,
+  height: 6,
+  rotation: 7,
+  mirror: 8,
+  corner_radius: 9,
+  corners: 10,
+  outer_dia: 11,
+  inner_dia: 12,
+  line_width: 13,
+  angle: 14,
+  gap: 15,
+  num_spokes: 16,
+  round: 17,
+  cut_size: 18,
+} as const;
+
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
-  // N == Number of Shapes ^ 2
-  // 50 ~ 2,500 shapes
-  // 100 ~ 10,000 shapes
-  // 225 ~ 50,000 shapes
-  // 320 ~ 100,000 shapes
-  // 700 ~ 500,000 shapes
-  // 1000 ~ 1,000,000 shapes
-  const N = 300
+  // N == Number of Shapes
+  const N = 2000
 
   const FPS = 60
   const FPSMS = 1000 / FPS
@@ -111,6 +129,8 @@ function REGLApp(): JSX.Element {
     //   `${Math.round(inverseTransform[6] * 100) / 100}, ${Math.round(inverseTransform[7] * 100) / 100}, ${Math.round(inverseTransform[8] * 100) / 100
     //   }`
     // )
+
+    // console.log(s)
   }
 
   function scaleAtPoint(x: number, y: number, s: number) {
@@ -136,72 +156,87 @@ function REGLApp(): JSX.Element {
   React.useEffect(() => {
     const REGL = regl({
       container: reglRef.current,
-      extensions: ['angle_instanced_arrays']
+      extensions: ['angle_instanced_arrays', 'OES_texture_float'],
+      attributes: { antialias: false }
     })
 
-    // console.log(REGL.limits)
+    console.log(REGL.limits)
 
     const colorBuffer1 = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: N * N * 3 * FLOAT_SIZE
+      length: N * 3,
+      data: Array(N).fill(0).map((_, i) => {
+        var r = Math.floor(i / N)
+        var g = (i % N) / N
+        return [r, g, r * g + 0.9]
+      }
+      )
     })
-    colorBuffer1.subdata(Array(N * N).fill(0).map((_, i) => {
-      var r = Math.floor(i / N) / N
-      var g = (i % N) / N
-      return [r, g, r * g + 0.9]
-    }))
 
-    const NUM_PARAMETERS = 9
-    const FEATURES_BUFFER = REGL.buffer({
+    const NUM_PARAMETERS = 17
+    // const MAX_TEXTURE_SIZE = REGL.limits.maxTextureSize
+
+    const NEW_ARRAY = new Float32Array(N * NUM_PARAMETERS).map((_, i) => {
+      switch (i % NUM_PARAMETERS) {
+        case PARAMETERS.symbol: return (Math.ceil(i / NUM_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
+        case PARAMETERS.index: return Math.ceil(i / NUM_PARAMETERS) / N
+        case PARAMETERS.polarity: return 1 //(i % 2) // polarity
+        case PARAMETERS.x: return Math.random() * 20 // x position
+        case PARAMETERS.y: return Math.random() * 20 // y position
+        case PARAMETERS.width: return 0.5 // width, square side, diameter
+        case PARAMETERS.height: return 0.5 // height
+        case PARAMETERS.rotation: return 0.0 // rotation
+        case PARAMETERS.mirror: return 0 // mirror
+        case PARAMETERS.corner_radius: return 0.1 // corner radius
+        case PARAMETERS.corners: 0//return Math.round(Math.random() * 16)//0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        case PARAMETERS.outer_dia: return 0.2 // — Outer diameter of the shape
+        case PARAMETERS.inner_dia: return 0.19 // — Inner diameter of the shape
+        case PARAMETERS.line_width: return 0.01 // — Line width of the shape (applies to the whole shape)
+        case PARAMETERS.angle: return 30 // — Angle of the spoke
+        case PARAMETERS.gap: return 0.1 // — Gap angle from 0 degrees
+        case PARAMETERS.num_spokes: return 4 // — Number of spokes
+        // case 14: return 0 // — Gap angle from 0 degrees
+        // case 15: return 0 // — Size of spoke gap
+        // case 16: return 0 // — Number of spokes
+        // case 17: return 0 // —r|s == 1|0 — Support for rounded or straight corners
+        // case 18: return 0 // — Size of the cut ( see corner radius )
+        default: return 0
+      }
+    })
+
+    // const LOOKUP_ARRAY: number[][] = []
+    // for (let i = 0; i < N; i++) {
+    //   LOOKUP_ARRAY.push([0, i])
+    //   // for (let j = 0; j < NUM_PARAMETERS; j++) {
+    //   // }
+    // }
+    const LOOKUP_ARRAY = Array(N).fill(0).map((_, i) => i)
+    console.log(LOOKUP_ARRAY)
+    const LOOKUP_BUFFER = REGL.buffer({
       usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: N * N * NUM_PARAMETERS * FLOAT_SIZE
+      length: N,
+      data: LOOKUP_ARRAY
     })
-    FEATURES_BUFFER.subdata(Array(N * N).fill(0).map((_, i) => {
-      const symbol = (i % 2) == 1 ? STANDARD_SYMBOLS.Round : STANDARD_SYMBOLS.Square // symbol
-      const index = i / (N * N)// index
-      const polarity = (i % 2) // polarity
-      const x = 200 * Math.random() // x position
-      const y = 200 * Math.random() - 100 // y position
-      const width = Math.floor(i / N) / N * 0.5 // width, square side, diameter
-      // const width = 2 / ((i % 2) + 1) // width, square side, diameter
-      const height = width // (i % N) / N * 10 // height
-      const rotation = 0 // rotation
-      const mirror = 0 // mirror
-      // const corner_radius = 0 // corner radius
-      // const corners = 0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-      // const inner_dia = 0 // — Inner diameter of the shape
-      // const line_width = 0 // — Line width of the shape (applies to the whole shape)
-      // const angle = 0 // — Gap angle from 0 degrees
-      // const gap = 0 // — Size of spoke gap
-      // const num_spokes = 0 // — Number of spokes
-      // const round = 0 // —r|s == 1|0 — Support for rounded or straight corners
-      // const cut_size = 0 // — Size of the cut ( see corner radius )
 
-      // LENGTH OF NUM_PARAMETERS
-      return [symbol, index, polarity, x, y, width, height, rotation, mirror]
-    }))
+    // console.log(LOOKUP_BUFFER.length)
 
-    // Uniforms extends {} = {},
-    // Attributes extends {} = {},
-    // Props extends {} = {},
-    // OwnContext extends {} = {},
-    // ParentContext extends REGL.DefaultContext = REGL.DefaultContext
 
-    interface Uniforms {
-      u_Transform: mat3,
-      u_InverseTransform: mat3,
-      u_Resolution: vec2,
-      u_Screen: vec2,
-      u_Scale: number,
-      u_PixelSize: number,
-      u_OutlineMode: number,
-      u_Color: vec3
-    }
+    // const FEATURES_NDARRAY = ndarray(NEW_ARRAY, [NUM_PARAMETERS, N])
+    // console.log(FEATURES_NDARRAY)
+    const FEATURES_TEXTURE = REGL.texture({
+      width: NUM_PARAMETERS,
+      height: N,
+      type: 'float',
+      format: 'luminance',
+      data: NEW_ARRAY,
+    })
+    // console.log(FEATURES_NDARRAY)
+    console.log(FEATURES_TEXTURE.width, FEATURES_TEXTURE.height)
 
     interface DrawProps {
-      features: regl.Buffer
+      features: regl.Texture2D
     }
 
     // interface CustomAttributeConfig extends regl.AttributeConfig {}
@@ -210,18 +245,23 @@ function REGLApp(): JSX.Element {
       buffer: regl.Buffer | undefined | null | false | ((context: regl.DefaultContext, props: DrawProps) => regl.Buffer) | regl.DynamicVariable<regl.Buffer>
     }
 
+    interface Uniforms {
+      u_Features: regl.Texture2D,
+      u_FeaturesDimensions: vec2,
+      u_Transform: mat3,
+      u_InverseTransform: mat3,
+      u_Resolution: vec2,
+      u_Screen: vec2,
+      u_Scale: number,
+      u_PixelSize: number,
+      u_OutlineMode: boolean,
+      u_Color: vec3
+    }
+
     interface Attributes {
       a_Position: vec2[],
-      a_Symbol: CustomAttributeConfig,
-      a_Index: CustomAttributeConfig,
-      a_Polarity: CustomAttributeConfig,
-      a_X: CustomAttributeConfig,
-      a_Y: CustomAttributeConfig,
-      a_Width: CustomAttributeConfig,
-      a_Height: CustomAttributeConfig,
+      a_TexCoord: CustomAttributeConfig,
       a_Color: CustomAttributeConfig,
-      a_Rotation: CustomAttributeConfig,
-      a_Mirror: CustomAttributeConfig,
     }
 
     const draw = REGL<Uniforms, Attributes, DrawProps>({
@@ -257,18 +297,30 @@ function REGLApp(): JSX.Element {
       },
 
       uniforms: {
+        u_Features: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+        u_FeaturesDimensions: (_context: regl.DefaultContext, props: DrawProps) => [props.features.width, props.features.height],
         u_Transform: () => transform,
         u_InverseTransform: () => inverseTransform,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
         u_Screen: () => [window.screen.width * window.devicePixelRatio, window.screen.height * window.devicePixelRatio],
         u_Scale: () => scale,
-        u_PixelSize: () => 3.9 / Math.pow(window.screen.width * window.devicePixelRatio * window.screen.height * window.devicePixelRatio, 0.5),
-        u_OutlineMode: () => 0,
+        u_PixelSize: () => 3.6 / Math.pow(window.screen.width * window.devicePixelRatio * window.screen.height * window.devicePixelRatio, 0.5),
+        u_OutlineMode: () => false,
         u_Color: [0.5, 0, 0.9],
-        ...Object.entries(STANDARD_SYMBOLS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {})
+        ...Object.entries(STANDARD_SYMBOLS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
+        ...Object.entries(PARAMETERS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {})
       },
 
       attributes: {
+
+        // Not a real prop, just testing
+        a_Color: {
+          buffer: colorBuffer1,
+          // buffer: REGL.prop('color'),
+          // buffer: (context, props: any) => props.color,
+          divisor: 1 // one separate color for every triangle
+        },
+
         a_Position: () => [
           [-1, -1],
           [+1, -1],
@@ -278,97 +330,19 @@ function REGLApp(): JSX.Element {
           [+1, -1],
         ],
 
-        a_Symbol: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          // buffer: REGL.prop<DrawProps, 'features'>('features'),
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
+        a_TexCoord: {
+          buffer: () => LOOKUP_BUFFER,
+          stride: 1 * FLOAT_SIZE,
           offset: 0 * FLOAT_SIZE,
-          divisor: 1
+          divisor: 1,
+          // size: 1
         },
-
-        a_Index: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          // buffer: REGL.prop<DrawProps, 'features'>('features'),
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 1 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Polarity: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 2 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_X: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 3 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Y: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 4 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Width: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 5 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Height: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          // buffer: REGL.prop<DrawProps, 'features'>('features'),
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 6 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-
-        a_Rotation: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          // buffer: REGL.prop<DrawProps, 'features'>('features'),
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 7 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Mirror: {
-          // buffer: FEATURES_BUFFER,
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-          // buffer: REGL.prop<DrawProps, 'features'>('features'),
-          stride: NUM_PARAMETERS * FLOAT_SIZE,
-          offset: 8 * FLOAT_SIZE,
-          divisor: 1
-        },
-
-        a_Color: {
-          buffer: colorBuffer1,
-          // buffer: REGL.prop('color'),
-          // buffer: (context, props: any) => props.color,
-          divisor: 1 // one separate color for every triangle
-        },
-        // a_Polarity: (context, props: any) => props.polarity
       },
 
       primitive: 'triangle strip',
       count: 6,
       offset: 0,
-      instances: N * N
+      instances: N
     })
 
     // const tick = REGL.frame(function () {
@@ -385,7 +359,7 @@ function REGLApp(): JSX.Element {
       //   depth: 1
       // })
       draw({
-        features: FEATURES_BUFFER,
+        features: FEATURES_TEXTURE,
       })
       // REGL.clear({
       //   depth: 1,
@@ -399,7 +373,7 @@ function REGLApp(): JSX.Element {
     // })
     scaleAtPoint(0, 0, scale)
     draw({
-      features: FEATURES_BUFFER,
+      features: FEATURES_TEXTURE,
     })
 
     function randomizeColorBuffer1() {

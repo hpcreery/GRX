@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { comlink } from 'vite-plugin-comlink'
 import glsl from 'vite-plugin-glsl'
+import glslify from 'rollup-plugin-glslify'
 
 export default defineConfig({
   base: './',
@@ -19,9 +20,9 @@ export default defineConfig({
   build: {
     outDir: resolve('out/web')
   },
-  plugins: [react(), comlink(), glsl()],
+  plugins: [react(), comlink(), glslify()],
   worker: {
     format: 'es',
-    plugins: [comlink(), glsl()]
+    plugins: [comlink(), glslify()]
   }
 })
