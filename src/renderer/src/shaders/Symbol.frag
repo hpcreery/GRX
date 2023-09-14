@@ -52,10 +52,10 @@ uniform struct shapes {
 
 uniform struct parameters {
   int symbol;
-  int index;
-  int polarity;
-  int x;
-  int y;
+  // int index;
+  // int polarity;
+  // int x;
+  // int y;
   int width;
   int height;
   int rotation;

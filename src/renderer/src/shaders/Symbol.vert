@@ -51,10 +51,6 @@ uniform struct shapes {
 
 uniform struct parameters {
   int symbol;
-  int index;
-  int polarity;
-  int x;
-  int y;
   int width;
   int height;
   int rotation;
@@ -78,9 +74,17 @@ uniform vec3 u_Color;
 uniform sampler2D u_Features;
 uniform vec2 u_FeaturesDimensions;
 
-attribute float a_TexCoord;
+attribute float a_SymNum;
 attribute vec2 a_Position;
 attribute vec3 a_Color;
+attribute float a_X;
+attribute float a_Y;
+attribute float a_Index;
+attribute float a_Width;
+attribute float a_Height;
+attribute float a_Polarity;
+attribute float a_Rotation;
+attribute float a_Mirror;
 
 varying mat3 v_Transform;
 varying float v_Symbol;
@@ -109,10 +113,22 @@ mat2 rotate2d(float _angle) {
 }
 
 float pullParam(int offset) {
-  vec2 texcoord = (vec2(float(offset), a_TexCoord) + 0.5) / u_FeaturesDimensions;
+  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_FeaturesDimensions;
   vec4 pixelValue = texture2D(u_Features, texcoord);
   return pixelValue.x;
 }
+
+// float pullParam(float offset) {
+//   vec2 texcoord = (vec2(a_SymNum, offset) + 0.5) / u_FeaturesDimensions;
+//   vec4 pixelValue = texture2D(u_Features, texcoord);
+//   return pixelValue.x;
+// }
+
+// float pullParam(float offset) {
+//   vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_FeaturesDimensions;
+//   vec4 pixelValue = texture2D(u_Features, texcoord);
+//   return pixelValue.x;
+// }
 
 vec4 texelFetch(vec2 pixelCoord) {
   vec2 uv = (pixelCoord + 0.5) / u_FeaturesDimensions;
@@ -124,10 +140,17 @@ void main() {
   float Aspect = u_Resolution.y / u_Resolution.x;
 
   vec2 Size = vec2(pullParam(u_Parameters.width), pullParam(u_Parameters.height));
-  float Rotation = pullParam(u_Parameters.rotation);
-  float Mirror = pullParam(u_Parameters.mirror);
-  vec2 Location = vec2(pullParam(u_Parameters.x), pullParam(u_Parameters.y));
-  float Index = pullParam(u_Parameters.index);
+  // float Rotation = pullParam(u_Parameters.rotation);
+  // float Mirror = pullParam(u_Parameters.mirror);
+  // vec2 Location = vec2(pullParam(u_Parameters.x), pullParam(u_Parameters.y));
+  // float Index = pullParam(u_Parameters.index);
+
+  // vec2 Size = vec2(a_Width, a_Height);
+  float Rotation = a_Rotation;
+  float Mirror = a_Mirror;
+  vec2 Location = vec2(a_X, a_Y);
+  float Index = a_Index;
+
 
   // vec2 SizedPosition = a_Position * vec2(a_Width / 2.0, a_Height / 2.0);
   vec2 SizedPosition = a_Position * (Size / 2.0);
@@ -141,9 +164,10 @@ void main() {
   v_Aspect = Aspect;
   v_Rotation = Rotation;
   v_Mirror = Mirror;
+  v_Symbol = pullParam(0);
   v_Symbol = pullParam(u_Parameters.symbol);
   v_Color = a_Color;
-  v_Polarity = pullParam(u_Parameters.polarity);
+  v_Polarity = a_Polarity;
   v_Width = Size.x;
   v_Height = Size.y;
   v_Position = FinalPosition.xy;

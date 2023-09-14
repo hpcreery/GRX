@@ -57,31 +57,27 @@ const STANDARD_SYMBOLS = {
 
 const PARAMETERS = {
   symbol: 0,
-  index: 1,
-  polarity: 2,
-  x: 3,
-  y: 4,
-  width: 5,
-  height: 6,
-  rotation: 7,
-  mirror: 8,
-  corner_radius: 9,
-  corners: 10,
-  outer_dia: 11,
-  inner_dia: 12,
-  line_width: 13,
-  angle: 14,
-  gap: 15,
-  num_spokes: 16,
-  round: 17,
-  cut_size: 18,
+  width: 1,
+  height: 2,
+  rotation: 3,
+  mirror: 4,
+  corner_radius: 5,
+  corners: 6,
+  outer_dia: 7,
+  inner_dia: 8,
+  line_width: 9,
+  angle: 10,
+  gap: 11,
+  num_spokes: 12,
+  round: 13,
+  cut_size: 14,
 } as const;
 
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
   // N == Number of Shapes
-  const N = 2000
+  const N = 9000
 
   const FPS = 60
   const FPSMS = 1000 / FPS
@@ -174,16 +170,95 @@ function REGLApp(): JSX.Element {
       )
     })
 
-    const NUM_PARAMETERS = 17
+    const NUM_PAD_RECORD_PARAMETERS = 8
+    const PAD_RECORDS_ARRAY = Array(N * NUM_PAD_RECORD_PARAMETERS).fill(0).map((_, i) => {
+      // index of feature
+      const index = i / (N)
+      // Center point.
+      const x = Math.random() * 100
+      const y = Math.random() * 100
+      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+      // const sym_num = STANDARD_SYMBOLS.Square
+      const sym_num = i
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      const resize_factor = 0
+      // Polarity. 0 = negative, 1 = positive
+      const polarity = 1
+      // Pad orientation (degrees)
+      const rotation = 0
+      // 0 = no mirror, 1 = mirror
+      const mirror = 0
+      return [index, x, y, sym_num, resize_factor, polarity, rotation, mirror]
+    })
+
+    const PAD_RECORDS_BUFFER = REGL.buffer({
+      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: N * NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+      data: PAD_RECORDS_ARRAY
+    })
+    // console.log(FEATURES_BUFFER.length)
+
+    // const NUM_LINE_PARAMETERS = 7
+    // const LINE_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
+    //   // index of feature
+    //   const index = i / (N)
+    //   // Start point.
+    //   const x1 = Math.random()
+    //   const y1 = Math.random()
+    //   // End point.
+    //   const x2 = Math.random()
+    //   const y2 = Math.random()
+    //   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    //   const sym_num = STANDARD_SYMBOLS.Square
+    //   // Polarity. 0 = negative, 1 = positive
+    //   const polarity = 1
+    //   return [index, x1, y1, x2, y2, sym_num, polarity]
+    // })
+
+    // const LINE_RECORDS_BUFFER = REGL.buffer({
+    //   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+    //   type: 'float',
+    //   length: N * NUM_LINE_PARAMETERS * FLOAT_SIZE,
+    //   data: LINE_RECORDS_ARRAY
+    // })
+
+    // const NUM_ARC_PARAMETERS = 10
+    // const ARC_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
+    //   // index of feature
+    //   const index = i / (N)
+    //   // Start point.
+    //   const x1 = Math.random()
+    //   const y1 = Math.random()
+    //   // End point.
+    //   const x2 = Math.random()
+    //   const y2 = Math.random()
+    //   // Center point.
+    //   const x = Math.random()
+    //   const y = Math.random()
+    //   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    //   const sym_num = STANDARD_SYMBOLS.Square
+    //   // Polarity. 0 = negative, 1 = positive
+    //   const polarity = 1
+    //   // Clockwise. 0 = counterclockwise, 1 = clockwise
+    //   const clockwise = 0
+    //   return [index, x1, y1, x2, y2, x, y, sym_num, polarity, clockwise]
+    // })
+
+    // const ARC_RECORDS_BUFFER = REGL.buffer({
+    //   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+    //   type: 'float',
+    //   length: N * NUM_ARC_PARAMETERS * FLOAT_SIZE,
+    //   data: ARC_RECORDS_ARRAY
+    // })
+
+
+    const NUM_SYMBOL_PARAMETERS = 13
     // const MAX_TEXTURE_SIZE = REGL.limits.maxTextureSize
 
-    const NEW_ARRAY = new Float32Array(N * NUM_PARAMETERS).map((_, i) => {
-      switch (i % NUM_PARAMETERS) {
-        case PARAMETERS.symbol: return (Math.ceil(i / NUM_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
-        case PARAMETERS.index: return Math.ceil(i / NUM_PARAMETERS) / N
-        case PARAMETERS.polarity: return 1 //(i % 2) // polarity
-        case PARAMETERS.x: return Math.random() * 20 // x position
-        case PARAMETERS.y: return Math.random() * 20 // y position
+    const NEW_ARRAY = new Float32Array(N * NUM_SYMBOL_PARAMETERS).map((_, i) => {
+      switch (i % NUM_SYMBOL_PARAMETERS) {
+        case PARAMETERS.symbol: return (Math.ceil(i / NUM_SYMBOL_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
         case PARAMETERS.width: return 0.5 // width, square side, diameter
         case PARAMETERS.height: return 0.5 // height
         case PARAMETERS.rotation: return 0.0 // rotation
@@ -205,28 +280,13 @@ function REGLApp(): JSX.Element {
       }
     })
 
-    // const LOOKUP_ARRAY: number[][] = []
-    // for (let i = 0; i < N; i++) {
-    //   LOOKUP_ARRAY.push([0, i])
-    //   // for (let j = 0; j < NUM_PARAMETERS; j++) {
-    //   // }
-    // }
-    const LOOKUP_ARRAY = Array(N).fill(0).map((_, i) => i)
-    console.log(LOOKUP_ARRAY)
-    const LOOKUP_BUFFER = REGL.buffer({
-      usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: N,
-      data: LOOKUP_ARRAY
-    })
-
     // console.log(LOOKUP_BUFFER.length)
 
 
     // const FEATURES_NDARRAY = ndarray(NEW_ARRAY, [NUM_PARAMETERS, N])
     // console.log(FEATURES_NDARRAY)
     const FEATURES_TEXTURE = REGL.texture({
-      width: NUM_PARAMETERS,
+      width: NUM_SYMBOL_PARAMETERS,
       height: N,
       type: 'float',
       format: 'luminance',
@@ -236,7 +296,8 @@ function REGLApp(): JSX.Element {
     console.log(FEATURES_TEXTURE.width, FEATURES_TEXTURE.height)
 
     interface DrawProps {
-      features: regl.Texture2D
+      features: regl.Buffer
+      symbols: regl.Texture2D
     }
 
     // interface CustomAttributeConfig extends regl.AttributeConfig {}
@@ -258,10 +319,22 @@ function REGLApp(): JSX.Element {
       u_Color: vec3
     }
 
+    // [index, x, y, sym_num, resize_factor, polarity, rotation, mirror]
     interface Attributes {
-      a_Position: vec2[],
-      a_TexCoord: CustomAttributeConfig,
       a_Color: CustomAttributeConfig,
+      a_SymNum: CustomAttributeConfig,
+      a_Position: vec2[],
+      a_X: CustomAttributeConfig,
+      a_Y: CustomAttributeConfig,
+      a_ResizeFactor: CustomAttributeConfig,
+      // a_Symbol: CustomAttributeConfig,
+      a_Index: CustomAttributeConfig,
+      a_Polarity: CustomAttributeConfig,
+      // a_Location: CustomAttributeConfig,
+      a_Rotation: CustomAttributeConfig,
+      a_Mirror: CustomAttributeConfig,
+      // a_Width: CustomAttributeConfig,
+      // a_Height: CustomAttributeConfig,
     }
 
     const draw = REGL<Uniforms, Attributes, DrawProps>({
@@ -297,8 +370,8 @@ function REGLApp(): JSX.Element {
       },
 
       uniforms: {
-        u_Features: (_context: regl.DefaultContext, props: DrawProps) => props.features,
-        u_FeaturesDimensions: (_context: regl.DefaultContext, props: DrawProps) => [props.features.width, props.features.height],
+        u_Features: (_context: regl.DefaultContext, props: DrawProps) => props.symbols,
+        u_FeaturesDimensions: (_context: regl.DefaultContext, props: DrawProps) => [props.symbols.width, props.symbols.height],
         u_Transform: () => transform,
         u_InverseTransform: () => inverseTransform,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
@@ -330,13 +403,74 @@ function REGLApp(): JSX.Element {
           [+1, -1],
         ],
 
-        a_TexCoord: {
-          buffer: () => LOOKUP_BUFFER,
-          stride: 1 * FLOAT_SIZE,
+
+
+        // [index, x, y, sym_num, resize_factor, polarity, rotation, mirror]
+        // a_Symbol: {
+        //   buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+        //   stride: NUM_PARAMETERS * FLOAT_SIZE,
+        //   offset: 0 * FLOAT_SIZE,
+        //   divisor: 1,
+        // },
+
+        a_Index: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 0 * FLOAT_SIZE,
-          divisor: 1,
-          // size: 1
+          divisor: 1
         },
+
+        a_X: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 1 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Y: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 2 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_SymNum: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 3 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_ResizeFactor: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 4 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Polarity: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 5 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Rotation: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 6 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+        a_Mirror: {
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
+          offset: 7 * FLOAT_SIZE,
+          divisor: 1
+        },
+
+
+
       },
 
       primitive: 'triangle strip',
@@ -359,7 +493,8 @@ function REGLApp(): JSX.Element {
       //   depth: 1
       // })
       draw({
-        features: FEATURES_TEXTURE,
+        symbols: FEATURES_TEXTURE,
+        features: PAD_RECORDS_BUFFER
       })
       // REGL.clear({
       //   depth: 1,
@@ -373,7 +508,8 @@ function REGLApp(): JSX.Element {
     // })
     scaleAtPoint(0, 0, scale)
     draw({
-      features: FEATURES_TEXTURE,
+      symbols: FEATURES_TEXTURE,
+      features: PAD_RECORDS_BUFFER
     })
 
     function randomizeColorBuffer1() {
