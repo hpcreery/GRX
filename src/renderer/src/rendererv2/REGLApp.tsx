@@ -55,23 +55,41 @@ const STANDARD_SYMBOLS = {
   Hole: 44,
 } as const;
 
-const PARAMETERS = {
+
+const SYMBOL_PARAMETERS = {
   symbol: 0,
   width: 1,
   height: 2,
-  rotation: 3,
-  mirror: 4,
-  corner_radius: 5,
-  corners: 6,
-  outer_dia: 7,
-  inner_dia: 8,
-  line_width: 9,
-  angle: 10,
-  gap: 11,
-  num_spokes: 12,
-  round: 13,
-  cut_size: 14,
+  corner_radius: 3,
+  corners: 4,
+  outer_dia: 5,
+  inner_dia: 6,
+  line_width: 7,
+  angle: 8,
+  gap: 9,
+  num_spokes: 10,
+  round: 11,
+  cut_size: 12,
 } as const;
+
+// const NUM_SYMBOL_PARAMETERS = 13
+const NUM_SYMBOL_PARAMETERS = Object.keys(SYMBOL_PARAMETERS).length
+
+const SYMBOL_PARAMETERS_ORDER = [
+  "symbol",
+  "width",
+  "height",
+  "corner_radius",
+  "corners",
+  "outer_dia",
+  "inner_dia",
+  "line_width",
+  "angle",
+  "gap",
+  "num_spokes",
+  "round",
+  "cut_size",
+] as const;
 
 function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
@@ -175,8 +193,8 @@ function REGLApp(): JSX.Element {
       // index of feature
       const index = i / (N)
       // Center point.
-      const x = Math.random() * 100
-      const y = Math.random() * 100
+      const x = Math.random() * 50
+      const y = Math.random() * 50
       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
       // const sym_num = STANDARD_SYMBOLS.Square
       const sym_num = i
@@ -253,50 +271,68 @@ function REGLApp(): JSX.Element {
     // })
 
 
-    const NUM_SYMBOL_PARAMETERS = 13
     // const MAX_TEXTURE_SIZE = REGL.limits.maxTextureSize
 
-    const NEW_ARRAY = new Float32Array(N * NUM_SYMBOL_PARAMETERS).map((_, i) => {
-      switch (i % NUM_SYMBOL_PARAMETERS) {
-        case PARAMETERS.symbol: return (Math.ceil(i / NUM_SYMBOL_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
-        case PARAMETERS.width: return 0.5 // width, square side, diameter
-        case PARAMETERS.height: return 0.5 // height
-        case PARAMETERS.rotation: return 0.0 // rotation
-        case PARAMETERS.mirror: return 0 // mirror
-        case PARAMETERS.corner_radius: return 0.1 // corner radius
-        case PARAMETERS.corners: 0//return Math.round(Math.random() * 16)//0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-        case PARAMETERS.outer_dia: return 0.2 // — Outer diameter of the shape
-        case PARAMETERS.inner_dia: return 0.19 // — Inner diameter of the shape
-        case PARAMETERS.line_width: return 0.01 // — Line width of the shape (applies to the whole shape)
-        case PARAMETERS.angle: return 30 // — Angle of the spoke
-        case PARAMETERS.gap: return 0.1 // — Gap angle from 0 degrees
-        case PARAMETERS.num_spokes: return 4 // — Number of spokes
-        // case 14: return 0 // — Gap angle from 0 degrees
-        // case 15: return 0 // — Size of spoke gap
-        // case 16: return 0 // — Number of spokes
-        // case 17: return 0 // —r|s == 1|0 — Support for rounded or straight corners
-        // case 18: return 0 // — Size of the cut ( see corner radius )
-        default: return 0
-      }
-    })
+    // const SYMBOLS_ARRAY = new Float32Array(N * NUM_SYMBOL_PARAMETERS).map((_, i) => {
+    //   switch (i % NUM_SYMBOL_PARAMETERS) {
+    //     // case PARAMETERS.symbol: return (Math.ceil(i / NUM_SYMBOL_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
+    //     // case PARAMETERS.symbol: return Math.ceil(i / NUM_SYMBOL_PARAMETERS) % Object.keys(STANDARD_SYMBOLS).length // symbol
+    //     case SYMBOL_PARAMETERS.symbol: return 4
+    //     case SYMBOL_PARAMETERS.width: return 1.5 // width, square side, diameter
+    //     case SYMBOL_PARAMETERS.height: return 0.5 // height
+    //     case SYMBOL_PARAMETERS.corner_radius: return 0.2 // corner radius
+    //     case SYMBOL_PARAMETERS.corners: 15 //return Math.round(Math.random() * 16)//0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    //     case SYMBOL_PARAMETERS.outer_dia: return 0.5 // — Outer diameter of the shape
+    //     case SYMBOL_PARAMETERS.inner_dia: return 0.4 // — Inner diameter of the shape
+    //     case SYMBOL_PARAMETERS.line_width: return 0.1 // — Line width of the shape (applies to the whole shape)
+    //     case SYMBOL_PARAMETERS.angle: return 30 // — Angle of the spoke
+    //     case SYMBOL_PARAMETERS.gap: return 0.1 // — Gap angle from 0 degrees
+    //     case SYMBOL_PARAMETERS.num_spokes: return 4 // — Number of spokes
+    //     // case 14: return 0 // — Gap angle from 0 degrees
+    //     // case 15: return 0 // — Size of spoke gap
+    //     // case 16: return 0 // — Number of spokes
+    //     // case 17: return 0 // —r|s == 1|0 — Support for rounded or straight corners
+    //     // case 18: return 0 // — Size of the cut ( see corner radius )
+    //     default: return 0
+    //   }
+    // })
+
+    const SYMBOLS_ARRAY2 = new Array(N).fill(0).map((_, i) => {
+      // STANDARD_SYMBOLS.
+      return [
+        23, // symbol
+        0.5, // width, square side, diameter
+        0.5, // height
+        0.1, // corner radius
+        15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        0.5, // — Outer diameter of the shape
+        0.4, // — Inner diameter of the shape
+        0.03, // — Line width of the shape (applies to the whole shape)
+        45, // — Angle of the spoke
+        0.1, // — Gap angle from 0 degrees
+        4, // — Number of spokes
+        0, // —r|s == 1|0 — Support for rounded or straight corners
+        0, // — Size of the cut ( see corner radius )
+      ]
+    }).flat()
 
     // console.log(LOOKUP_BUFFER.length)
 
 
     // const FEATURES_NDARRAY = ndarray(NEW_ARRAY, [NUM_PARAMETERS, N])
     // console.log(FEATURES_NDARRAY)
-    const FEATURES_TEXTURE = REGL.texture({
+    const SYMBOLS_TEXTURE = REGL.texture({
       width: NUM_SYMBOL_PARAMETERS,
       height: N,
       type: 'float',
       format: 'luminance',
-      data: NEW_ARRAY,
+      data: SYMBOLS_ARRAY2,
     })
     // console.log(FEATURES_NDARRAY)
-    console.log(FEATURES_TEXTURE.width, FEATURES_TEXTURE.height)
+    console.log(SYMBOLS_TEXTURE.width, SYMBOLS_TEXTURE.height)
 
     interface DrawProps {
-      features: regl.Buffer
+      records: regl.Buffer
       symbols: regl.Texture2D
     }
 
@@ -307,8 +343,8 @@ function REGLApp(): JSX.Element {
     }
 
     interface Uniforms {
-      u_Features: regl.Texture2D,
-      u_FeaturesDimensions: vec2,
+      u_SymbolsTexture: regl.Texture2D,
+      u_SymbolsTextureDimensions: vec2,
       u_Transform: mat3,
       u_InverseTransform: mat3,
       u_Resolution: vec2,
@@ -327,15 +363,13 @@ function REGLApp(): JSX.Element {
       a_X: CustomAttributeConfig,
       a_Y: CustomAttributeConfig,
       a_ResizeFactor: CustomAttributeConfig,
-      // a_Symbol: CustomAttributeConfig,
       a_Index: CustomAttributeConfig,
       a_Polarity: CustomAttributeConfig,
-      // a_Location: CustomAttributeConfig,
       a_Rotation: CustomAttributeConfig,
       a_Mirror: CustomAttributeConfig,
-      // a_Width: CustomAttributeConfig,
-      // a_Height: CustomAttributeConfig,
     }
+
+    console.log(Object.entries(SYMBOL_PARAMETERS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}))
 
     const draw = REGL<Uniforms, Attributes, DrawProps>({
       frag: SymbolFrag,
@@ -370,8 +404,8 @@ function REGLApp(): JSX.Element {
       },
 
       uniforms: {
-        u_Features: (_context: regl.DefaultContext, props: DrawProps) => props.symbols,
-        u_FeaturesDimensions: (_context: regl.DefaultContext, props: DrawProps) => [props.symbols.width, props.symbols.height],
+        u_SymbolsTexture: (_context: regl.DefaultContext, props: DrawProps) => props.symbols,
+        u_SymbolsTextureDimensions: (_context: regl.DefaultContext, props: DrawProps) => [props.symbols.width, props.symbols.height],
         u_Transform: () => transform,
         u_InverseTransform: () => inverseTransform,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
@@ -381,7 +415,7 @@ function REGLApp(): JSX.Element {
         u_OutlineMode: () => false,
         u_Color: [0.5, 0, 0.9],
         ...Object.entries(STANDARD_SYMBOLS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
-        ...Object.entries(PARAMETERS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {})
+        ...Object.entries(SYMBOL_PARAMETERS).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {})
       },
 
       attributes: {
@@ -414,56 +448,56 @@ function REGLApp(): JSX.Element {
         // },
 
         a_Index: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 0 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_X: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 1 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_Y: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 2 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 3 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_ResizeFactor: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 4 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 5 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_Rotation: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 6 * FLOAT_SIZE,
           divisor: 1
         },
 
         a_Mirror: {
-          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.features,
+          buffer: (_context: regl.DefaultContext, props: DrawProps) => props.records,
           stride: NUM_PAD_RECORD_PARAMETERS * FLOAT_SIZE,
           offset: 7 * FLOAT_SIZE,
           divisor: 1
@@ -493,8 +527,8 @@ function REGLApp(): JSX.Element {
       //   depth: 1
       // })
       draw({
-        symbols: FEATURES_TEXTURE,
-        features: PAD_RECORDS_BUFFER
+        symbols: SYMBOLS_TEXTURE,
+        records: PAD_RECORDS_BUFFER
       })
       // REGL.clear({
       //   depth: 1,
@@ -508,8 +542,8 @@ function REGLApp(): JSX.Element {
     // })
     scaleAtPoint(0, 0, scale)
     draw({
-      symbols: FEATURES_TEXTURE,
-      features: PAD_RECORDS_BUFFER
+      symbols: SYMBOLS_TEXTURE,
+      records: PAD_RECORDS_BUFFER
     })
 
     function randomizeColorBuffer1() {

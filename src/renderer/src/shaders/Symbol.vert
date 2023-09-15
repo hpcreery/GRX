@@ -53,8 +53,6 @@ uniform struct parameters {
   int symbol;
   int width;
   int height;
-  int rotation;
-  int mirror;
   int corner_radius;
   int corners;
   int outer_dia;
@@ -71,41 +69,30 @@ uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
 uniform float u_Scale;
 uniform vec3 u_Color;
-uniform sampler2D u_Features;
-uniform vec2 u_FeaturesDimensions;
+uniform sampler2D u_SymbolsTexture;
+uniform vec2 u_SymbolsTextureDimensions;
 
+attribute vec3 a_Color;
 attribute float a_SymNum;
 attribute vec2 a_Position;
-attribute vec3 a_Color;
 attribute float a_X;
 attribute float a_Y;
+attribute float a_ResizeFactor;
 attribute float a_Index;
-attribute float a_Width;
-attribute float a_Height;
 attribute float a_Polarity;
 attribute float a_Rotation;
 attribute float a_Mirror;
 
-varying mat3 v_Transform;
-varying float v_Symbol;
-varying vec3 v_Color;
-varying float v_Polarity;
-varying float v_Radius;
-varying vec2 v_Position;
-varying float v_Aspect;
+varying float v_Index;
+varying float v_SymNum;
 varying vec2 v_Location;
-varying float v_Width;
-varying float v_Height;
+varying float v_ResizeFactor;
+varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
-varying float v_Corner_Radius;
-varying float v_Corners;
-varying float v_Outer_Dia;
-varying float v_Inner_Dia;
-varying float v_Line_Width;
-varying float v_Angle;
-varying float v_Gap;
-varying float v_Num_Spokes;
+
+varying vec3 v_Color;
+varying float v_Aspect;
 
 
 mat2 rotate2d(float _angle) {
@@ -113,26 +100,9 @@ mat2 rotate2d(float _angle) {
 }
 
 float pullParam(int offset) {
-  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_FeaturesDimensions;
-  vec4 pixelValue = texture2D(u_Features, texcoord);
+  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_SymbolsTextureDimensions;
+  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
   return pixelValue.x;
-}
-
-// float pullParam(float offset) {
-//   vec2 texcoord = (vec2(a_SymNum, offset) + 0.5) / u_FeaturesDimensions;
-//   vec4 pixelValue = texture2D(u_Features, texcoord);
-//   return pixelValue.x;
-// }
-
-// float pullParam(float offset) {
-//   vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_FeaturesDimensions;
-//   vec4 pixelValue = texture2D(u_Features, texcoord);
-//   return pixelValue.x;
-// }
-
-vec4 texelFetch(vec2 pixelCoord) {
-  vec2 uv = (pixelCoord + 0.5) / u_FeaturesDimensions;
-  return texture2D(u_Features, uv);
 }
 
 void main() {
@@ -160,25 +130,13 @@ void main() {
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
   vec3 FinalPosition = u_Transform * AspectPosition;
 
+  v_SymNum = a_SymNum;
   v_Location = Location;
   v_Aspect = Aspect;
   v_Rotation = Rotation;
   v_Mirror = Mirror;
-  v_Symbol = pullParam(0);
-  v_Symbol = pullParam(u_Parameters.symbol);
   v_Color = a_Color;
   v_Polarity = a_Polarity;
-  v_Width = Size.x;
-  v_Height = Size.y;
-  v_Position = FinalPosition.xy;
-  v_Corner_Radius = pullParam(u_Parameters.corner_radius);
-  v_Corners = pullParam(u_Parameters.corners);
-  v_Outer_Dia = pullParam(u_Parameters.outer_dia);
-  v_Inner_Dia = pullParam(u_Parameters.inner_dia);
-  v_Line_Width = pullParam(u_Parameters.line_width);
-  v_Angle = pullParam(u_Parameters.angle);
-  v_Gap = pullParam(u_Parameters.gap);
-  v_Num_Spokes = pullParam(u_Parameters.num_spokes);
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 

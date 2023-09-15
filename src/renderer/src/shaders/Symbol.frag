@@ -51,33 +51,27 @@ uniform struct shapes {
 } u_Shapes;
 
 uniform struct parameters {
-  int symbol;
-  // int index;
-  // int polarity;
-  // int x;
-  // int y;
-  int width;
-  int height;
-  int rotation;
-  int mirror;
-  int corner_radius;
-  int corners;
-  int outer_dia;
-  int inner_dia;
-  int line_width;
-  int angle;
-  int gap;
-  int num_spokes;
-  int round;
-  int cut_size;
+  highp int symbol;
+  highp int width;
+  highp int height;
+  highp int corner_radius;
+  highp int corners;
+  highp int outer_dia;
+  highp int inner_dia;
+  highp int line_width;
+  highp int angle;
+  highp int gap;
+  highp int num_spokes;
+  highp int round;
+  highp int cut_size;
 } u_Parameters;
 
 // #pragma glslify: parameters = require('./modules/test.frag')
 // uniform parameters u_Parameters;
 //  = parameters(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18);
 
-uniform sampler2D u_Features;
-uniform vec2 u_FeaturesDimensions;
+uniform sampler2D u_SymbolsTexture;
+uniform vec2 u_SymbolsTextureDimensions;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
@@ -87,25 +81,16 @@ uniform bool u_OutlineMode;
 uniform vec3 u_Color;
 uniform float u_Scale;
 
-varying float v_Symbol;
-varying vec3 v_Color;
-varying float v_Polarity;
-// varying float v_Radius;
-varying vec2 v_Position;
-varying float v_Aspect;
+varying float v_Index;
+varying float v_SymNum;
 varying vec2 v_Location;
-varying float v_Width;
-varying float v_Height;
+varying float v_ResizeFactor;
+varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
-varying float v_Corner_Radius;
-varying float v_Corners;
-varying float v_Outer_Dia;
-varying float v_Inner_Dia;
-varying float v_Line_Width;
-varying float v_Angle;
-varying float v_Gap;
-varying float v_Num_Spokes;
+
+varying vec3 v_Color;
+varying float v_Aspect;
 
 // varying float v_TexColor;
 
@@ -300,14 +285,14 @@ float diamonDist(vec2 p, vec2 size) {
 }
 
 // Horizontal Hexagon
-float hexagonDist(vec2 p, vec2 size, float radius) {
+float verticalHexagonDist(vec2 p, vec2 size, float radius) {
   float dist = abs(p.x) * (size.y - (size.y - radius * 2.0)) + abs(p.y) * size.x - size.x * size.y * 0.5;
   dist = dist / (size.x + size.y) * 2.0;
   return max(dist, boxDist(p, size));
 }
 
 // Vertical Hexagon
-float hexagonVDist(vec2 p, vec2 size, float radius) {
+float horizHexagonDist(vec2 p, vec2 size, float radius) {
   float dist = abs(p.x) * size.y + abs(p.y) * (size.x - (size.x - radius * 2.0)) - size.x * size.y * 0.5;
   dist = dist / (size.x + size.y) * 2.0;
   return max(dist, boxDist(p, size));
@@ -330,43 +315,43 @@ float squareButterflydist(vec2 p, float dist) {
   return d;
 }
 
+// float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
+
+//   float r_angle = radians(angle);
+//   float n_angle = atan(p.y, p.x) - r_angle;
+//   n_angle = (2.0 / num_spokes) * asin(sin((num_spokes / 2.0) * n_angle));
+
+//   float leng = length(p);
+
+//   // r = ro * cos(n_angle − theta1) + √( 𝑅^2 − (ro^2) * sin^2(n_angle − theta1))
+//   float off = gap * 3.0;
+//   float R = gap / 3.0;
+//   // float ro = sqrt(off * off + R * R);
+//   float ro = gap * 1.0;
+//   // float theta1 = atan(R / off);
+//   float theta1 = 0.0;
+
+//   float r = ro * cos(n_angle - theta1) + sqrt(R * R - ro * ro * sin(n_angle - theta1) * sin(n_angle - theta1));
+//   vec2 cart = vec2(off * cos(r_angle), off * sin(r_angle));
+//   // return length(p - cart);
+//   // return circleDist(p - cart, gap / 2.0);
+//   return leng - r;
+//   // float r = 0.4;
+//   // float l = sqrt(r * r - ro * ro - 2.0 * ro * r * cos(n_angle - theta1));
+//   // return leng - l;
+
+//   float da = (leng * sin(n_angle) + gap / 2.0);
+//   float db = (-leng * sin(n_angle) + gap / 2.0);
+//   float spokes = min(da, db);
+//   if (num_spokes == 1.0) {
+//     p = rotate2d(r_angle) * p;
+//     spokes = min(spokes, p.x);
+//   }
+
+//   return spokes;
+// }
+
 float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
-
-  float r_angle = radians(angle);
-  float n_angle = atan(p.y, p.x) - r_angle;
-  n_angle = (2.0 / num_spokes) * asin(sin((num_spokes / 2.0) * n_angle));
-
-  float leng = length(p);
-
-  // r = ro * cos(n_angle − theta1) + √( 𝑅^2 − (ro^2) * sin^2(n_angle − theta1))
-  float off = gap * 3.0;
-  float R = gap / 3.0;
-  // float ro = sqrt(off * off + R * R);
-  float ro = gap * 1.0;
-  // float theta1 = atan(R / off);
-  float theta1 = 0.0;
-
-  float r = ro * cos(n_angle - theta1) + sqrt(R * R - ro * ro * sin(n_angle - theta1) * sin(n_angle - theta1));
-  vec2 cart = vec2(off * cos(r_angle), off * sin(r_angle));
-  // return length(p - cart);
-  // return circleDist(p - cart, gap / 2.0);
-  return leng - r;
-  // float r = 0.4;
-  // float l = sqrt(r * r - ro * ro - 2.0 * ro * r * cos(n_angle - theta1));
-  // return leng - l;
-
-  float da = (leng * sin(n_angle) + gap / 2.0);
-  float db = (-leng * sin(n_angle) + gap / 2.0);
-  float spokes = min(da, db);
-  if (num_spokes == 1.0) {
-    p = rotate2d(r_angle) * p;
-    spokes = min(spokes, p.x);
-  }
-
-  return spokes;
-}
-
-float spokeDistSimple(vec2 p, float angle, float num_spokes, float gap) {
 
   float r_angle = radians(angle);
   float n_angle = atan(p.y, p.x) - r_angle;
@@ -416,19 +401,10 @@ float spokeDistSimple(vec2 p, float angle, float num_spokes, float gap) {
 // sc is the sin/cos of the aperture
 float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
   // radius
-  float dia = (od + id) / 2.0;
+  float radius = (od / 2.0 + id / 2.0) / 2.0;
 
   // line width
-  float lw = (od - id) / 2.0;
-
-  // number of spokes
-  // float num_of_spokes = 1.0;
-
-  // inital angle
-  // float ang = 0.0;
-
-  // spoke gap width
-  // float gap = 0.0;
+  float lw = (od / 2.0 - id / 2.0) / 2.0;
 
   // correct rotation
   ang += (90.0) / num_of_spokes;
@@ -443,30 +419,30 @@ float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float ang,
 
   // find angle of offset from chord length (gap)
   gap += 2.0 * lw;
-  float angle_of_gap = degrees(asin(gap / (2.0 * dia)));
+  float angle_of_gap = degrees(asin(gap / (2.0 * radius)));
   float offset = radians(angle_of_gap) - radians(180.0) / n;
 
   vec2 sincos2 = vec2(sin(radians(90.0) - offset), cos(radians(90.0) - offset));
 
-  return (n_angle < offset ? length(s - sincos2 * dia) : abs(length(s) - dia)) - lw;
+  return (n_angle < offset ? length(s - sincos2 * radius) : abs(length(s) - radius)) - lw;
 }
 
-float thermalDist(vec2 p, float radius) {
+// float thermalDist(vec2 p, float radius) {
 
-  float ang = 0.0;
-  vec2 sincos = vec2(sin(ang), cos(ang));
-  return length(p - sincos * 0.5 * radius) - radius / 6.0;
+//   float ang = 0.0;
+//   vec2 sincos = vec2(sin(ang), cos(ang));
+//   return length(p - sincos * 0.5 * radius) - radius / 6.0;
 
-  float id = radius * 0.8;
-  // float outercircle = circleDist(p, radius);
-  // float innercircle = circleDist(p, id);
-  float circle = abs(circleDist(p, (radius + id) / 2.0));
-  float spokes = spokeDist(p, 0.0, 2.0, radius / 2.0);
-  float therm = max(circle, spokes);
+//   float id = radius * 0.8;
+//   // float outercircle = circleDist(p, radius);
+//   // float innercircle = circleDist(p, id);
+//   float circle = abs(circleDist(p, (radius + id) / 2.0));
+//   float spokes = spokeDist(p, 0.0, 2.0, radius / 2.0);
+//   float therm = max(circle, spokes);
 
-  return spokes;// - ((radius - id) / 2.0);
-  // return spokeDist(p, 45.0, 3.0, radius / 4.0);
-}
+//   return spokes;// - ((radius - id) / 2.0);
+//   // return spokeDist(p, 45.0, 3.0, radius / 4.0);
+// }
 
 float thermalDistOrig(vec2 p, float radius) {
   float id = radius * 0.8;
@@ -477,6 +453,22 @@ float thermalDistOrig(vec2 p, float radius) {
 
   return therm;
   // return spokeDist(p, 45.0, 3.0, radius / 4.0);
+}
+
+float roundThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
+  float outercircle = circleDist(p, od / 2.0);
+  float innercircle = circleDist(p, id / 2.0);
+  float d = substract(innercircle, outercircle);
+  float therm = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  return therm;
+}
+
+float squareThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
+  float outersquare = boxDist(p, vec2(od, od));
+  float innersquare = boxDist(p, vec2(id, id));
+  float d = substract(innersquare, outersquare);
+  float therm = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  return therm;
 }
 
 ///////////////////////
@@ -520,7 +512,33 @@ float draw(float dist, bool outline) {
   return dist;
 }
 
+float pullParam(int offset) {
+  vec2 texcoord = (vec2(float(offset), v_SymNum) + 0.5) / u_SymbolsTextureDimensions;
+  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
+  return pixelValue.x;
+}
+
+float pullParam(float offset) {
+  vec2 texcoord = (vec2(offset, v_SymNum) + 0.5) / u_SymbolsTextureDimensions;
+  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
+  return pixelValue.x;
+}
+
 void main() {
+
+  float t_Symbol = pullParam(u_Parameters.symbol);
+  float t_Width = pullParam(u_Parameters.width);
+  float t_Height = pullParam(u_Parameters.height);
+  float t_Corner_Radius = pullParam(u_Parameters.corner_radius);
+  float t_Corners = pullParam(u_Parameters.corners);
+  float t_Outer_Dia = pullParam(u_Parameters.outer_dia);
+  float t_Inner_Dia = pullParam(u_Parameters.inner_dia);
+  float t_Line_Width = pullParam(u_Parameters.line_width);
+  float t_Angle = pullParam(u_Parameters.angle);
+  float t_Gap = pullParam(u_Parameters.gap);
+  float t_Num_Spokes = pullParam(u_Parameters.num_spokes);
+  // float t_Round = pullParam(u_Parameters.round);
+  // float t_Cut_Size = pullParam(u_Parameters.cut_size);
 
   // gl_FragColor = vec4(v_Color, 0.4);
   // // gl_FragColor = vec4(v_TexColor, v_TexColor, v_TexColor, 1.0);
@@ -534,7 +552,7 @@ void main() {
   vec2 OffsetPosition = AspectPosition.xy - v_Location;
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
   // vec2 T_FragCoord = OffsetPosition * rotate2d(radians(-u_Scale * 30.0));
-  vec2 T_FragCoord = OffsetPosition * rotate2d(radians(-v_Rotation));
+  vec2 FragCoord = OffsetPosition * rotate2d(radians(-v_Rotation));
 
   vec3 color = v_Color;
   // vec3 color = u_Color;
@@ -547,69 +565,72 @@ void main() {
 
   float dist = 0.0;
 
-  if (v_Symbol == u_Shapes.Round) {
-    dist = circleDist(T_FragCoord.xy, v_Outer_Dia / 2.0);
-  } else if (v_Symbol == u_Shapes.Square || v_Symbol == u_Shapes.Rectangle) {
-    dist = boxDist(T_FragCoord.xy, vec2(v_Width, v_Height));
-  } else if (v_Symbol == u_Shapes.Rounded_Rectangle) {
-    dist = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius, v_Corners);
-  } else if (v_Symbol == u_Shapes.Oval) {
-    dist = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Height / 2.0);
-  } else if (v_Symbol == u_Shapes.Chamfered_Rectangle) {
-    dist = chamferedBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius, v_Corners);
-  } else if (v_Symbol == u_Shapes.Diamond) {
-    dist = diamonDist(T_FragCoord.xy, vec2(v_Width, v_Height));
-  } else if (v_Symbol == u_Shapes.Octagon) {
-    dist = chamferedBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius, 15.0);
-  } else if (v_Symbol == u_Shapes.Round_Donut) {
-    float InnerCircle = circleDist(T_FragCoord.xy, v_Inner_Dia / 2.0);
-    float OuterCircle = circleDist(T_FragCoord.xy, v_Outer_Dia / 2.0);
+  if (t_Symbol == u_Shapes.Round) {
+    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
+  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+    dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
+  } else if (t_Symbol == u_Shapes.Rounded_Rectangle) {
+    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+  } else if (t_Symbol == u_Shapes.Oval) {
+    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0);
+  } else if (t_Symbol == u_Shapes.Chamfered_Rectangle) {
+    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+  } else if (t_Symbol == u_Shapes.Diamond) {
+    dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
+  } else if (t_Symbol == u_Shapes.Octagon) {
+    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
+  } else if (t_Symbol == u_Shapes.Round_Donut) {
+    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+    float OuterCircle = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
     dist = substract(InnerCircle, OuterCircle);
-  } else if (v_Symbol == u_Shapes.Square_Donut) {
-    float InnerSquare = boxDist(T_FragCoord.xy, vec2(v_Inner_Dia, v_Inner_Dia));
-    float OuterSquare = boxDist(T_FragCoord.xy, vec2(v_Width, v_Height));
+  } else if (t_Symbol == u_Shapes.Square_Donut) {
+    float InnerSquare = boxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia));
+    float OuterSquare = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     dist = substract(InnerSquare, OuterSquare);
-  } else if (v_Symbol == u_Shapes.SquareRound_Donut) {
-    float InnerCircle = circleDist(T_FragCoord.xy, v_Inner_Dia / 2.0);
-    float OuterCircle = boxDist(T_FragCoord.xy, vec2(v_Width, v_Height));
+  } else if (t_Symbol == u_Shapes.SquareRound_Donut) {
+    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+    float OuterCircle = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     dist = substract(InnerCircle, OuterCircle);
-  } else if (v_Symbol == u_Shapes.Rounded_Square_Donut) {
-    float InnerSquare = roundBoxDist(T_FragCoord.xy, vec2(v_Inner_Dia, v_Inner_Dia), v_Corner_Radius - (v_Width - v_Inner_Dia) / 2.0, v_Corners);
-    float OuterSquare = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius, v_Corners);
+  } else if (t_Symbol == u_Shapes.Rounded_Square_Donut) {
+    float InnerSquare = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Width - t_Inner_Dia) / 2.0, t_Corners);
+    float OuterSquare = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     dist = substract(InnerSquare, OuterSquare);
-  } else if (v_Symbol == u_Shapes.Rectange_Donut) {
-    float InnerRect = boxDist(T_FragCoord.xy, vec2(v_Width - v_Line_Width * 2.0, v_Height - v_Line_Width * 2.0));
-    float OuterRect = boxDist(T_FragCoord.xy, vec2(v_Width, v_Height));
+  } else if (t_Symbol == u_Shapes.Rectange_Donut) {
+    float InnerRect = boxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0));
+    float OuterRect = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     dist = substract(InnerRect, OuterRect);
-  } else if (v_Symbol == u_Shapes.Rounded_Rectangle_Donut) {
-    float InnerRect = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius, v_Corners);
-    float OuterRect = roundBoxDist(T_FragCoord.xy, vec2(v_Width - v_Inner_Dia, v_Height - v_Inner_Dia), v_Corner_Radius, v_Corners);
+  } else if (t_Symbol == u_Shapes.Rounded_Rectangle_Donut) {
+    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
     dist = substract(InnerRect, OuterRect);
-  } else if (v_Symbol == u_Shapes.Oval_Donut) {
-    float InnerOval = roundBoxDist(T_FragCoord.xy, vec2(v_Width - v_Line_Width * 2.0, v_Height - v_Line_Width * 2.0), v_Height / 2.0 - v_Line_Width);
-    float OuterOval = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Height / 2.0);
+  } else if (t_Symbol == u_Shapes.Oval_Donut) {
+    float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0);
+    float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Height / 2.0 - t_Line_Width);
     dist = substract(InnerOval, OuterOval);
-  } else if (v_Symbol == u_Shapes.Horizontal_Hexagon) {
-    dist = hexagonDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius);
-  } else if (v_Symbol == u_Shapes.Vertical_Hexagon) {
-    dist = hexagonVDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Corner_Radius);
-  } else if (v_Symbol == u_Shapes.Butterfly) {
-    dist = butterflyDist(T_FragCoord.xy, v_Outer_Dia / 2.0);
-  } else if (v_Symbol == u_Shapes.Square_Butterfly) {
-    dist = squareButterflydist(T_FragCoord.xy, v_Width / 2.0);
-  } else if (v_Symbol == u_Shapes.Triangle) {
-    dist = triangleDist(T_FragCoord.xy, v_Width, v_Height);
-  } else if (v_Symbol == u_Shapes.Half_Oval) {
-    dist = roundBoxDist(T_FragCoord.xy, vec2(v_Width, v_Height), v_Height / 2.0, 9.0);
-  } else if (v_Symbol == u_Shapes.Rounded_Round_Thermal) {
-    dist = roundedRoundThermalDist(T_FragCoord.xy, v_Outer_Dia, v_Inner_Dia, v_Angle, v_Num_Spokes, v_Gap);
+  } else if (t_Symbol == u_Shapes.Horizontal_Hexagon) {
+    dist = horizHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
+  } else if (t_Symbol == u_Shapes.Vertical_Hexagon) {
+    dist = verticalHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
+  } else if (t_Symbol == u_Shapes.Butterfly) {
+    dist = butterflyDist(FragCoord.xy, t_Outer_Dia / 2.0);
+  } else if (t_Symbol == u_Shapes.Square_Butterfly) {
+    dist = squareButterflydist(FragCoord.xy, t_Width / 2.0);
+  } else if (t_Symbol == u_Shapes.Triangle) {
+    dist = triangleDist(FragCoord.xy, t_Width, t_Height);
+  } else if (t_Symbol == u_Shapes.Half_Oval) {
+    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0, 9.0);
+  } else if (t_Symbol == u_Shapes.Rounded_Round_Thermal) {
+    dist = roundedRoundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+  } else if (t_Symbol == u_Shapes.Squared_Round_Thermal) {
+    dist = roundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+  } else if (t_Symbol == u_Shapes.Square_Thermal) {
+    dist = squareThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
   }
 
   // dist = clamp(u_Shapes.Round / v_Symbol, 0.0, 1.0) * circleDist(T_FragCoord.xy, v_Width);
   // dist = clamp(u_Shapes.Square / v_Symbol, 0.0, 1.0) * boxDist(T_FragCoord.xy, vec2(v_Width, v_Height), 0.0);
 
   draw(dist, u_OutlineMode);
-  // float d = distance(v_Position, v_Center);
 
   // if(d > v_Radius) {
   //   discard;
