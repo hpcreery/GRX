@@ -28,7 +28,7 @@ uniform struct shapes {
   float Rounded_Round_Thermal;
   float Squared_Round_Thermal;
   float Square_Thermal;
-  float Open_Cornders_Square_Thermal;
+  float Open_Corners_Square_Thermal;
   float Line_Thermal;
   float Square_Round_Thermal;
   float Rectangular_Thermal;
@@ -203,7 +203,7 @@ float sdRoundBox(in vec2 p, in vec2 size, in vec4 r) {
   return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
 }
 
-vec4 roundedCornersVector(float corners) {
+vec4 roundedCornersVectorOld(float corners) {
   // CORNERS IS A VALUE FROM 0 TO 15, 1,2,4,8 indicate the chamfered corner and the sum of the values is between 0 and 15 base 2 added up
 
   // r.x = roundness top-right
@@ -239,6 +239,43 @@ vec4 roundedCornersVector(float corners) {
   return r;
 }
 
+vec4 roundedCornersVector(float corners) {
+  // CORNERS IS A VALUE FROM 0 TO 15, 1,2,4,8 indicate the chamfered corner and the sum of the values is between 0 and 15 base 2 added up
+
+  // r.x = roundness top-right
+  // r.y = roundness top-left
+  // r.z = roundness bottom-left
+  // r.w = roundness bottom-right
+  vec4 r = vec4(0.0, 0.0, 0.0, 0.0);
+
+  // default to all corners
+  corners = mod(corners, 16.0);
+  if (corners == 0.0) {
+    corners = 15.0;
+  }
+  // bottom-right
+  r.w = step(8.0, corners);
+  corners = mod(corners, 8.0);
+  // bottom-left
+  r.z = step(4.0, corners);
+  corners = mod(corners, 4.0);
+  // top-left
+  r.y = step(2.0, corners);
+  corners = mod(corners, 2.0);
+  // top-right
+  r.x = step(1.0, corners);
+  corners = mod(corners, 1.0);
+  return r;
+}
+
+// this only works if angle is a factor of 45 and num_of_spokes is 1,2,4
+// returns vec4 indicating ur, ul, bl, br
+vec4 openCorners(in float angle, in float num_of_spokes) {
+  vec4 a = vec4(45.0, 315.0, 225.0, 135.0);
+  vec4 b = step(mod((a - 45.0) + (angle - 45.0), (360.0 / num_of_spokes)), vec4(0.0));
+  return b;
+}
+
 // Round Box with rounded all corners
 float roundBoxDist(vec2 p, vec2 size, float radius) {
   size /= 2.0;
@@ -250,8 +287,8 @@ float roundBoxDist(vec2 p, vec2 size, float radius) {
 // Round box with vec4 of rounded corners
 float roundBoxDist(vec2 p, vec2 size, vec4 corners) {
   size /= 2.0;
-  corners.xy = (p.x > 0.0) ? corners.xy : corners.zw;
-  corners.x = (p.y > 0.0) ? corners.x : corners.y;
+  corners.xy = (p.y > 0.0) ? corners.xy : corners.wz;
+  corners.x = (p.x > 0.0) ? corners.x : corners.y;
   vec2 q = abs(p) - size + corners.x;
   return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corners.x;
 }
@@ -265,8 +302,8 @@ float roundBoxDist(vec2 p, vec2 size, float radius, float corners) {
 // Chamfered box with vec4 of rounded corners
 float chamferedBoxDist(vec2 p, vec2 size, vec4 corners) {
   size /= 2.0;
-  corners.xy = (p.x > 0.0) ? corners.xy : corners.zw;
-  corners.x = (p.y > 0.0) ? corners.x : corners.y;
+  corners.xy = (p.y > 0.0) ? corners.xy : corners.wz;
+  corners.x = (p.x > 0.0) ? corners.x : corners.y;
   float dista = abs(p.x) + abs(p.y) - (size.x + size.y) + corners.x;
   vec2 d = abs(p) - size;
   return intersect(min(max(d.x, d.y), 0.0), dista);
@@ -471,6 +508,46 @@ float squareThermalDist(in vec2 p, in float od, in float id, in float ang, in fl
   return therm;
 }
 
+float boxThermalDist(in vec2 p, in float width, in float height, in float ang, in float num_of_spokes, in float gap, in float air_gap) {
+  float outerbox = boxDist(p, vec2(width, height));
+  float innerbox = boxDist(p, vec2(width - air_gap * 2.0, height - air_gap * 2.0));
+  float d = substract(innerbox, outerbox);
+  float therm = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  return therm;
+}
+
+float boxThermalOpenCornersDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float air_gap) {
+
+  // if angle is a multiple of 90 degrees,
+  if (mod(angle, 90.0) == 0.0) {
+    return boxThermalDist(p, width, height, angle, num_of_spokes, gap, air_gap);
+  }
+
+  // if angle is a multiple of 45 degrees, draw 4 rects
+  if (mod(angle, 45.0) == 0.0) {
+    vec4 corners = openCorners(angle, num_of_spokes);
+    float topWidth = width - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.y * (gap * sin(radians(45.0)) + air_gap));
+    float botWidth = width - (corners.z * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
+    vec2 topLocation = vec2(corners.y * (width / 2.0 - topWidth / 2.0) - corners.x * (width / 2.0 - topWidth / 2.0), height / 2.0 - air_gap / 2.0);
+    vec2 botLocation = vec2(corners.z * (width / 2.0 - botWidth / 2.0) - corners.w * (width / 2.0 - botWidth / 2.0), -height / 2.0 + air_gap / 2.0);
+    float topBox = boxDist(translate(p, topLocation), vec2(topWidth, air_gap));
+    float botBox = boxDist(translate(p, botLocation), vec2(botWidth, air_gap));
+
+    float leftHeight = height - (corners.y * (gap * sin(radians(45.0)) + air_gap)) - (corners.z * (gap * sin(radians(45.0)) + air_gap));
+    float rightHeight = height - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
+    vec2 leftLocation = vec2(-width / 2.0 + air_gap / 2.0, corners.z * (height / 2.0 - leftHeight / 2.0) - corners.y * (width / 2.0 - leftHeight / 2.0));
+    vec2 rightLocation = vec2(width / 2.0 - air_gap / 2.0, corners.w * (height / 2.0 - rightHeight / 2.0) - corners.x * (width / 2.0 - rightHeight / 2.0));
+    float leftBox = boxDist(translate(p, leftLocation), vec2(air_gap, leftHeight));
+    float rightBox = boxDist(translate(p, rightLocation), vec2(air_gap, rightHeight));
+
+    float tb = merge(topBox, botBox);
+    float lr = merge(leftBox, rightBox);
+    return merge(lr, tb);
+  }
+
+  return 0.0;
+}
+
 ///////////////////////
 // Masks for drawing //
 ///////////////////////
@@ -625,6 +702,8 @@ void main() {
     dist = roundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
   } else if (t_Symbol == u_Shapes.Square_Thermal) {
     dist = squareThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+  } else if (t_Symbol == u_Shapes.Open_Corners_Square_Thermal) {
+    dist = boxThermalOpenCornersDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
   }
 
   // dist = clamp(u_Shapes.Round / v_Symbol, 0.0, 1.0) * circleDist(T_FragCoord.xy, v_Width);

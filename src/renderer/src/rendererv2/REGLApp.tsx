@@ -32,7 +32,7 @@ const STANDARD_SYMBOLS = {
   Rounded_Round_Thermal: 21,
   Squared_Round_Thermal: 22,
   Square_Thermal: 23,
-  Open_Cornders_Square_Thermal: 24,
+  Open_Corners_Square_Thermal: 24,
   Line_Thermal: 25,
   Square_Round_Thermal: 26,
   Rectangular_Thermal: 27,
@@ -95,7 +95,7 @@ function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
   // N == Number of Shapes
-  const N = 9000
+  const N = 300000
 
   const FPS = 60
   const FPSMS = 1000 / FPS
@@ -193,11 +193,13 @@ function REGLApp(): JSX.Element {
       // index of feature
       const index = i / (N)
       // Center point.
-      const x = Math.random() * 50
-      const y = Math.random() * 50
+      const x = Math.random() * 300
+      const y = Math.random() * 300
       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // const sym_num = STANDARD_SYMBOLS.Square
-      const sym_num = i
+      const sym_num = STANDARD_SYMBOLS.Open_Corners_Square_Thermal
+      // const sym_num = STANDARD_SYMBOLS.Square_Thermal
+      // const sym_num = STANDARD_SYMBOLS.Rounded_Rectangle
+      // const sym_num = i % Object.keys(STANDARD_SYMBOLS).length
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       const resize_factor = 0
       // Polarity. 0 = negative, 1 = positive
@@ -297,20 +299,20 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    const SYMBOLS_ARRAY2 = new Array(N).fill(0).map((_, i) => {
+    const SYMBOLS_ARRAY2 = new Array(Object.keys(STANDARD_SYMBOLS).length).fill(0).map((_, i) => {
       // STANDARD_SYMBOLS.
       return [
-        23, // symbol
+        i, // symbol
         0.5, // width, square side, diameter
         0.5, // height
         0.1, // corner radius
-        15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        1, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
         0.5, // — Outer diameter of the shape
-        0.4, // — Inner diameter of the shape
-        0.03, // — Line width of the shape (applies to the whole shape)
-        45, // — Angle of the spoke
-        0.1, // — Gap angle from 0 degrees
-        4, // — Number of spokes
+        0.25, // — Inner diameter of the shape
+        0.01, // — Line width of the shape (applies to the whole shape)
+        45, // — Angle of the spoke from 0 degrees
+        0.353, // — Gap
+        2, // — Number of spokes
         0, // —r|s == 1|0 — Support for rounded or straight corners
         0, // — Size of the cut ( see corner radius )
       ]
@@ -323,7 +325,7 @@ function REGLApp(): JSX.Element {
     // console.log(FEATURES_NDARRAY)
     const SYMBOLS_TEXTURE = REGL.texture({
       width: NUM_SYMBOL_PARAMETERS,
-      height: N,
+      height: Object.keys(STANDARD_SYMBOLS).length,
       type: 'float',
       format: 'luminance',
       data: SYMBOLS_ARRAY2,

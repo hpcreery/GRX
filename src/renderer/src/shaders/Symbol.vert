@@ -27,7 +27,7 @@ uniform struct shapes {
   float Rounded_Round_Thermal;
   float Squared_Round_Thermal;
   float Square_Thermal;
-  float Open_Cornders_Square_Thermal;
+  float Open_Corners_Square_Thermal;
   float Line_Thermal;
   float Square_Round_Thermal;
   float Rectangular_Thermal;
