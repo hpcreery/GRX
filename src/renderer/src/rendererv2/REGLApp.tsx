@@ -36,7 +36,7 @@ const STANDARD_SYMBOLS = {
   Line_Thermal: 25,
   Square_Round_Thermal: 26,
   Rectangular_Thermal: 27,
-  Rectangular_thermal_Open_Corners: 28,
+  Rectangular_Thermal_Open_Corners: 28,
   Rounded_Square_Thermal: 29,
   Rounded_Square_Thermal_Open_Corners: 30,
   Rounded_Rectangular_Thermal: 31,
@@ -196,9 +196,9 @@ function REGLApp(): JSX.Element {
       const x = Math.random() * 300
       const y = Math.random() * 300
       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      const sym_num = STANDARD_SYMBOLS.Open_Corners_Square_Thermal
+      // const sym_num = STANDARD_SYMBOLS.Oval_Thermal
       // const sym_num = STANDARD_SYMBOLS.Square_Thermal
-      // const sym_num = STANDARD_SYMBOLS.Rounded_Rectangle
+      const sym_num = STANDARD_SYMBOLS.Rectangular_Thermal
       // const sym_num = i % Object.keys(STANDARD_SYMBOLS).length
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       const resize_factor = 0
@@ -219,100 +219,20 @@ function REGLApp(): JSX.Element {
     })
     // console.log(FEATURES_BUFFER.length)
 
-    // const NUM_LINE_PARAMETERS = 7
-    // const LINE_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
-    //   // index of feature
-    //   const index = i / (N)
-    //   // Start point.
-    //   const x1 = Math.random()
-    //   const y1 = Math.random()
-    //   // End point.
-    //   const x2 = Math.random()
-    //   const y2 = Math.random()
-    //   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-    //   const sym_num = STANDARD_SYMBOLS.Square
-    //   // Polarity. 0 = negative, 1 = positive
-    //   const polarity = 1
-    //   return [index, x1, y1, x2, y2, sym_num, polarity]
-    // })
-
-    // const LINE_RECORDS_BUFFER = REGL.buffer({
-    //   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
-    //   type: 'float',
-    //   length: N * NUM_LINE_PARAMETERS * FLOAT_SIZE,
-    //   data: LINE_RECORDS_ARRAY
-    // })
-
-    // const NUM_ARC_PARAMETERS = 10
-    // const ARC_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
-    //   // index of feature
-    //   const index = i / (N)
-    //   // Start point.
-    //   const x1 = Math.random()
-    //   const y1 = Math.random()
-    //   // End point.
-    //   const x2 = Math.random()
-    //   const y2 = Math.random()
-    //   // Center point.
-    //   const x = Math.random()
-    //   const y = Math.random()
-    //   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-    //   const sym_num = STANDARD_SYMBOLS.Square
-    //   // Polarity. 0 = negative, 1 = positive
-    //   const polarity = 1
-    //   // Clockwise. 0 = counterclockwise, 1 = clockwise
-    //   const clockwise = 0
-    //   return [index, x1, y1, x2, y2, x, y, sym_num, polarity, clockwise]
-    // })
-
-    // const ARC_RECORDS_BUFFER = REGL.buffer({
-    //   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
-    //   type: 'float',
-    //   length: N * NUM_ARC_PARAMETERS * FLOAT_SIZE,
-    //   data: ARC_RECORDS_ARRAY
-    // })
-
-
-    // const MAX_TEXTURE_SIZE = REGL.limits.maxTextureSize
-
-    // const SYMBOLS_ARRAY = new Float32Array(N * NUM_SYMBOL_PARAMETERS).map((_, i) => {
-    //   switch (i % NUM_SYMBOL_PARAMETERS) {
-    //     // case PARAMETERS.symbol: return (Math.ceil(i / NUM_SYMBOL_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
-    //     // case PARAMETERS.symbol: return Math.ceil(i / NUM_SYMBOL_PARAMETERS) % Object.keys(STANDARD_SYMBOLS).length // symbol
-    //     case SYMBOL_PARAMETERS.symbol: return 4
-    //     case SYMBOL_PARAMETERS.width: return 1.5 // width, square side, diameter
-    //     case SYMBOL_PARAMETERS.height: return 0.5 // height
-    //     case SYMBOL_PARAMETERS.corner_radius: return 0.2 // corner radius
-    //     case SYMBOL_PARAMETERS.corners: 15 //return Math.round(Math.random() * 16)//0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-    //     case SYMBOL_PARAMETERS.outer_dia: return 0.5 // — Outer diameter of the shape
-    //     case SYMBOL_PARAMETERS.inner_dia: return 0.4 // — Inner diameter of the shape
-    //     case SYMBOL_PARAMETERS.line_width: return 0.1 // — Line width of the shape (applies to the whole shape)
-    //     case SYMBOL_PARAMETERS.angle: return 30 // — Angle of the spoke
-    //     case SYMBOL_PARAMETERS.gap: return 0.1 // — Gap angle from 0 degrees
-    //     case SYMBOL_PARAMETERS.num_spokes: return 4 // — Number of spokes
-    //     // case 14: return 0 // — Gap angle from 0 degrees
-    //     // case 15: return 0 // — Size of spoke gap
-    //     // case 16: return 0 // — Number of spokes
-    //     // case 17: return 0 // —r|s == 1|0 — Support for rounded or straight corners
-    //     // case 18: return 0 // — Size of the cut ( see corner radius )
-    //     default: return 0
-    //   }
-    // })
-
     const SYMBOLS_ARRAY2 = new Array(Object.keys(STANDARD_SYMBOLS).length).fill(0).map((_, i) => {
       // STANDARD_SYMBOLS.
       return [
         i, // symbol
         0.5, // width, square side, diameter
-        0.5, // height
-        0.1, // corner radius
-        1, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        1.5, // height
+        0.2, // corner radius
+        15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
         0.5, // — Outer diameter of the shape
-        0.25, // — Inner diameter of the shape
-        0.01, // — Line width of the shape (applies to the whole shape)
-        45, // — Angle of the spoke from 0 degrees
-        0.353, // — Gap
-        2, // — Number of spokes
+        0.4, // — Inner diameter of the shape
+        0.05, // — Line width of the shape (ioapplies to the whole shape)
+        0.0, // — Angle of the spoke from 0 degrees
+        0.1, // — Gap
+        4, // — Number of spokes
         0, // —r|s == 1|0 — Support for rounded or straight corners
         0, // — Size of the cut ( see corner radius )
       ]
@@ -633,3 +553,84 @@ function REGLApp(): JSX.Element {
 }
 
 export default REGLApp
+
+
+// const NUM_LINE_PARAMETERS = 7
+// const LINE_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
+//   // index of feature
+//   const index = i / (N)
+//   // Start point.
+//   const x1 = Math.random()
+//   const y1 = Math.random()
+//   // End point.
+//   const x2 = Math.random()
+//   const y2 = Math.random()
+//   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+//   const sym_num = STANDARD_SYMBOLS.Square
+//   // Polarity. 0 = negative, 1 = positive
+//   const polarity = 1
+//   return [index, x1, y1, x2, y2, sym_num, polarity]
+// })
+
+// const LINE_RECORDS_BUFFER = REGL.buffer({
+//   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+//   type: 'float',
+//   length: N * NUM_LINE_PARAMETERS * FLOAT_SIZE,
+//   data: LINE_RECORDS_ARRAY
+// })
+
+// const NUM_ARC_PARAMETERS = 10
+// const ARC_RECORDS_ARRAY = Array(N).fill(0).map((_, i) => {
+//   // index of feature
+//   const index = i / (N)
+//   // Start point.
+//   const x1 = Math.random()
+//   const y1 = Math.random()
+//   // End point.
+//   const x2 = Math.random()
+//   const y2 = Math.random()
+//   // Center point.
+//   const x = Math.random()
+//   const y = Math.random()
+//   // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+//   const sym_num = STANDARD_SYMBOLS.Square
+//   // Polarity. 0 = negative, 1 = positive
+//   const polarity = 1
+//   // Clockwise. 0 = counterclockwise, 1 = clockwise
+//   const clockwise = 0
+//   return [index, x1, y1, x2, y2, x, y, sym_num, polarity, clockwise]
+// })
+
+// const ARC_RECORDS_BUFFER = REGL.buffer({
+//   usage: 'dynamic',  // give the WebGL driver a hint that this buffer may change
+//   type: 'float',
+//   length: N * NUM_ARC_PARAMETERS * FLOAT_SIZE,
+//   data: ARC_RECORDS_ARRAY
+// })
+
+
+// const MAX_TEXTURE_SIZE = REGL.limits.maxTextureSize
+
+// const SYMBOLS_ARRAY = new Float32Array(N * NUM_SYMBOL_PARAMETERS).map((_, i) => {
+//   switch (i % NUM_SYMBOL_PARAMETERS) {
+//     // case PARAMETERS.symbol: return (Math.ceil(i / NUM_SYMBOL_PARAMETERS) % 2) == 1 ? STANDARD_SYMBOLS.Triangle : STANDARD_SYMBOLS.Rounded_Round_Thermal // symbol
+//     // case PARAMETERS.symbol: return Math.ceil(i / NUM_SYMBOL_PARAMETERS) % Object.keys(STANDARD_SYMBOLS).length // symbol
+//     case SYMBOL_PARAMETERS.symbol: return 4
+//     case SYMBOL_PARAMETERS.width: return 1.5 // width, square side, diameter
+//     case SYMBOL_PARAMETERS.height: return 0.5 // height
+//     case SYMBOL_PARAMETERS.corner_radius: return 0.2 // corner radius
+//     case SYMBOL_PARAMETERS.corners: 15 //return Math.round(Math.random() * 16)//0 // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+//     case SYMBOL_PARAMETERS.outer_dia: return 0.5 // — Outer diameter of the shape
+//     case SYMBOL_PARAMETERS.inner_dia: return 0.4 // — Inner diameter of the shape
+//     case SYMBOL_PARAMETERS.line_width: return 0.1 // — Line width of the shape (applies to the whole shape)
+//     case SYMBOL_PARAMETERS.angle: return 30 // — Angle of the spoke
+//     case SYMBOL_PARAMETERS.gap: return 0.1 // — Gap angle from 0 degrees
+//     case SYMBOL_PARAMETERS.num_spokes: return 4 // — Number of spokes
+//     // case 14: return 0 // — Gap angle from 0 degrees
+//     // case 15: return 0 // — Size of spoke gap
+//     // case 16: return 0 // — Number of spokes
+//     // case 17: return 0 // —r|s == 1|0 — Support for rounded or straight corners
+//     // case 18: return 0 // — Size of the cut ( see corner radius )
+//     default: return 0
+//   }
+// })
