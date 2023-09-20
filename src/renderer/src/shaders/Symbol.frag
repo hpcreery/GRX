@@ -512,16 +512,21 @@ float boxThermalDist(in vec2 p, in float width, in float height, in float ang, i
   float outerbox = boxDist(p, vec2(width, height));
   float innerbox = boxDist(p, vec2(width - air_gap * 2.0, height - air_gap * 2.0));
   float d = substract(innerbox, outerbox);
-  vec2 offset = vec2(max(0.0, width - height) / 2.0, max(0.0, height - width) / 2.0);
-  offset.x = p.x > 0.0 ? offset.x : -offset.x;
-  offset.y = p.y > 0.0 ? offset.y : -offset.y;
-  if (width > height && abs(offset.x) < abs(p.x)) {
-    d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+  if (mod(ang, 90.0) == 0.0) {
+    d = max(d, spokeDist(p, ang, num_of_spokes, gap));
+    return d;
   }
-  if (height > width && abs(offset.y) < abs(p.y)) {
-    d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+  if (mod(ang, 45.0) == 0.0) {
+    vec2 offset = vec2(max(0.0, width - height) / 2.0, max(0.0, height - width) / 2.0);
+    offset.x = p.x > 0.0 ? offset.x : -offset.x;
+    offset.y = p.y > 0.0 ? offset.y : -offset.y;
+    if (width > height && abs(offset.x) < abs(p.x)) {
+      d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+    }
+    if (height > width && abs(offset.y) < abs(p.y)) {
+      d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+    }
   }
-
   return d;
 }
 
@@ -755,7 +760,6 @@ void main() {
     float d = substract(innercircle, outerbox);
     float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
     dist = therm;
-  // ! TODO FIX THIS, when angle is 0, 90, etc the spokes are not correct
   } else if (t_Symbol == u_Shapes.Rectangular_Thermal) {
     dist = boxThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
   } else if (t_Symbol == u_Shapes.Rectangular_Thermal_Open_Corners) {
