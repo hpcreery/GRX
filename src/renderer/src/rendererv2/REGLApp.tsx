@@ -95,7 +95,7 @@ function REGLApp(): JSX.Element {
   const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
 
   // N == Number of Shapes
-  const N = 300000
+  const N = 300
 
   const FPS = 60
   const FPSMS = 1000 / FPS
@@ -193,12 +193,12 @@ function REGLApp(): JSX.Element {
       // index of feature
       const index = i / (N)
       // Center point.
-      const x = Math.random() * 300
-      const y = Math.random() * 300
+      const x = (Math.random() - 0.5) * 10
+      const y = (Math.random() - 0.5) * 10
       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
       // const sym_num = STANDARD_SYMBOLS.Oval_Thermal
       // const sym_num = STANDARD_SYMBOLS.Square_Thermal
-      const sym_num = STANDARD_SYMBOLS.Rectangular_Thermal
+      const sym_num = STANDARD_SYMBOLS.Oblong_Thermal
       // const sym_num = i % Object.keys(STANDARD_SYMBOLS).length
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       const resize_factor = 0
@@ -230,9 +230,9 @@ function REGLApp(): JSX.Element {
         0.5, // — Outer diameter of the shape
         0.4, // — Inner diameter of the shape
         0.05, // — Line width of the shape (ioapplies to the whole shape)
-        0.0, // — Angle of the spoke from 0 degrees
+        90, // — Angle of the spoke from 0 degrees
         0.1, // — Gap
-        4, // — Number of spokes
+        2, // — Number of spokes
         0, // —r|s == 1|0 — Support for rounded or straight corners
         0, // — Size of the cut ( see corner radius )
       ]
@@ -271,7 +271,7 @@ function REGLApp(): JSX.Element {
       u_InverseTransform: mat3,
       u_Resolution: vec2,
       u_Screen: vec2,
-      u_Scale: number,
+      // u_Scale: number,
       u_PixelSize: number,
       u_OutlineMode: boolean,
       u_Color: vec3
@@ -332,7 +332,7 @@ function REGLApp(): JSX.Element {
         u_InverseTransform: () => inverseTransform,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
         u_Screen: () => [window.screen.width * window.devicePixelRatio, window.screen.height * window.devicePixelRatio],
-        u_Scale: () => scale,
+        // u_Scale: () => scale,
         u_PixelSize: () => 3.6 / Math.pow(window.screen.width * window.devicePixelRatio * window.screen.height * window.devicePixelRatio, 0.5),
         u_OutlineMode: () => false,
         u_Color: [0.5, 0, 0.9],

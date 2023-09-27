@@ -79,7 +79,7 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
-uniform float u_Scale;
+// uniform float u_Scale;
 
 varying float v_Index;
 varying float v_SymNum;
@@ -436,7 +436,7 @@ float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
 // }
 
 // sc is the sin/cos of the aperture
-float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
+float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
   // radius
   float radius = (od / 2.0 + id / 2.0) / 2.0;
 
@@ -444,10 +444,10 @@ float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float ang,
   float lw = (od / 2.0 - id / 2.0) / 2.0;
 
   // correct rotation
-  ang += (90.0) / num_of_spokes;
+  angle += (90.0) / num_of_spokes;
 
   float n = num_of_spokes * 2.0;
-  float r_angle = radians(ang);
+  float r_angle = radians(angle);
   float r = length(p);
 
   float n_angle = atan(p.y, p.x) - r_angle;
@@ -462,6 +462,8 @@ float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float ang,
   vec2 sincos2 = vec2(sin(radians(90.0) - offset), cos(radians(90.0) - offset));
 
   return (n_angle < offset ? length(s - sincos2 * radius) : abs(length(s) - radius)) - lw;
+  // return length(s - sincos2 * radius) - lw; // round ends
+  // return abs(length(s) - radius) - lw; // outer circle
 }
 
 // float thermalDist(vec2 p, float radius) {
@@ -492,70 +494,70 @@ float thermalDistOrig(vec2 p, float radius) {
   // return spokeDist(p, 45.0, 3.0, radius / 4.0);
 }
 
-float roundThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
+float roundThermalDist(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
   float outercircle = circleDist(p, od / 2.0);
   float innercircle = circleDist(p, id / 2.0);
   float d = substract(innercircle, outercircle);
-  float therm = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  float therm = max(d, spokeDist(p, angle, num_of_spokes, gap));
   return therm;
 }
 
-float squareThermalDist(in vec2 p, in float od, in float id, in float ang, in float num_of_spokes, in float gap) {
+float squareThermalDist(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
   float outersquare = boxDist(p, vec2(od, od));
   float innersquare = boxDist(p, vec2(id, id));
   float d = substract(innersquare, outersquare);
-  float therm = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  float therm = max(d, spokeDist(p, angle, num_of_spokes, gap));
   return therm;
 }
 
-float boxThermalDist(in vec2 p, in float width, in float height, in float ang, in float num_of_spokes, in float gap, in float air_gap) {
+float boxThermalDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float line_width) {
   float outerbox = boxDist(p, vec2(width, height));
-  float innerbox = boxDist(p, vec2(width - air_gap * 2.0, height - air_gap * 2.0));
+  float innerbox = boxDist(p, vec2(width - line_width * 2.0, height - line_width * 2.0));
   float d = substract(innerbox, outerbox);
-  if (mod(ang, 90.0) == 0.0) {
-    d = max(d, spokeDist(p, ang, num_of_spokes, gap));
+  if (mod(angle, 90.0) == 0.0) {
+    d = max(d, spokeDist(p, angle, num_of_spokes, gap));
     return d;
   }
-  if (mod(ang, 45.0) == 0.0) {
+  if (mod(angle, 45.0) == 0.0) {
     vec2 offset = vec2(max(0.0, width - height) / 2.0, max(0.0, height - width) / 2.0);
     offset.x = p.x > 0.0 ? offset.x : -offset.x;
     offset.y = p.y > 0.0 ? offset.y : -offset.y;
     if (width > height && abs(offset.x) < abs(p.x)) {
-      d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+      d = max(d, spokeDist(translate(p, offset), angle, num_of_spokes, gap));
     }
     if (height > width && abs(offset.y) < abs(p.y)) {
-      d = max(d, spokeDist(translate(p, offset), ang, num_of_spokes, gap));
+      d = max(d, spokeDist(translate(p, offset), angle, num_of_spokes, gap));
     }
   }
   return d;
 }
 
-float boxThermalOpenCornersDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float air_gap) {
+float boxThermalOpenCornersDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float line_width) {
 
   // if angle is a multiple of 90 degrees,
   if (mod(angle, 90.0) == 0.0) {
-    return boxThermalDist(p, width, height, angle, num_of_spokes, gap, air_gap);
+    return boxThermalDist(p, width, height, angle, num_of_spokes, gap, line_width);
   }
 
   // if angle is a multiple of 45 degrees, draw 4 rects
   if (mod(angle, 45.0) == 0.0) {
     vec4 corners = openCorners(angle, num_of_spokes);
 
-    float topWidth = width - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.y * (gap * sin(radians(45.0)) + air_gap));
-    float botWidth = width - (corners.z * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
-    vec2 topLocation = vec2(corners.y * (width / 2.0 - topWidth / 2.0) - corners.x * (width / 2.0 - topWidth / 2.0), height / 2.0 - air_gap / 2.0);
-    vec2 botLocation = vec2(corners.z * (width / 2.0 - botWidth / 2.0) - corners.w * (width / 2.0 - botWidth / 2.0), -height / 2.0 + air_gap / 2.0);
+    float topWidth = width - (corners.x * (gap * sin(radians(45.0)) + line_width)) - (corners.y * (gap * sin(radians(45.0)) + line_width));
+    float botWidth = width - (corners.z * (gap * sin(radians(45.0)) + line_width)) - (corners.w * (gap * sin(radians(45.0)) + line_width));
+    vec2 topLocation = vec2(corners.y * (width / 2.0 - topWidth / 2.0) - corners.x * (width / 2.0 - topWidth / 2.0), height / 2.0 - line_width / 2.0);
+    vec2 botLocation = vec2(corners.z * (width / 2.0 - botWidth / 2.0) - corners.w * (width / 2.0 - botWidth / 2.0), -height / 2.0 + line_width / 2.0);
 
-    float topBox = boxDist(translate(p, topLocation), vec2(topWidth, air_gap));
-    float botBox = boxDist(translate(p, botLocation), vec2(botWidth, air_gap));
+    float topBox = boxDist(translate(p, topLocation), vec2(topWidth, line_width));
+    float botBox = boxDist(translate(p, botLocation), vec2(botWidth, line_width));
 
-    float leftHeight = height - (corners.y * (gap * sin(radians(45.0)) + air_gap)) - (corners.z * (gap * sin(radians(45.0)) + air_gap));
-    float rightHeight = height - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
-    vec2 leftLocation = vec2(-width / 2.0 + air_gap / 2.0, corners.z * (height / 2.0 - leftHeight / 2.0) - corners.y * (height / 2.0 - leftHeight / 2.0));
-    vec2 rightLocation = vec2(width / 2.0 - air_gap / 2.0, corners.w * (height / 2.0 - rightHeight / 2.0) - corners.x * (height / 2.0 - rightHeight / 2.0));
+    float leftHeight = height - (corners.y * (gap * sin(radians(45.0)) + line_width)) - (corners.z * (gap * sin(radians(45.0)) + line_width));
+    float rightHeight = height - (corners.x * (gap * sin(radians(45.0)) + line_width)) - (corners.w * (gap * sin(radians(45.0)) + line_width));
+    vec2 leftLocation = vec2(-width / 2.0 + line_width / 2.0, corners.z * (height / 2.0 - leftHeight / 2.0) - corners.y * (height / 2.0 - leftHeight / 2.0));
+    vec2 rightLocation = vec2(width / 2.0 - line_width / 2.0, corners.w * (height / 2.0 - rightHeight / 2.0) - corners.x * (height / 2.0 - rightHeight / 2.0));
 
-    float leftBox = boxDist(translate(p, leftLocation), vec2(air_gap, leftHeight));
-    float rightBox = boxDist(translate(p, rightLocation), vec2(air_gap, rightHeight));
+    float leftBox = boxDist(translate(p, leftLocation), vec2(line_width, leftHeight));
+    float rightBox = boxDist(translate(p, rightLocation), vec2(line_width, rightHeight));
 
     float tb = merge(topBox, botBox);
     float lr = merge(leftBox, rightBox);
@@ -573,27 +575,129 @@ float lineThermalDist(in vec2 p, in float outerDia, in float innerDia, in float 
   // https://odbplusplus.com/wp-content/uploads/sites/2/2021/02/odb_spec_user.pdf
   // angle is always 45 degrees
   // num of spokes is always 4
-  float air_gap = (outerDia - innerDia) / 2.0;
+  float line_width = (outerDia - innerDia) / 2.0;
 
   // if angle is a multiple of 45 degrees, draw 4 rects
   vec4 corners = openCorners(angle, num_of_spokes);
-  float topWidth = width - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.y * (gap * sin(radians(45.0)) + air_gap));
-  float botWidth = width - (corners.z * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
-  vec2 topLocation = vec2(corners.y * (width / 2.0 - topWidth / 2.0) - corners.x * (width / 2.0 - topWidth / 2.0), height / 2.0 - air_gap / 2.0);
-  vec2 botLocation = vec2(corners.z * (width / 2.0 - botWidth / 2.0) - corners.w * (width / 2.0 - botWidth / 2.0), -height / 2.0 + air_gap / 2.0);
-  float topLine = roundBoxDist(translate(p, topLocation), vec2(topWidth, air_gap), air_gap / 2.0);
-  float botLine = roundBoxDist(translate(p, botLocation), vec2(botWidth, air_gap), air_gap / 2.0);
+  float topWidth = width - (corners.x * (gap * sin(radians(45.0)) + line_width)) - (corners.y * (gap * sin(radians(45.0)) + line_width));
+  float botWidth = width - (corners.z * (gap * sin(radians(45.0)) + line_width)) - (corners.w * (gap * sin(radians(45.0)) + line_width));
+  vec2 topLocation = vec2(corners.y * (width / 2.0 - topWidth / 2.0) - corners.x * (width / 2.0 - topWidth / 2.0), height / 2.0 - line_width / 2.0);
+  vec2 botLocation = vec2(corners.z * (width / 2.0 - botWidth / 2.0) - corners.w * (width / 2.0 - botWidth / 2.0), -height / 2.0 + line_width / 2.0);
+  float topLine = roundBoxDist(translate(p, topLocation), vec2(topWidth, line_width), line_width / 2.0);
+  float botLine = roundBoxDist(translate(p, botLocation), vec2(botWidth, line_width), line_width / 2.0);
 
-  float leftHeight = height - (corners.y * (gap * sin(radians(45.0)) + air_gap)) - (corners.z * (gap * sin(radians(45.0)) + air_gap));
-  float rightHeight = height - (corners.x * (gap * sin(radians(45.0)) + air_gap)) - (corners.w * (gap * sin(radians(45.0)) + air_gap));
-  vec2 leftLocation = vec2(-width / 2.0 + air_gap / 2.0, corners.z * (height / 2.0 - leftHeight / 2.0) - corners.y * (width / 2.0 - leftHeight / 2.0));
-  vec2 rightLocation = vec2(width / 2.0 - air_gap / 2.0, corners.w * (height / 2.0 - rightHeight / 2.0) - corners.x * (width / 2.0 - rightHeight / 2.0));
-  float leftLine = roundBoxDist(translate(p, leftLocation), vec2(air_gap, leftHeight), air_gap / 2.0);
-  float rightLine = roundBoxDist(translate(p, rightLocation), vec2(air_gap, rightHeight), air_gap / 2.0);
+  float leftHeight = height - (corners.y * (gap * sin(radians(45.0)) + line_width)) - (corners.z * (gap * sin(radians(45.0)) + line_width));
+  float rightHeight = height - (corners.x * (gap * sin(radians(45.0)) + line_width)) - (corners.w * (gap * sin(radians(45.0)) + line_width));
+  vec2 leftLocation = vec2(-width / 2.0 + line_width / 2.0, corners.z * (height / 2.0 - leftHeight / 2.0) - corners.y * (width / 2.0 - leftHeight / 2.0));
+  vec2 rightLocation = vec2(width / 2.0 - line_width / 2.0, corners.w * (height / 2.0 - rightHeight / 2.0) - corners.x * (width / 2.0 - rightHeight / 2.0));
+  float leftLine = roundBoxDist(translate(p, leftLocation), vec2(line_width, leftHeight), line_width / 2.0);
+  float rightLine = roundBoxDist(translate(p, rightLocation), vec2(line_width, rightHeight), line_width / 2.0);
 
   float tb = merge(topLine, botLine);
   float lr = merge(leftLine, rightLine);
   return merge(lr, tb);
+}
+
+float oblongThermalDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float line_width, in float rounded) {
+  float OuterOval = roundBoxDist(p, vec2(width, height), min(height, width) / 2.0);
+  float InnerOval = roundBoxDist(p, vec2(width - line_width * 2.0, height - line_width * 2.0), min(height, width) / 2.0 - line_width);
+  float d = substract(InnerOval, OuterOval);
+  vec2 offset = vec2(max(0.0, width - height) / 2.0, max(0.0, height - width) / 2.0);
+  offset.x = p.x > 0.0 ? offset.x : -offset.x;
+  offset.y = p.y > 0.0 ? offset.y : -offset.y;
+
+  if (width > height) {
+
+    if (mod(angle, 180.0) == 0.0 && num_of_spokes == 2.0) {
+      if (rounded == 1.0) {
+        if (abs(offset.x) < abs(p.x)) {
+          d = roundedRoundThermalDist(translate(p, offset), height, height - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 90.0) == 0.0 && num_of_spokes == 2.0) {
+      if (rounded == 1.0) {
+        if ((line_width + gap) / 2.0 > abs(p.x)) {
+          d = circleDist(translate(abs(p), vec2((line_width + gap) / 2.0, (height - line_width) / 2.0)), line_width / 2.0);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 90.0) == 0.0) {
+      if (rounded == 1.0) {
+        if ((line_width + gap) / 2.0 > abs(p.x)) {
+          d = circleDist(translate(abs(p), vec2((line_width + gap) / 2.0, (height - line_width) / 2.0)), line_width / 2.0);
+        }
+        if (abs(offset.x) < abs(p.x)) {
+          d = roundedRoundThermalDist(translate(p, offset), height, height - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 45.0) == 0.0 && num_of_spokes == 4.0) {
+      if (rounded == 1.0) {
+        if (abs(offset.x) < abs(p.x)) {
+          d = roundedRoundThermalDist(translate(p, offset), height, height - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      } else {
+        if (abs(offset.x) < abs(p.x)) {
+          d = roundThermalDist(translate(p, offset), height, height - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      }
+      return d;
+    } else {
+      return 0.0;
+    }
+  } else {
+    if (mod(angle, 180.0) == 0.0 && num_of_spokes == 2.0) {
+      if (rounded == 1.0) {
+        if ((line_width + gap) / 2.0 > abs(p.y)) {
+          d = circleDist(translate(abs(p), vec2((width - line_width) / 2.0, (line_width + gap) / 2.0)), line_width / 2.0);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 90.0) == 0.0 && num_of_spokes == 2.0) {
+      if (rounded == 1.0) {
+        if (abs(offset.y) < abs(p.y)) {
+          d = roundedRoundThermalDist(translate(p, offset), width, width - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 90.0) == 0.0) {
+      if (rounded == 1.0) {
+        if ((line_width + gap) / 2.0 > abs(p.y)) {
+          d = circleDist(translate(abs(p), vec2((width - line_width) / 2.0, (line_width + gap) / 2.0)), line_width / 2.0);
+        }
+        if (abs(offset.y) < abs(p.y)) {
+          d = roundedRoundThermalDist(translate(p, offset), width, width - line_width * 2.0, angle + 90.0, num_of_spokes - 2.0, gap);
+        }
+      } else {
+        d = max(d, spokeDist(p, angle, num_of_spokes, gap));
+      }
+      return d;
+    } else if (mod(angle, 45.0) == 0.0 && num_of_spokes == 4.0) {
+      if (rounded == 1.0) {
+        if (abs(offset.y) < abs(p.y)) {
+          d = roundedRoundThermalDist(translate(p, offset), width, width - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      } else {
+        if (abs(offset.y) < abs(p.y)) {
+          d = roundThermalDist(translate(p, offset), width, width - line_width * 2.0, angle, num_of_spokes, gap);
+        }
+      }
+      return d;
+    } else {
+      return 0.0;
+    }
+  }
 }
 
 ///////////////////////
@@ -662,7 +766,7 @@ void main() {
   float t_Angle = pullParam(u_Parameters.angle);
   float t_Gap = pullParam(u_Parameters.gap);
   float t_Num_Spokes = pullParam(u_Parameters.num_spokes);
-  // float t_Round = pullParam(u_Parameters.round);
+  float t_Round = pullParam(u_Parameters.round);
   // float t_Cut_Size = pullParam(u_Parameters.cut_size);
 
   // gl_FragColor = vec4(v_Color, 0.4);
@@ -676,7 +780,6 @@ void main() {
   vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
   vec2 OffsetPosition = AspectPosition.xy - v_Location;
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
-  // vec2 T_FragCoord = OffsetPosition * rotate2d(radians(-u_Scale * 30.0));
   vec2 FragCoord = OffsetPosition * rotate2d(radians(-v_Rotation));
 
   vec3 color = v_Color;
@@ -782,6 +885,14 @@ void main() {
     float d = substract(InnerOval, OuterOval);
     float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
     dist = therm;
+  } else if (t_Symbol == u_Shapes.Oblong_Thermal) {
+    // float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
+    // float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
+    // float d = substract(InnerOval, OuterOval);
+    // float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
+    // dist = therm;
+    // in vec2 p, in float width, in float height, in float ang, in float num_of_spokes, in float gap, in float line_width
+    dist = oblongThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Round);
   }
 
   // dist = clamp(u_Shapes.Round / v_Symbol, 0.0, 1.0) * circleDist(T_FragCoord.xy, v_Width);

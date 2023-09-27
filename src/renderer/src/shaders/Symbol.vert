@@ -67,7 +67,7 @@ uniform struct parameters {
 
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
-uniform float u_Scale;
+// uniform float u_Scale;
 uniform vec3 u_Color;
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
@@ -94,7 +94,6 @@ varying float v_Mirror;
 varying vec3 v_Color;
 varying float v_Aspect;
 
-
 mat2 rotate2d(float _angle) {
   return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
 }
@@ -110,10 +109,6 @@ void main() {
   float Aspect = u_Resolution.y / u_Resolution.x;
 
   vec2 Size = vec2(pullParam(u_Parameters.width), pullParam(u_Parameters.height));
-  // float Rotation = pullParam(u_Parameters.rotation);
-  // float Mirror = pullParam(u_Parameters.mirror);
-  // vec2 Location = vec2(pullParam(u_Parameters.x), pullParam(u_Parameters.y));
-  // float Index = pullParam(u_Parameters.index);
 
   // vec2 Size = vec2(a_Width, a_Height);
   float Rotation = a_Rotation;
@@ -121,15 +116,13 @@ void main() {
   vec2 Location = vec2(a_X, a_Y);
   float Index = a_Index;
 
-
-  // vec2 SizedPosition = a_Position * vec2(a_Width / 2.0, a_Height / 2.0);
   vec2 SizedPosition = a_Position * (Size / 2.0);
-  // vec2 RotatedPostion = SizedPosition * rotate2d(radians(u_Scale * 30.0));
   vec2 RotatedPostion = SizedPosition * rotate2d(radians(Rotation));
   vec2 OffsetPosition = RotatedPostion + Location;
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
   vec3 FinalPosition = u_Transform * AspectPosition;
 
+  v_Index = Index;
   v_SymNum = a_SymNum;
   v_Location = Location;
   v_Aspect = Aspect;
@@ -137,6 +130,7 @@ void main() {
   v_Mirror = Mirror;
   v_Color = a_Color;
   v_Polarity = a_Polarity;
+  v_ResizeFactor = a_ResizeFactor;
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 
