@@ -37,16 +37,18 @@ uniform struct shapes {
   float Rounded_Rectangular_Thermal;
   float Oval_Thermal;
   float Oblong_Thermal;
-  float Home_Plate;
-  float Inverted_Home_Plate;
-  float Flat_Home_Plate;
-  float Radiused_Inverted_Home_Plate;
-  float Radiused_Home_Plate;
-  float Cross;
-  float Dogbone;
-  float DPack;
+  // float Home_Plate;
+  // float Inverted_Home_Plate;
+  // float Flat_Home_Plate;
+  // float Radiused_Inverted_Home_Plate;
+  // float Radiused_Home_Plate;
+  // float Cross;
+  // float Dogbone;
+  // float DPack;
   float Ellipse;
   float Moire;
+  float Hole;
+  float Null;
 } u_Shapes;
 
 uniform struct parameters {
@@ -58,11 +60,15 @@ uniform struct parameters {
   int outer_dia;
   int inner_dia;
   int line_width;
+  int line_length;
   int angle;
   int gap;
   int num_spokes;
   int round;
   int cut_size;
+  int ring_width;
+  int ring_gap;
+  int num_rings;
 } u_Parameters;
 
 uniform mat3 u_Transform;
@@ -72,20 +78,24 @@ uniform vec3 u_Color;
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
 
+attribute vec2 a_Vertex_Position;
+
 attribute vec3 a_Color;
-attribute float a_SymNum;
-attribute vec2 a_Position;
-attribute float a_X;
-attribute float a_Y;
-attribute float a_ResizeFactor;
 attribute float a_Index;
+
+// PAD PARAMETERS
+attribute vec2 a_Location;
+attribute float a_SymNum;
+attribute float a_ResizeFactor;
 attribute float a_Polarity;
 attribute float a_Rotation;
 attribute float a_Mirror;
 
 varying float v_Index;
-varying float v_SymNum;
+
+// PAD PARAMETERS
 varying vec2 v_Location;
+varying float v_SymNum;
 varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
@@ -110,13 +120,12 @@ void main() {
 
   vec2 Size = vec2(pullParam(u_Parameters.width), pullParam(u_Parameters.height));
 
-  // vec2 Size = vec2(a_Width, a_Height);
   float Rotation = a_Rotation;
   float Mirror = a_Mirror;
-  vec2 Location = vec2(a_X, a_Y);
+  vec2 Location = a_Location;
   float Index = a_Index;
 
-  vec2 SizedPosition = a_Position * (Size / 2.0);
+  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 RotatedPostion = SizedPosition * rotate2d(radians(Rotation));
   vec2 OffsetPosition = RotatedPostion + Location;
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);

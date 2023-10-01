@@ -1,7 +1,7 @@
 precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
-#define DEBUG 1
+#define DEBUG 0
 
 uniform struct shapes {
   float Round;
@@ -38,16 +38,18 @@ uniform struct shapes {
   float Rounded_Rectangular_Thermal;
   float Oval_Thermal;
   float Oblong_Thermal;
-  float Home_Plate;
-  float Inverted_Home_Plate;
-  float Flat_Home_Plate;
-  float Radiused_Inverted_Home_Plate;
-  float Radiused_Home_Plate;
-  float Cross;
-  float Dogbone;
-  float DPack;
+  // float Home_Plate;
+  // float Inverted_Home_Plate;
+  // float Flat_Home_Plate;
+  // float Radiused_Inverted_Home_Plate;
+  // float Radiused_Home_Plate;
+  // float Cross;
+  // float Dogbone;
+  // float DPack;
   float Ellipse;
   float Moire;
+  float Hole;
+  float Null;
 } u_Shapes;
 
 uniform struct parameters {
@@ -59,11 +61,15 @@ uniform struct parameters {
   highp int outer_dia;
   highp int inner_dia;
   highp int line_width;
+  highp int line_length;
   highp int angle;
   highp int gap;
   highp int num_spokes;
   highp int round;
   highp int cut_size;
+  highp int ring_width;
+  highp int ring_gap;
+  highp int num_rings;
 } u_Parameters;
 
 // #pragma glslify: parameters = require('./modules/test.frag')
@@ -700,6 +706,51 @@ float oblongThermalDist(in vec2 p, in float width, in float height, in float ang
   }
 }
 
+float ellipseDist(vec2 p, vec2 ab) {
+    // symmetry
+  p = abs(p);
+
+    // find root with Newton solver
+  vec2 q = ab * (p - ab);
+  float w = (q.x < q.y) ? 1.570796327 : 0.0;
+  for (int i = 0; i < 5; i++) {
+    vec2 cs = vec2(cos(w), sin(w));
+    vec2 u = ab * vec2(cs.x, cs.y);
+    vec2 v = ab * vec2(-cs.y, cs.x);
+    w = w + dot(p - u, v) / (dot(p - u, u) + dot(v, v));
+  }
+
+    // compute final point and distance
+  float d = length(p - ab * vec2(cos(w), sin(w)));
+
+    // return signed distance
+  return (dot(p / ab, p / ab) > 1.0) ? d : -d;
+}
+
+float moireDist(vec2 p, float ring_width, float ring_gap, float num_rings, float line_width, float line_length, float angle) {
+
+  float a = ((ring_width + ring_gap) / 2.0);
+  // -1.0 < m < 1.0
+  // ratio of the width of the ring to the width of the gap
+  // float m = 0.0;
+  float m = (ring_width - ring_gap) * 2.0;
+
+  // f = frequency of rings
+  float f = 1.0;
+
+  float period = (a / 2.0) * m;
+
+  float rings = (a / PI) * asin(sin((PI / a) * ((length(p) / f) + period))) - period;
+  float rings_edge = circleDist(p, ((ring_width + ring_gap) * num_rings));
+  rings = max(rings, rings_edge);
+
+  float lines = -spokeDist(p, angle, 4.0, line_width);
+  float lines_edge = boxDist(p * rotate2d(-radians(angle)), vec2(line_length, line_length));
+  lines = max(lines, lines_edge);
+
+  return min(rings, lines);
+}
+
 ///////////////////////
 // Masks for drawing //
 ///////////////////////
@@ -763,11 +814,15 @@ void main() {
   float t_Outer_Dia = pullParam(u_Parameters.outer_dia);
   float t_Inner_Dia = pullParam(u_Parameters.inner_dia);
   float t_Line_Width = pullParam(u_Parameters.line_width);
+  float t_Line_Length = pullParam(u_Parameters.line_length);
   float t_Angle = pullParam(u_Parameters.angle);
   float t_Gap = pullParam(u_Parameters.gap);
   float t_Num_Spokes = pullParam(u_Parameters.num_spokes);
   float t_Round = pullParam(u_Parameters.round);
   // float t_Cut_Size = pullParam(u_Parameters.cut_size);
+  float t_Ring_Width = pullParam(u_Parameters.ring_width);
+  float t_Ring_Gap = pullParam(u_Parameters.ring_gap);
+  float t_Num_Rings = pullParam(u_Parameters.num_rings);
 
   // gl_FragColor = vec4(v_Color, 0.4);
   // // gl_FragColor = vec4(v_TexColor, v_TexColor, v_TexColor, 1.0);
@@ -793,7 +848,7 @@ void main() {
 
   float dist = 0.0;
 
-  if (t_Symbol == u_Shapes.Round) {
+  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
   } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
     dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
@@ -886,23 +941,14 @@ void main() {
     float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
     dist = therm;
   } else if (t_Symbol == u_Shapes.Oblong_Thermal) {
-    // float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
-    // float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
-    // float d = substract(InnerOval, OuterOval);
-    // float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
-    // dist = therm;
-    // in vec2 p, in float width, in float height, in float ang, in float num_of_spokes, in float gap, in float line_width
     dist = oblongThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Round);
+  } else if (t_Symbol == u_Shapes.Ellipse) {
+    dist = ellipseDist(FragCoord.xy, vec2(t_Width / 2.0, t_Height / 2.0));
+  } else if (t_Symbol == u_Shapes.Moire) {
+    dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
   }
 
-  // dist = clamp(u_Shapes.Round / v_Symbol, 0.0, 1.0) * circleDist(T_FragCoord.xy, v_Width);
-  // dist = clamp(u_Shapes.Square / v_Symbol, 0.0, 1.0) * boxDist(T_FragCoord.xy, vec2(v_Width, v_Height), 0.0);
-
   draw(dist, u_OutlineMode);
-
-  // if(d > v_Radius) {
-  //   discard;
-  // }
 
   // float Alpha = v_Polarity * ALPHA;
   // if(u_OutlineMode == 1.0) {
