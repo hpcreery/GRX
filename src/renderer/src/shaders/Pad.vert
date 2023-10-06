@@ -52,24 +52,27 @@ uniform struct shapes {
 } u_Shapes;
 
 uniform struct parameters {
-  int symbol;
-  int width;
-  int height;
-  int corner_radius;
-  int corners;
-  int outer_dia;
-  int inner_dia;
-  int line_width;
-  int line_length;
-  int angle;
-  int gap;
-  int num_spokes;
-  int round;
-  int cut_size;
-  int ring_width;
-  int ring_gap;
-  int num_rings;
+  highp int symbol;
+  highp int width;
+  highp int height;
+  highp int corner_radius;
+  highp int corners;
+  highp int outer_dia;
+  highp int inner_dia;
+  highp int line_width;
+  highp int line_length;
+  highp int angle;
+  highp int gap;
+  highp int num_spokes;
+  highp int round;
+  highp int cut_size;
+  highp int ring_width;
+  highp int ring_gap;
+  highp int num_rings;
 } u_Parameters;
+
+// #pragma glslify: parameters = require('./modules/test.frag')
+// uniform parameters u_Parameters;
 
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
@@ -101,7 +104,6 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
 
-varying vec3 v_Color;
 varying float v_Aspect;
 
 mat2 rotate2d(float _angle) {
@@ -131,13 +133,12 @@ void main() {
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
   vec3 FinalPosition = u_Transform * AspectPosition;
 
-  v_Index = Index;
-  v_SymNum = a_SymNum;
-  v_Location = Location;
   v_Aspect = Aspect;
-  v_Rotation = Rotation;
-  v_Mirror = Mirror;
-  v_Color = a_Color;
+  v_Index = a_Index;
+  v_SymNum = a_SymNum;
+  v_Location = a_Location;
+  v_Rotation = a_Rotation;
+  v_Mirror = a_Mirror;
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
 

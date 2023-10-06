@@ -72,9 +72,8 @@ uniform struct parameters {
   highp int num_rings;
 } u_Parameters;
 
-// #pragma glslify: parameters = require('./modules/test.frag')
+// #pragma glslify: parameters = require('./modules/test.frag', symbol=symbol)
 // uniform parameters u_Parameters;
-//  = parameters(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18);
 
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
@@ -89,18 +88,15 @@ uniform vec3 u_Color;
 
 varying float v_Index;
 varying float v_SymNum;
-varying vec2 v_Location;
-varying float v_ResizeFactor;
+varying vec2 v_Start_Location;
+varying vec2 v_End_Location;
 varying float v_Polarity;
-varying float v_Rotation;
-varying float v_Mirror;
 
-varying vec3 v_Color;
 varying float v_Aspect;
 
 // varying float v_TexColor;
 
-const float ALPHA = 0.8;
+const float ALPHA = 1.0;
 
 mat2 rotate2d(float _angle) {
   return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
@@ -804,7 +800,7 @@ float pullParam(float offset) {
   return pixelValue.x;
 }
 
-void main() {
+float drawShape(vec2 FragCoord) {
 
   float t_Symbol = pullParam(u_Parameters.symbol);
   float t_Width = pullParam(u_Parameters.width);
@@ -823,28 +819,6 @@ void main() {
   float t_Ring_Width = pullParam(u_Parameters.ring_width);
   float t_Ring_Gap = pullParam(u_Parameters.ring_gap);
   float t_Num_Rings = pullParam(u_Parameters.num_rings);
-
-  // gl_FragColor = vec4(v_Color, 0.4);
-  // // gl_FragColor = vec4(v_TexColor, v_TexColor, v_TexColor, 1.0);
-  // return;
-
-  float scale = u_InverseTransform[0][0];
-
-  vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
-  vec2 OffsetPosition = AspectPosition.xy - v_Location;
-  // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
-  vec2 FragCoord = OffsetPosition * rotate2d(radians(-v_Rotation));
-
-  vec3 color = v_Color;
-  // vec3 color = u_Color;
-  // vec3 color = vec3(1.0);
-
-  float Alpha = v_Polarity * ALPHA;
-  if (u_OutlineMode) {
-    Alpha = ALPHA;
-  }
 
   float dist = 0.0;
 
@@ -946,9 +920,47 @@ void main() {
     dist = ellipseDist(FragCoord.xy, vec2(t_Width / 2.0, t_Height / 2.0));
   } else if (t_Symbol == u_Shapes.Moire) {
     dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
+  } else {
+    dist = -1.0;
+  }
+  return dist;
+}
+
+void main() {
+
+  // gl_FragColor = vec4(1.0,1.0,1.0, 1.0);
+  // return;
+
+  float scale = u_InverseTransform[0][0];
+
+  vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
+
+  vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
+  vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
+  vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
+  vec2 OffsetPosition = AspectPosition.xy - Center_Location;
+  // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
+  vec2 FragCoord = OffsetPosition;
+
+  vec3 color = u_Color;
+  // vec3 color = vec3(1.0);
+
+  float Alpha = v_Polarity * ALPHA;
+  if (v_Polarity == 0.0) {
+    color = vec3(0.0,0.0,0.0);
   }
 
-  draw(dist, u_OutlineMode);
+  float dX = v_Start_Location.x - v_End_Location.x;
+  float dY = v_Start_Location.y - v_End_Location.y;
+  float len = distance(v_Start_Location, v_End_Location);
+  float angle = atan(dY/dX);
+  float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotate2d(-angle));
+  float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotate2d(-angle));
+  float con = boxDist(FragCoord * rotate2d(-angle), vec2(len, 1.0));
+  float dist = merge(start,end);
+  dist = merge(dist, con);
+
+  dist = draw(dist, u_OutlineMode);
 
   // float Alpha = v_Polarity * ALPHA;
   // if(u_OutlineMode == 1.0) {
