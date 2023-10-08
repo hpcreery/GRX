@@ -98,10 +98,6 @@ varying float v_Aspect;
 
 const float ALPHA = 1.0;
 
-mat2 rotate2d(float _angle) {
-  return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
-}
-
 //////////////////////////////////////
 // Combine distance field functions //
 //////////////////////////////////////
@@ -131,15 +127,24 @@ float intersect(float d1, float d2) {
 // Rotation and translation //
 //////////////////////////////
 
-vec2 rotateCCW(vec2 p, float a) {
-  mat2 m = mat2(cos(a), sin(a), -sin(a), cos(a));
+vec2 rotateCCW(vec2 p, float angle) {
+  mat2 m = mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
   return p * m;
 }
 
-vec2 rotateCW(vec2 p, float a) {
-  mat2 m = mat2(cos(a), -sin(a), sin(a), cos(a));
+vec2 rotateCW(vec2 p, float angle) {
+  mat2 m = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
   return p * m;
 }
+
+mat2 rotateCCW(float angle) {
+  return mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+}
+
+mat2 rotateCW(float angle) {
+  return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+}
+
 
 vec2 translate(vec2 p, vec2 t) {
   return p - t;
@@ -383,7 +388,7 @@ float squareButterflydist(vec2 p, float dist) {
 //   float db = (-leng * sin(n_angle) + gap / 2.0);
 //   float spokes = min(da, db);
 //   if (num_spokes == 1.0) {
-//     p = rotate2d(r_angle) * p;
+//     p = rotateCW(r_angle) * p;
 //     spokes = min(spokes, p.x);
 //   }
 
@@ -402,7 +407,7 @@ float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
   float db = (-leng * sin(n_angle) + gap / 2.0);
   float spokes = min(da, db);
   if (num_spokes == 1.0) {
-    p = rotate2d(r_angle) * p;
+    p = rotateCW(r_angle) * p;
     spokes = min(spokes, p.x);
   }
 
@@ -741,7 +746,7 @@ float moireDist(vec2 p, float ring_width, float ring_gap, float num_rings, float
   rings = max(rings, rings_edge);
 
   float lines = -spokeDist(p, angle, 4.0, line_width);
-  float lines_edge = boxDist(p * rotate2d(-radians(angle)), vec2(line_length, line_length));
+  float lines_edge = boxDist(p * rotateCW(-radians(angle)), vec2(line_length, line_length));
   lines = max(lines, lines_edge);
 
   return min(rings, lines);
@@ -769,7 +774,7 @@ float outerBorderMask(float dist, float width) {
   return alpha1 - alpha2;
 }
 
-float draw(float dist, bool outline) {
+float draw(float dist) {
   if (DEBUG == 1) {
     return dist;
   }
@@ -777,7 +782,7 @@ float draw(float dist, bool outline) {
     discard;
   }
   float scale = u_InverseTransform[0][0];
-  if (dist * float(outline) < -scale * u_PixelSize) {
+  if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
     discard;
   }
   // if(outline) {
@@ -954,21 +959,13 @@ void main() {
   float dY = v_Start_Location.y - v_End_Location.y;
   float len = distance(v_Start_Location, v_End_Location);
   float angle = atan(dY/dX);
-  float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotate2d(-angle));
-  float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotate2d(-angle));
-  float con = boxDist(FragCoord * rotate2d(-angle), vec2(len, 1.0));
+  float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-angle));
+  float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-angle));
+  float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, 1.0));
   float dist = merge(start,end);
   dist = merge(dist, con);
 
-  dist = draw(dist, u_OutlineMode);
-
-  // float Alpha = v_Polarity * ALPHA;
-  // if(u_OutlineMode == 1.0) {
-  //   if(d < v_Radius - u_PixelSize) {
-  //     discard;
-  //   }
-  //   Alpha = ALPHA;
-  // }
+  dist = draw(dist);
 
   if (DEBUG == 1) {
     // if(dist < 0.0 && dist > -u_PixelSize * scale) {

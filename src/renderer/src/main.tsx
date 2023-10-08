@@ -7,7 +7,6 @@ import { useLocalStorage } from '@mantine/hooks'
 import chroma from 'chroma-js'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 
-import GlApp from './rendererv2/GLApp'
 import REGLApp from './rendererv2/REGLApp'
 
 function Main(): JSX.Element | null {
