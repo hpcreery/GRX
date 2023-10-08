@@ -940,25 +940,14 @@ void main() {
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
   vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation));
 
-  vec3 color = u_Color;
   // vec3 color = vec3(1.0);
+  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
+  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
 
-  float Alpha = v_Polarity * ALPHA;
-  if (v_Polarity == 0.0) {
-    color = vec3(0.0,0.0,0.0);
-  }
 
   float dist = drawShape(FragCoord);
 
   dist = draw(dist);
-
-  // float Alpha = v_Polarity * ALPHA;
-  // if(u_OutlineMode == 1.0) {
-  //   if(d < v_Radius - u_PixelSize) {
-  //     discard;
-  //   }
-  //   Alpha = ALPHA;
-  // }
 
   if (DEBUG == 1) {
     // if(dist < 0.0 && dist > -u_PixelSize * scale) {

@@ -947,13 +947,13 @@ void main() {
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
   vec2 FragCoord = OffsetPosition;
 
-  vec3 color = u_Color;
   // vec3 color = vec3(1.0);
+  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
+  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
 
-  float Alpha = v_Polarity * ALPHA;
-  if (v_Polarity == 0.0) {
-    color = vec3(0.0,0.0,0.0);
-  }
+  // ? which one to go by for line width...
+  float t_Outer_Dia = pullParam(u_Parameters.outer_dia);
+  float t_Width = pullParam(u_Parameters.width);
 
   float dX = v_Start_Location.x - v_End_Location.x;
   float dY = v_Start_Location.y - v_End_Location.y;
@@ -961,7 +961,7 @@ void main() {
   float angle = atan(dY/dX);
   float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-angle));
   float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-angle));
-  float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, 1.0));
+  float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, t_Width));
   float dist = merge(start,end);
   dist = merge(dist, con);
 
