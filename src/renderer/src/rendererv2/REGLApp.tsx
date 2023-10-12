@@ -19,9 +19,9 @@ import { RenderEngine } from './engine'
 import { Button } from '@mantine/core'
 
 // N == Number of Shapes
-const N_PADS = 1000
+const N_PADS = 10000
 const N_LINES = 100
-const N_ARCS = 1000
+const N_ARCS = 10
 
 const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
   .fill(Array<number>(PAD_RECORD_PARAMETERS.length).fill(0))
@@ -100,30 +100,38 @@ const LINE_RECORDS_ARRAY2 = Array<number[]>(N_LINES)
 const ARC_RECORDS_ARRAY = Array<number[]>(N_ARCS)
   .fill(Array<number>(LINE_RECORD_PARAMETERS.length).fill(0))
   .map((_, i) => {
-    const angle = Math.random() * 2 * Math.PI
-    const radius = Math.random() * 10
+    const start_angle = Math.abs(Math.random()) * 360
+    const end_angle = Math.abs(Math.random()) * 360
+    const radius = Math.abs(Math.random()) * 0.1
+    const center_x = (Math.random() - 0.5) * 1
+    const center_y = (Math.random() - 0.5) * 1
+    function degreesToRadians(degrees: number): number {
+      return degrees * (Math.PI / 180);
+    }
     return new Arc_Record({
       // index of feature
       index: i / N_ARCS,
 
       // Center point.
-      xc: (Math.random() - 0.5) * 1,
-      yc: (Math.random() - 0.5) * 1,
+      xc: center_x,
+      yc: center_y,
 
       // Start point.
-      xs: Math.cos(angle) * radius,
-      ys: Math.sin(angle) * radius,
+      xs: center_x + Math.cos(degreesToRadians(start_angle)) * radius,
+      ys: center_y + Math.sin(degreesToRadians(start_angle)) * radius,
 
       // End point.
-      xe: Math.cos(angle + Math.PI) * radius,
-      ye: Math.sin(angle + Math.PI) * radius,
+      xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
+      ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
 
       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
+      sym_num: STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
-      // polarity: i % 2,
+      // polarity: 1,
       polarity: Math.random() > 0.5 ? 1 : 0,
+      clockwise: Math.random() > 0.5 ? 1 : 0,
+      // clockwise: 0,
     }).toArray()
   })
 
@@ -153,19 +161,19 @@ const SYMBOLS_ARRAY = new Array<number[]>(STANDARD_SYMBOLS.length)
   })
 
 function REGLApp(): JSX.Element {
-  const reglRef = React.useRef<HTMLDivElement>(document.createElement('div'))
+  const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
   const [engine, setEngine] = React.useState<RenderEngine>()
 
   React.useEffect(() => {
     const Engine = new RenderEngine({
-      container: reglRef.current,
+      container: containerRef.current,
       attributes: {
         antialias: false,
       }
     })
 
 
-    Engine.OUTLINE_MODE = true
+    Engine.OUTLINE_MODE = false
 
     Engine.addLayer({
       pads: PAD_RECORDS_ARRAY,
@@ -195,11 +203,12 @@ function REGLApp(): JSX.Element {
 
   return (
     <>
+      {engine ? <StatsWidget /> : null}
       <Button onClick={(): void => { engine ? engine.OUTLINE_MODE = !engine.OUTLINE_MODE : null }}>OUTLINE</Button>
       <Button onClick={(): void => { engine ? engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) : null }}>COLOR</Button>
       <div
-        ref={reglRef}
-        id="regl-element"
+        ref={containerRef}
+        id="container-element"
         style={{
           width: '100%',
           height: '100%'
@@ -209,5 +218,57 @@ function REGLApp(): JSX.Element {
     </>
   )
 }
+
+function StatsWidget(): JSX.Element {
+  const [fps, setFPS] = React.useState<number>(0)
+  const [avgFPS, setAvgFPS] = React.useState<number>(0)
+
+  let totalFPS = 0
+  const frameTimes: number[] = []
+  let frameCursor = 0
+  const maxFrames = 20
+  let numFrames = 0
+
+  let then = performance.now()
+  function updateFPS(now: number): void {
+    now *= 0.001
+    const deltaTime = now - then
+    then = now
+    const fps = 1 / deltaTime
+    setFPS(Math.round(fps))
+    totalFPS += fps - (frameTimes[frameCursor] || 0)
+    frameTimes[frameCursor++] = fps
+    numFrames = Math.max(numFrames, frameCursor)
+    frameCursor %= maxFrames
+    const avgFPS = totalFPS / numFrames
+    setAvgFPS(Math.round(avgFPS))
+    requestAnimationFrame(updateFPS)
+  }
+
+  React.useEffect(() => {
+    requestAnimationFrame(updateFPS)
+  }, [])
+
+
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      padding: 10,
+      background: 'rgba(0,0,0,0.5)',
+      color: 'white',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      pointerEvents: 'none',
+      zIndex: 100,
+      userSelect: 'none',
+    }}>
+      <div>FPS: {fps}</div>
+      <div>Avg FPS: {avgFPS}</div>
+    </div>
+  )
+}
+
 
 export default REGLApp

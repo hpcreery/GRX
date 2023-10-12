@@ -2,12 +2,15 @@ import PadFrag from '../shaders/Pad.frag'
 import PadVert from '../shaders/Pad.vert'
 import LineFrag from '../shaders/Line.frag'
 import LineVert from '../shaders/Line.vert'
+import ArcFrag from '../shaders/Arc.frag'
+import ArcVert from '../shaders/Arc.vert'
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Records from './records'
 import * as Symbols from './symbols'
 import Layer from './layer'
 import { glFloatSize } from './constants'
+// import createStatsWidget from 'regl-stats-widget'
 
 const { LINE_RECORD_PARAMETERS, PAD_RECORD_PARAMETERS, ARC_RECORD_PARAMETERS } = Records
 const { SYMBOL_PARAMETERS, STANDARD_SYMBOLS_MAP, SYMBOL_PARAMETERS_MAP } = Symbols
@@ -45,6 +48,12 @@ interface LineUniforms {
   u_Color: vec3
 }
 
+interface ArcUniforms {
+  u_SymbolsTexture: REGL.Texture2D
+  u_SymbolsTextureDimensions: vec2
+  u_Color: vec3
+}
+
 interface FeaturesAttributes {
   a_Vertex_Position: vec2[]
 }
@@ -59,7 +68,7 @@ interface PadAttributes {
   a_Mirror: CustomAttributeConfig
 }
 
-interface Lineattributes {
+interface LineAttributes {
   a_SymNum: CustomAttributeConfig
   a_Start_Location: CustomAttributeConfig
   a_End_Location: CustomAttributeConfig
@@ -67,10 +76,26 @@ interface Lineattributes {
   a_Polarity: CustomAttributeConfig
 }
 
+interface ArcAttributes {
+  a_SymNum: CustomAttributeConfig
+  a_Start_Location: CustomAttributeConfig
+  a_End_Location: CustomAttributeConfig
+  a_Center_Location: CustomAttributeConfig
+  a_Index: CustomAttributeConfig
+  a_Polarity: CustomAttributeConfig
+  a_Clockwise: CustomAttributeConfig
+}
+
 export interface RenderEngineConfig {
   container: HTMLElement
   attributes?: WebGLContextAttributes | undefined
 }
+
+// export interface Stats {
+//   renderDuration: number,
+//   fps: number,
+//   lastRenderTime: number
+// }
 
 export class RenderEngine {
   private _FPS = 60
@@ -88,13 +113,19 @@ export class RenderEngine {
   public MIN_ZOOM = 0.01
 
   private zoom = 1
-  private position: vec2 = [0, 0]
+  private position: vec2 = [-500, 400]
   private velocity: vec2 = [0, 0]
   private dragging = false
   private transform = mat3.create()
   private inverseTransform = mat3.create()
 
   private dirty = true
+
+  // public stats: Stats = {
+  //   renderDuration: 0,
+  //   fps: 0,
+  //   lastRenderTime: 0
+  // }
 
   // public layers: Layer[] = []
   // make layers a proxy so that we can call render when a property is updated
@@ -110,13 +141,14 @@ export class RenderEngine {
   drawFeatures: REGL.DrawCommand<REGL.DefaultContext, FeaturesProps>
   drawPads: REGL.DrawCommand<REGL.DefaultContext, Layer>
   drawLines: REGL.DrawCommand<REGL.DefaultContext, Layer>
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext, Layer>
 
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
 
     this.regl = REGL({
       container,
-      extensions: ['angle_instanced_arrays', 'OES_texture_float', 'EXT_blend_minmax'],
+      extensions: ['angle_instanced_arrays', 'OES_texture_float', 'EXT_blend_minmax', 'EXT_disjoint_timer_query'],
       attributes
     })
 
@@ -199,7 +231,7 @@ export class RenderEngine {
       offset: 0
     })
 
-    this.drawLines = this.regl<LineUniforms, Lineattributes, Layer>({
+    this.drawLines = this.regl<LineUniforms, LineAttributes, Layer>({
       frag: LineFrag,
 
       vert: LineVert,
@@ -321,6 +353,81 @@ export class RenderEngine {
       instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyPads
     })
 
+    this.drawArcs = this.regl<ArcUniforms, ArcAttributes, Layer>({
+      frag: ArcFrag,
+
+      vert: ArcVert,
+
+      uniforms: {
+        u_SymbolsTexture: (_context: REGL.DefaultContext, props: Layer) => props.symbols,
+        u_SymbolsTextureDimensions: (_context: REGL.DefaultContext, props: Layer) => [
+          props.symbols.width,
+          props.symbols.height
+        ],
+        u_Color: this.regl.prop<Layer, 'color'>('color')
+      },
+
+      attributes: {
+        a_Index: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 0 * glFloatSize,
+          divisor: 1
+        },
+
+        a_Start_Location: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 1 * glFloatSize,
+          divisor: 1
+        },
+
+        a_End_Location: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 3 * glFloatSize,
+          divisor: 1
+        },
+
+        a_Center_Location: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 5 * glFloatSize,
+          divisor: 1
+        },
+
+        a_SymNum: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 7 * glFloatSize,
+          divisor: 1
+        },
+
+        a_Polarity: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 8 * glFloatSize,
+          divisor: 1
+        },
+
+        a_Clockwise: {
+          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
+          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: 9 * glFloatSize,
+          divisor: 1
+        }
+      },
+
+      instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyArcs
+    })
+
+    // this.stats = createStatsWidget([
+    //   // [this.drawFeatures, 'drawFeatures'],
+    //   [this.drawPads, 'drawPads'],
+    //   [this.drawLines, 'drawLines'],
+    //   [this.drawArcs, 'drawArcs']
+    // ])
+
     mat3.identity(this.transform)
     mat3.identity(this.inverseTransform)
     this.zoomAtPoint(0, 0, this.zoom)
@@ -329,6 +436,8 @@ export class RenderEngine {
     // this.regl.frame(() => this.render())
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     // new ResizeObserver(this.resize.bind(this)).observe(this.CONTAINER)
+
+    // this.renderTick()
 
     // PROPERTY UPDATES TO CALL RENDER
     return new Proxy(this, {
@@ -433,25 +542,6 @@ export class RenderEngine {
     )
   }
 
-  public render(force = false): void {
-    if (!this.dirty && !force) return
-    this.dirty = false
-    setTimeout(() => (this.dirty = true), this._FPSMS)
-    this.drawFeatures(() => {
-      this.regl.clear({
-        depth: 1
-      })
-      for (const layer of this.layers) {
-        if (!layer.visible) continue
-        this.regl.clear({
-          depth: 1
-        })
-        if (layer.qtyPads > 0) this.drawPads(layer)
-        if (layer.qtyLines > 0) this.drawLines(layer)
-      }
-    })
-  }
-
   public updateTransform(): void {
     // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
     const { zoom, position } = this
@@ -513,6 +603,27 @@ export class RenderEngine {
     this.position[0] = x - (x - this.position[0]) * zoomBy
     this.position[1] = y - (y - this.position[1]) * zoomBy
     this.updateTransform()
+  }
+
+  public render(force = false): void {
+    // return
+    if (!this.dirty && !force) return
+    this.dirty = false
+    setTimeout(() => (this.dirty = true), this._FPSMS)
+    this.drawFeatures(() => {
+      this.regl.clear({
+        depth: 1
+      })
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
+        this.regl.clear({
+          depth: 1
+        })
+        if (layer.qtyPads > 0) this.drawPads(layer)
+        if (layer.qtyLines > 0) this.drawLines(layer)
+        if (layer.qtyArcs > 0) this.drawArcs(layer)
+      }
+    })
   }
 
   public destroy(): void {

@@ -63,6 +63,7 @@
     "pixi.js": "^7.2.4",
     "react-color": "^2.19.3",
     "regl": "^2.1.0",
+    "regl-stats-widget": "^0.0.1",
     "web-vitals": "^3.3.1"
   },
   "devDependencies": {
