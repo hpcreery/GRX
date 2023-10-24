@@ -128,8 +128,8 @@ const ARC_RECORDS_ARRAY = Array<number[]>(N_ARCS)
       sym_num: STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
-      // polarity: 1,
-      polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 1,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
       clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
     }).toArray()
@@ -179,6 +179,7 @@ function REGLApp(): JSX.Element {
       pads: PAD_RECORDS_ARRAY,
       lines: LINE_RECORDS_ARRAY,
       symbols: SYMBOLS_ARRAY,
+      // arcs: ARC_RECORDS_ARRAY,
     })
 
     Engine.addLayer({
@@ -190,8 +191,6 @@ function REGLApp(): JSX.Element {
       arcs: ARC_RECORDS_ARRAY,
       symbols: SYMBOLS_ARRAY,
     })
-
-    Engine.render()
 
     setEngine(Engine)
 

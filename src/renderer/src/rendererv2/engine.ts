@@ -10,9 +10,15 @@ import * as Records from './records'
 import * as Symbols from './symbols'
 import Layer from './layer'
 import { glFloatSize } from './constants'
-// import createStatsWidget from 'regl-stats-widget'
 
-const { LINE_RECORD_PARAMETERS, PAD_RECORD_PARAMETERS, ARC_RECORD_PARAMETERS } = Records
+const {
+  LINE_RECORD_PARAMETERS,
+  PAD_RECORD_PARAMETERS,
+  ARC_RECORD_PARAMETERS,
+  LINE_RECORD_PARAMETERS_MAP,
+  PAD_RECORD_PARAMETERS_MAP,
+  ARC_RECORD_PARAMETERS_MAP
+} = Records
 const { SYMBOL_PARAMETERS, STANDARD_SYMBOLS_MAP, SYMBOL_PARAMETERS_MAP } = Symbols
 
 interface FeaturesProps {}
@@ -86,6 +92,18 @@ interface ArcAttributes {
   a_Clockwise: CustomAttributeConfig
 }
 
+interface ScreenRenderProps {
+  frameBuffer: REGL.Framebuffer
+}
+
+interface ScreenRenderUniforms {
+  render_tex: REGL.Framebuffer
+}
+
+interface FrameBufferRenderProps {
+  frameBuffer: REGL.Framebuffer
+}
+
 export interface RenderEngineConfig {
   container: HTMLElement
   attributes?: WebGLContextAttributes | undefined
@@ -96,6 +114,8 @@ export interface RenderEngineConfig {
 //   fps: number,
 //   lastRenderTime: number
 // }
+
+const MACROS: { [key: string]: REGL.Framebuffer } = {}
 
 export class RenderEngine {
   private _FPS = 60
@@ -143,13 +163,24 @@ export class RenderEngine {
   drawLines: REGL.DrawCommand<REGL.DefaultContext, Layer>
   drawArcs: REGL.DrawCommand<REGL.DefaultContext, Layer>
 
+  renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
+  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
 
     this.regl = REGL({
       container,
-      extensions: ['angle_instanced_arrays', 'OES_texture_float', 'EXT_blend_minmax', 'EXT_disjoint_timer_query'],
+      extensions: ['angle_instanced_arrays', 'OES_texture_float'],
       attributes
+    })
+
+    MACROS['test'] = this.regl.framebuffer({
+      color: this.regl.texture({
+        width: 1,
+        height: 1
+      }),
+      depth: true
     })
 
     this.regl.clear({
@@ -164,26 +195,9 @@ export class RenderEngine {
 
       depth: {
         enable: true,
-        mask: true,
+        mask: false,
         func: 'less',
         range: [0, 1]
-      },
-
-      blend: {
-        enable: false,
-
-        func: {
-          srcRGB: 'one minus dst color',
-          srcAlpha: 0,
-          dstRGB: 0,
-          dstAlpha: 0
-        },
-
-        equation: {
-          rgb: 'subtract',
-          alpha: 'subtract'
-        },
-        color: [0.5, 0.5, 0.5, 0]
       },
 
       uniforms: {
@@ -231,6 +245,63 @@ export class RenderEngine {
       offset: 0
     })
 
+    this.renderToFrameBuffer = this.regl<
+      Record<string, never>,
+      Record<string, never>,
+      FrameBufferRenderProps
+    >({
+      // Essentially Defaults
+      // depth: {
+      //   enable: true,
+      //   mask: false,
+      //   func: 'less',
+      //   range: [0, 1]
+      // },
+      framebuffer: (_context: REGL.DefaultContext, props: FrameBufferRenderProps) =>
+        props.frameBuffer
+    })
+
+    this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
+      {
+        vert: `
+        precision mediump float;
+        attribute vec2 a_Vertex_Position;
+        varying vec2 v_UV;
+        void main () {
+          v_UV = a_Vertex_Position;
+          gl_Position = vec4(a_Vertex_Position, 0, 1);
+        }
+      `,
+        frag: `
+        precision mediump float;
+        uniform sampler2D render_tex;
+        varying vec2 v_UV;
+        void main () {
+          gl_FragColor = texture2D(render_tex, (v_UV * 0.5) + 0.5);
+        }
+      `,
+        blend: {
+          enable: true,
+
+          func: {
+            srcRGB: 'one minus dst color',
+            srcAlpha: 'constant alpha',
+            dstRGB: 'one minus src color',
+            dstAlpha: 'zero'
+          },
+
+          equation: {
+            rgb: 'add',
+            alpha: 'add'
+          },
+          color: [0.5, 0.5, 0.5, 0.1]
+        },
+        uniforms: {
+          render_tex: (_context: REGL.DefaultContext, props: ScreenRenderProps) => props.frameBuffer
+        }
+      }
+    )
+
     this.drawLines = this.regl<LineUniforms, LineAttributes, Layer>({
       frag: LineFrag,
 
@@ -249,35 +320,35 @@ export class RenderEngine {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 0 * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 1 * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 3 * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 5 * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 6 * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         }
       },
@@ -303,49 +374,49 @@ export class RenderEngine {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 0 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 1 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 3 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_ResizeFactor: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 4 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 5 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Rotation: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 6 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
           divisor: 1
         },
 
         a_Mirror: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 7 * glFloatSize,
+          offset: PAD_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
           divisor: 1
         }
       },
@@ -371,62 +442,55 @@ export class RenderEngine {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 0 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 1 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 3 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_Center_Location: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 5 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 7 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 8 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Clockwise: {
           buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: 9 * glFloatSize,
+          offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
           divisor: 1
         }
       },
 
       instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyArcs
     })
-
-    // this.stats = createStatsWidget([
-    //   // [this.drawFeatures, 'drawFeatures'],
-    //   [this.drawPads, 'drawPads'],
-    //   [this.drawLines, 'drawLines'],
-    //   [this.drawArcs, 'drawArcs']
-    // ])
 
     mat3.identity(this.transform)
     mat3.identity(this.inverseTransform)
@@ -610,7 +674,7 @@ export class RenderEngine {
     if (!this.dirty && !force) return
     this.dirty = false
     setTimeout(() => (this.dirty = true), this._FPSMS)
-    this.drawFeatures(() => {
+    this.drawFeatures(({ viewportWidth, viewportHeight }) => {
       this.regl.clear({
         depth: 1
       })
@@ -619,9 +683,22 @@ export class RenderEngine {
         this.regl.clear({
           depth: 1
         })
-        if (layer.qtyPads > 0) this.drawPads(layer)
-        if (layer.qtyLines > 0) this.drawLines(layer)
-        if (layer.qtyArcs > 0) this.drawArcs(layer)
+
+        const layer_fbo = this.regl.framebuffer({
+          shape: [viewportWidth, viewportHeight]
+        })
+        layer_fbo.use(() => {
+          if (layer.qtyPads > 0) this.drawPads(layer)
+          if (layer.qtyLines > 0) this.drawLines(layer)
+          if (layer.qtyArcs > 0) this.drawArcs(layer)
+        })
+        // this.renderToFrameBuffer({ frameBuffer: layer_fbo }, () => {
+        //   if (layer.qtyPads > 0) this.drawPads(layer)
+        //   if (layer.qtyLines > 0) this.drawLines(layer)
+        //   if (layer.qtyArcs > 0) this.drawArcs(layer)
+        // })
+        this.renderToScreen({ frameBuffer: layer_fbo })
+        layer_fbo.destroy()
       }
     })
   }
