@@ -5,7 +5,7 @@ import LineVert from '../shaders/Line.vert'
 import ArcFrag from '../shaders/Arc.frag'
 import ArcVert from '../shaders/Arc.vert'
 import REGL from 'regl'
-import { mat3, vec2, vec3 } from 'gl-matrix'
+import { mat3, vec2, vec3, vec4 } from 'gl-matrix'
 import * as Records from './records'
 import * as Symbols from './symbols'
 import Layer from './layer'
@@ -128,6 +128,7 @@ export class RenderEngine {
     return this._FPS
   }
   public OUTLINE_MODE = false
+  public BACKGROUND_COLOR: [number, number, number, number] = [0, 0, 0, 0]
   public readonly CONTAINER: HTMLElement
   public MAX_ZOOM = 100
   public MIN_ZOOM = 0.01
@@ -166,6 +167,8 @@ export class RenderEngine {
   renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
+  private layer_fbo: REGL.Framebuffer2D
+
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
 
@@ -185,6 +188,12 @@ export class RenderEngine {
 
     this.regl.clear({
       depth: 1
+    })
+
+    this.layer_fbo = this.regl.framebuffer()
+    this.regl.clear({
+      depth: 1,
+      framebuffer: this.layer_fbo
     })
 
     this.drawFeatures = this.regl<FeaturesUniforms, FeaturesAttributes, FeaturesProps>({
@@ -280,22 +289,29 @@ export class RenderEngine {
           gl_FragColor = texture2D(render_tex, (v_UV * 0.5) + 0.5);
         }
       `,
+
         blend: {
           enable: true,
 
           func: {
             srcRGB: 'one minus dst color',
-            srcAlpha: 'constant alpha',
+            srcAlpha: 'one',
             dstRGB: 'one minus src color',
-            dstAlpha: 'zero'
+            dstAlpha: 'one'
           },
 
           equation: {
             rgb: 'add',
             alpha: 'add'
           },
-          color: [0.5, 0.5, 0.5, 0.1]
+          color: [0, 0, 0, 0.1]
         },
+
+        depth: {
+          enable: false,
+          mask: false
+        },
+
         uniforms: {
           render_tex: (_context: REGL.DefaultContext, props: ScreenRenderProps) => props.frameBuffer
         }
@@ -506,7 +522,7 @@ export class RenderEngine {
     // PROPERTY UPDATES TO CALL RENDER
     return new Proxy(this, {
       set(target, name, value): boolean {
-        const setables = ['OUTLINE_MODE']
+        const setables = ['OUTLINE_MODE', 'BACKGROUND_COLOR']
         if (setables.includes(String(name))) {
           target[name] = value
           target.render(true)
@@ -540,10 +556,27 @@ export class RenderEngine {
   private addControls(): void {
     this.CONTAINER.onwheel = (e): void => {
       const { x: offsetX, y: offsetY } = this.CONTAINER.getBoundingClientRect()
-      this.zoomAtPoint(e.clientX - offsetX, e.clientY - offsetY, e.deltaY)
+      this.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
     }
-    this.CONTAINER.onmousedown = (_e): void => {
+    this.CONTAINER.onmousedown = (e): void => {
       this.dragging = true
+      const { x: offsetX, y: offsetY } = this.CONTAINER.getBoundingClientRect()
+      // console.log(`oX:${offsetX}, oY:${offsetY}`)
+      // console.log(`width:${(e.target as HTMLCanvasElement).clientWidth}, height:${(e.target as HTMLCanvasElement).clientHeight}`)
+      // console.log(window.devicePixelRatio)
+      const xpos = e.clientX - offsetX
+      const ypos = (e.target as HTMLCanvasElement).offsetHeight - (e.clientY - offsetY)
+      // console.log(`X:${xpos}, Y:${ypos}`)
+      for (const layer of this.layers) {
+        const data = this.regl.read({
+          framebuffer: layer.framebuffer,
+          x: xpos * window.devicePixelRatio,
+          y: ypos * window.devicePixelRatio,
+          width: 1,
+          height: 1
+        })
+        console.log(layer.name + ': ' + data.join(', '))
+      }
     }
     this.CONTAINER.onmouseup = (_e): void => {
       this.dragging = false
@@ -558,11 +591,13 @@ export class RenderEngine {
   }
 
   public addLayer({
+    name,
     pads,
     lines,
     arcs,
     symbols
   }: {
+    name: string
     pads?: REGL.BufferData
     lines?: REGL.BufferData
     arcs?: REGL.BufferData
@@ -595,13 +630,15 @@ export class RenderEngine {
     })
     this.layers.push(
       new Layer({
+        name,
         pads: padBuffer,
         qtyPads: (pads ?? []).length,
         lines: lineBuffer,
         qtyLines: (lines ?? []).length,
         arcs: arcBuffer,
         qtyArcs: (arcs ?? []).length,
-        symbols: symbolTexture
+        symbols: symbolTexture,
+        framebuffer: this.regl.framebuffer()
       })
     )
   }
@@ -670,35 +707,34 @@ export class RenderEngine {
   }
 
   public render(force = false): void {
-    // return
     if (!this.dirty && !force) return
     this.dirty = false
-    setTimeout(() => (this.dirty = true), this._FPSMS)
     this.drawFeatures(({ viewportWidth, viewportHeight }) => {
       this.regl.clear({
+        color: this.BACKGROUND_COLOR,
         depth: 1
       })
+      setTimeout(() => (this.dirty = true), this._FPSMS)
+
       for (const layer of this.layers) {
         if (!layer.visible) continue
+        layer.framebuffer.resize(viewportWidth, viewportHeight)
         this.regl.clear({
+          framebuffer: layer.framebuffer,
+          color: this.BACKGROUND_COLOR,
           depth: 1
         })
-
-        const layer_fbo = this.regl.framebuffer({
-          shape: [viewportWidth, viewportHeight]
+        layer.framebuffer.use(() => {
+          this.drawPads(layer)
+          this.drawLines(layer)
+          this.drawArcs(layer)
         })
-        layer_fbo.use(() => {
-          if (layer.qtyPads > 0) this.drawPads(layer)
-          if (layer.qtyLines > 0) this.drawLines(layer)
-          if (layer.qtyArcs > 0) this.drawArcs(layer)
-        })
-        // this.renderToFrameBuffer({ frameBuffer: layer_fbo }, () => {
+        // this.renderToFrameBuffer({ frameBuffer: layer.framebuffer }, () => {
         //   if (layer.qtyPads > 0) this.drawPads(layer)
         //   if (layer.qtyLines > 0) this.drawLines(layer)
         //   if (layer.qtyArcs > 0) this.drawArcs(layer)
         // })
-        this.renderToScreen({ frameBuffer: layer_fbo })
-        layer_fbo.destroy()
+        this.renderToScreen({ frameBuffer: layer.framebuffer })
       }
     })
   }

@@ -19,7 +19,7 @@ import { RenderEngine } from './engine'
 import { Button } from '@mantine/core'
 
 // N == Number of Shapes
-const N_PADS = 10000
+const N_PADS = 5000
 const N_LINES = 100
 const N_ARCS = 10
 
@@ -176,6 +176,7 @@ function REGLApp(): JSX.Element {
     Engine.OUTLINE_MODE = false
 
     Engine.addLayer({
+      name: 'layer1',
       pads: PAD_RECORDS_ARRAY,
       lines: LINE_RECORDS_ARRAY,
       symbols: SYMBOLS_ARRAY,
@@ -183,11 +184,13 @@ function REGLApp(): JSX.Element {
     })
 
     Engine.addLayer({
+      name: 'layer2',
       lines: LINE_RECORDS_ARRAY2,
       symbols: SYMBOLS_ARRAY,
     })
 
     Engine.addLayer({
+      name: 'layer3',
       arcs: ARC_RECORDS_ARRAY,
       symbols: SYMBOLS_ARRAY,
     })
@@ -225,7 +228,7 @@ function StatsWidget(): JSX.Element {
   let totalFPS = 0
   const frameTimes: number[] = []
   let frameCursor = 0
-  const maxFrames = 20
+  const maxFrames = 100
   let numFrames = 0
 
   let then = performance.now()
