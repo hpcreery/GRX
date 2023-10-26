@@ -115,23 +115,57 @@ export interface RenderEngineConfig {
 //   lastRenderTime: number
 // }
 
+interface PointerCoordinates {
+  x: number
+  y: number
+}
+
+const PointerEvents = {
+  POINTER_DOWN: 'pointerdown',
+  POINTER_UP: 'pointerup',
+  POINTER_MOVE: 'pointermove'
+} as const
+
+export type PointerEvent = CustomEvent<PointerCoordinates>
+
 const MACROS: { [key: string]: REGL.Framebuffer } = {}
 
+interface RenderSettings {
+  FPS: number
+  MSPFRAME: number
+  OUTLINE_MODE: boolean
+  BACKGROUND_COLOR: [number, number, number, number]
+  MAX_ZOOM: number
+  MIN_ZOOM: number
+}
+
 export class RenderEngine {
-  private _FPS = 60
-  private _FPSMS = 1000 / 60
-  public set FPS(value: number) {
-    this._FPS = value
-    this._FPSMS = 1000 / value
-  }
-  public get FPS(): number {
-    return this._FPS
-  }
-  public OUTLINE_MODE = false
-  public BACKGROUND_COLOR: [number, number, number, number] = [0, 0, 0, 0]
+  public SETTINGS: RenderSettings = new Proxy(
+    {
+      MSPFRAME: 1000 / 60,
+      get FPS(): number {
+        return 1000 / this.MSPFRAME
+      },
+      set FPS(value: number) {
+        this.MSPFRAME = 1000 / value
+      },
+      OUTLINE_MODE: false,
+      BACKGROUND_COLOR: [0, 0, 0, 0],
+      MAX_ZOOM: 100,
+      MIN_ZOOM: 0.01
+    },
+    {
+      set: (target, name, value): boolean => {
+        target[name] = value
+        this.render(true)
+        return true
+      }
+    }
+  )
+
   public readonly CONTAINER: HTMLElement
-  public MAX_ZOOM = 100
-  public MIN_ZOOM = 0.01
+
+  public pointer: EventTarget = new EventTarget()
 
   private zoom = 1
   private position: vec2 = [-500, 400]
@@ -148,7 +182,6 @@ export class RenderEngine {
   //   lastRenderTime: 0
   // }
 
-  // public layers: Layer[] = []
   // make layers a proxy so that we can call render when a property is updated
   public layers: Layer[] = new Proxy([], {
     set: (target, name, value): boolean => {
@@ -227,7 +260,7 @@ export class RenderEngine {
               window.devicePixelRatio,
             0.5
           ),
-        u_OutlineMode: () => this.OUTLINE_MODE,
+        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
@@ -518,18 +551,6 @@ export class RenderEngine {
     // new ResizeObserver(this.resize.bind(this)).observe(this.CONTAINER)
 
     // this.renderTick()
-
-    // PROPERTY UPDATES TO CALL RENDER
-    return new Proxy(this, {
-      set(target, name, value): boolean {
-        const setables = ['OUTLINE_MODE', 'BACKGROUND_COLOR']
-        if (setables.includes(String(name))) {
-          target[name] = value
-          target.render(true)
-        }
-        return true
-      }
-    })
   }
 
   private resize(): void {
@@ -538,7 +559,7 @@ export class RenderEngine {
   }
 
   private toss(): void {
-    const { dragging, _FPSMS } = this
+    const { dragging } = this
     if (this.velocity[0] === 0 && this.velocity[1] === 0) return
     if (dragging) return
     vec2.add(this.position, this.position, this.velocity)
@@ -548,25 +569,52 @@ export class RenderEngine {
       this.velocity[0] = 0
       this.velocity[1] = 0
     } else {
-      setTimeout(() => this.toss(), _FPSMS)
-      // setTimeout(this.toss.bind(this), _FPSMS)
+      setTimeout(() => this.toss(), this.SETTINGS.MSPFRAME)
+      // setTimeout(this.toss.bind(this), this.SETTINGS.MSPFRAME)
     }
   }
 
+  public getWorldPositionFromMouse(e: MouseEvent): vec2 {
+    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+    const mouse_element_pos = [e.clientX - offsetX, e.clientY - offsetY]
+    const mouse_normalize_pos = [
+      mouse_element_pos[0] / width,
+      (height - mouse_element_pos[1]) / height
+    ]
+    return this.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
+  }
+
+  public getWorldPosition(x: number, y: number): vec2 {
+    const { width, height } = this.CONTAINER.getBoundingClientRect()
+    const aspect = height / width
+    const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
+    const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.inverseTransform)
+    const mouse_aspect = vec2.multiply(vec2.create(), mouse, [1 / aspect, 1])
+
+    return mouse_aspect
+  }
+
   private addControls(): void {
+    const sendPointerEvent = (
+      mouse: MouseEvent,
+      event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
+    ): void => {
+      const [x, y] = this.getWorldPositionFromMouse(mouse)
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCoordinates>(event_type, {
+          detail: { x, y }
+        })
+      )
+    }
     this.CONTAINER.onwheel = (e): void => {
       const { x: offsetX, y: offsetY } = this.CONTAINER.getBoundingClientRect()
       this.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
     }
     this.CONTAINER.onmousedown = (e): void => {
       this.dragging = true
-      const { x: offsetX, y: offsetY } = this.CONTAINER.getBoundingClientRect()
-      // console.log(`oX:${offsetX}, oY:${offsetY}`)
-      // console.log(`width:${(e.target as HTMLCanvasElement).clientWidth}, height:${(e.target as HTMLCanvasElement).clientHeight}`)
-      // console.log(window.devicePixelRatio)
+      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
-      const ypos = (e.target as HTMLCanvasElement).offsetHeight - (e.clientY - offsetY)
-      // console.log(`X:${xpos}, Y:${ypos}`)
+      const ypos = height - (e.clientY - offsetY)
       for (const layer of this.layers) {
         const data = this.regl.read({
           framebuffer: layer.framebuffer,
@@ -577,16 +625,22 @@ export class RenderEngine {
         })
         console.log(layer.name + ': ' + data.join(', '))
       }
+
+      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
-    this.CONTAINER.onmouseup = (_e): void => {
+    this.CONTAINER.onmouseup = (e): void => {
       this.dragging = false
       this.toss()
+
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onmousemove = (e): void => {
       if (!this.dragging) return
       this.velocity = [e.movementX, e.movementY]
       vec2.add(this.position, this.position, this.velocity)
       this.updateTransform()
+
+      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
     }
   }
 
@@ -690,12 +744,12 @@ export class RenderEngine {
     const { zoom } = this
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
-    if (newZoom < this.MIN_ZOOM) {
-      newZoom = this.MIN_ZOOM
+    if (newZoom < this.SETTINGS.MIN_ZOOM) {
+      newZoom = this.SETTINGS.MIN_ZOOM
       zoomBy = newZoom / zoom
       this.zoom = newZoom
-    } else if (newZoom > this.MAX_ZOOM) {
-      newZoom = this.MAX_ZOOM
+    } else if (newZoom > this.SETTINGS.MAX_ZOOM) {
+      newZoom = this.SETTINGS.MAX_ZOOM
       zoomBy = newZoom / zoom
       this.zoom = newZoom
     } else {
@@ -711,17 +765,17 @@ export class RenderEngine {
     this.dirty = false
     this.drawFeatures(({ viewportWidth, viewportHeight }) => {
       this.regl.clear({
-        color: this.BACKGROUND_COLOR,
+        color: this.SETTINGS.BACKGROUND_COLOR,
         depth: 1
       })
-      setTimeout(() => (this.dirty = true), this._FPSMS)
+      setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
 
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.framebuffer.resize(viewportWidth, viewportHeight)
         this.regl.clear({
           framebuffer: layer.framebuffer,
-          color: this.BACKGROUND_COLOR,
+          color: this.SETTINGS.BACKGROUND_COLOR,
           depth: 1
         })
         layer.framebuffer.use(() => {

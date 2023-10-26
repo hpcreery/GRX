@@ -173,7 +173,7 @@ function REGLApp(): JSX.Element {
     })
 
 
-    Engine.OUTLINE_MODE = false
+    Engine.SETTINGS.OUTLINE_MODE = false
 
     Engine.addLayer({
       name: 'layer1',
@@ -195,9 +195,12 @@ function REGLApp(): JSX.Element {
       symbols: SYMBOLS_ARRAY,
     })
 
+    Engine.pointer.addEventListener('pointerdown', console.log)
+
     setEngine(Engine)
 
     return () => {
+      Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }
 
@@ -206,7 +209,7 @@ function REGLApp(): JSX.Element {
   return (
     <>
       {engine ? <StatsWidget /> : null}
-      <Button onClick={(): void => { engine ? engine.OUTLINE_MODE = !engine.OUTLINE_MODE : null }}>OUTLINE</Button>
+      <Button onClick={(): void => { engine ? engine.SETTINGS.OUTLINE_MODE = !engine.SETTINGS.OUTLINE_MODE : null }}>OUTLINE</Button>
       <Button onClick={(): void => { engine ? engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) : null }}>COLOR</Button>
       <div
         ref={containerRef}
