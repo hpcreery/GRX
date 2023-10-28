@@ -4,24 +4,25 @@ import {
   STANDARD_SYMBOLS,
   STANDARD_SYMBOLS_MAP,
   SYMBOL_PARAMETERS,
-  SYMBOL_PARAMETERS_MAP,
+  // SYMBOL_PARAMETERS_MAP,
   Symbol
 } from './symbols'
 import {
   PAD_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS,
-  ARC_RECORD_PARAMETERS,
+  // ARC_RECORD_PARAMETERS,
   Pad_Record,
   Line_Record,
   Arc_Record
 } from './records'
 import { RenderEngine } from './engine'
 import { Button } from '@mantine/core'
+import { IPlotRecord } from './types'
 
 // N == Number of Shapes
-const N_PADS = 5000
+const N_PADS = 500
 const N_LINES = 100
-const N_ARCS = 10
+const N_ARCS = 50
 
 const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
   .fill(Array<number>(PAD_RECORD_PARAMETERS.length).fill(0))
@@ -44,12 +45,12 @@ const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    }).toArray()
+    })
   })
 
 
-const LINE_RECORDS_ARRAY = Array<number[]>(N_LINES)
-  .fill(Array<number>(LINE_RECORD_PARAMETERS.length).fill(0))
+const LINE_RECORDS_ARRAY = Array<IPlotRecord[]>(N_LINES)
+  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
@@ -70,11 +71,11 @@ const LINE_RECORDS_ARRAY = Array<number[]>(N_LINES)
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
-    }).toArray()
+    })
   })
 
-const LINE_RECORDS_ARRAY2 = Array<number[]>(N_LINES)
-  .fill(Array<number>(LINE_RECORD_PARAMETERS.length).fill(0))
+const LINE_RECORDS_ARRAY2 = Array<IPlotRecord[]>(N_LINES)
+  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
@@ -94,11 +95,11 @@ const LINE_RECORDS_ARRAY2 = Array<number[]>(N_LINES)
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
-    }).toArray()
+    })
   })
 
-const ARC_RECORDS_ARRAY = Array<number[]>(N_ARCS)
-  .fill(Array<number>(LINE_RECORD_PARAMETERS.length).fill(0))
+const ARC_RECORDS_ARRAY = Array<IPlotRecord[]>(N_ARCS)
+  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
   .map((_, i) => {
     const start_angle = Math.abs(Math.random()) * 360
     const end_angle = Math.abs(Math.random()) * 360
@@ -132,12 +133,12 @@ const ARC_RECORDS_ARRAY = Array<number[]>(N_ARCS)
       // polarity: Math.random() > 0.5 ? 1 : 0,
       clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
-    }).toArray()
+    })
   })
 
 
-const SYMBOLS_ARRAY = new Array<number[]>(STANDARD_SYMBOLS.length)
-  .fill(Array<number>(SYMBOL_PARAMETERS.length).fill(0))
+const SYMBOLS_ARRAY = new Array<IPlotRecord[]>(STANDARD_SYMBOLS.length)
+  .fill(Array<IPlotRecord>(SYMBOL_PARAMETERS.length))
   .map((_, i) => {
     return new Symbol({
       symbol: i, // symbol
@@ -157,7 +158,7 @@ const SYMBOLS_ARRAY = new Array<number[]>(STANDARD_SYMBOLS.length)
       ring_width: 0.001, // — Ring width
       ring_gap: 0.004, // — Ring gap
       num_rings: 2 // — Number of rings
-    }).toArray()
+    })
   })
 
 function REGLApp(): JSX.Element {
@@ -177,22 +178,23 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'layer1',
-      pads: PAD_RECORDS_ARRAY,
-      lines: LINE_RECORDS_ARRAY,
-      symbols: SYMBOLS_ARRAY,
+      // pads: PAD_RECORDS_ARRAY,
+      // lines: LINE_RECORDS_ARRAY,
+      // symbols: SYMBOLS_ARRAY,
       // arcs: ARC_RECORDS_ARRAY,
+      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
     })
 
     Engine.addLayer({
       name: 'layer2',
-      lines: LINE_RECORDS_ARRAY2,
-      symbols: SYMBOLS_ARRAY,
+      // lines: LINE_RECORDS_ARRAY2,
+      // symbols: SYMBOLS_ARRAY,
+      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY2]
     })
 
     Engine.addLayer({
       name: 'layer3',
-      arcs: ARC_RECORDS_ARRAY,
-      symbols: SYMBOLS_ARRAY,
+      data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY]
     })
 
     Engine.pointer.addEventListener('pointerdown', console.log)

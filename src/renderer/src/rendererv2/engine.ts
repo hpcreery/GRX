@@ -1,37 +1,12 @@
-import PadFrag from '../shaders/Pad.frag'
-import PadVert from '../shaders/Pad.vert'
-import LineFrag from '../shaders/Line.frag'
-import LineVert from '../shaders/Line.vert'
-import ArcFrag from '../shaders/Arc.frag'
-import ArcVert from '../shaders/Arc.vert'
 import REGL from 'regl'
-import { mat3, vec2, vec3, vec4 } from 'gl-matrix'
-import * as Records from './records'
+import { mat3, vec2 } from 'gl-matrix'
 import * as Symbols from './symbols'
 import Layer from './layer'
-import { glFloatSize } from './constants'
+import { IPlotRecord } from './types'
 
-const {
-  LINE_RECORD_PARAMETERS,
-  PAD_RECORD_PARAMETERS,
-  ARC_RECORD_PARAMETERS,
-  LINE_RECORD_PARAMETERS_MAP,
-  PAD_RECORD_PARAMETERS_MAP,
-  ARC_RECORD_PARAMETERS_MAP
-} = Records
-const { SYMBOL_PARAMETERS, STANDARD_SYMBOLS_MAP, SYMBOL_PARAMETERS_MAP } = Symbols
+const { STANDARD_SYMBOLS_MAP, SYMBOL_PARAMETERS_MAP } = Symbols
 
 interface FeaturesProps {}
-
-type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
-  buffer:
-    | REGL.Buffer
-    | undefined
-    | null
-    | false
-    | ((context: REGL.DefaultContext, props: Layer) => REGL.Buffer)
-    | REGL.DynamicVariable<REGL.Buffer>
-}
 
 interface FeaturesUniforms {
   u_Transform: mat3
@@ -42,55 +17,10 @@ interface FeaturesUniforms {
   u_OutlineMode: boolean
 }
 
-interface PadUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
-}
-
-interface LineUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
-}
-
-interface ArcUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
-}
-
 interface FeaturesAttributes {
   a_Vertex_Position: vec2[]
 }
 
-interface PadAttributes {
-  a_SymNum: CustomAttributeConfig
-  a_Location: CustomAttributeConfig
-  a_ResizeFactor: CustomAttributeConfig
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-  a_Rotation: CustomAttributeConfig
-  a_Mirror: CustomAttributeConfig
-}
-
-interface LineAttributes {
-  a_SymNum: CustomAttributeConfig
-  a_Start_Location: CustomAttributeConfig
-  a_End_Location: CustomAttributeConfig
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-}
-
-interface ArcAttributes {
-  a_SymNum: CustomAttributeConfig
-  a_Start_Location: CustomAttributeConfig
-  a_End_Location: CustomAttributeConfig
-  a_Center_Location: CustomAttributeConfig
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-  a_Clockwise: CustomAttributeConfig
-}
 
 interface ScreenRenderProps {
   frameBuffer: REGL.Framebuffer
@@ -193,9 +123,6 @@ export class RenderEngine {
 
   regl: REGL.Regl
   drawFeatures: REGL.DrawCommand<REGL.DefaultContext, FeaturesProps>
-  drawPads: REGL.DrawCommand<REGL.DefaultContext, Layer>
-  drawLines: REGL.DrawCommand<REGL.DefaultContext, Layer>
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext, Layer>
 
   renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
@@ -351,196 +278,6 @@ export class RenderEngine {
       }
     )
 
-    this.drawLines = this.regl<LineUniforms, LineAttributes, Layer>({
-      frag: LineFrag,
-
-      vert: LineVert,
-
-      uniforms: {
-        u_SymbolsTexture: (_context: REGL.DefaultContext, props: Layer) => props.symbols,
-        u_SymbolsTextureDimensions: (_context: REGL.DefaultContext, props: Layer) => [
-          props.symbols.width,
-          props.symbols.height
-        ],
-        u_Color: this.regl.prop<Layer, 'color'>('color')
-      },
-
-      attributes: {
-        a_Index: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
-
-        a_Start_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-          divisor: 1
-        },
-
-        a_End_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-          divisor: 1
-        },
-
-        a_SymNum: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
-
-        a_Polarity: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.lines,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        }
-      },
-
-      instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyLines
-    })
-
-    this.drawPads = this.regl<PadUniforms, PadAttributes, Layer>({
-      frag: PadFrag,
-
-      vert: PadVert,
-
-      uniforms: {
-        u_SymbolsTexture: (_context: REGL.DefaultContext, props: Layer) => props.symbols,
-        u_SymbolsTextureDimensions: (_context: REGL.DefaultContext, props: Layer) => [
-          props.symbols.width,
-          props.symbols.height
-        ],
-        u_Color: this.regl.prop<Layer, 'color'>('color')
-      },
-
-      attributes: {
-        a_Index: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
-
-        a_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
-          divisor: 1
-        },
-
-        a_SymNum: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
-
-        a_ResizeFactor: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-          divisor: 1
-        },
-
-        a_Polarity: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        },
-
-        a_Rotation: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-          divisor: 1
-        },
-
-        a_Mirror: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.pads,
-          stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-          offset: PAD_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
-          divisor: 1
-        }
-      },
-
-      instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyPads
-    })
-
-    this.drawArcs = this.regl<ArcUniforms, ArcAttributes, Layer>({
-      frag: ArcFrag,
-
-      vert: ArcVert,
-
-      uniforms: {
-        u_SymbolsTexture: (_context: REGL.DefaultContext, props: Layer) => props.symbols,
-        u_SymbolsTextureDimensions: (_context: REGL.DefaultContext, props: Layer) => [
-          props.symbols.width,
-          props.symbols.height
-        ],
-        u_Color: this.regl.prop<Layer, 'color'>('color')
-      },
-
-      attributes: {
-        a_Index: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
-
-        a_Start_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-          divisor: 1
-        },
-
-        a_End_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-          divisor: 1
-        },
-
-        a_Center_Location: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
-          divisor: 1
-        },
-
-        a_SymNum: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
-
-        a_Polarity: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        },
-
-        a_Clockwise: {
-          buffer: (_context: REGL.DefaultContext, props: Layer) => props.arcs,
-          stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
-          divisor: 1
-        }
-      },
-
-      instances: (_context: REGL.DefaultContext, props: Layer) => props.qtyArcs
-    })
-
     mat3.identity(this.transform)
     mat3.identity(this.inverseTransform)
     this.zoomAtPoint(0, 0, this.zoom)
@@ -612,7 +349,7 @@ export class RenderEngine {
     }
     this.CONTAINER.onmousedown = (e): void => {
       this.dragging = true
-      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+      const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
       const ypos = height - (e.clientY - offsetY)
       for (const layer of this.layers) {
@@ -646,53 +383,16 @@ export class RenderEngine {
 
   public addLayer({
     name,
-    pads,
-    lines,
-    arcs,
-    symbols
+    data,
   }: {
     name: string
-    pads?: REGL.BufferData
-    lines?: REGL.BufferData
-    arcs?: REGL.BufferData
-    symbols?: REGL.BufferData
+    data: IPlotRecord[]
   }): void {
-    const symbolTexture = this.regl.texture({
-      width: SYMBOL_PARAMETERS.length,
-      height: Object.keys(STANDARD_SYMBOLS_MAP).length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols
-    })
-    const padBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (pads ?? []).length * PAD_RECORD_PARAMETERS.length * glFloatSize,
-      data: pads
-    })
-    const lineBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (lines ?? []).length * LINE_RECORD_PARAMETERS.length * glFloatSize,
-      data: lines
-    })
-    const arcBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (arcs ?? []).length * ARC_RECORD_PARAMETERS.length * glFloatSize,
-      data: arcs
-    })
     this.layers.push(
       new Layer({
         name,
-        pads: padBuffer,
-        qtyPads: (pads ?? []).length,
-        lines: lineBuffer,
-        qtyLines: (lines ?? []).length,
-        arcs: arcBuffer,
-        qtyArcs: (arcs ?? []).length,
-        symbols: symbolTexture,
-        framebuffer: this.regl.framebuffer()
+        data,
+        regl: this.regl,
       })
     )
   }
@@ -763,13 +463,12 @@ export class RenderEngine {
   public render(force = false): void {
     if (!this.dirty && !force) return
     this.dirty = false
+    this.regl.clear({
+      color: this.SETTINGS.BACKGROUND_COLOR,
+      depth: 1
+    })
+    setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
     this.drawFeatures(({ viewportWidth, viewportHeight }) => {
-      this.regl.clear({
-        color: this.SETTINGS.BACKGROUND_COLOR,
-        depth: 1
-      })
-      setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
-
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.framebuffer.resize(viewportWidth, viewportHeight)
@@ -778,16 +477,7 @@ export class RenderEngine {
           color: this.SETTINGS.BACKGROUND_COLOR,
           depth: 1
         })
-        layer.framebuffer.use(() => {
-          this.drawPads(layer)
-          this.drawLines(layer)
-          this.drawArcs(layer)
-        })
-        // this.renderToFrameBuffer({ frameBuffer: layer.framebuffer }, () => {
-        //   if (layer.qtyPads > 0) this.drawPads(layer)
-        //   if (layer.qtyLines > 0) this.drawLines(layer)
-        //   if (layer.qtyArcs > 0) this.drawArcs(layer)
-        // })
+        layer.render()
         this.renderToScreen({ frameBuffer: layer.framebuffer })
       }
     })

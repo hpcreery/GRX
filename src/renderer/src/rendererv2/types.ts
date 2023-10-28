@@ -1,7 +1,4 @@
-export interface IBufferElement {
-  toArray(): number[]
-}
-
-export interface ITextureElement {
-  toArray(): number[]
+export interface IPlotRecord {
+  type: string
+  get array(): number[]
 }

@@ -1,4 +1,4 @@
-import { IBufferElement } from './types'
+import { IPlotRecord } from './types'
 
 export const PAD_RECORD_PARAMETERS = [
   'index',
@@ -52,7 +52,7 @@ export const ARC_RECORD_PARAMETERS_MAP = Object.fromEntries(
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
-export class Pad_Record implements TPad_Record, IBufferElement {
+export class Pad_Record implements TPad_Record, IPlotRecord {
   public type = 'pad' as const
   public index = 0
   public x = 0
@@ -67,10 +67,8 @@ export class Pad_Record implements TPad_Record, IBufferElement {
     Object.assign(this, record)
   }
 
-  public toArray(): number[] {
-    const array: number[] = []
-    PAD_RECORD_PARAMETERS.forEach((key, i) => (array[i] = this[key]))
-    return array
+  public get array(): number[] {
+    return PAD_RECORD_PARAMETERS.map((key) => this[key])
   }
 }
 
@@ -78,7 +76,8 @@ export class Pad_Record implements TPad_Record, IBufferElement {
 
 export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
-export class Line_Record implements TLine_Record, IBufferElement {
+export class Line_Record implements TLine_Record, IPlotRecord {
+  public type = 'line' as const
   public index = 0
   public xs = 0
   public ys = 0
@@ -91,10 +90,8 @@ export class Line_Record implements TLine_Record, IBufferElement {
     Object.assign(this, record)
   }
 
-  public toArray(): number[] {
-    const array: number[] = []
-    LINE_RECORD_PARAMETERS.forEach((key, i) => (array[i] = this[key]))
-    return array
+  public get array(): number[] {
+    return LINE_RECORD_PARAMETERS.map((key) => this[key])
   }
 }
 
@@ -102,7 +99,8 @@ export class Line_Record implements TLine_Record, IBufferElement {
 
 export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
-export class Arc_Record implements TArc_Record, IBufferElement {
+export class Arc_Record implements TArc_Record, IPlotRecord {
+  public type = 'arc' as const
   public index = 0
   public xs = 0
   public ys = 0
@@ -118,10 +116,8 @@ export class Arc_Record implements TArc_Record, IBufferElement {
     Object.assign(this, record)
   }
 
-  public toArray(): number[] {
-    const array: number[] = []
-    ARC_RECORD_PARAMETERS.forEach((key, i) => (array[i] = this[key]))
-    return array
+  public get array(): number[] {
+    return ARC_RECORD_PARAMETERS.map((key) => this[key])
   }
 }
 

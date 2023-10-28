@@ -1,4 +1,4 @@
-import { ITextureElement } from './types'
+import { IPlotRecord } from './types'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -82,7 +82,8 @@ export const SYMBOL_PARAMETERS_MAP = Object.fromEntries(
 
 export type TSymbol = typeof SYMBOL_PARAMETERS_MAP
 
-export class Symbol implements TSymbol, ITextureElement {
+export class Symbol implements TSymbol, IPlotRecord {
+  public type = 'symbol' as const
   public symbol: number = STANDARD_SYMBOLS_MAP.Null
   public width = 0
   public height = 0
@@ -105,9 +106,7 @@ export class Symbol implements TSymbol, ITextureElement {
     Object.assign(this, symbol)
   }
 
-  public toArray(): number[] {
-    const array: number[] = []
-    SYMBOL_PARAMETERS.forEach((key, i) => (array[i] = this[key]))
-    return array
+  public get array(): number[] {
+    return SYMBOL_PARAMETERS.map((key) => this[key])
   }
 }
