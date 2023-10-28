@@ -67,6 +67,7 @@ interface RenderSettings {
   BACKGROUND_COLOR: [number, number, number, number]
   MAX_ZOOM: number
   MIN_ZOOM: number
+  ZOOM_TO_CURSOR: boolean
 }
 
 export class RenderEngine {
@@ -82,7 +83,8 @@ export class RenderEngine {
       OUTLINE_MODE: false,
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
-      MIN_ZOOM: 0.01
+      MIN_ZOOM: 0.01,
+      ZOOM_TO_CURSOR: true
     },
     {
       set: (target, name, value): boolean => {
@@ -344,8 +346,12 @@ export class RenderEngine {
       )
     }
     this.CONTAINER.onwheel = (e): void => {
-      const { x: offsetX, y: offsetY } = this.CONTAINER.getBoundingClientRect()
-      this.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
+      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+      if (this.SETTINGS.ZOOM_TO_CURSOR) {
+        this.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
+      } else {
+        this.zoomAtPoint(width / 2, height / 2, e.deltaY)
+      }
     }
     this.CONTAINER.onmousedown = (e): void => {
       this.dragging = true
