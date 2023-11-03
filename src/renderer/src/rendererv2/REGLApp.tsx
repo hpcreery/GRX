@@ -16,13 +16,13 @@ import {
   Arc_Record
 } from './records'
 import { RenderEngine } from './engine'
-import { Button } from '@mantine/core'
+import { Button, Switch } from '@mantine/core'
 import { IPlotRecord } from './types'
 
 // N == Number of Shapes
-const N_PADS = 500
-const N_LINES = 100
-const N_ARCS = 50
+const N_PADS = 10
+const N_LINES = 10
+const N_ARCS = 10
 
 const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
   .fill(Array<number>(PAD_RECORD_PARAMETERS.length).fill(0))
@@ -177,32 +177,26 @@ function REGLApp(): JSX.Element {
     Engine.SETTINGS.OUTLINE_MODE = false
 
     Engine.addLayer({
-      name: 'layer1',
-      // pads: PAD_RECORDS_ARRAY,
-      // lines: LINE_RECORDS_ARRAY,
-      // symbols: SYMBOLS_ARRAY,
-      // arcs: ARC_RECORDS_ARRAY,
+      name: 'a',
       data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
     })
 
     Engine.addLayer({
-      name: 'layer2',
-      // lines: LINE_RECORDS_ARRAY2,
-      // symbols: SYMBOLS_ARRAY,
+      name: 'b',
       data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY2]
     })
 
     Engine.addLayer({
-      name: 'layer3',
+      name: 'c',
       data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY]
     })
 
-    Engine.pointer.addEventListener('pointerdown', console.log)
+    // Engine.pointer.addEventListener('pointerdown', console.log)
 
     setEngine(Engine)
 
     return () => {
-      Engine.pointer.removeEventListener('pointerdown', console.log)
+      // Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }
 
@@ -210,9 +204,25 @@ function REGLApp(): JSX.Element {
 
   return (
     <>
-      {engine ? <StatsWidget /> : null}
-      <Button onClick={(): void => { engine ? engine.SETTINGS.OUTLINE_MODE = !engine.SETTINGS.OUTLINE_MODE : null }}>OUTLINE</Button>
-      <Button onClick={(): void => { engine ? engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) : null }}>COLOR</Button>
+      {engine ?
+        <>
+          {/* <StatsWidget /> */}
+          <Button
+            onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
+            Color
+          </Button>
+          <br />
+          Outline
+          <Switch
+            defaultChecked={engine.SETTINGS.OUTLINE_MODE}
+            onChange={(e): void => { engine.SETTINGS.OUTLINE_MODE = e.target.checked }} />
+          <br />
+          Zoom To Cursor
+          <Switch
+            defaultChecked={engine.SETTINGS.ZOOM_TO_CURSOR}
+            onChange={(e): void => { engine.SETTINGS.ZOOM_TO_CURSOR = e.target.checked }} />
+        </>
+        : null}
       <div
         ref={containerRef}
         id="container-element"

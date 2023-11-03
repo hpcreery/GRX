@@ -78,79 +78,47 @@ interface ArcAttributes {
 }
 
 export default class Layer {
+  public regl: REGL.Regl
+
   public visible = true
   public name: string
-  public regl: REGL.Regl
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
+
   public pads: REGL.Buffer
-  public qtyPads: number
+  get qtyPads(): number {
+    return this.pads.stats.size / (PAD_RECORD_PARAMETERS.length * glFloatSize * 4) // not sure why 4
+  }
+
   public lines: REGL.Buffer
-  public qtyLines: number
+  get qtyLines(): number {
+    return this.lines.stats.size / (LINE_RECORD_PARAMETERS.length * glFloatSize * 4)
+  }
+
   public arcs: REGL.Buffer
-  public qtyArcs: number
+  get qtyArcs(): number {
+    return this.arcs.stats.size / (ARC_RECORD_PARAMETERS.length * glFloatSize * 4)
+  }
+
+  public surfaces: REGL.Texture2D[] = []
+
   public symbols: REGL.Texture2D
+
   public framebuffer: REGL.Framebuffer2D
+
   drawPads: REGL.DrawCommand<REGL.DefaultContext>
   drawLines: REGL.DrawCommand<REGL.DefaultContext>
   drawArcs: REGL.DrawCommand<REGL.DefaultContext>
-  constructor(props: { regl: REGL.Regl; data: IPlotRecord[]; name: string }) {
+
+  macros: { [key: string]: REGL.Framebuffer } = {}
+
+  constructor(props: { regl: REGL.Regl; name: string }) {
     this.regl = props.regl
 
-    const pads: number[][] = []
-    const lines: number[][] = []
-    const arcs: number[][] = []
-    const symbols: number[][] = []
-    const data = props.data
-
-    data.forEach((record) => {
-      if (record.type === 'pad') {
-        pads.push(record.array)
-      }
-      if (record.type === 'line') {
-        lines.push(record.array)
-      }
-      if (record.type === 'arc') {
-        arcs.push(record.array)
-      }
-      if (record.type === 'symbol') {
-        symbols.push(record.array)
-      }
-    })
-
-    const symbolTexture = this.regl.texture({
-      width: SYMBOL_PARAMETERS.length,
-      height: Object.keys(STANDARD_SYMBOLS_MAP).length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols
-    })
-    const padBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (pads ?? []).length * PAD_RECORD_PARAMETERS.length * glFloatSize,
-      data: pads
-    })
-    const lineBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (lines ?? []).length * LINE_RECORD_PARAMETERS.length * glFloatSize,
-      data: lines
-    })
-    const arcBuffer = this.regl.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: (arcs ?? []).length * ARC_RECORD_PARAMETERS.length * glFloatSize,
-      data: arcs
-    })
-
     this.name = props.name
-    this.qtyPads = (pads ?? []).length
-    this.qtyLines = (lines ?? []).length
-    this.qtyArcs = (arcs ?? []).length
-    this.pads = padBuffer
-    this.lines = lineBuffer
-    this.arcs = arcBuffer
-    this.symbols = symbolTexture
+    this.pads = this.regl.buffer(0)
+    this.lines = this.regl.buffer(0)
+    this.arcs = this.regl.buffer(0)
+    this.symbols = this.regl.texture()
     this.framebuffer = this.regl.framebuffer()
 
     this.drawLines = this.regl<LineUniforms, LineAttributes>({
@@ -333,10 +301,83 @@ export default class Layer {
 
       instances: () => this.qtyArcs
     })
+
+    this.macros['test'] = this.regl.framebuffer({
+      color: this.regl.texture({
+        width: 1,
+        height: 1
+      }),
+      depth: true
+    })
   }
 
-  public render(): void {
+  public init(data: (Records.Record | Symbols.Symbol)[]): this {
+    const pads: number[][] = []
+    const lines: number[][] = []
+    const arcs: number[][] = []
+    const symbols: number[][] = []
+    const contours: Records.Contour[][] = []
+
+    data.forEach((record) => {
+      if (record.type === 'pad') {
+        pads.push(record.array)
+      }
+      if (record.type === 'line') {
+        lines.push(record.array)
+      }
+      if (record.type === 'arc') {
+        arcs.push(record.array)
+      }
+      if (record.type === 'symbol') {
+        symbols.push(record.array)
+      }
+      if (record.type === 'surface') {
+        contours.push(record.array)
+      }
+    })
+
+    // TODO: make symbols not only expend in width but also in height
+    this.symbols({
+      width: SYMBOL_PARAMETERS.length,
+      height: Object.keys(STANDARD_SYMBOLS_MAP).length,
+      type: 'float',
+      format: 'luminance',
+      data: symbols,
+    })
+    this.pads({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: pads.length * PAD_RECORD_PARAMETERS.length * glFloatSize,
+      data: pads
+    })
+    this.lines({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: lines.length * LINE_RECORD_PARAMETERS.length * glFloatSize,
+      data: lines
+    })
+    this.arcs({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: arcs.length * ARC_RECORD_PARAMETERS.length * glFloatSize,
+      data: arcs
+    })
+
+    // this.qtyPads = pads.length
+    // this.qtyLines = lines.length
+    // this.qtyArcs = qtyArcs.length
+
+    return this
+  }
+
+  public render(context: REGL.DefaultContext): void {
     if (!this.visible) return
+    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.regl.clear({
+      framebuffer: this.framebuffer,
+      color: [0, 0, 0, 0],
+      depth: 1
+    })
     this.framebuffer.use(() => {
       this.drawPads()
       this.drawLines()

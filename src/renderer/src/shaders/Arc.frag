@@ -72,9 +72,8 @@ uniform struct parameters {
   highp int num_rings;
 } u_Parameters;
 
-// #pragma glslify: parameters = require('./modules/test.frag', symbol=symbol)
-// uniform parameters u_Parameters;
 
+// COMMON UNIFORMS
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
 uniform mat3 u_Transform;
@@ -84,8 +83,11 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
-// uniform float u_Scale;
 
+// COMMON VARYINGS
+varying float v_Aspect;
+
+// ARC VARYINGS
 varying float v_Index;
 varying float v_SymNum;
 varying vec2 v_Start_Location;
@@ -93,9 +95,6 @@ varying vec2 v_End_Location;
 varying vec2 v_Center_Location;
 varying float v_Polarity;
 varying float v_Clockwise;
-varying float v_Aspect;
-
-// varying float v_TexColor;
 
 const float ALPHA = 1.0;
 

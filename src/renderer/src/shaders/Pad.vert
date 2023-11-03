@@ -2,55 +2,6 @@ precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
 
-uniform struct shapes {
-  float Round;
-  float Square;
-  float Rectangle;
-  float Rounded_Rectangle;
-  float Chamfered_Rectangle;
-  float Oval;
-  float Diamond;
-  float Octagon;
-  float Round_Donut;
-  float Square_Donut;
-  float SquareRound_Donut;
-  float Rounded_Square_Donut;
-  float Rectange_Donut;
-  float Rounded_Rectangle_Donut;
-  float Oval_Donut;
-  float Horizontal_Hexagon;
-  float Vertical_Hexagon;
-  float Butterfly;
-  float Square_Butterfly;
-  float Triangle;
-  float Half_Oval;
-  float Rounded_Round_Thermal;
-  float Squared_Round_Thermal;
-  float Square_Thermal;
-  float Open_Corners_Square_Thermal;
-  float Line_Thermal;
-  float Square_Round_Thermal;
-  float Rectangular_Thermal;
-  float Rectangular_Thermal_Open_Corners;
-  float Rounded_Square_Thermal;
-  float Rounded_Square_Thermal_Open_Corners;
-  float Rounded_Rectangular_Thermal;
-  float Oval_Thermal;
-  float Oblong_Thermal;
-  // float Home_Plate;
-  // float Inverted_Home_Plate;
-  // float Flat_Home_Plate;
-  // float Radiused_Inverted_Home_Plate;
-  // float Radiused_Home_Plate;
-  // float Cross;
-  // float Dogbone;
-  // float DPack;
-  float Ellipse;
-  float Moire;
-  float Hole;
-  float Null;
-} u_Shapes;
-
 uniform struct parameters {
   highp int symbol;
   highp int width;
@@ -71,22 +22,22 @@ uniform struct parameters {
   highp int num_rings;
 } u_Parameters;
 
-// #pragma glslify: parameters = require('./modules/test.frag')
-// uniform parameters u_Parameters;
 
+// COMMON UNIFORMS
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
-// uniform float u_Scale;
-uniform vec3 u_Color;
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
 
+// COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
 
-attribute vec3 a_Color;
-attribute float a_Index;
+// COMMON VARYINGS
+varying float v_Aspect;
 
-// PAD PARAMETERS
+
+// PAD ATTRIBUTES
+attribute float a_Index;
 attribute vec2 a_Location;
 attribute float a_SymNum;
 attribute float a_ResizeFactor;
@@ -94,9 +45,8 @@ attribute float a_Polarity;
 attribute float a_Rotation;
 attribute float a_Mirror;
 
+// PAD VARYINGS
 varying float v_Index;
-
-// PAD PARAMETERS
 varying vec2 v_Location;
 varying float v_SymNum;
 varying float v_ResizeFactor;
@@ -104,7 +54,6 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
 
-varying float v_Aspect;
 
 mat2 rotate2d(float _angle) {
   return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
@@ -122,14 +71,9 @@ void main() {
 
   vec2 Size = vec2(pullParam(u_Parameters.width), pullParam(u_Parameters.height));
 
-  float Rotation = a_Rotation;
-  float Mirror = a_Mirror;
-  vec2 Location = a_Location;
-  float Index = a_Index;
-
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
-  vec2 RotatedPostion = SizedPosition * rotate2d(radians(Rotation));
-  vec2 OffsetPosition = RotatedPostion + Location;
+  vec2 RotatedPostion = SizedPosition * rotate2d(radians(a_Rotation));
+  vec2 OffsetPosition = RotatedPostion + a_Location;
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
   vec3 FinalPosition = u_Transform * AspectPosition;
 
@@ -142,6 +86,6 @@ void main() {
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
 
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  gl_Position = vec4(FinalPosition.xy, a_Index, 1);
 
 }

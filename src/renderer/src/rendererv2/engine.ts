@@ -1,6 +1,7 @@
 import REGL from 'regl'
 import { mat3, vec2 } from 'gl-matrix'
 import * as Symbols from './symbols'
+import * as Records from './records'
 import Layer from './layer'
 import { IPlotRecord } from './types'
 
@@ -20,7 +21,6 @@ interface FeaturesUniforms {
 interface FeaturesAttributes {
   a_Vertex_Position: vec2[]
 }
-
 
 interface ScreenRenderProps {
   frameBuffer: REGL.Framebuffer
@@ -57,8 +57,6 @@ const PointerEvents = {
 } as const
 
 export type PointerEvent = CustomEvent<PointerCoordinates>
-
-const MACROS: { [key: string]: REGL.Framebuffer } = {}
 
 interface RenderSettings {
   FPS: number
@@ -100,7 +98,7 @@ export class RenderEngine {
   public pointer: EventTarget = new EventTarget()
 
   private zoom = 1
-  private position: vec2 = [-500, 400]
+  private position: vec2 = [0, 0]
   private velocity: vec2 = [0, 0]
   private dragging = false
   private transform = mat3.create()
@@ -137,16 +135,10 @@ export class RenderEngine {
     this.regl = REGL({
       container,
       extensions: ['angle_instanced_arrays', 'OES_texture_float'],
-      attributes
+      attributes,
+      profile: true
     })
-
-    MACROS['test'] = this.regl.framebuffer({
-      color: this.regl.texture({
-        width: 1,
-        height: 1
-      }),
-      depth: true
-    })
+    console.log('WEBGL LIMITS', this.regl.limits)
 
     this.regl.clear({
       depth: 1
@@ -389,18 +381,16 @@ export class RenderEngine {
 
   public addLayer({
     name,
-    data,
+    data
   }: {
     name: string
-    data: IPlotRecord[]
+    data: (Records.Record | Symbols.Symbol)[]
   }): void {
-    this.layers.push(
-      new Layer({
-        name,
-        data,
-        regl: this.regl,
-      })
-    )
+    const layer = new Layer({
+      name,
+      regl: this.regl
+    }).init(data)
+    this.layers.push(layer)
   }
 
   public updateTransform(): void {
@@ -474,19 +464,31 @@ export class RenderEngine {
       depth: 1
     })
     setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
-    this.drawFeatures(({ viewportWidth, viewportHeight }) => {
+    this.drawFeatures((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        layer.framebuffer.resize(viewportWidth, viewportHeight)
-        this.regl.clear({
-          framebuffer: layer.framebuffer,
-          color: this.SETTINGS.BACKGROUND_COLOR,
-          depth: 1
-        })
-        layer.render()
+        layer.render(context)
         this.renderToScreen({ frameBuffer: layer.framebuffer })
       }
     })
+  }
+
+  public stats(): void {
+    // console.log(this.regl.stats)
+    // console.log('Texture Count: ' + this.regl.stats.textureCount)
+    // console.log(
+    //   'Texture Memory: ' + Math.round(this.regl.stats.getTotalTextureSize() / 1024 / 1024) + ' MB'
+    // )
+    // console.log('Render Buffer Count: ' + this.regl.stats.renderbufferCount)
+    // console.log(
+    //   'Render Buffer Memory: ' +
+    //     Math.round(this.regl.stats.getTotalRenderbufferSize() / 1024 / 1024) +
+    //     ' MB'
+    // )
+    // console.log('Buffer Count: ' + this.regl.stats.bufferCount)
+    // console.log(
+    //   'Buffer Memory: ' + Math.round(this.regl.stats.getTotalBufferSize() / 1024 / 1024) + ' MB'
+    // )
   }
 
   public destroy(): void {
