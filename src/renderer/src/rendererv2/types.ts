@@ -1,13 +1,15 @@
 export interface IPlotRecord {
   type: string
   get array(): number[]
-  get length(): number
   get object(): Record<string, number>
+  get length(): number
 }
 
-export interface ISurfaceRecord {
-  type: string
-  get array(): number[][][]
-  get length(): number
-  // get object(): Record<string, number[][]>
-}
+// export function staticImplements<T>(ctor: T): void {
+//   // do nothing
+// }
+
+// export interface IGetLen {
+//   items: number
+//   empty: number[]
+// }

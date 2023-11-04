@@ -384,7 +384,7 @@ export class RenderEngine {
     data
   }: {
     name: string
-    data: (Records.Record | Symbols.Symbol)[]
+    data: (Records.Input_Record | Symbols.Symbol)[]
   }): void {
     const layer = new Layer({
       name,

@@ -111,12 +111,10 @@ export class Symbol implements TSymbol, IPlotRecord {
   }
 
   public get length(): number {
-    return this.array.length
+    return SYMBOL_PARAMETERS.length
   }
 
   public get object(): TSymbol {
-    return Object.fromEntries(
-      SYMBOL_PARAMETERS.map((key) => [key, this[key]])
-    ) as TSymbol
+    return Object.fromEntries(SYMBOL_PARAMETERS.map((key) => [key, this[key]])) as TSymbol
   }
 }

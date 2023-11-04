@@ -311,12 +311,12 @@ export default class Layer {
     })
   }
 
-  public init(data: (Records.Record | Symbols.Symbol)[]): this {
+  public init(data: (Records.Input_Record | Symbols.Symbol)[]): this {
     const pads: number[][] = []
     const lines: number[][] = []
     const arcs: number[][] = []
     const symbols: number[][] = []
-    const contours: Records.Contour[][] = []
+    const contours: number[][] = []
 
     data.forEach((record) => {
       if (record.type === 'pad') {

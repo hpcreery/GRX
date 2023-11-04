@@ -3,17 +3,16 @@ import '../App.css'
 import {
   STANDARD_SYMBOLS,
   STANDARD_SYMBOLS_MAP,
-  SYMBOL_PARAMETERS,
-  // SYMBOL_PARAMETERS_MAP,
   Symbol
 } from './symbols'
 import {
-  PAD_RECORD_PARAMETERS,
-  LINE_RECORD_PARAMETERS,
-  // ARC_RECORD_PARAMETERS,
   Pad_Record,
   Line_Record,
-  Arc_Record
+  Arc_Record,
+  Surface_Record,
+  Contour_Record,
+  Contour_Arc_Segment_Record,
+  Contour_Line_Segment_Record,
 } from './records'
 import { RenderEngine } from './engine'
 import { Button, Switch } from '@mantine/core'
@@ -24,8 +23,45 @@ const N_PADS = 10
 const N_LINES = 10
 const N_ARCS = 10
 
-const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
-  .fill(Array<number>(PAD_RECORD_PARAMETERS.length).fill(0))
+const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(1)
+  .fill(new Surface_Record({}))
+  .map((_, i) => {
+    return new Surface_Record({
+      // index of feature
+      index: i / 1,
+      // Center point.
+      xs: 0,
+      ys: 0,
+      polarity: 1,
+    }).addContours([
+      new Contour_Record({
+        poly_type: 0,
+      })
+        .addSegments([
+          new Contour_Line_Segment_Record({
+            x: 0.5,
+            y: -0.5,
+          }),
+          new Contour_Line_Segment_Record({
+            x: 0.5,
+            y: 0.5,
+          }),
+          new Contour_Line_Segment_Record({
+            x: -0.5,
+            y: 0.5,
+          }),
+          new Contour_Line_Segment_Record({
+            x: -0.5,
+            y: -0.5,
+          }),
+        ])
+    ])
+  })
+
+console.log(SURFACE_RECORDS_ARRAY)
+
+const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
+  .fill(new Pad_Record({}))
   .map((_, i) => {
     return new Pad_Record({
       // index of feature
@@ -48,9 +84,8 @@ const PAD_RECORDS_ARRAY = Array<number[]>(N_PADS)
     })
   })
 
-
-const LINE_RECORDS_ARRAY = Array<IPlotRecord[]>(N_LINES)
-  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
+const LINE_RECORDS_ARRAY = new Array<IPlotRecord>(N_LINES)
+  .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
@@ -74,8 +109,8 @@ const LINE_RECORDS_ARRAY = Array<IPlotRecord[]>(N_LINES)
     })
   })
 
-const LINE_RECORDS_ARRAY2 = Array<IPlotRecord[]>(N_LINES)
-  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
+const LINE_RECORDS_ARRAY2 = new Array<IPlotRecord>(N_LINES)
+  .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
@@ -98,8 +133,8 @@ const LINE_RECORDS_ARRAY2 = Array<IPlotRecord[]>(N_LINES)
     })
   })
 
-const ARC_RECORDS_ARRAY = Array<IPlotRecord[]>(N_ARCS)
-  .fill(Array<IPlotRecord>(LINE_RECORD_PARAMETERS.length))
+const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
+  .fill(new Arc_Record({}))
   .map((_, i) => {
     const start_angle = Math.abs(Math.random()) * 360
     const end_angle = Math.abs(Math.random()) * 360
@@ -137,8 +172,8 @@ const ARC_RECORDS_ARRAY = Array<IPlotRecord[]>(N_ARCS)
   })
 
 
-const SYMBOLS_ARRAY = new Array<IPlotRecord[]>(STANDARD_SYMBOLS.length)
-  .fill(Array<IPlotRecord>(SYMBOL_PARAMETERS.length))
+const SYMBOLS_ARRAY = new Array<IPlotRecord>(STANDARD_SYMBOLS.length)
+  .fill(new Symbol({}))
   .map((_, i) => {
     return new Symbol({
       symbol: i, // symbol
