@@ -358,7 +358,8 @@ export class RenderEngine {
           width: 1,
           height: 1
         })
-        console.log(layer.name + ': ' + data.join(', '))
+        if (data.reduce((acc, val) => acc + val, 0) == 0) continue
+        console.log(layer.name)
       }
 
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)

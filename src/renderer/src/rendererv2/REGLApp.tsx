@@ -19,7 +19,7 @@ import { Button, Switch } from '@mantine/core'
 import { IPlotRecord } from './types'
 
 // N == Number of Shapes
-const N_PADS = 10
+const N_PADS = 1000
 const N_LINES = 10
 const N_ARCS = 10
 
@@ -29,18 +29,18 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(1)
     return new Surface_Record({
       // index of feature
       index: i / 1,
-      // Center point.
-      xs: 0,
-      ys: 0,
       polarity: 1,
     }).addContours([
       new Contour_Record({
         poly_type: 0,
+        // Start point.
+        xs: -0.1,
+        ys: -0.,
       })
         .addSegments([
           new Contour_Line_Segment_Record({
-            x: 0.5,
-            y: -0.5,
+            x: 0.2,
+            y: -0.2,
           }),
           new Contour_Line_Segment_Record({
             x: 0.5,
@@ -53,6 +53,10 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(1)
           new Contour_Line_Segment_Record({
             x: -0.5,
             y: -0.5,
+          }),
+          new Contour_Line_Segment_Record({
+            x: -0.1,
+            y: -0.,
           }),
         ])
     ])
@@ -211,19 +215,24 @@ function REGLApp(): JSX.Element {
 
     Engine.SETTINGS.OUTLINE_MODE = false
 
-    Engine.addLayer({
-      name: 'a',
-      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'line and pads layer',
+    //   data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
+    // })
 
     Engine.addLayer({
-      name: 'b',
+      name: 'line layer',
       data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY2]
     })
 
     Engine.addLayer({
-      name: 'c',
+      name: 'arc layer',
       data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY]
+    })
+
+    Engine.addLayer({
+      name: 'surface layer',
+      data: [...SURFACE_RECORDS_ARRAY]
     })
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
@@ -244,10 +253,10 @@ function REGLApp(): JSX.Element {
           {/* <StatsWidget /> */}
           <Button
             onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
-            Color
+            Randomize Colors
           </Button>
           <br />
-          Outline
+          Outline Mode
           <Switch
             defaultChecked={engine.SETTINGS.OUTLINE_MODE}
             onChange={(e): void => { engine.SETTINGS.OUTLINE_MODE = e.target.checked }} />

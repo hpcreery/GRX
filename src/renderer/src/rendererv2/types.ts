@@ -4,12 +4,3 @@ export interface IPlotRecord {
   get object(): Record<string, number>
   get length(): number
 }
-
-// export function staticImplements<T>(ctor: T): void {
-//   // do nothing
-// }
-
-// export interface IGetLen {
-//   items: number
-//   empty: number[]
-// }

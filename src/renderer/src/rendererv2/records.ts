@@ -52,8 +52,8 @@ export const ARC_RECORD_PARAMETERS_MAP = Object.fromEntries(
 
 export const CONTOUR_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
 export const CONTOUR_ARC_RECORD_PARAMETERS = ['id', 'x', 'y', 'xc', 'yc', 'clockwise'] as const
-export const CONTOUR_RECORD_PARAMETERS = ['id', 'poly_type'] as const
-export const SURFACE_RECORD_PARAMETERS = ['id', 'index', 'polarity', 'xs', 'ys'] as const
+export const CONTOUR_RECORD_PARAMETERS = ['id', 'xs', 'ys', 'poly_type'] as const
+export const SURFACE_RECORD_PARAMETERS = ['id', 'index', 'polarity', 'top', 'right', 'bottom', 'left', 'segmentsCount'] as const
 
 export const CONTOUR_SEGMENT_RECORD_PARAMETERS_MAP = Object.fromEntries(
   CONTOUR_SEGMENT_RECORD_PARAMETERS.map((key, i) => [key, i])
@@ -185,7 +185,7 @@ export class Contour_Arc_Segment_Record implements TContourArc, IPlotRecord {
   public yc = 0
   public clockwise = 0
 
-  constructor(segment: Partial<TContourArc>) {
+  constructor(segment: Partial<Omit<TContourArc, 'id'>>) {
     Object.assign(this, segment)
   }
 
@@ -210,7 +210,7 @@ export class Contour_Line_Segment_Record implements TContourSegment, IPlotRecord
   public x = 0
   public y = 0
 
-  constructor(segment: Partial<TContourSegment>) {
+  constructor(segment: Partial<Omit<TContourSegment, 'id'>>) {
     Object.assign(this, segment)
   }
 
@@ -234,9 +234,11 @@ export class Contour_Record implements TContour, IPlotRecord {
   public type = 'contour' as const
   public poly_type: 1 | 0 = 1
   public id = 333
+  public xs = 0
+  public ys = 0
   public segments: (Contour_Arc_Segment_Record | Contour_Line_Segment_Record)[] = []
 
-  constructor(contour: Partial<TContour>) {
+  constructor(contour: Partial<Omit<TContour, 'id'>>) {
     Object.assign(this, contour)
   }
 
@@ -263,13 +265,27 @@ export class Contour_Record implements TContour, IPlotRecord {
 export class Surface_Record implements TSurface, IPlotRecord {
   public type = 'surface' as const
   public id = 222
-  public xs = 0
-  public ys = 0
   public index = 0
   public polarity = 0
   public contours: Contour_Record[] = []
 
-  constructor(record: Partial<TSurface>) {
+  public get left(): number {
+    return Math.min(...this.contours.flatMap((contour) => contour.segments.map((segment) => segment.x)))
+  }
+
+  public get right(): number {
+    return Math.max(...this.contours.flatMap((contour) => contour.segments.map((segment) => segment.x)))
+  }
+
+  public get top(): number {
+    return Math.max(...this.contours.flatMap((contour) => contour.segments.map((segment) => segment.y)))
+  }
+
+  public get bottom(): number {
+    return Math.min(...this.contours.flatMap((contour) => contour.segments.map((segment) => segment.y)))
+  }
+
+  constructor(record: Partial<Omit<TSurface, 'id'>>) {
     Object.assign(this, record)
   }
 
@@ -278,9 +294,15 @@ export class Surface_Record implements TSurface, IPlotRecord {
   }
 
   public get array(): number[] {
-    return SURFACE_RECORD_PARAMETERS.map((key) => this[key]).concat(
-      this.contours.flatMap((contour) => contour.array)
-    )
+    return SURFACE_RECORD_PARAMETERS.map((key) => this[key])
+  }
+
+  public get contoursArray(): number[] {
+    return this.contours.flatMap((contour) => contour.array).concat(999)
+  }
+
+  public get segmentsCount(): number {
+    return this.contours.reduce((acc, contour) => acc + contour.segments.length, 0)
   }
 
   public get object(): TSurface {

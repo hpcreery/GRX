@@ -5,6 +5,8 @@ import LineFrag from '../shaders/Line.frag'
 import LineVert from '../shaders/Line.vert'
 import ArcFrag from '../shaders/Arc.frag'
 import ArcVert from '../shaders/Arc.vert'
+import SurfaceFrag from '../shaders/Surface.frag'
+import SurfaceVert from '../shaders/Surface.vert'
 import { vec2, vec3 } from 'gl-matrix'
 import { IPlotRecord } from './types'
 import * as Records from './records'
@@ -17,7 +19,9 @@ const {
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
-  ARC_RECORD_PARAMETERS_MAP
+  ARC_RECORD_PARAMETERS_MAP,
+  SURFACE_RECORD_PARAMETERS,
+  SURFACE_RECORD_PARAMETERS_MAP
 } = Records
 const { SYMBOL_PARAMETERS, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -77,6 +81,11 @@ interface ArcAttributes {
   a_Clockwise: CustomAttributeConfig
 }
 
+interface SurfaceFeature {
+  attributes: REGL.Buffer
+  contours: REGL.Texture2D
+}
+
 export default class Layer {
   public regl: REGL.Regl
 
@@ -99,7 +108,9 @@ export default class Layer {
     return this.arcs.stats.size / (ARC_RECORD_PARAMETERS.length * glFloatSize * 4)
   }
 
-  public surfaces: REGL.Texture2D[] = []
+  // public surfaces: REGL.Buffer[] = []
+  // public contours: REGL.Texture2D[] = []
+  public surfaces: SurfaceFeature[] = []
 
   public symbols: REGL.Texture2D
 
@@ -108,6 +119,7 @@ export default class Layer {
   drawPads: REGL.DrawCommand<REGL.DefaultContext>
   drawLines: REGL.DrawCommand<REGL.DefaultContext>
   drawArcs: REGL.DrawCommand<REGL.DefaultContext>
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
 
   macros: { [key: string]: REGL.Framebuffer } = {}
 
@@ -302,6 +314,65 @@ export default class Layer {
       instances: () => this.qtyArcs
     })
 
+    this.drawSurfaces = this.regl<NonNullable<unknown>, NonNullable<unknown>>({
+      frag: SurfaceFrag,
+
+      vert: SurfaceVert,
+
+      uniforms: {
+        u_Color: () => this.color,
+        u_ContoursTexture: (_context: REGL.DefaultContext, _props, batchId: number) =>
+          this.surfaces[batchId].contours,
+        u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
+          this.surfaces[batchId].contours.width,
+          this.surfaces[batchId].contours.height
+        ]
+      },
+
+      attributes: {
+        a_Index: {
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
+            this.surfaces[batchId].attributes,
+          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+          divisor: 1
+        },
+
+        a_Polarity: {
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
+            this.surfaces[batchId].attributes,
+          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+          divisor: 1
+        },
+
+        // a_Size: {
+        //   buffer: (_context: REGL.DefaultContext, _props, batchId: number) => this.surfaces[batchId].attributes,
+        //   // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+        //   offset: SURFACE_RECORD_PARAMETERS_MAP.width * glFloatSize, // implies height is next in vec2
+        //   divisor: 1
+        // },
+
+        a_Box: {
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
+            this.surfaces[batchId].attributes,
+          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies height is next in vec2
+          divisor: 1
+        },
+
+        a_SegmentsCount: {
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
+            this.surfaces[batchId].attributes,
+          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: SURFACE_RECORD_PARAMETERS_MAP.segmentsCount * glFloatSize,
+          divisor: 1
+        }
+      },
+
+      instances: 1
+    })
+
     this.macros['test'] = this.regl.framebuffer({
       color: this.regl.texture({
         width: 1,
@@ -316,9 +387,21 @@ export default class Layer {
     const lines: number[][] = []
     const arcs: number[][] = []
     const symbols: number[][] = []
-    const contours: number[][] = []
 
+    // Auto index if not provided
+    let index = 0
     data.forEach((record) => {
+      if (record.type === 'symbol') {
+        symbols.push(record.array)
+      }
+      // Auto index if not provided
+      if (!(record instanceof Symbols.Symbol)) {
+        if (record.index === 0) {
+          record.index = index++
+        } else {
+          index = record.index
+        }
+      }
       if (record.type === 'pad') {
         pads.push(record.array)
       }
@@ -328,22 +411,60 @@ export default class Layer {
       if (record.type === 'arc') {
         arcs.push(record.array)
       }
-      if (record.type === 'symbol') {
-        symbols.push(record.array)
-      }
       if (record.type === 'surface') {
-        contours.push(record.array)
+        // surfaces.push(record.array)
+        // contours.push(record.contoursArray)
+
+        const surfaces = record.array
+        const surfaceCountours = record.contoursArray
+        // console.log('surfaceContours', surfaceCountours)
+        // console.log('surfaceContours length', surfaceCountours.length)
+        // console.log('segments count', record.segmentsCount)
+        // console.log('trbl', record.top, record.right, record.bottom, record.left)
+        // console.log('radius', Math.ceil(Math.sqrt(surfaceCountours.length)))
+        const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
+        // console.log('radius', radius)
+        // console.log('new length', Math.round(Math.pow(radius, 2)))
+        const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
+          return surfaceCountours[index] ?? 999
+        })
+        console.log('newData', newData)
+        this.surfaces.push({
+          attributes: this.regl.buffer({
+            usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+            type: 'float',
+            length: surfaces.length * SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+            data: surfaces
+          }),
+          contours: this.regl.texture({
+            width: radius,
+            height: radius,
+            type: 'float',
+            format: 'luminance',
+            wrap: 'clamp',
+            data: newData
+          })
+          // contours: this.regl.texture({
+          //   width: surfaceCountours.length,
+          //   height: 1,
+          //   type: 'float',
+          //   format: 'luminance',
+          //   wrap: 'clamp',
+          //   data: surfaceCountours
+          // })
+        })
       }
     })
 
     // TODO: make symbols not only expend in width but also in height
-    this.symbols({
-      width: SYMBOL_PARAMETERS.length,
-      height: Object.keys(STANDARD_SYMBOLS_MAP).length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols,
-    })
+    symbols.length > 0 &&
+      this.symbols({
+        width: SYMBOL_PARAMETERS.length,
+        height: symbols.length,
+        type: 'float',
+        format: 'luminance',
+        data: symbols
+      })
     this.pads({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
@@ -382,6 +503,7 @@ export default class Layer {
       this.drawPads()
       this.drawLines()
       this.drawArcs()
+      this.drawSurfaces(this.surfaces.length)
     })
   }
 }
