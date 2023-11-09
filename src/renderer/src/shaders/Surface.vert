@@ -29,7 +29,6 @@ attribute float a_SegmentsCount;
 varying float v_Index;
 varying float v_Polarity;
 varying vec4 v_Box;
-varying float v_SegmentsCount;
 
 varying float v_Aspect;
 
@@ -51,7 +50,6 @@ void main() {
   v_Index = a_Index;
   v_Polarity = a_Polarity;
   v_Box = a_Box;
-  v_SegmentsCount = a_SegmentsCount;
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 

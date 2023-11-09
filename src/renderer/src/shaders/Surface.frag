@@ -1,7 +1,7 @@
 precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
-#define DEBUG 2
+#define DEBUG 0
 
 const float ALPHA = 1.0;
 
@@ -26,10 +26,40 @@ varying float v_Aspect;
 uniform sampler2D u_ContoursTexture;
 uniform vec2 u_ContoursTextureDimensions;
 
+uniform float u_EndSurfaceId;
+uniform float u_ContourId;
+uniform float u_EndContourId;
+uniform float u_LineSegmentId;
+uniform float u_ArcSegmentId;
+
+// ['id', 'xs', 'ys', 'poly_type']
+uniform struct contour_parameters {
+  highp int id;
+  highp int xs;
+  highp int ys;
+  highp int poly_type;
+} u_ContourParameters;
+
+// ['id', 'x', 'y']
+uniform struct line_segment_parameters {
+  highp int id;
+  highp int x;
+  highp int y;
+} u_LineSegmentParameters;
+
+// ['id', 'x', 'y', 'xc', 'yc', 'clockwise']
+uniform struct arc_segment_parameters {
+  highp int id;
+  highp int x;
+  highp int y;
+  highp int xc;
+  highp int yc;
+  highp int clockwise;
+} u_ArcSegmentParameters;
+
 // SURFACE VARYINGS
 varying float v_Index;
 varying float v_Polarity;
-varying float v_SegmentsCount;
 
 float dot2(in vec2 v) {
   return dot(v, v);
@@ -38,8 +68,41 @@ float cross2d(in vec2 v0, in vec2 v1) {
   return v0.x * v1.y - v0.y * v1.x;
 }
 
-const float N = 50.0;
+const int N = 50;
 // #define N 5.0
+
+
+mat2 rotateCCW(float angle) {
+  return mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+}
+
+mat2 rotateCW(float angle) {
+  return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+}
+
+// float udSegment( in vec2 p, in vec2 a, in vec2 b )
+// {
+//     vec2 ba = b-a;
+//     vec2 pa = p-a;
+//     float h =clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+//     return length(pa-h*ba);
+// }
+
+float sdSegment( in vec2 p, in vec2 a, in vec2 b )
+{
+    vec2 pa = p-a, ba = b-a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return length( pa - ba*h );
+}
+
+// sc is the sin/cos of the aperture
+float sdArc( in vec2 p, in vec2 sc, in float ra )
+{
+    p.x = abs(p.x);
+    return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*ra) :
+                                  abs(length(p)-ra));
+}
+
 
 // https://math.stackexchange.com/questions/3020095/signed-angle-in-plane:
 // "the ratio of the cross product and scalar product is the tangent of the angle"
@@ -60,6 +123,37 @@ float getValueByIndexFromTexture(float index) {
   return texelFetch(u_ContoursTexture, u_ContoursTextureDimensions, vec2(col, row)).x;
 }
 
+float getValueByIndexFromTexture(int index) {
+  return getValueByIndexFromTexture(float(index));
+}
+
+float slice(in vec2 p, in float angle) {
+  vec2 c = vec2(cos(angle), sin(angle));
+  //p.x = abs(p.x);
+  p.y = abs(p.y);
+  float n = length(p - c * dot(p, c));
+  return n * sign(c.y * p.x - c.x * p.y);
+}
+
+float circleDist(vec2 p, float radius) {
+  return length(p) - radius;
+}
+
+float substract(float d1, float d2) {
+  return max(-d1, d2);
+}
+
+float draw(float dist) {
+  if (dist > 0.0) {
+    discard;
+  }
+  float scale = u_InverseTransform[0][0];
+  if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
+    discard;
+  }
+  return dist;
+}
+
 void main() {
 
   float scale = u_InverseTransform[0][0];
@@ -76,72 +170,136 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
   float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
 
-  float dist = 0.0;
+  float dist = 12340.0;
 
   float angle = 0.0;
     // float N = 16.0;
 
-  float radius = 1.0;
 
-  vec2 c0;
-  vec2 c1;
   // float t = speed * iTime;
 
-  float currentType = 0.0;
-  vec2 prevPoint = vec2(0.0);
-  for (float i = 0.0; i < N; i += 1.0) {
+  // 1.0: island
+  // 0.0: hole
+  // Default to 0 for outside suface
+  float island = 0.0;
+
+  // 1.0: island
+  // 0.0: hole
+  float current_poly_type = 1.0;
+
+  // float distance = 12340.0;
+
+  int offset = 0;
+  vec2 currentPoint;
+  vec2 previousPoint = vec2(0.0);
+  for (int i = 0; i < N; i += 1) {
+
     // if (i > v_SegmentsCount) {
     //   break;
     // }
-    float a = getValueByIndexFromTexture(i);
-    // END OF CONTOUR
-    if (a == 999.0) {
+
+    int typeIndex = i + offset;
+    float id = getValueByIndexFromTexture(typeIndex);
+
+    // END OF SURFACE
+    if (id == u_EndSurfaceId) {
       break;
     }
-    // SURFACE TYPE
-    if (a == 222.0) {
-      currentType = 222.0;
-      continue;
+
+    // END OF CONTOUR
+    if (id == u_EndContourId) {
+      if (abs(angle) > 0.0001) {
+        island = current_poly_type;
+      }
+      angle = 0.0;
     }
+
     // NEW CONTOUR
-    if (a == 333.0) {
-      currentType = 333.0;
-      prevPoint = vec2(getValueByIndexFromTexture(i + 1.0), getValueByIndexFromTexture(i + 2.0));
+    if (id == u_ContourId) {
+      previousPoint = vec2(getValueByIndexFromTexture(typeIndex + u_ContourParameters.xs), getValueByIndexFromTexture(typeIndex + u_ContourParameters.ys));
+
+      current_poly_type = getValueByIndexFromTexture(typeIndex + u_ContourParameters.poly_type);
+
+      offset += 2;
       continue;
     }
+
     // NEW LINE SEGMENT
-    if (a == 444.0) {
-      currentType = 444.0;
-      // c0 = radius * getValueByIndexFromTexture(i + 1.0);
-      c1 = vec2(getValueByIndexFromTexture(i + 1.0), getValueByIndexFromTexture(i + 2.0));
-      angle += signedAngle(prevPoint - FragCoord, c1 - FragCoord);
-      prevPoint = c1;
+    if (id == u_LineSegmentId) {
+      currentPoint = vec2(getValueByIndexFromTexture(typeIndex + u_LineSegmentParameters.x), getValueByIndexFromTexture(typeIndex + u_LineSegmentParameters.y));
+
+      angle += signedAngle(previousPoint - FragCoord, currentPoint - FragCoord);
+
+      float d = sdSegment(FragCoord, previousPoint, currentPoint);
+      dist = min(d, dist);
+
+      previousPoint = currentPoint;
+      offset += 2;
       continue;
     }
+
     // NEW ARC SEGMENT
-    if (a == 555.0) {
-      currentType = 555.0;
+    if (id == u_ArcSegmentId) {
+
+      // to determine if a point is inisde an arc, we need to check:
+      // 𝑃 is inside the circle: 𝑑(𝑂,𝑃) ≤ 𝑟
+      // 𝑃 is to the left of 𝑂𝐴 : 𝑂𝐴×𝑂𝑃 ≥ 0 !! DEEMED NOT NECESSARY
+      // 𝑃 is to the right of 𝑂𝐵 : 𝑂𝐵×𝑂𝑃 ≤ 0 !! DEEMED NOT NECESSARY
+      // 𝑃 is to the right of 𝐴𝐵 : 𝐴𝐵×𝐴𝑃 ≤ 0
+
+      vec2 center = vec2(getValueByIndexFromTexture(typeIndex + u_ArcSegmentParameters.xc), getValueByIndexFromTexture(typeIndex + u_ArcSegmentParameters.yc));
+      vec2 currentPoint = vec2(getValueByIndexFromTexture(typeIndex + u_ArcSegmentParameters.x), getValueByIndexFromTexture(typeIndex + u_ArcSegmentParameters.y));
+      float clockwise = getValueByIndexFromTexture(typeIndex + u_ArcSegmentParameters.clockwise);
+
+      vec2 previousSegment = previousPoint - center;
+      vec2 currentSegment = currentPoint - center;
+      vec2 coordSegment = FragCoord - center;
+
+      float true_radius = (length(currentSegment) + length(previousSegment)) / 2.0;
+
+      // frag is inside the circle
+      float inside_circle = length(coordSegment) <= true_radius ? 1.0 : 0.0;
+
+      // frag is to the right or left of the chord (depending on the direction of the arc)
+      float side_of_chord = cross2d(previousPoint - currentPoint, previousPoint - FragCoord) * sign(clockwise - 0.5) >= 0.0 ? 1.0 : 0.0;
+
+      // frag is inside the arc
+      float p_in_arc = inside_circle * side_of_chord;
+
+      if (p_in_arc == 0.0) {
+        angle += signedAngle(previousPoint - FragCoord, currentPoint - FragCoord);
+      } else {
+        // if (clockwise == 1.0) {
+        //   angle += -(2.0 * PI) - abs(signedAngle(previousPoint - FragCoord, currentPoint - FragCoord));
+        // } else {
+        //   angle += (2.0 * PI) - abs(signedAngle(previousPoint - FragCoord, currentPoint - FragCoord));
+        // }
+        angle += ((2.0 * PI) - abs(signedAngle(previousPoint - FragCoord, currentPoint - FragCoord))) * -sign(clockwise - 0.5);
+      }
+
+
+      float sdX = previousPoint.x - center.x;
+      float sdY = previousPoint.y - center.y;
+      float start_angle = atan(sdY, sdX);
+      float edX = currentPoint.x - center.x;
+      float edY = currentPoint.y - center.y;
+      float end_angle = atan(edY, edX);
+      float d = (clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice((FragCoord - center) * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+      d = substract(d, abs(circleDist(FragCoord - center, true_radius)));
+      dist = min(d, dist);
+
+      previousPoint = currentPoint;
+      offset += 5;
       continue;
     }
-
-    // if (currentType == 222.0) {
-    //   continue;
-    // }
-    // if (currentType == 333.0) {
-    //   continue;
-    // }
-
-    // c0 = radius * getValueByIndexFromTexture(i);
-    // c1 = radius * getValueByIndexFromTexture(i + 1.0);
-    // angle += signedAngle(c0 - FragCoord, c1 - FragCoord);
 
   }
 
+
+  if (island == 1.0) {
+    dist = -dist;
+  }
   if (DEBUG == 1) {
-    // if(dist < 0.0 && dist > -u_PixelSize * scale) {
-    //   dist = 1.0;
-    // }
-    // gl_FragColor = vec4(-dist, dist, dist, 1.0);
     vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
     col *= 1.0 - exp(-6.0 * abs(dist));
     col *= 0.8 + 0.5 * cos(500.0 * dist);
@@ -152,17 +310,6 @@ void main() {
     gl_FragColor = vec4(col, 1.0);
     return;
   }
-  if (DEBUG == 2) {
-    // if (angle < 0.0) {
-    //   angle += 2.0 * PI;
-    // }
-    // angle = mod(angle, 2.0 * PI);
-    angle = angle / (2.0 * PI);
-    if (angle <= 0.0001) {
-      discard;
-    }
-    gl_FragColor = vec4(angle, angle, angle, 1.0);
-    return;
-  }
+  dist = draw(dist);
   gl_FragColor = vec4(color, Alpha);
 }

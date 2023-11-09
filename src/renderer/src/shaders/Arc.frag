@@ -797,9 +797,6 @@ float outerBorderMask(float dist, float width) {
 }
 
 float draw(float dist) {
-  if (DEBUG == 1) {
-    return dist;
-  }
   if (dist > 0.0) {
     discard;
   }
@@ -807,11 +804,6 @@ float draw(float dist) {
   if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
     discard;
   }
-  // if(outline) {
-  //   if(dist < -scale * u_PixelSize) {
-  //     discard;
-  //   }
-  // }
   return dist;
 }
 
@@ -1010,7 +1002,6 @@ void main() {
   float dist = merge(start, end);
   dist = merge(dist, con);
 
-  dist = draw(dist);
 
   if (DEBUG == 1) {
     // if(dist < 0.0 && dist > -u_PixelSize * scale) {
@@ -1027,5 +1018,6 @@ void main() {
     gl_FragColor = vec4(col, 1.0);
     return;
   }
+  dist = draw(dist);
   gl_FragColor = vec4(color, Alpha);
 }

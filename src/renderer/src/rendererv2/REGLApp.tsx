@@ -22,47 +22,85 @@ import { IPlotRecord } from './types'
 const N_PADS = 1000
 const N_LINES = 10
 const N_ARCS = 10
+const N_SURFACES = 3
 
-const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(1)
+const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
   .fill(new Surface_Record({}))
   .map((_, i) => {
+    console.log(i)
     return new Surface_Record({
       // index of feature
-      index: i / 1,
+      index: i / N_SURFACES,
       polarity: 1,
     }).addContours([
       new Contour_Record({
-        poly_type: 0,
+        poly_type: 1,
         // Start point.
-        xs: -0.1,
-        ys: -0.,
+        xs: 0 + i,
+        ys: 0 + i,
       })
         .addSegments([
-          new Contour_Line_Segment_Record({
-            x: 0.2,
-            y: -0.2,
+          // new Contour_Line_Segment_Record({
+          //   x: 0.2 + i,
+          //   y: -0.2 + i,
+          // }),
+          new Contour_Arc_Segment_Record({
+            x: 0.2 + i,
+            y: -0.2 + i,
+            xc: 0.15 + i,
+            yc: -0.05 + i,
+            // computer the center coordinates of the arc with a radius of 0.1
+            clockwise: 0,
           }),
           new Contour_Line_Segment_Record({
-            x: 0.5,
-            y: 0.5,
+            x: 0.5 + i,
+            y: -0.2 + i,
           }),
           new Contour_Line_Segment_Record({
-            x: -0.5,
-            y: 0.5,
+            x: 0.5 + i,
+            y: 0.5 + i,
           }),
           new Contour_Line_Segment_Record({
-            x: -0.5,
-            y: -0.5,
+            x: -0.5 + i,
+            y: 0.5 + i,
           }),
           new Contour_Line_Segment_Record({
-            x: -0.1,
-            y: -0.,
+            x: -0.5 + i,
+            y: -0.5 + i,
           }),
-        ])
+          new Contour_Line_Segment_Record({
+            x: 0 + i,
+            y: 0 + i,
+          }),
+        ]),
+        new Contour_Record({
+          poly_type: 0,
+          // Start point.
+          xs: 0.4 + i,
+          ys: 0.4 + i,
+        })
+          .addSegments([
+            new Contour_Line_Segment_Record({
+              x: 0.4 + i,
+              y: 0.3 + i,
+            }),
+            new Contour_Line_Segment_Record({
+              x: 0.3 + i,
+              y: 0.3 + i,
+            }),
+            new Contour_Line_Segment_Record({
+              x: 0.3 + i,
+              y: 0.4 + i,
+            }),
+            new Contour_Line_Segment_Record({
+              x: 0.4 + i,
+              y: 0.4 + i,
+            }),
+          ])
     ])
   })
 
-console.log(SURFACE_RECORDS_ARRAY)
+// console.log(SURFACE_RECORDS_ARRAY)
 
 const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
   .fill(new Pad_Record({}))
@@ -227,13 +265,13 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'arc layer',
-      data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY]
+      data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY, ...SURFACE_RECORDS_ARRAY]
     })
 
-    Engine.addLayer({
-      name: 'surface layer',
-      data: [...SURFACE_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'surface layer',
+    //   data: [...SURFACE_RECORDS_ARRAY]
+    // })
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 

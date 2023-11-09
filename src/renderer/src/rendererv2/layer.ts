@@ -108,8 +108,6 @@ export default class Layer {
     return this.arcs.stats.size / (ARC_RECORD_PARAMETERS.length * glFloatSize * 4)
   }
 
-  // public surfaces: REGL.Buffer[] = []
-  // public contours: REGL.Texture2D[] = []
   public surfaces: SurfaceFeature[] = []
 
   public symbols: REGL.Texture2D
@@ -123,10 +121,13 @@ export default class Layer {
 
   macros: { [key: string]: REGL.Framebuffer } = {}
 
-  constructor(props: { regl: REGL.Regl; name: string }) {
+  constructor(props: { regl: REGL.Regl; name: string, color?: vec3 }) {
     this.regl = props.regl
 
     this.name = props.name
+    if (props.color) {
+      this.color = props.color
+    }
     this.pads = this.regl.buffer(0)
     this.lines = this.regl.buffer(0)
     this.arcs = this.regl.buffer(0)
@@ -326,14 +327,18 @@ export default class Layer {
         u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
           this.surfaces[batchId].contours.width,
           this.surfaces[batchId].contours.height
-        ]
+        ],
+        u_EndSurfaceId: Records.END_SURFACE_ID,
+        u_ContourId: Records.CONTOUR_ID,
+        u_EndContourId: Records.END_CONTOUR_ID,
+        u_LineSegmentId: Records.CONTOUR_LINE_SEGMENT_ID,
+        u_ArcSegmentId: Records.CONTOUR_ARC_SEGMENT_ID,
       },
 
       attributes: {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
             this.surfaces[batchId].attributes,
-          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
           offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
@@ -341,33 +346,15 @@ export default class Layer {
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
             this.surfaces[batchId].attributes,
-          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
           offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
-        // a_Size: {
-        //   buffer: (_context: REGL.DefaultContext, _props, batchId: number) => this.surfaces[batchId].attributes,
-        //   // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-        //   offset: SURFACE_RECORD_PARAMETERS_MAP.width * glFloatSize, // implies height is next in vec2
-        //   divisor: 1
-        // },
-
         a_Box: {
-          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributes,
-          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) => this.surfaces[batchId].attributes,
           offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies height is next in vec2
           divisor: 1
         },
-
-        a_SegmentsCount: {
-          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributes,
-          // stride: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: SURFACE_RECORD_PARAMETERS_MAP.segmentsCount * glFloatSize,
-          divisor: 1
-        }
       },
 
       instances: 1
@@ -412,21 +399,11 @@ export default class Layer {
         arcs.push(record.array)
       }
       if (record.type === 'surface') {
-        // surfaces.push(record.array)
-        // contours.push(record.contoursArray)
-
         const surfaces = record.array
         const surfaceCountours = record.contoursArray
-        // console.log('surfaceContours', surfaceCountours)
-        // console.log('surfaceContours length', surfaceCountours.length)
-        // console.log('segments count', record.segmentsCount)
-        // console.log('trbl', record.top, record.right, record.bottom, record.left)
-        // console.log('radius', Math.ceil(Math.sqrt(surfaceCountours.length)))
         const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
-        // console.log('radius', radius)
-        // console.log('new length', Math.round(Math.pow(radius, 2)))
         const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
-          return surfaceCountours[index] ?? 999
+          return surfaceCountours[index] ?? Records.END_SURFACE_ID
         })
         console.log('newData', newData)
         this.surfaces.push({
