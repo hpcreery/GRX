@@ -8,7 +8,7 @@ import ArcVert from '../shaders/Arc.vert'
 import SurfaceFrag from '../shaders/Surface.frag'
 import SurfaceVert from '../shaders/Surface.vert'
 import { vec2, vec3 } from 'gl-matrix'
-import { IPlotRecord } from './types'
+// import { IPlotRecord, FeatureTypeIdentifyer } from './types'
 import * as Records from './records'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
@@ -31,7 +31,7 @@ type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
     | undefined
     | null
     | false
-    | ((context: REGL.DefaultContext, props: Layer) => REGL.Buffer)
+    | ((context: REGL.DefaultContext, props: Layer, batchId: number) => REGL.Buffer)
     | REGL.DynamicVariable<REGL.Buffer>
 }
 
@@ -51,6 +51,17 @@ interface ArcUniforms {
   u_SymbolsTexture: REGL.Texture2D
   u_SymbolsTextureDimensions: vec2
   u_Color: vec3
+}
+
+interface SurfaceUniforms {
+  u_Color: vec3
+  u_ContoursTexture: REGL.Texture2D
+  u_ContoursTextureDimensions: vec2
+  u_EndSurfaceId: number
+  u_ContourId: number
+  u_EndContourId: number
+  u_LineSegmentId: number
+  u_ArcSegmentId: number
 }
 
 interface PadAttributes {
@@ -81,9 +92,41 @@ interface ArcAttributes {
   a_Clockwise: CustomAttributeConfig
 }
 
+interface SurfaceAttributes {
+  a_Index: CustomAttributeConfig
+  a_Polarity: CustomAttributeConfig
+  a_Box: CustomAttributeConfig
+}
+
 interface SurfaceFeature {
   attributes: REGL.Buffer
   contours: REGL.Texture2D
+}
+
+export const LayerContext = {
+  BOARD: 'board',
+  MISC: 'misc'
+} as const
+export type LayerContexts = (typeof LayerContext)[keyof typeof LayerContext]
+
+export const LayerType = {
+  SILKSCREEN: 'silkscreen',
+  SOLDERMASK: 'soldermask',
+  SIGNAL: 'signal',
+  MIXED: 'mixed',
+  POWER_GROUND: 'power_ground',
+  DOCUMENT: 'document',
+  DRILL: 'drill',
+  ROUT: 'rout'
+} as const
+export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
+
+export interface LayerProps {
+  regl: REGL.Regl
+  name: string
+  color?: vec3
+  context?: LayerContexts
+  type?: LayerTypes
 }
 
 export default class Layer {
@@ -92,6 +135,8 @@ export default class Layer {
   public visible = true
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
+  public context: LayerContexts = 'misc'
+  public type: LayerTypes = 'document'
 
   public pads: REGL.Buffer
   get qtyPads(): number {
@@ -121,13 +166,20 @@ export default class Layer {
 
   macros: { [key: string]: REGL.Framebuffer } = {}
 
-  constructor(props: { regl: REGL.Regl; name: string, color?: vec3 }) {
+  constructor(props: LayerProps) {
     this.regl = props.regl
 
     this.name = props.name
     if (props.color) {
       this.color = props.color
     }
+    if (props.context) {
+      this.context = props.context
+    }
+    if (props.type) {
+      this.type = props.type
+    }
+
     this.pads = this.regl.buffer(0)
     this.lines = this.regl.buffer(0)
     this.arcs = this.regl.buffer(0)
@@ -315,7 +367,7 @@ export default class Layer {
       instances: () => this.qtyArcs
     })
 
-    this.drawSurfaces = this.regl<NonNullable<unknown>, NonNullable<unknown>>({
+    this.drawSurfaces = this.regl<SurfaceUniforms, SurfaceAttributes>({
       frag: SurfaceFrag,
 
       vert: SurfaceVert,
@@ -332,7 +384,7 @@ export default class Layer {
         u_ContourId: Records.CONTOUR_ID,
         u_EndContourId: Records.END_CONTOUR_ID,
         u_LineSegmentId: Records.CONTOUR_LINE_SEGMENT_ID,
-        u_ArcSegmentId: Records.CONTOUR_ARC_SEGMENT_ID,
+        u_ArcSegmentId: Records.CONTOUR_ARC_SEGMENT_ID
       },
 
       attributes: {
@@ -351,25 +403,26 @@ export default class Layer {
         },
 
         a_Box: {
-          buffer: (_context: REGL.DefaultContext, _props, batchId: number) => this.surfaces[batchId].attributes,
+          buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
+            this.surfaces[batchId].attributes,
           offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies height is next in vec2
           divisor: 1
-        },
+        }
       },
 
       instances: 1
     })
 
-    this.macros['test'] = this.regl.framebuffer({
-      color: this.regl.texture({
-        width: 1,
-        height: 1
-      }),
-      depth: true
-    })
+    // this.macros['test'] = this.regl.framebuffer({
+    //   color: this.regl.texture({
+    //     width: 1,
+    //     height: 1
+    //   }),
+    //   depth: true
+    // })
   }
 
-  public init(data: (Records.Input_Record | Symbols.Symbol)[]): this {
+  public init(data: (Records.Shape | Symbols.Symbol)[]): this {
     const pads: number[][] = []
     const lines: number[][] = []
     const arcs: number[][] = []
@@ -378,34 +431,35 @@ export default class Layer {
     // Auto index if not provided
     let index = 0
     data.forEach((record) => {
-      if (record.type === 'symbol') {
+      // if (record.type === 'symbol') {
+      //   symbols.push(record.array)
+      // }
+      if (record instanceof Symbols.Symbol) {
         symbols.push(record.array)
-      }
-      // Auto index if not provided
-      if (!(record instanceof Symbols.Symbol)) {
+      } else {
+        // Auto index if not provided
         if (record.index === 0) {
           record.index = index++
         } else {
           index = record.index
         }
       }
-      if (record.type === 'pad') {
+      if (record instanceof Records.Pad_Record) {
         pads.push(record.array)
       }
-      if (record.type === 'line') {
+      if (record instanceof Records.Line_Record) {
         lines.push(record.array)
       }
-      if (record.type === 'arc') {
+      if (record instanceof Records.Arc_Record) {
         arcs.push(record.array)
       }
-      if (record.type === 'surface') {
+      if (record instanceof Records.Surface_Record) {
         const surfaces = record.array
         const surfaceCountours = record.contoursArray
         const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
         const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
           return surfaceCountours[index] ?? Records.END_SURFACE_ID
         })
-        console.log('newData', newData)
         this.surfaces.push({
           attributes: this.regl.buffer({
             usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
@@ -460,10 +514,6 @@ export default class Layer {
       length: arcs.length * ARC_RECORD_PARAMETERS.length * glFloatSize,
       data: arcs
     })
-
-    // this.qtyPads = pads.length
-    // this.qtyLines = lines.length
-    // this.qtyArcs = qtyArcs.length
 
     return this
   }

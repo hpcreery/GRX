@@ -1,4 +1,4 @@
-import { IPlotRecord } from './types'
+import { IPlotRecord, FeatureTypeIdentifyer } from './types'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -83,7 +83,7 @@ export const SYMBOL_PARAMETERS_MAP = Object.fromEntries(
 export type TSymbol = typeof SYMBOL_PARAMETERS_MAP
 
 export class Symbol implements TSymbol, IPlotRecord {
-  public type = 'symbol' as const
+  public type = FeatureTypeIdentifyer.SYMBOL
   public symbol: number = STANDARD_SYMBOLS_MAP.Null
   public width = 0
   public height = 0

@@ -13,8 +13,8 @@ const {
 const {
   SURFACE_RECORD_PARAMETERS_MAP,
   CONTOUR_RECORD_PARAMETERS_MAP,
-  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP: CONTOUR_ARC_RECORD_PARAMETERS_MAP,
-  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP: CONTOUR_SEGMENT_RECORD_PARAMETERS_MAP,
+  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP,
+  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP,
 } = Records
 
 interface FeaturesProps {}
@@ -208,11 +208,11 @@ export class RenderEngine {
           (acc, [key, value]) => Object.assign(acc, { [`u_ContourParameters.${key}`]: value }),
           {}
         ),
-        ...Object.entries(CONTOUR_ARC_RECORD_PARAMETERS_MAP).reduce(
+        ...Object.entries(CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_ArcSegmentParameters.${key}`]: value }),
           {}
         ),
-        ...Object.entries(CONTOUR_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
+        ...Object.entries(CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_LineSegmentParameters.${key}`]: value }),
           {}
         )
@@ -413,7 +413,7 @@ export class RenderEngine {
   }: {
     name: string
     color?: vec3
-    data: (Records.Input_Record | Symbols.Symbol)[]
+    data: (Records.Shape | Symbols.Symbol)[]
   }): void {
     const layer = new Layer({
       name,

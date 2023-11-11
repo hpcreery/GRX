@@ -50,7 +50,7 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
             xc: 0.15 + i,
             yc: -0.05 + i,
             // computer the center coordinates of the arc with a radius of 0.1
-            clockwise: 0,
+            clockwise: 1,
           }),
           new Contour_Line_Segment_Record({
             x: 0.5 + i,
@@ -68,6 +68,14 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
             x: -0.5 + i,
             y: -0.5 + i,
           }),
+          // new Contour_Arc_Segment_Record({
+          //   x: -0.5 + i,
+          //   y: -0.5 + i,
+          //   xc: -0.5 + i,
+          //   yc: 0 + i,
+          //   // computer the center coordinates of the arc with a radius of 0.1
+          //   clockwise: 0,
+          // }),
           new Contour_Line_Segment_Record({
             x: 0 + i,
             y: 0 + i,
@@ -253,10 +261,10 @@ function REGLApp(): JSX.Element {
 
     Engine.SETTINGS.OUTLINE_MODE = false
 
-    // Engine.addLayer({
-    //   name: 'line and pads layer',
-    //   data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
-    // })
+    Engine.addLayer({
+      name: 'line and pads layer',
+      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
+    })
 
     Engine.addLayer({
       name: 'line layer',
