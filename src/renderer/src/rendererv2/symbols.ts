@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifyer } from './types'
+import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -69,16 +69,8 @@ export const SYMBOL_PARAMETERS = [
   'num_rings'
 ] as const
 
-export const STANDARD_SYMBOLS_MAP = Object.fromEntries(
-  STANDARD_SYMBOLS.map((key, i) => [key, i])
-) as {
-  [key in (typeof STANDARD_SYMBOLS)[number]]: number
-}
-export const SYMBOL_PARAMETERS_MAP = Object.fromEntries(
-  SYMBOL_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof SYMBOL_PARAMETERS)[number]]: number
-}
+export const STANDARD_SYMBOLS_MAP = toMap(STANDARD_SYMBOLS)
+export const SYMBOL_PARAMETERS_MAP = toMap(SYMBOL_PARAMETERS)
 
 export type TSymbol = typeof SYMBOL_PARAMETERS_MAP
 

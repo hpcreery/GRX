@@ -3,19 +3,6 @@ import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Symbols from './symbols'
 import * as Records from './records'
 import Layer from './layer'
-import { IPlotRecord } from './types'
-
-const {
-  STANDARD_SYMBOLS_MAP,
-  SYMBOL_PARAMETERS_MAP,
-} = Symbols
-
-const {
-  SURFACE_RECORD_PARAMETERS_MAP,
-  CONTOUR_RECORD_PARAMETERS_MAP,
-  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP,
-  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP,
-} = Records
 
 interface FeaturesProps {}
 
@@ -40,9 +27,9 @@ interface ScreenRenderUniforms {
   render_tex: REGL.Framebuffer
 }
 
-interface FrameBufferRenderProps {
-  frameBuffer: REGL.Framebuffer
-}
+// interface FrameBufferRenderProps {
+//   frameBuffer: REGL.Framebuffer
+// }
 
 export interface RenderEngineConfig {
   container: HTMLElement
@@ -132,9 +119,9 @@ export class RenderEngine {
   })
 
   regl: REGL.Regl
-  drawFeatures: REGL.DrawCommand<REGL.DefaultContext, FeaturesProps>
+  worldContext: REGL.DrawCommand<REGL.DefaultContext, FeaturesProps>
 
-  renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
+  // renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
   private layer_fbo: REGL.Framebuffer2D
@@ -151,28 +138,16 @@ export class RenderEngine {
     console.log('WEBGL LIMITS', this.regl.limits)
 
     this.regl.clear({
-      depth: 1
+      depth: 0
     })
 
     this.layer_fbo = this.regl.framebuffer()
     this.regl.clear({
-      depth: 1,
-      framebuffer: this.layer_fbo
+      framebuffer: this.layer_fbo,
+      depth: 0
     })
 
-    this.drawFeatures = this.regl<FeaturesUniforms, FeaturesAttributes, FeaturesProps>({
-      cull: {
-        enable: true,
-        face: 'front'
-      },
-
-      depth: {
-        enable: true,
-        mask: false,
-        func: 'less',
-        range: [0, 1]
-      },
-
+    this.worldContext = this.regl<FeaturesUniforms, FeaturesAttributes, FeaturesProps>({
       uniforms: {
         u_Transform: () => this.transform,
         u_InverseTransform: () => this.inverseTransform,
@@ -191,31 +166,7 @@ export class RenderEngine {
               window.devicePixelRatio,
             0.5
           ),
-        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE,
-        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(SURFACE_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_SurfaceParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_ContourParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_ArcSegmentParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_LineSegmentParameters.${key}`]: value }),
-          {}
-        )
+        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE
       },
 
       attributes: {
@@ -229,26 +180,24 @@ export class RenderEngine {
         ]
       },
 
+      cull: {
+        enable: true,
+        face: 'back'
+      },
+
       primitive: 'triangle strip',
       count: 6,
       offset: 0
     })
 
-    this.renderToFrameBuffer = this.regl<
-      Record<string, never>,
-      Record<string, never>,
-      FrameBufferRenderProps
-    >({
-      // Essentially Defaults
-      // depth: {
-      //   enable: true,
-      //   mask: false,
-      //   func: 'less',
-      //   range: [0, 1]
-      // },
-      framebuffer: (_context: REGL.DefaultContext, props: FrameBufferRenderProps) =>
-        props.frameBuffer
-    })
+    // this.renderToFrameBuffer = this.regl<
+    //   Record<string, never>,
+    //   Record<string, never>,
+    //   FrameBufferRenderProps
+    // >({
+    //   framebuffer: (_context: REGL.DefaultContext, props: FrameBufferRenderProps) =>
+    //     props.frameBuffer
+    // })
 
     this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
       {
@@ -258,7 +207,7 @@ export class RenderEngine {
         varying vec2 v_UV;
         void main () {
           v_UV = a_Vertex_Position;
-          gl_Position = vec4(a_Vertex_Position, 0, 1);
+          gl_Position = vec4(a_Vertex_Position, 1, 1);
         }
       `,
         frag: `
@@ -289,7 +238,9 @@ export class RenderEngine {
 
         depth: {
           enable: false,
-          mask: false
+          mask: false,
+          func: 'greater',
+          range: [0, 1]
         },
 
         uniforms: {
@@ -491,10 +442,10 @@ export class RenderEngine {
     this.dirty = false
     this.regl.clear({
       color: this.SETTINGS.BACKGROUND_COLOR,
-      depth: 1
+      depth: 0
     })
     setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
-    this.drawFeatures((context) => {
+    this.worldContext((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.render(context)

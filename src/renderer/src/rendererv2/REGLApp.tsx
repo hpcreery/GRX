@@ -20,8 +20,8 @@ import { IPlotRecord } from './types'
 
 // N == Number of Shapes
 const N_PADS = 1000
-const N_LINES = 10
-const N_ARCS = 10
+const N_LINES = 50
+const N_ARCS = 50
 const N_SURFACES = 3
 
 const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
@@ -30,7 +30,7 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
     console.log(i)
     return new Surface_Record({
       // index of feature
-      index: i / N_SURFACES,
+      // index: i / N_SURFACES,
       polarity: 1,
     }).addContours([
       new Contour_Record({
@@ -116,7 +116,7 @@ const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
     return new Pad_Record({
       // index of feature
       // index: i / N_PADS,
-      index: (i) / (N_LINES + N_PADS),
+      // index: (i) / (N_LINES + N_PADS),
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -134,13 +134,13 @@ const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
     })
   })
 
-const LINE_RECORDS_ARRAY = new Array<IPlotRecord>(N_LINES)
+const LINE_RECORDS_ARRAY_NEG = new Array<IPlotRecord>(N_LINES)
   .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
-      // index: i / N_LINES,
-      index: (i + N_PADS) / (N_LINES + N_PADS),
+      index: i,
+      // index: (i + N_PADS) / (N_LINES + N_PADS),
 
       // Start point.
       xs: (Math.random() - 0.5) * 1,
@@ -155,16 +155,17 @@ const LINE_RECORDS_ARRAY = new Array<IPlotRecord>(N_LINES)
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
-      polarity: Math.random() > 0.5 ? 1 : 0,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 0,
     })
   })
 
-const LINE_RECORDS_ARRAY2 = new Array<IPlotRecord>(N_LINES)
+const LINE_RECORDS_ARRAY_POS = new Array<IPlotRecord>(N_LINES)
   .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
       // index of feature
-      index: i / N_LINES,
+      index: i,
 
       // Start point.
       xs: (Math.random() - 0.5) * 1,
@@ -179,7 +180,8 @@ const LINE_RECORDS_ARRAY2 = new Array<IPlotRecord>(N_LINES)
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
-      polarity: Math.random() > 0.5 ? 1 : 0,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 1,
     })
   })
 
@@ -196,7 +198,7 @@ const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
     }
     return new Arc_Record({
       // index of feature
-      index: i / N_ARCS,
+      // index: i / N_ARCS,
 
       // Center point.
       xc: center_x,
@@ -214,7 +216,7 @@ const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
       sym_num: STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
-      polarity: 1,
+      polarity: 0,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
@@ -261,19 +263,19 @@ function REGLApp(): JSX.Element {
 
     Engine.SETTINGS.OUTLINE_MODE = false
 
-    Engine.addLayer({
-      name: 'line and pads layer',
-      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY, ...PAD_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'line and pads layer',
+    //   data: [...SYMBOLS_ARRAY, ...PAD_RECORDS_ARRAY]
+    // })
 
     Engine.addLayer({
       name: 'line layer',
-      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY2]
+      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG, ...ARC_RECORDS_ARRAY]
     })
 
     Engine.addLayer({
       name: 'arc layer',
-      data: [...SYMBOLS_ARRAY, ...ARC_RECORDS_ARRAY, ...SURFACE_RECORDS_ARRAY]
+      data: [...SYMBOLS_ARRAY, ...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     })
 
     // Engine.addLayer({

@@ -21,9 +21,13 @@ const {
   PAD_RECORD_PARAMETERS_MAP,
   ARC_RECORD_PARAMETERS_MAP,
   SURFACE_RECORD_PARAMETERS,
-  SURFACE_RECORD_PARAMETERS_MAP
+  SURFACE_RECORD_PARAMETERS_MAP,
+  CONTOUR_RECORD_PARAMETERS_MAP,
+  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP,
+  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
 } = Records
-const { SYMBOL_PARAMETERS, STANDARD_SYMBOLS_MAP } = Symbols
+
+const { SYMBOL_PARAMETERS, SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
 type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
   buffer:
@@ -103,6 +107,10 @@ interface SurfaceFeature {
   contours: REGL.Texture2D
 }
 
+interface CommonAttributes {}
+
+interface CommonUniforms {}
+
 export const LayerContext = {
   BOARD: 'board',
   MISC: 'misc'
@@ -159,10 +167,11 @@ export default class Layer {
 
   public framebuffer: REGL.Framebuffer2D
 
-  drawPads: REGL.DrawCommand<REGL.DefaultContext>
-  drawLines: REGL.DrawCommand<REGL.DefaultContext>
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext>
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
+  private commonConfig: REGL.DrawCommand<REGL.DefaultContext>
+  private drawPads: REGL.DrawCommand<REGL.DefaultContext>
+  private drawLines: REGL.DrawCommand<REGL.DefaultContext>
+  private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
+  private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
 
   macros: { [key: string]: REGL.Framebuffer } = {}
 
@@ -185,6 +194,45 @@ export default class Layer {
     this.arcs = this.regl.buffer(0)
     this.symbols = this.regl.texture()
     this.framebuffer = this.regl.framebuffer()
+
+    this.commonConfig = this.regl<CommonUniforms, CommonAttributes>({
+      depth: {
+        enable: true,
+        mask: true,
+        func: 'greater',
+        range: [0, 1]
+      },
+      cull: {
+        enable: true,
+        face: 'back'
+      },
+      uniforms: {
+        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
+          {}
+        ),
+        ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }),
+          {}
+        ),
+        ...Object.entries(SURFACE_RECORD_PARAMETERS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_SurfaceParameters.${key}`]: value }),
+          {}
+        ),
+        ...Object.entries(CONTOUR_RECORD_PARAMETERS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_ContourParameters.${key}`]: value }),
+          {}
+        ),
+        ...Object.entries(CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_ArcSegmentParameters.${key}`]: value }),
+          {}
+        ),
+        ...Object.entries(CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
+          (acc, [key, value]) => Object.assign(acc, { [`u_LineSegmentParameters.${key}`]: value }),
+          {}
+        )
+      }
+    })
 
     this.drawLines = this.regl<LineUniforms, LineAttributes>({
       frag: LineFrag,
@@ -423,6 +471,7 @@ export default class Layer {
   }
 
   public init(data: (Records.Shape | Symbols.Symbol)[]): this {
+    const qtyFeatures = data.length
     const pads: number[][] = []
     const lines: number[][] = []
     const arcs: number[][] = []
@@ -431,27 +480,31 @@ export default class Layer {
     // Auto index if not provided
     let index = 0
     data.forEach((record) => {
-      // if (record.type === 'symbol') {
-      //   symbols.push(record.array)
-      // }
       if (record instanceof Symbols.Symbol) {
         symbols.push(record.array)
+        return
       } else {
         // Auto index if not provided
         if (record.index === 0) {
-          record.index = index++
+          record.index = index++ / qtyFeatures
         } else {
           index = record.index
+          record.index = index / qtyFeatures
         }
       }
+      // console.log(qtyFeatures)
+      console.log(record.index, record.polarity)
       if (record instanceof Records.Pad_Record) {
         pads.push(record.array)
+        return
       }
       if (record instanceof Records.Line_Record) {
         lines.push(record.array)
+        return
       }
       if (record instanceof Records.Arc_Record) {
         arcs.push(record.array)
+        return
       }
       if (record instanceof Records.Surface_Record) {
         const surfaces = record.array
@@ -484,6 +537,7 @@ export default class Layer {
           //   data: surfaceCountours
           // })
         })
+        return
       }
     })
 
@@ -524,13 +578,15 @@ export default class Layer {
     this.regl.clear({
       framebuffer: this.framebuffer,
       color: [0, 0, 0, 0],
-      depth: 1
+      depth: 0
     })
     this.framebuffer.use(() => {
-      this.drawPads()
-      this.drawLines()
-      this.drawArcs()
-      this.drawSurfaces(this.surfaces.length)
+      this.commonConfig(() => {
+        this.drawPads()
+        this.drawArcs()
+        this.drawLines()
+        this.drawSurfaces(this.surfaces.length)
+      })
     })
   }
 }

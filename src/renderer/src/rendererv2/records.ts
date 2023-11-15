@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifyer } from './types'
+import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
 
 export const PAD_RECORD_PARAMETERS = [
   'index',
@@ -31,50 +31,39 @@ export const ARC_RECORD_PARAMETERS = [
   'polarity',
   'clockwise'
 ] as const
-
-export const PAD_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  PAD_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof PAD_RECORD_PARAMETERS)[number]]: number
-}
-export const LINE_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  LINE_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof LINE_RECORD_PARAMETERS)[number]]: number
-}
-export const ARC_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  ARC_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof ARC_RECORD_PARAMETERS)[number]]: number
-}
+export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
+export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS = [
+  'id',
+  'x',
+  'y',
+  'xc',
+  'yc',
+  'clockwise'
+] as const
+export const CONTOUR_RECORD_PARAMETERS = ['id', 'xs', 'ys', 'poly_type'] as const
+export const SURFACE_RECORD_PARAMETERS = [
+  'index',
+  'polarity',
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'segmentsCount'
+] as const
 
 // =================
 
-export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
-export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y', 'xc', 'yc', 'clockwise'] as const
-export const CONTOUR_RECORD_PARAMETERS = ['id', 'xs', 'ys', 'poly_type'] as const
-export const SURFACE_RECORD_PARAMETERS = ['index', 'polarity', 'top', 'right', 'bottom', 'left', 'segmentsCount'] as const
-
-export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS)[number]]: number
-}
-export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS)[number]]: number
-}
-export const CONTOUR_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  CONTOUR_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof CONTOUR_RECORD_PARAMETERS)[number]]: number
-}
-export const SURFACE_RECORD_PARAMETERS_MAP = Object.fromEntries(
-  SURFACE_RECORD_PARAMETERS.map((key, i) => [key, i])
-) as {
-  [key in (typeof SURFACE_RECORD_PARAMETERS)[number]]: number
-}
+export const PAD_RECORD_PARAMETERS_MAP = toMap(PAD_RECORD_PARAMETERS)
+export const LINE_RECORD_PARAMETERS_MAP = toMap(LINE_RECORD_PARAMETERS)
+export const ARC_RECORD_PARAMETERS_MAP = toMap(ARC_RECORD_PARAMETERS)
+export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
+  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS
+)
+export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
+  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS
+)
+export const CONTOUR_RECORD_PARAMETERS_MAP = toMap(CONTOUR_RECORD_PARAMETERS)
+export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
@@ -303,21 +292,33 @@ export class Contour_Record implements TContour_Record, IPlotRecord {
   }
 
   public get array(): number[] {
-    return CONTOUR_RECORD_PARAMETERS.map((key) => this[key]).concat(
-      this.segments.flatMap((segment) => segment.array)
-    ).concat(END_CONTOUR_ID)
+    return CONTOUR_RECORD_PARAMETERS.map((key) => this[key])
+      .concat(this.segments.flatMap((segment) => segment.array))
+      .concat(END_CONTOUR_ID)
   }
 
   public get length(): number {
-    return CONTOUR_RECORD_PARAMETERS.length + this.segments.reduce((acc, segment) => acc + segment.length, 0)
+    return (
+      CONTOUR_RECORD_PARAMETERS.length +
+      this.segments.reduce((acc, segment) => acc + segment.length, 0)
+    )
   }
 
   public get object(): TContour_Record {
-    return Object.fromEntries(CONTOUR_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TContour_Record
+    return Object.fromEntries(
+      CONTOUR_RECORD_PARAMETERS.map((key) => [key, this[key]])
+    ) as TContour_Record
   }
 
   public addSegments(segments: (Contour_Arc_Segment_Record | Contour_Line_Segment_Record)[]): this {
-    this.segments = this.segments.concat(segments)
+    for (const segment of segments) {
+      this.addSegment(segment)
+    }
+    return this
+  }
+
+  public addSegment(segment: Contour_Arc_Segment_Record | Contour_Line_Segment_Record): this {
+    this.segments.push(segment)
     return this
   }
 }
@@ -350,7 +351,10 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
   }
 
   public get length(): number {
-    return SURFACE_RECORD_PARAMETERS.length + this.contours.reduce((acc, contour) => acc + contour.length, 0)
+    return (
+      SURFACE_RECORD_PARAMETERS.length +
+      this.contours.reduce((acc, contour) => acc + contour.length, 0)
+    )
   }
 
   public get array(): number[] {
@@ -366,11 +370,20 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
   }
 
   public get object(): TSurface_Record {
-    return Object.fromEntries(SURFACE_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TSurface_Record
+    return Object.fromEntries(
+      SURFACE_RECORD_PARAMETERS.map((key) => [key, this[key]])
+    ) as TSurface_Record
   }
 
   public addContours(contour: Contour_Record[]): this {
-    this.contours = this.contours.concat(contour)
+    for (const c of contour) {
+      this.addContour(c)
+    }
+    return this
+  }
+
+  public addContour(contour: Contour_Record): this {
+    this.contours.push(contour)
     return this
   }
 }
