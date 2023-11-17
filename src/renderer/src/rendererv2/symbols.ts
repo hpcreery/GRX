@@ -1,4 +1,5 @@
 import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
+import { Shape } from './records'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -108,5 +109,16 @@ export class Symbol implements TSymbol, IPlotRecord {
 
   public get object(): TSymbol {
     return Object.fromEntries(SYMBOL_PARAMETERS.map((key) => [key, this[key]])) as TSymbol
+  }
+}
+
+export class Macro {
+  public type = FeatureTypeIdentifyer.MACRO
+  public name = ''
+  public shapes: Shape[] = []
+
+  constructor(name: string, shapes: Shape[]) {
+    this.name = name
+    this.shapes = shapes
   }
 }

@@ -269,17 +269,17 @@ function REGLApp(): JSX.Element {
     // })
 
     Engine.addLayer({
-      name: 'line layer',
-      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG, ...ARC_RECORDS_ARRAY]
+      name: 'layer1',
+      data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
     })
 
     Engine.addLayer({
-      name: 'arc layer',
+      name: 'layer2',
       data: [...SYMBOLS_ARRAY, ...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     })
 
     // Engine.addLayer({
-    //   name: 'surface layer',
+    //   name: 'layer3',
     //   data: [...SURFACE_RECORDS_ARRAY]
     // })
 

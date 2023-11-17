@@ -42,23 +42,19 @@ type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
 interface PadUniforms {
   u_SymbolsTexture: REGL.Texture2D
   u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
 }
 
 interface LineUniforms {
   u_SymbolsTexture: REGL.Texture2D
   u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
 }
 
 interface ArcUniforms {
   u_SymbolsTexture: REGL.Texture2D
   u_SymbolsTextureDimensions: vec2
-  u_Color: vec3
 }
 
 interface SurfaceUniforms {
-  u_Color: vec3
   u_ContoursTexture: REGL.Texture2D
   u_ContoursTextureDimensions: vec2
   u_EndSurfaceId: number
@@ -111,40 +107,8 @@ interface CommonAttributes {}
 
 interface CommonUniforms {}
 
-export const LayerContext = {
-  BOARD: 'board',
-  MISC: 'misc'
-} as const
-export type LayerContexts = (typeof LayerContext)[keyof typeof LayerContext]
-
-export const LayerType = {
-  SILKSCREEN: 'silkscreen',
-  SOLDERMASK: 'soldermask',
-  SIGNAL: 'signal',
-  MIXED: 'mixed',
-  POWER_GROUND: 'power_ground',
-  DOCUMENT: 'document',
-  DRILL: 'drill',
-  ROUT: 'rout'
-} as const
-export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
-
-export interface LayerProps {
-  regl: REGL.Regl
-  name: string
-  color?: vec3
-  context?: LayerContexts
-  type?: LayerTypes
-}
-
-export default class Layer {
+class ShapeRenderer {
   public regl: REGL.Regl
-
-  public visible = true
-  public name: string
-  public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
-  public context: LayerContexts = 'misc'
-  public type: LayerTypes = 'document'
 
   public pads: REGL.Buffer
   get qtyPads(): number {
@@ -177,17 +141,6 @@ export default class Layer {
 
   constructor(props: LayerProps) {
     this.regl = props.regl
-
-    this.name = props.name
-    if (props.color) {
-      this.color = props.color
-    }
-    if (props.context) {
-      this.context = props.context
-    }
-    if (props.type) {
-      this.type = props.type
-    }
 
     this.pads = this.regl.buffer(0)
     this.lines = this.regl.buffer(0)
@@ -241,8 +194,7 @@ export default class Layer {
 
       uniforms: {
         u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height],
-        u_Color: () => this.color
+        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
       },
 
       attributes: {
@@ -292,8 +244,7 @@ export default class Layer {
 
       uniforms: {
         u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height],
-        u_Color: () => this.color
+        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
       },
 
       attributes: {
@@ -357,8 +308,7 @@ export default class Layer {
 
       uniforms: {
         u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height],
-        u_Color: () => this.color
+        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
       },
 
       attributes: {
@@ -421,7 +371,6 @@ export default class Layer {
       vert: SurfaceVert,
 
       uniforms: {
-        u_Color: () => this.color,
         u_ContoursTexture: (_context: REGL.DefaultContext, _props, batchId: number) =>
           this.surfaces[batchId].contours,
         u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
@@ -460,14 +409,6 @@ export default class Layer {
 
       instances: 1
     })
-
-    // this.macros['test'] = this.regl.framebuffer({
-    //   color: this.regl.texture({
-    //     width: 1,
-    //     height: 1
-    //   }),
-    //   depth: true
-    // })
   }
 
   public init(data: (Records.Shape | Symbols.Symbol)[]): this {
@@ -573,7 +514,6 @@ export default class Layer {
   }
 
   public render(context: REGL.DefaultContext): void {
-    if (!this.visible) return
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
@@ -587,6 +527,102 @@ export default class Layer {
         this.drawLines()
         this.drawSurfaces(this.surfaces.length)
       })
+    })
+  }
+}
+
+export const LayerContext = {
+  BOARD: 'board',
+  MISC: 'misc'
+} as const
+export type LayerContexts = (typeof LayerContext)[keyof typeof LayerContext]
+
+export const LayerType = {
+  SILKSCREEN: 'silkscreen',
+  SOLDERMASK: 'soldermask',
+  SIGNAL: 'signal',
+  MIXED: 'mixed',
+  POWER_GROUND: 'power_ground',
+  DOCUMENT: 'document',
+  DRILL: 'drill',
+  ROUT: 'rout'
+} as const
+export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
+
+export interface LayerProps {
+  regl: REGL.Regl
+  name: string
+  color?: vec3
+  context?: LayerContexts
+  type?: LayerTypes
+}
+
+interface LayerUniforms {
+  u_Color: vec3
+}
+
+interface LayerAttributes {}
+
+export default class Layer extends ShapeRenderer {
+  public visible = true
+  public name: string
+  public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
+  public context: LayerContexts = 'misc'
+  public type: LayerTypes = 'document'
+
+  private layerConfig: REGL.DrawCommand<REGL.DefaultContext>
+
+  macros: { [key: string]: REGL.Framebuffer } = {}
+
+  constructor(props: LayerProps) {
+    super(props)
+
+    this.name = props.name
+    if (props.color) {
+      this.color = props.color
+    }
+    if (props.context) {
+      this.context = props.context
+    }
+    if (props.type) {
+      this.type = props.type
+    }
+
+    this.pads = this.regl.buffer(0)
+    this.lines = this.regl.buffer(0)
+    this.arcs = this.regl.buffer(0)
+    this.symbols = this.regl.texture()
+    this.framebuffer = this.regl.framebuffer()
+
+    this.layerConfig = this.regl<LayerUniforms, LayerAttributes>({
+      depth: {
+        enable: true,
+        mask: true,
+        func: 'greater',
+        range: [0, 1]
+      },
+      cull: {
+        enable: true,
+        face: 'back'
+      },
+      uniforms: {
+        u_Color: () => this.color
+      }
+    })
+
+    // this.macros['test'] = this.regl.framebuffer({
+    //   color: this.regl.texture({
+    //     width: 1,
+    //     height: 1
+    //   }),
+    //   depth: true
+    // })
+  }
+
+  public render(context: REGL.DefaultContext): void {
+    if (!this.visible) return
+    this.layerConfig(() => {
+      super.render(context)
     })
   }
 }

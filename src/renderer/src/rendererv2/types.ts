@@ -8,6 +8,7 @@ export const FeatureTypeIdentifyer = {
   CONTOUR: 'contour',
   SURFACE: 'surface',
   SYMBOL: 'symbol',
+  MACRO: 'macro',
 } as const
 
 export type FeatureTypeIdentifyers = typeof FeatureTypeIdentifyer[keyof typeof FeatureTypeIdentifyer]
