@@ -8,7 +8,7 @@ import ArcVert from '../shaders/Arc.vert'
 import SurfaceFrag from '../shaders/Surface.frag'
 import SurfaceVert from '../shaders/Surface.vert'
 import { vec2, vec3 } from 'gl-matrix'
-// import { IPlotRecord, FeatureTypeIdentifyer } from './types'
+import { IPlotRecord } from './types'
 import * as Records from './records'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
@@ -35,7 +35,7 @@ type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
     | undefined
     | null
     | false
-    | ((context: REGL.DefaultContext, props: Layer, batchId: number) => REGL.Buffer)
+    | ((context: REGL.DefaultContext, props: LayerRenderer, batchId: number) => REGL.Buffer)
     | REGL.DynamicVariable<REGL.Buffer>
 }
 
@@ -98,38 +98,138 @@ interface SurfaceAttributes {
   a_Box: CustomAttributeConfig
 }
 
-interface SurfaceFeature {
-  attributes: REGL.Buffer
-  contours: REGL.Texture2D
-}
-
 interface CommonAttributes {}
 
 interface CommonUniforms {}
 
+interface ShaderShapeCollection<T extends IPlotRecord> {
+  records: T[]
+  length: number
+  update: (data: T[]) => this
+  refresh: () => this
+}
+
+class ShapeCollection<T extends IPlotRecord> implements ShaderShapeCollection<T> {
+  public records: T[] = []
+  get length(): number {
+    return this.records.length
+  }
+  public buffer: REGL.Buffer
+
+  constructor(props: { regl: REGL.Regl; records?: T[] }) {
+    this.records = props.records ?? []
+    this.buffer = props.regl.buffer(0)
+    this.refresh()
+  }
+
+  public update(data: T[]): this {
+    this.records = data
+    return this.refresh()
+  }
+
+  public refresh(): this {
+    const numbers: number[][] = []
+    this.records.forEach((record) => {
+      numbers.push(record.array)
+    })
+    this.buffer({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: this.length * 4,
+      data: numbers
+    })
+    return this
+  }
+}
+
+class SurfaceCollection {
+  public record: Records.Surface_Record = new Records.Surface_Record({})
+  get length(): number {
+    return this.record.length
+  }
+  public contourTexture: REGL.Texture2D
+  public attributeBuffer: REGL.Buffer
+
+  constructor(props: { regl: REGL.Regl; record?: Records.Surface_Record }) {
+    this.record = props.record ?? new Records.Surface_Record({})
+    this.contourTexture = props.regl.texture()
+    this.attributeBuffer = props.regl.buffer(0)
+    this.refresh()
+  }
+
+  public update(record: Records.Surface_Record): this {
+    this.record = record
+    return this.refresh()
+  }
+
+  public refresh(): this {
+    const surfaces = this.record.array
+    const surfaceCountours = this.record.contoursArray
+    const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
+    const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
+      return surfaceCountours[index] ?? Records.END_SURFACE_ID
+    })
+    this.attributeBuffer({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: surfaces.length * SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+      data: surfaces
+    })
+    this.contourTexture({
+      width: radius,
+      height: radius,
+      type: 'float',
+      format: 'luminance',
+      wrap: 'clamp',
+      data: newData
+    })
+    return this
+  }
+}
+
+class SymbolCollection {
+  public symbols: Symbols.Symbol[] = []
+  get length(): number {
+    return this.symbols.length
+  }
+  public texture: REGL.Texture2D
+
+  constructor(props: { regl: REGL.Regl; symbols?: Symbols.Symbol[] }) {
+    this.symbols = props.symbols ?? []
+    this.texture = props.regl.texture()
+    this.refresh()
+  }
+
+  public update(symbols: Symbols.Symbol[]): this {
+    this.symbols = symbols
+    return this.refresh()
+  }
+
+  public refresh(): this {
+    if (this.symbols.length === 0) {
+      return this
+    }
+    const symbols = this.symbols.map((symbol) => symbol.array)
+    // TODO: make symbols not only expend in width but also in height
+    this.texture({
+      width: SYMBOL_PARAMETERS.length,
+      height: symbols.length,
+      type: 'float',
+      format: 'luminance',
+      data: symbols
+    })
+    return this
+  }
+}
+
 class ShapeRenderer {
   public regl: REGL.Regl
 
-  public pads: REGL.Buffer
-  get qtyPads(): number {
-    return this.pads.stats.size / (PAD_RECORD_PARAMETERS.length * glFloatSize * 4) // not sure why 4
-  }
-
-  public lines: REGL.Buffer
-  get qtyLines(): number {
-    return this.lines.stats.size / (LINE_RECORD_PARAMETERS.length * glFloatSize * 4)
-  }
-
-  public arcs: REGL.Buffer
-  get qtyArcs(): number {
-    return this.arcs.stats.size / (ARC_RECORD_PARAMETERS.length * glFloatSize * 4)
-  }
-
-  public surfaces: SurfaceFeature[] = []
-
-  public symbols: REGL.Texture2D
-
-  public framebuffer: REGL.Framebuffer2D
+  public symbols: SymbolCollection
+  public pads: ShapeCollection<Records.Pad_Record>
+  public lines: ShapeCollection<Records.Line_Record>
+  public arcs: ShapeCollection<Records.Arc_Record>
+  public surfaces: SurfaceCollection[] = []
 
   private commonConfig: REGL.DrawCommand<REGL.DefaultContext>
   private drawPads: REGL.DrawCommand<REGL.DefaultContext>
@@ -139,14 +239,19 @@ class ShapeRenderer {
 
   macros: { [key: string]: REGL.Framebuffer } = {}
 
-  constructor(props: LayerProps) {
+  constructor(props: ShapeRendererProps) {
     this.regl = props.regl
 
-    this.pads = this.regl.buffer(0)
-    this.lines = this.regl.buffer(0)
-    this.arcs = this.regl.buffer(0)
-    this.symbols = this.regl.texture()
-    this.framebuffer = this.regl.framebuffer()
+    this.symbols = new SymbolCollection({ regl: this.regl })
+    this.pads = new ShapeCollection<Records.Pad_Record>({
+      regl: this.regl
+    })
+    this.lines = new ShapeCollection<Records.Line_Record>({
+      regl: this.regl
+    })
+    this.arcs = new ShapeCollection<Records.Arc_Record>({
+      regl: this.regl
+    })
 
     this.commonConfig = this.regl<CommonUniforms, CommonAttributes>({
       depth: {
@@ -193,48 +298,48 @@ class ShapeRenderer {
       vert: LineVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
+        u_SymbolsTexture: () => this.symbols.texture,
+        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
         a_Index: {
-          buffer: () => this.lines,
+          buffer: () => this.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
-          buffer: () => this.lines,
+          buffer: () => this.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
-          buffer: () => this.lines,
+          buffer: () => this.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.lines,
+          buffer: () => this.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.lines,
+          buffer: () => this.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.qtyLines
+      instances: () => this.lines.length
     })
 
     this.drawPads = this.regl<PadUniforms, PadAttributes>({
@@ -243,62 +348,62 @@ class ShapeRenderer {
       vert: PadVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
+        u_SymbolsTexture: () => this.symbols.texture,
+        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
         a_Index: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Location: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_ResizeFactor: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Rotation: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
           divisor: 1
         },
 
         a_Mirror: {
-          buffer: () => this.pads,
+          buffer: () => this.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.qtyPads
+      instances: () => this.pads.length
     })
 
     this.drawArcs = this.regl<ArcUniforms, ArcAttributes>({
@@ -307,62 +412,62 @@ class ShapeRenderer {
       vert: ArcVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols,
-        u_SymbolsTextureDimensions: () => [this.symbols.width, this.symbols.height]
+        u_SymbolsTexture: () => this.symbols.texture,
+        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
         a_Index: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_Center_Location: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Clockwise: {
-          buffer: () => this.arcs,
+          buffer: () => this.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.qtyArcs
+      instances: () => this.arcs.length
     })
 
     this.drawSurfaces = this.regl<SurfaceUniforms, SurfaceAttributes>({
@@ -372,10 +477,10 @@ class ShapeRenderer {
 
       uniforms: {
         u_ContoursTexture: (_context: REGL.DefaultContext, _props, batchId: number) =>
-          this.surfaces[batchId].contours,
+          this.surfaces[batchId].contourTexture,
         u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
-          this.surfaces[batchId].contours.width,
-          this.surfaces[batchId].contours.height
+          this.surfaces[batchId].contourTexture.width,
+          this.surfaces[batchId].contourTexture.height
         ],
         u_EndSurfaceId: Records.END_SURFACE_ID,
         u_ContourId: Records.CONTOUR_ID,
@@ -387,21 +492,21 @@ class ShapeRenderer {
       attributes: {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributes,
+            this.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributes,
+            this.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Box: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributes,
+            this.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies height is next in vec2
           divisor: 1
         }
@@ -413,16 +518,16 @@ class ShapeRenderer {
 
   public init(data: (Records.Shape | Symbols.Symbol)[]): this {
     const qtyFeatures = data.length
-    const pads: number[][] = []
-    const lines: number[][] = []
-    const arcs: number[][] = []
-    const symbols: number[][] = []
+    const pads: Records.Pad_Record[] = []
+    const lines: Records.Line_Record[] = []
+    const arcs: Records.Arc_Record[] = []
+    const symbols: Symbols.Symbol[] = []
 
     // Auto index if not provided
     let index = 0
     data.forEach((record) => {
       if (record instanceof Symbols.Symbol) {
-        symbols.push(record.array)
+        symbols.push(record)
         return
       } else {
         // Auto index if not provided
@@ -434,100 +539,48 @@ class ShapeRenderer {
         }
       }
       // console.log(qtyFeatures)
-      console.log(record.index, record.polarity)
+      // console.log(record.index, record.polarity)
       if (record instanceof Records.Pad_Record) {
-        pads.push(record.array)
+        pads.push(record)
         return
       }
       if (record instanceof Records.Line_Record) {
-        lines.push(record.array)
+        lines.push(record)
         return
       }
       if (record instanceof Records.Arc_Record) {
-        arcs.push(record.array)
+        arcs.push(record)
         return
       }
       if (record instanceof Records.Surface_Record) {
-        const surfaces = record.array
-        const surfaceCountours = record.contoursArray
-        const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
-        const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
-          return surfaceCountours[index] ?? Records.END_SURFACE_ID
-        })
-        this.surfaces.push({
-          attributes: this.regl.buffer({
-            usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-            type: 'float',
-            length: surfaces.length * SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-            data: surfaces
-          }),
-          contours: this.regl.texture({
-            width: radius,
-            height: radius,
-            type: 'float',
-            format: 'luminance',
-            wrap: 'clamp',
-            data: newData
-          })
-          // contours: this.regl.texture({
-          //   width: surfaceCountours.length,
-          //   height: 1,
-          //   type: 'float',
-          //   format: 'luminance',
-          //   wrap: 'clamp',
-          //   data: surfaceCountours
-          // })
-        })
+        this.surfaces.push(new SurfaceCollection({ regl: this.regl, record }))
         return
       }
     })
 
-    // TODO: make symbols not only expend in width but also in height
-    symbols.length > 0 &&
-      this.symbols({
-        width: SYMBOL_PARAMETERS.length,
-        height: symbols.length,
-        type: 'float',
-        format: 'luminance',
-        data: symbols
-      })
-    this.pads({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: pads.length * PAD_RECORD_PARAMETERS.length * glFloatSize,
-      data: pads
-    })
-    this.lines({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: lines.length * LINE_RECORD_PARAMETERS.length * glFloatSize,
-      data: lines
-    })
-    this.arcs({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: arcs.length * ARC_RECORD_PARAMETERS.length * glFloatSize,
-      data: arcs
-    })
+    this.symbols.update(symbols)
+    this.pads.update(pads)
+    this.lines.update(lines)
+    this.arcs.update(arcs)
 
     return this
   }
 
-  public render(context: REGL.DefaultContext): void {
-    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.regl.clear({
-      framebuffer: this.framebuffer,
-      color: [0, 0, 0, 0],
-      depth: 0
+  public render(_context: REGL.DefaultContext): void {
+    // this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+    // this.regl.clear({
+    //   framebuffer: this.framebuffer,
+    //   color: [0, 0, 0, 0],
+    //   depth: 0
+    // })
+    // this.framebuffer.use(() => {
+    this.commonConfig(() => {
+      this.drawPads()
+      this.drawArcs()
+      this.drawLines()
+      this.drawSurfaces(this.surfaces.length)
     })
-    this.framebuffer.use(() => {
-      this.commonConfig(() => {
-        this.drawPads()
-        this.drawArcs()
-        this.drawLines()
-        this.drawSurfaces(this.surfaces.length)
-      })
-    })
+    // })
   }
 }
 
@@ -549,9 +602,12 @@ export const LayerType = {
 } as const
 export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
 
-export interface LayerProps {
+export interface ShapeRendererProps {
   regl: REGL.Regl
   name: string
+}
+
+export interface LayerRendererProps extends ShapeRendererProps {
   color?: vec3
   context?: LayerContexts
   type?: LayerTypes
@@ -563,7 +619,7 @@ interface LayerUniforms {
 
 interface LayerAttributes {}
 
-export default class Layer extends ShapeRenderer {
+export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
@@ -572,9 +628,11 @@ export default class Layer extends ShapeRenderer {
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext>
 
+  public framebuffer: REGL.Framebuffer2D
+
   macros: { [key: string]: REGL.Framebuffer } = {}
 
-  constructor(props: LayerProps) {
+  constructor(props: LayerRendererProps) {
     super(props)
 
     this.name = props.name
@@ -588,10 +646,6 @@ export default class Layer extends ShapeRenderer {
       this.type = props.type
     }
 
-    this.pads = this.regl.buffer(0)
-    this.lines = this.regl.buffer(0)
-    this.arcs = this.regl.buffer(0)
-    this.symbols = this.regl.texture()
     this.framebuffer = this.regl.framebuffer()
 
     this.layerConfig = this.regl<LayerUniforms, LayerAttributes>({
@@ -621,8 +675,29 @@ export default class Layer extends ShapeRenderer {
 
   public render(context: REGL.DefaultContext): void {
     if (!this.visible) return
-    this.layerConfig(() => {
-      super.render(context)
+    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.regl.clear({
+      framebuffer: this.framebuffer,
+      color: [0, 0, 0, 0],
+      depth: 0
+    })
+    this.framebuffer.use(() => {
+      this.layerConfig(() => {
+        super.render(context)
+      })
     })
   }
+}
+
+interface MacroProps extends LayerRendererProps {}
+
+class MacroRenderer extends ShapeRenderer {
+  constructor(props: MacroProps) {
+    super(props)
+  }
+
+  // private getBounds(): vec4 {
+  //   for (const pad of this.padsBuffer) {
+  //   }
+  // }
 }

@@ -2,7 +2,7 @@ import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Symbols from './symbols'
 import * as Records from './records'
-import Layer from './layer'
+import LayerRenderer from './layer'
 
 interface FeaturesProps {}
 
@@ -110,7 +110,7 @@ export class RenderEngine {
   // }
 
   // make layers a proxy so that we can call render when a property is updated
-  public layers: Layer[] = new Proxy([], {
+  public layers: LayerRenderer[] = new Proxy([], {
     set: (target, name, value): boolean => {
       target[name] = value
       this.render(true)
@@ -366,7 +366,7 @@ export class RenderEngine {
     color?: vec3
     data: (Records.Shape | Symbols.Symbol)[]
   }): void {
-    const layer = new Layer({
+    const layer = new LayerRenderer({
       name,
       color,
       regl: this.regl
