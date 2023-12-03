@@ -273,7 +273,8 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'layer0',
-      data: [...SYMBOLS_ARRAY, ...PAD_RECORDS_ARRAY]
+      symbols: SYMBOLS_ARRAY,
+      image: [...PAD_RECORDS_ARRAY]
     })
 
     // Engine.addLayer({
@@ -283,7 +284,8 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'layer2',
-      data: [...SYMBOLS_ARRAY, ...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
+      symbols: SYMBOLS_ARRAY,
+      image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     })
 
     // Engine.addLayer({

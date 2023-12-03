@@ -516,30 +516,19 @@ class ShapeRenderer {
     })
   }
 
-  public init(data: (Records.Shape | Symbols.Symbol)[]): this {
+  public update(data: Records.Shape[]): this {
     const qtyFeatures = data.length
     const pads: Records.Pad_Record[] = []
     const lines: Records.Line_Record[] = []
     const arcs: Records.Arc_Record[] = []
-    const symbols: Symbols.Symbol[] = []
 
-    // Auto index if not provided
+    // Auto index
     let index = 0
     data.forEach((record) => {
-      if (record instanceof Symbols.Symbol) {
-        symbols.push(record)
-        return
-      } else {
-        // Auto index if not provided
-        if (record.index === 0) {
-          record.index = index++ / qtyFeatures
-        } else {
-          index = record.index
-          record.index = index / qtyFeatures
-        }
-      }
-      // console.log(qtyFeatures)
-      // console.log(record.index, record.polarity)
+
+      // Auto index
+      record.index = index++ / qtyFeatures
+
       if (record instanceof Records.Pad_Record) {
         pads.push(record)
         return
@@ -558,7 +547,6 @@ class ShapeRenderer {
       }
     })
 
-    this.symbols.update(symbols)
     this.pads.update(pads)
     this.lines.update(lines)
     this.arcs.update(arcs)

@@ -360,18 +360,23 @@ export class RenderEngine {
   public addLayer({
     name,
     color,
-    data
+    symbols,
+    image
   }: {
     name: string
     color?: vec3
-    data: (Records.Shape | Symbols.Symbol)[]
-  }): void {
+    symbols: Symbols.Symbol[]
+    image: Records.Shape[]
+  }): LayerRenderer {
     const layer = new LayerRenderer({
       name,
       color,
       regl: this.regl
-    }).init(data)
+    })
+    layer.symbols.update(symbols)
+    layer.update(image)
     this.layers.push(layer)
+    return layer
   }
 
   public updateTransform(): void {
