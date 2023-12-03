@@ -124,7 +124,7 @@ const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
       sym_num: i % Object.keys(STANDARD_SYMBOLS).length,
       // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-      resize_factor: 0,
+      resize_factor: Math.random() + 1,
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
@@ -282,11 +282,11 @@ function REGLApp(): JSX.Element {
     //   data: [...SYMBOLS_ARRAY, ...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
     // })
 
-    Engine.addLayer({
-      name: 'layer2',
-      symbols: SYMBOLS_ARRAY,
-      image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'layer2',
+    //   symbols: SYMBOLS_ARRAY,
+    //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
+    // })
 
     // Engine.addLayer({
     //   name: 'layer3',

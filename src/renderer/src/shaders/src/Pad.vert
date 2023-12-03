@@ -69,7 +69,7 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  vec2 Size = vec2(pullParam(u_Parameters.width), pullParam(u_Parameters.height));
+  vec2 Size = vec2(pullParam(u_Parameters.width) * a_ResizeFactor, pullParam(u_Parameters.height) * a_ResizeFactor);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 RotatedPostion = SizedPosition * rotate2d(radians(a_Rotation));

@@ -547,9 +547,10 @@ class ShapeRenderer {
       }
     })
 
-    this.pads.update(pads)
-    this.lines.update(lines)
-    this.arcs.update(arcs)
+    // Reverse order to draw from the top down
+    this.pads.update(pads.reverse())
+    this.lines.update(lines.reverse())
+    this.arcs.update(arcs.reverse())
 
     return this
   }

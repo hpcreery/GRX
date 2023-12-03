@@ -1,7 +1,7 @@
 precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
-#define DEBUG 0
+#define DEBUG 1
 
 uniform struct shapes {
   float Round;
@@ -156,7 +156,7 @@ void main() {
   vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
   vec2 OffsetPosition = AspectPosition.xy - v_Location;
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
-  vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation));
+  vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation)) / v_ResizeFactor;
 
   // vec3 color = vec3(1.0);
   vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
@@ -167,10 +167,6 @@ void main() {
   dist = draw(dist);
 
   if (DEBUG == 1) {
-    // if(dist < 0.0 && dist > -u_PixelSize * scale) {
-    //   dist = 1.0;
-    // }
-    // gl_FragColor = vec4(-dist, dist, dist, 1.0);
     vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
     col *= 1.0 - exp(-6.0 * abs(dist));
     col *= 0.8 + 0.5 * cos(500.0 * dist);
