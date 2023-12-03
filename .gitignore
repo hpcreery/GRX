@@ -3,4 +3,7 @@ dist
 out
 *.log*
 
+# Shader Builds
+src/renderer/src/shaders/build
+
 .DS_Store

@@ -1,103 +1,5 @@
-precision mediump float;
+precision highp float;
 
-#define PI 3.1415926535897932384626433832795
-#define DEBUG 0
-
-uniform struct shapes {
-  float Round;
-  float Square;
-  float Rectangle;
-  float Rounded_Rectangle;
-  float Chamfered_Rectangle;
-  float Oval;
-  float Diamond;
-  float Octagon;
-  float Round_Donut;
-  float Square_Donut;
-  float SquareRound_Donut;
-  float Rounded_Square_Donut;
-  float Rectange_Donut;
-  float Rounded_Rectangle_Donut;
-  float Oval_Donut;
-  float Horizontal_Hexagon;
-  float Vertical_Hexagon;
-  float Butterfly;
-  float Square_Butterfly;
-  float Triangle;
-  float Half_Oval;
-  float Rounded_Round_Thermal;
-  float Squared_Round_Thermal;
-  float Square_Thermal;
-  float Open_Corners_Square_Thermal;
-  float Line_Thermal;
-  float Square_Round_Thermal;
-  float Rectangular_Thermal;
-  float Rectangular_Thermal_Open_Corners;
-  float Rounded_Square_Thermal;
-  float Rounded_Square_Thermal_Open_Corners;
-  float Rounded_Rectangular_Thermal;
-  float Oval_Thermal;
-  float Oblong_Thermal;
-  // float Home_Plate;
-  // float Inverted_Home_Plate;
-  // float Flat_Home_Plate;
-  // float Radiused_Inverted_Home_Plate;
-  // float Radiused_Home_Plate;
-  // float Cross;
-  // float Dogbone;
-  // float DPack;
-  float Ellipse;
-  float Moire;
-  float Hole;
-  float Null;
-} u_Shapes;
-
-uniform struct parameters {
-  highp int symbol;
-  highp int width;
-  highp int height;
-  highp int corner_radius;
-  highp int corners;
-  highp int outer_dia;
-  highp int inner_dia;
-  highp int line_width;
-  highp int line_length;
-  highp int angle;
-  highp int gap;
-  highp int num_spokes;
-  highp int round;
-  highp int cut_size;
-  highp int ring_width;
-  highp int ring_gap;
-  highp int num_rings;
-} u_Parameters;
-
-// COMMIN UNIFORMS
-uniform sampler2D u_SymbolsTexture;
-uniform vec2 u_SymbolsTextureDimensions;
-uniform mat3 u_Transform;
-uniform mat3 u_InverseTransform;
-uniform vec2 u_Resolution;
-uniform vec2 u_Screen;
-uniform float u_PixelSize;
-uniform bool u_OutlineMode;
-uniform vec3 u_Color;
-
-// COMMON VARYINGS
-varying float v_Aspect;
-
-// LINE VARYINGS
-varying float v_Index;
-varying float v_SymNum;
-varying vec2 v_Start_Location;
-varying vec2 v_End_Location;
-varying float v_Polarity;
-
-const float ALPHA = 1.0;
-
-//////////////////////////////////////
-// Combine distance field functions //
-//////////////////////////////////////
 
 float smoothMerge(float d1, float d2, float k) {
   float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
@@ -151,7 +53,7 @@ vec2 translate(vec2 p, vec2 t) {
 // Distance field functions //
 //////////////////////////////
 
-float pie(vec2 p, float angle) {
+float pieDist(vec2 p, float angle) {
   angle = radians(angle) / 2.0;
   vec2 n = vec2(cos(angle), sin(angle));
   return abs(p).x * n.x + p.y * n.y;
@@ -175,7 +77,7 @@ float triangleDist(vec2 p, float width, float height) {
 float semiCircleDist(vec2 p, float radius, float angle, float width) {
   width /= 2.0;
   radius -= width;
-  return substract(pie(p, angle), abs(circleDist(p, radius)) - width);
+  return substract(pieDist(p, angle), abs(circleDist(p, radius)) - width);
 }
 
 float lineDist(vec2 p, vec2 start, vec2 end, float width) {
@@ -190,57 +92,6 @@ float boxDist(vec2 p, vec2 size) {
   size /= 2.0;
   vec2 d = abs(p) - size;
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-}
-
-// float roundBoxDist(vec2 p, vec2 size, float radius) {
-//   size /= 2.0;
-//   size -= vec2(radius);
-//   vec2 d = abs(p) - size;
-//   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - radius;
-// }
-
-float sdRoundBox(in vec2 p, in vec2 size, in vec4 r) {
-  size /= 2.0;
-  r.xy = (p.x > 0.0) ? r.xy : r.zw;
-  r.x = (p.y > 0.0) ? r.x : r.y;
-  vec2 q = abs(p) - size + r.x;
-  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x;
-}
-
-vec4 roundedCornersVectorOld(float corners) {
-  // CORNERS IS A VALUE FROM 0 TO 15, 1,2,4,8 indicate the chamfered corner and the sum of the values is between 0 and 15 base 2 added up
-
-  // r.x = roundness top-right
-  // r.y = roundness boottom-right
-  // r.z = roundness top-left
-  // r.w = roundness bottom-left
-  vec4 r = vec4(0.0, 0.0, 0.0, 0.0);
-
-  // default to all corners
-  if (corners == 0.0) {
-    corners = 15.0;
-  }
-  // boottom-right
-  if (corners >= 8.0) {
-    r.y = 1.0;
-    corners -= 8.0;
-  }
-  // bottom-left
-  if (corners >= 4.0) {
-    r.w = 1.0;
-    corners -= 4.0;
-  }
-  // top-left
-  if (corners >= 2.0) {
-    r.z = 1.0;
-    corners -= 2.0;
-  }
-  // top-right
-  if (corners >= 1.0) {
-    r.x = 1.0;
-    corners -= 1.0;
-  }
-  return r;
 }
 
 vec4 roundedCornersVector(float corners) {
@@ -356,42 +207,6 @@ float squareButterflydist(vec2 p, float dist) {
   return d;
 }
 
-// float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
-
-//   float r_angle = radians(angle);
-//   float n_angle = atan(p.y, p.x) - r_angle;
-//   n_angle = (2.0 / num_spokes) * asin(sin((num_spokes / 2.0) * n_angle));
-
-//   float leng = length(p);
-
-//   // r = ro * cos(n_angle − theta1) + √( 𝑅^2 − (ro^2) * sin^2(n_angle − theta1))
-//   float off = gap * 3.0;
-//   float R = gap / 3.0;
-//   // float ro = sqrt(off * off + R * R);
-//   float ro = gap * 1.0;
-//   // float theta1 = atan(R / off);
-//   float theta1 = 0.0;
-
-//   float r = ro * cos(n_angle - theta1) + sqrt(R * R - ro * ro * sin(n_angle - theta1) * sin(n_angle - theta1));
-//   vec2 cart = vec2(off * cos(r_angle), off * sin(r_angle));
-//   // return length(p - cart);
-//   // return circleDist(p - cart, gap / 2.0);
-//   return leng - r;
-//   // float r = 0.4;
-//   // float l = sqrt(r * r - ro * ro - 2.0 * ro * r * cos(n_angle - theta1));
-//   // return leng - l;
-
-//   float da = (leng * sin(n_angle) + gap / 2.0);
-//   float db = (-leng * sin(n_angle) + gap / 2.0);
-//   float spokes = min(da, db);
-//   if (num_spokes == 1.0) {
-//     p = rotateCW(r_angle) * p;
-//     spokes = min(spokes, p.x);
-//   }
-
-//   return spokes;
-// }
-
 float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
 
   float r_angle = radians(angle);
@@ -410,34 +225,6 @@ float spokeDist(vec2 p, float angle, float num_spokes, float gap) {
 
   return spokes;
 }
-
-// This successfully works challenging to determine spoke gap width
-// float sdThermal(in vec2 p) {
-//   float ra = 0.9;
-//   float rb = 0.05;
-//   float num_spokes = 2.0;
-//   float tb = 3.141519 / 2.0;
-//   num_spokes *= 2.0;
-//   vec2 sc = vec2(sin(tb), cos(tb));
-//     //p.x = abs(p.x);
-//     //return abs(length(p)-ra) - rb;
-
-//   float ang = 0.0;// 3.141519 / num_spokes;
-//   vec2 sincos = vec2(sin(ang), cos(ang));
-//     //x = r cosθ and y = r sinθ
-//   float r = length(p);
-
-//   float r_angle = radians(ang);
-//   float n_angle = atan(p.y, p.x) - r_angle;
-//   n_angle = (2.0 / num_spokes) * asin(sin((num_spokes / 2.0) * n_angle));
-//   vec2 s = vec2(r * cos(n_angle), r * sin(n_angle));
-
-//     //return length(s - sincos * 0.9) - 0.3;
-
-//     //return length(p-sc*ra) - rb;
-//   return ((sc.y * s.x > sc.x * s.y) ? length(s - sc * ra) : abs(length(s) - ra)) - rb;
-//     //return (p.x > 0.0 ? length(p-sc*ra) : abs(length(p)-ra)) - rb;
-// }
 
 // sc is the sin/cos of the aperture
 float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
@@ -469,23 +256,6 @@ float roundedRoundThermalDist(in vec2 p, in float od, in float id, in float angl
   // return length(s - sincos2 * radius) - lw; // round ends
   // return abs(length(s) - radius) - lw; // outer circle
 }
-
-// float thermalDist(vec2 p, float radius) {
-
-//   float ang = 0.0;
-//   vec2 sincos = vec2(sin(ang), cos(ang));
-//   return length(p - sincos * 0.5 * radius) - radius / 6.0;
-
-//   float id = radius * 0.8;
-//   // float outercircle = circleDist(p, radius);
-//   // float innercircle = circleDist(p, id);
-//   float circle = abs(circleDist(p, (radius + id) / 2.0));
-//   float spokes = spokeDist(p, 0.0, 2.0, radius / 2.0);
-//   float therm = max(circle, spokes);
-
-//   return spokes;// - ((radius - id) / 2.0);
-//   // return spokeDist(p, 45.0, 3.0, radius / 4.0);
-// }
 
 float thermalDistOrig(vec2 p, float radius) {
   float id = radius * 0.8;
@@ -771,56 +541,28 @@ float outerBorderMask(float dist, float width) {
   return alpha1 - alpha2;
 }
 
-float draw(float dist) {
-  if (DEBUG == 1) {
-    return dist;
-  }
-  if (dist > 0.0) {
-    discard;
-  }
-  float scale = u_InverseTransform[0][0];
-  if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
-    discard;
-  }
-  // if(outline) {
-  //   if(dist < -scale * u_PixelSize) {
-  //     discard;
-  //   }
-  // }
-  return dist;
-}
+#pragma glslify: pullSymbolParameter = require('./PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-float pullParam(int offset) {
-  vec2 texcoord = (vec2(float(offset), v_SymNum) + 0.5) / u_SymbolsTextureDimensions;
-  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
-  return pixelValue.x;
-}
 
-float pullParam(float offset) {
-  vec2 texcoord = (vec2(offset, v_SymNum) + 0.5) / u_SymbolsTextureDimensions;
-  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
-  return pixelValue.x;
-}
+float drawShape(vec2 FragCoord, int SymNum) {
 
-float drawShape(vec2 FragCoord) {
-
-  float t_Symbol = pullParam(u_Parameters.symbol);
-  float t_Width = pullParam(u_Parameters.width);
-  float t_Height = pullParam(u_Parameters.height);
-  float t_Corner_Radius = pullParam(u_Parameters.corner_radius);
-  float t_Corners = pullParam(u_Parameters.corners);
-  float t_Outer_Dia = pullParam(u_Parameters.outer_dia);
-  float t_Inner_Dia = pullParam(u_Parameters.inner_dia);
-  float t_Line_Width = pullParam(u_Parameters.line_width);
-  float t_Line_Length = pullParam(u_Parameters.line_length);
-  float t_Angle = pullParam(u_Parameters.angle);
-  float t_Gap = pullParam(u_Parameters.gap);
-  float t_Num_Spokes = pullParam(u_Parameters.num_spokes);
-  float t_Round = pullParam(u_Parameters.round);
-  // float t_Cut_Size = pullParam(u_Parameters.cut_size);
-  float t_Ring_Width = pullParam(u_Parameters.ring_width);
-  float t_Ring_Gap = pullParam(u_Parameters.ring_gap);
-  float t_Num_Rings = pullParam(u_Parameters.num_rings);
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
+  float t_Width = pullSymbolParameter(u_Parameters.width, SymNum);
+  float t_Height = pullSymbolParameter(u_Parameters.height, SymNum);
+  float t_Corner_Radius = pullSymbolParameter(u_Parameters.corner_radius, SymNum);
+  float t_Corners = pullSymbolParameter(u_Parameters.corners, SymNum);
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
+  float t_Inner_Dia = pullSymbolParameter(u_Parameters.inner_dia, SymNum);
+  float t_Line_Width = pullSymbolParameter(u_Parameters.line_width, SymNum);
+  float t_Line_Length = pullSymbolParameter(u_Parameters.line_length, SymNum);
+  float t_Angle = pullSymbolParameter(u_Parameters.angle, SymNum);
+  float t_Gap = pullSymbolParameter(u_Parameters.gap, SymNum);
+  float t_Num_Spokes = pullSymbolParameter(u_Parameters.num_spokes, SymNum);
+  float t_Round = pullSymbolParameter(u_Parameters.round, SymNum);
+  // float t_Cut_Size = pullSymbolParameter(u_Parameters.cut_size);
+  float t_Ring_Width = pullSymbolParameter(u_Parameters.ring_width, SymNum);
+  float t_Ring_Gap = pullSymbolParameter(u_Parameters.ring_gap, SymNum);
+  float t_Num_Rings = pullSymbolParameter(u_Parameters.num_rings, SymNum);
 
   float dist = 0.0;
 
@@ -928,56 +670,4 @@ float drawShape(vec2 FragCoord) {
   return dist;
 }
 
-void main() {
-
-  // gl_FragColor = vec4(1.0,1.0,1.0, 1.0);
-  // return;
-
-  float scale = u_InverseTransform[0][0];
-
-  vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-
-  vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
-  vec2 OffsetPosition = AspectPosition.xy - Center_Location;
-  // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
-  vec2 FragCoord = OffsetPosition;
-
-  // vec3 color = vec3(1.0);
-  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
-  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
-
-  // ? which one to go by for line width...
-  float t_Outer_Dia = pullParam(u_Parameters.outer_dia);
-  float t_Width = pullParam(u_Parameters.width);
-
-  float dX = v_Start_Location.x - v_End_Location.x;
-  float dY = v_Start_Location.y - v_End_Location.y;
-  float len = distance(v_Start_Location, v_End_Location);
-  float angle = atan(dY/dX);
-  float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-angle));
-  float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-angle));
-  float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, t_Width));
-  float dist = merge(start,end);
-  dist = merge(dist, con);
-
-  dist = draw(dist);
-
-  if (DEBUG == 1) {
-    // if(dist < 0.0 && dist > -u_PixelSize * scale) {
-    //   dist = 1.0;
-    // }
-    // gl_FragColor = vec4(-dist, dist, dist, 1.0);
-    vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
-    col *= 1.0 - exp(-6.0 * abs(dist));
-    col *= 0.8 + 0.5 * cos(500.0 * dist);
-    // col = mix(col, vec3(1.0), 1.0 - smoothstep(0.0, u_PixelSize * scale, abs(dist)));
-    if (dist < 0.0 && dist > -u_PixelSize * scale) {
-      col = vec3(1.0, 1.0, 1.0);
-    }
-    gl_FragColor = vec4(col, 1.0);
-    return;
-  }
-  gl_FragColor = vec4(color, Alpha);
-}
+#pragma glslify: export(drawShape)

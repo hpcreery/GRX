@@ -261,11 +261,18 @@ function REGLApp(): JSX.Element {
       }
     })
 
+    // DictionaryStandard
+    // DictionaryUser
+    // DictionaryFont
 
     Engine.SETTINGS.OUTLINE_MODE = false
+    // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
+
+
+    // Engine.addDictionary({}_)
 
     Engine.addLayer({
-      name: 'line and pads layer',
+      name: 'layer0',
       data: [...SYMBOLS_ARRAY, ...PAD_RECORDS_ARRAY]
     })
 
@@ -282,6 +289,11 @@ function REGLApp(): JSX.Element {
     // Engine.addLayer({
     //   name: 'layer3',
     //   data: [...SURFACE_RECORDS_ARRAY]
+    // })
+
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   set: [...SURFACE_RECORDS_ARRAY]
     // })
 
     // Engine.pointer.addEventListener('pointerdown', console.log)

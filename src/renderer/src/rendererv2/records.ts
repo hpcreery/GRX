@@ -389,3 +389,26 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
 }
 
 export type Shape = Pad_Record | Line_Record | Arc_Record | Surface_Record
+
+export class Macro_Record {
+  public type = FeatureTypeIdentifyer.MACRO
+  public index = 0
+  public name = ''
+  public symbols: Shape[] = []
+
+  constructor(record: Partial<Macro_Record>) {
+    Object.assign(this, record)
+  }
+}
+
+export class Macro_Definition_Record {
+  public type = FeatureTypeIdentifyer.MACRO
+  public index = 0
+  public name = ''
+  public symbols: Shape[] = []
+
+  constructor(record: Partial<Macro_Record>) {
+    Object.assign(this, record)
+  }
+}
+

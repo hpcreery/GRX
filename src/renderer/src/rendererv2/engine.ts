@@ -387,31 +387,8 @@ export class RenderEngine {
     mat3.scale(this.transform, this.transform, [width / 2, -height / 2])
     mat3.invert(this.inverseTransform, this.transform)
 
-    // console.log(
-    //   'transform \n' +
-    //     `${Math.round(this.transform[0] * 100) / 100}, ${
-    //       Math.round(this.transform[1] * 100) / 100
-    //     }, ${Math.round(this.transform[2] * 100) / 100},\n` +
-    //     `${Math.round(this.transform[3] * 100) / 100}, ${
-    //       Math.round(this.transform[4] * 100) / 100
-    //     }, ${Math.round(this.transform[5] * 100) / 100},\n` +
-    //     `${Math.round(this.transform[6] * 100) / 100}, ${
-    //       Math.round(this.transform[7] * 100) / 100
-    //     }, ${Math.round(this.transform[8] * 100) / 100}`
-    // )
-
-    // console.log(
-    //   'this.inverseTransform \n' +
-    //     `${Math.round(this.inverseTransform[0] * 100) / 100}, ${
-    //       Math.round(this.inverseTransform[1] * 100) / 100
-    //     }, ${Math.round(this.inverseTransform[2] * 100) / 100},\n` +
-    //     `${Math.round(this.inverseTransform[3] * 100) / 100}, ${
-    //       Math.round(this.inverseTransform[4] * 100) / 100
-    //     }, ${Math.round(this.inverseTransform[5] * 100) / 100},\n` +
-    //     `${Math.round(this.inverseTransform[6] * 100) / 100}, ${
-    //       Math.round(this.inverseTransform[7] * 100) / 100
-    //     }, ${Math.round(this.inverseTransform[8] * 100) / 100}`
-    // )
+    // logMatrix(this.transform)
+    // logMatrix(this.inverseTransform)
 
     // console.log(s)
     this.render()
@@ -481,4 +458,18 @@ export class RenderEngine {
     this.CONTAINER.onmousemove = null
     this.CONTAINER.onresize = null
   }
+}
+
+export function logMatrix(matrix: mat3): void {
+  console.log(
+      `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${
+        Math.round(matrix[2] * 100) / 100
+      },\n` +
+      `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${
+        Math.round(matrix[5] * 100) / 100
+      },\n` +
+      `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${
+        Math.round(matrix[8] * 100) / 100
+      }`
+  )
 }

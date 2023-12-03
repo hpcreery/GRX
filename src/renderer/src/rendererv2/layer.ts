@@ -1,12 +1,12 @@
 import REGL from 'regl'
-import PadFrag from '../shaders/Pad.frag'
-import PadVert from '../shaders/Pad.vert'
-import LineFrag from '../shaders/Line.frag'
-import LineVert from '../shaders/Line.vert'
-import ArcFrag from '../shaders/Arc.frag'
-import ArcVert from '../shaders/Arc.vert'
-import SurfaceFrag from '../shaders/Surface.frag'
-import SurfaceVert from '../shaders/Surface.vert'
+import PadFrag from '../shaders/src/Pad.frag'
+import PadVert from '../shaders/src/Pad.vert'
+import LineFrag from '../shaders/src/Line.frag'
+import LineVert from '../shaders/src/Line.vert'
+import ArcFrag from '../shaders/src/Arc.frag'
+import ArcVert from '../shaders/src/Arc.vert'
+import SurfaceFrag from '../shaders/src/Surface.frag'
+import SurfaceVert from '../shaders/src/Surface.vert'
 import { vec2, vec3 } from 'gl-matrix'
 import { IPlotRecord } from './types'
 import * as Records from './records'
@@ -102,14 +102,14 @@ interface CommonAttributes {}
 
 interface CommonUniforms {}
 
-interface ShaderShapeCollection<T extends IPlotRecord> {
-  records: T[]
+interface ShaderCollection<T> {
   length: number
-  update: (data: T[]) => this
+  records: T
+  update: (data: T) => this
   refresh: () => this
 }
 
-class ShapeCollection<T extends IPlotRecord> implements ShaderShapeCollection<T> {
+class ShapeShaderCollection<T extends IPlotRecord> implements ShaderCollection<T[]> {
   public records: T[] = []
   get length(): number {
     return this.records.length
@@ -142,29 +142,29 @@ class ShapeCollection<T extends IPlotRecord> implements ShaderShapeCollection<T>
   }
 }
 
-class SurfaceCollection {
-  public record: Records.Surface_Record = new Records.Surface_Record({})
+class SurfaceShaderCollection implements ShaderCollection<Records.Surface_Record> {
+  public records: Records.Surface_Record = new Records.Surface_Record({})
   get length(): number {
-    return this.record.length
+    return this.records.length
   }
   public contourTexture: REGL.Texture2D
   public attributeBuffer: REGL.Buffer
 
   constructor(props: { regl: REGL.Regl; record?: Records.Surface_Record }) {
-    this.record = props.record ?? new Records.Surface_Record({})
+    this.records = props.record ?? new Records.Surface_Record({})
     this.contourTexture = props.regl.texture()
     this.attributeBuffer = props.regl.buffer(0)
     this.refresh()
   }
 
   public update(record: Records.Surface_Record): this {
-    this.record = record
+    this.records = record
     return this.refresh()
   }
 
   public refresh(): this {
-    const surfaces = this.record.array
-    const surfaceCountours = this.record.contoursArray
+    const surfaces = this.records.array
+    const surfaceCountours = this.records.contoursArray
     const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
     const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
       return surfaceCountours[index] ?? Records.END_SURFACE_ID
@@ -172,7 +172,7 @@ class SurfaceCollection {
     this.attributeBuffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: surfaces.length * SURFACE_RECORD_PARAMETERS.length * glFloatSize,
+      length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
       data: surfaces
     })
     this.contourTexture({
@@ -187,29 +187,29 @@ class SurfaceCollection {
   }
 }
 
-class SymbolCollection {
-  public symbols: Symbols.Symbol[] = []
+class SymbolShaderCollection implements ShaderCollection<Symbols.Symbol[]> {
+  public records: Symbols.Symbol[] = []
   get length(): number {
-    return this.symbols.length
+    return this.records.length
   }
   public texture: REGL.Texture2D
 
   constructor(props: { regl: REGL.Regl; symbols?: Symbols.Symbol[] }) {
-    this.symbols = props.symbols ?? []
+    this.records = props.symbols ?? []
     this.texture = props.regl.texture()
     this.refresh()
   }
 
   public update(symbols: Symbols.Symbol[]): this {
-    this.symbols = symbols
+    this.records = symbols
     return this.refresh()
   }
 
   public refresh(): this {
-    if (this.symbols.length === 0) {
+    if (this.records.length === 0) {
       return this
     }
-    const symbols = this.symbols.map((symbol) => symbol.array)
+    const symbols = this.records.map((symbol) => symbol.array)
     // TODO: make symbols not only expend in width but also in height
     this.texture({
       width: SYMBOL_PARAMETERS.length,
@@ -222,14 +222,16 @@ class SymbolCollection {
   }
 }
 
+// class MacroCollection implements ShaderCollection<Records.Macro_Record[]> {
+
 class ShapeRenderer {
   public regl: REGL.Regl
 
-  public symbols: SymbolCollection
-  public pads: ShapeCollection<Records.Pad_Record>
-  public lines: ShapeCollection<Records.Line_Record>
-  public arcs: ShapeCollection<Records.Arc_Record>
-  public surfaces: SurfaceCollection[] = []
+  public symbols: SymbolShaderCollection
+  public pads: ShapeShaderCollection<Records.Pad_Record>
+  public lines: ShapeShaderCollection<Records.Line_Record>
+  public arcs: ShapeShaderCollection<Records.Arc_Record>
+  public surfaces: SurfaceShaderCollection[] = []
 
   private commonConfig: REGL.DrawCommand<REGL.DefaultContext>
   private drawPads: REGL.DrawCommand<REGL.DefaultContext>
@@ -237,19 +239,17 @@ class ShapeRenderer {
   private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
   private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
 
-  macros: { [key: string]: REGL.Framebuffer } = {}
-
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
 
-    this.symbols = new SymbolCollection({ regl: this.regl })
-    this.pads = new ShapeCollection<Records.Pad_Record>({
+    this.symbols = new SymbolShaderCollection({ regl: this.regl })
+    this.pads = new ShapeShaderCollection<Records.Pad_Record>({
       regl: this.regl
     })
-    this.lines = new ShapeCollection<Records.Line_Record>({
+    this.lines = new ShapeShaderCollection<Records.Line_Record>({
       regl: this.regl
     })
-    this.arcs = new ShapeCollection<Records.Arc_Record>({
+    this.arcs = new ShapeShaderCollection<Records.Arc_Record>({
       regl: this.regl
     })
 
@@ -553,7 +553,7 @@ class ShapeRenderer {
         return
       }
       if (record instanceof Records.Surface_Record) {
-        this.surfaces.push(new SurfaceCollection({ regl: this.regl, record }))
+        this.surfaces.push(new SurfaceShaderCollection({ regl: this.regl, record }))
         return
       }
     })

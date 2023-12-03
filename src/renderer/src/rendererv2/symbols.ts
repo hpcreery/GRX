@@ -37,7 +37,10 @@ export const STANDARD_SYMBOLS = [
   'Rounded_Rectangular_Thermal',
   'Oval_Thermal',
   'Oblong_Thermal',
+
   // ! Implement these symbols
+
+  // https://odbplusplus.com/wp-content/uploads/sites/2/2021/02/odb_spec_user.pdf
   // "Home_Plate",
   // "Inverted_Home_Plate",
   // "Flat_Home_Plate",
@@ -46,6 +49,14 @@ export const STANDARD_SYMBOLS = [
   // "Cross",
   // "Dogbone",
   // "DPack",
+
+  // https://www.artwork.com/ipc2581/IPC-2581C.pdf
+  // "Hexagon"
+  // "Hexagon_Donut"
+  // "Octagon_Donut"
+  // "Hexagon_Thermal"
+  // "Octagon_Thermal"
+
   'Ellipse',
   'Moire',
   'Hole'
