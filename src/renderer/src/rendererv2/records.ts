@@ -1,4 +1,6 @@
 import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
+import { ptr } from './utils'
+import * as Symbols from './symbols'
 
 export const PAD_RECORD_PARAMETERS = [
   'index',
@@ -67,18 +69,24 @@ export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
+let defaultSymbol = new Symbols.StandardSymbol({})
+const defaultSymbolPtr = ptr(() => defaultSymbol, (v) => (defaultSymbol = v))
+
 export class Pad_Record implements TPad_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.PAD
   public index = 0
   public x = 0
   public y = 0
-  public sym_num = 0
+  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public get sym_num(): number {
+    return this.symbol.value.sym_num
+  }
   public resize_factor = 0
   public polarity = 0
   public rotation = 0
   public mirror = 0
 
-  constructor(record: Partial<TPad_Record>) {
+  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
     Object.assign(this, record)
   }
 
@@ -106,10 +114,13 @@ export class Line_Record implements TLine_Record, IPlotRecord {
   public ys = 0
   public xe = 0
   public ye = 0
-  public sym_num = 0
+  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public get sym_num(): number {
+    return this.symbol.value.sym_num
+  }
   public polarity = 0
 
-  constructor(record: Partial<TLine_Record>) {
+  constructor(record: Partial<Omit<TLine_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
     Object.assign(this, record)
   }
 
@@ -139,11 +150,14 @@ export class Arc_Record implements TArc_Record, IPlotRecord {
   public ye = 0
   public xc = 0
   public yc = 0
-  public sym_num = 0
+  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public get sym_num(): number {
+    return this.symbol.value.sym_num
+  }
   public polarity = 0
   public clockwise = 0
 
-  constructor(record: Partial<TArc_Record>) {
+  constructor(record: Partial<Omit<TArc_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
     Object.assign(this, record)
   }
 

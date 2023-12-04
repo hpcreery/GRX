@@ -13,6 +13,12 @@ import * as Records from './records'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 
+import {
+  SymbolShaderCollection,
+  ShapeShaderCollection,
+  SurfaceShaderCollection
+} from './collections'
+
 const {
   LINE_RECORD_PARAMETERS,
   PAD_RECORD_PARAMETERS,
@@ -40,18 +46,12 @@ type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
 }
 
 interface PadUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
 }
 
 interface LineUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
 }
 
 interface ArcUniforms {
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
 }
 
 interface SurfaceUniforms {
@@ -102,132 +102,14 @@ interface CommonAttributes {}
 
 interface CommonUniforms {}
 
-interface ShaderCollection<T> {
-  length: number
-  records: T
-  update: (data: T) => this
-  refresh: () => this
+export interface ShapeRendererProps {
+  regl: REGL.Regl
+  name: string
 }
 
-class ShapeShaderCollection<T extends IPlotRecord> implements ShaderCollection<T[]> {
-  public records: T[] = []
-  get length(): number {
-    return this.records.length
-  }
-  public buffer: REGL.Buffer
-
-  constructor(props: { regl: REGL.Regl; records?: T[] }) {
-    this.records = props.records ?? []
-    this.buffer = props.regl.buffer(0)
-    this.refresh()
-  }
-
-  public update(data: T[]): this {
-    this.records = data
-    return this.refresh()
-  }
-
-  public refresh(): this {
-    const numbers: number[][] = []
-    this.records.forEach((record) => {
-      numbers.push(record.array)
-    })
-    this.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.length * 4,
-      data: numbers
-    })
-    return this
-  }
-}
-
-class SurfaceShaderCollection implements ShaderCollection<Records.Surface_Record> {
-  public records: Records.Surface_Record = new Records.Surface_Record({})
-  get length(): number {
-    return this.records.length
-  }
-  public contourTexture: REGL.Texture2D
-  public attributeBuffer: REGL.Buffer
-
-  constructor(props: { regl: REGL.Regl; record?: Records.Surface_Record }) {
-    this.records = props.record ?? new Records.Surface_Record({})
-    this.contourTexture = props.regl.texture()
-    this.attributeBuffer = props.regl.buffer(0)
-    this.refresh()
-  }
-
-  public update(record: Records.Surface_Record): this {
-    this.records = record
-    return this.refresh()
-  }
-
-  public refresh(): this {
-    const surfaces = this.records.array
-    const surfaceCountours = this.records.contoursArray
-    const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
-    const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
-      return surfaceCountours[index] ?? Records.END_SURFACE_ID
-    })
-    this.attributeBuffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-      data: surfaces
-    })
-    this.contourTexture({
-      width: radius,
-      height: radius,
-      type: 'float',
-      format: 'luminance',
-      wrap: 'clamp',
-      data: newData
-    })
-    return this
-  }
-}
-
-class SymbolShaderCollection implements ShaderCollection<Symbols.Symbol[]> {
-  public records: Symbols.Symbol[] = []
-  get length(): number {
-    return this.records.length
-  }
-  public texture: REGL.Texture2D
-
-  constructor(props: { regl: REGL.Regl; symbols?: Symbols.Symbol[] }) {
-    this.records = props.symbols ?? []
-    this.texture = props.regl.texture()
-    this.refresh()
-  }
-
-  public update(symbols: Symbols.Symbol[]): this {
-    this.records = symbols
-    return this.refresh()
-  }
-
-  public refresh(): this {
-    if (this.records.length === 0) {
-      return this
-    }
-    const symbols = this.records.map((symbol) => symbol.array)
-    // TODO: make symbols not only expend in width but also in height
-    this.texture({
-      width: SYMBOL_PARAMETERS.length,
-      height: symbols.length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols
-    })
-    return this
-  }
-}
-
-// class MacroCollection implements ShaderCollection<Records.Macro_Record[]> {
-
-class ShapeRenderer {
+export class ShapeRenderer {
   public regl: REGL.Regl
 
-  public symbols: SymbolShaderCollection
   public pads: ShapeShaderCollection<Records.Pad_Record>
   public lines: ShapeShaderCollection<Records.Line_Record>
   public arcs: ShapeShaderCollection<Records.Arc_Record>
@@ -242,7 +124,6 @@ class ShapeRenderer {
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
 
-    this.symbols = new SymbolShaderCollection({ regl: this.regl })
     this.pads = new ShapeShaderCollection<Records.Pad_Record>({
       regl: this.regl
     })
@@ -298,8 +179,6 @@ class ShapeRenderer {
       vert: LineVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -348,8 +227,6 @@ class ShapeRenderer {
       vert: PadVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -412,8 +289,6 @@ class ShapeRenderer {
       vert: ArcVert,
 
       uniforms: {
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -525,7 +400,6 @@ class ShapeRenderer {
     // Auto index
     let index = 0
     data.forEach((record) => {
-
       // Auto index
       record.index = index++ / qtyFeatures
 
@@ -590,11 +464,6 @@ export const LayerType = {
   ROUT: 'rout'
 } as const
 export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
-
-export interface ShapeRendererProps {
-  regl: REGL.Regl
-  name: string
-}
 
 export interface LayerRendererProps extends ShapeRendererProps {
   color?: vec3
@@ -678,15 +547,15 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
-interface MacroProps extends LayerRendererProps {}
+// interface MacroProps extends LayerRendererProps {}
 
-class MacroRenderer extends ShapeRenderer {
-  constructor(props: MacroProps) {
-    super(props)
-  }
+// class MacroRenderer extends ShapeRenderer {
+//   constructor(props: MacroProps) {
+//     super(props)
+//   }
 
-  // private getBounds(): vec4 {
-  //   for (const pad of this.padsBuffer) {
-  //   }
-  // }
-}
+//   // private getBounds(): vec4 {
+//   //   for (const pad of this.padsBuffer) {
+//   //   }
+//   // }
+// }

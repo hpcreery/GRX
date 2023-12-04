@@ -84,11 +84,13 @@ export const SYMBOL_PARAMETERS = [
 export const STANDARD_SYMBOLS_MAP = toMap(STANDARD_SYMBOLS)
 export const SYMBOL_PARAMETERS_MAP = toMap(SYMBOL_PARAMETERS)
 
-export type TSymbol = typeof SYMBOL_PARAMETERS_MAP
+export type TStandardSymbol = typeof SYMBOL_PARAMETERS_MAP
 
-export class Symbol implements TSymbol, IPlotRecord {
+export class StandardSymbol implements TStandardSymbol, IPlotRecord {
   public type = FeatureTypeIdentifyer.SYMBOL
-  public symbol: number = STANDARD_SYMBOLS_MAP.Null
+  public id = ''
+  public sym_num = 0
+  public symbol = STANDARD_SYMBOLS_MAP.Null
   public width = 0
   public height = 0
   public corner_radius = 0
@@ -106,7 +108,7 @@ export class Symbol implements TSymbol, IPlotRecord {
   public ring_gap = 0
   public num_rings = 0
 
-  constructor(symbol: Partial<TSymbol>) {
+  constructor(symbol: Partial<TStandardSymbol & { id: string }>) {
     Object.assign(this, symbol)
   }
 
@@ -118,8 +120,8 @@ export class Symbol implements TSymbol, IPlotRecord {
     return SYMBOL_PARAMETERS.length
   }
 
-  public get object(): TSymbol {
-    return Object.fromEntries(SYMBOL_PARAMETERS.map((key) => [key, this[key]])) as TSymbol
+  public get object(): TStandardSymbol {
+    return Object.fromEntries(SYMBOL_PARAMETERS.map((key) => [key, this[key]])) as TStandardSymbol
   }
 }
 

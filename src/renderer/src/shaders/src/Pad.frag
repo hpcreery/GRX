@@ -1,7 +1,7 @@
 precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
-#define DEBUG 1
+#define DEBUG 0
 
 uniform struct shapes {
   float Round;

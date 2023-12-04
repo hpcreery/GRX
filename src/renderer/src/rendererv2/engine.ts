@@ -3,20 +3,29 @@ import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Symbols from './symbols'
 import * as Records from './records'
 import LayerRenderer from './layer'
+import { ptr, malloc } from './utils'
+import { SymbolShaderCollection } from './collections'
 
-interface FeaturesProps {}
+interface WorldProps {}
 
-interface FeaturesUniforms {
+interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_Resolution: vec2
   u_Screen: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
+  u_SymbolsTexture: REGL.Texture2D
+  u_SymbolsTextureDimensions: vec2
 }
 
-interface FeaturesAttributes {
+interface WorldAttributes {
   a_Vertex_Position: vec2[]
+}
+
+interface WorldContext {
+  outlineMode: boolean
+  transform: mat3
 }
 
 interface ScreenRenderProps {
@@ -119,7 +128,8 @@ export class RenderEngine {
   })
 
   regl: REGL.Regl
-  worldContext: REGL.DrawCommand<REGL.DefaultContext, FeaturesProps>
+  world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+  public symbols: SymbolShaderCollection
 
   // renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
@@ -147,7 +157,14 @@ export class RenderEngine {
       depth: 0
     })
 
-    this.worldContext = this.regl<FeaturesUniforms, FeaturesAttributes, FeaturesProps>({
+    this.symbols = new SymbolShaderCollection({ regl: this.regl })
+
+    this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
+      context: {
+        outlineMode: () => this.SETTINGS.OUTLINE_MODE,
+        transform: () => this.transform,
+      },
+
       uniforms: {
         u_Transform: () => this.transform,
         u_InverseTransform: () => this.inverseTransform,
@@ -166,7 +183,10 @@ export class RenderEngine {
               window.devicePixelRatio,
             0.5
           ),
-        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE
+        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE,
+
+        u_SymbolsTexture: () => this.symbols.texture,
+        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -360,12 +380,12 @@ export class RenderEngine {
   public addLayer({
     name,
     color,
-    symbols,
+    standardSymbols: symbols,
     image
   }: {
     name: string
     color?: vec3
-    symbols: Symbols.Symbol[]
+    standardSymbols: ptr<Symbols.StandardSymbol>[]
     image: Records.Shape[]
   }): LayerRenderer {
     const layer = new LayerRenderer({
@@ -373,7 +393,8 @@ export class RenderEngine {
       color,
       regl: this.regl
     })
-    layer.symbols.update(symbols)
+    this.symbols.insert(symbols)
+    console.log(this.symbols.records)
     layer.update(image)
     this.layers.push(layer)
     return layer
@@ -427,7 +448,7 @@ export class RenderEngine {
       depth: 0
     })
     setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
-    this.worldContext((context) => {
+    this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.render(context)
