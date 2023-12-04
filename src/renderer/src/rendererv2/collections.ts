@@ -110,9 +110,11 @@ export class SymbolCollection {
       if (symbolPtr.value.id.match(/\+\d+$/)) {
         const [base, count] = symbolPtr.value.id.split('+')
         symbolPtr.value.id = `${base}+${Number(count) + 1}`
+        this.makeUnique(symbolPtr)
         return
       }
       symbolPtr.value.id = `${symbolPtr.value.id}+${1}`
+      this.makeUnique(symbolPtr)
       return
     }
     return
