@@ -26,7 +26,9 @@ export default defineConfig({
       react(),
       comlink(),
       glslify({
-        compress: false
+        compress: false,
+        // @ts-ignore - glslify options are not typed
+        transform: ['glslify-import']
       })
     ],
     worker: {
@@ -34,7 +36,9 @@ export default defineConfig({
       plugins: [
         comlink(),
         glslify({
-          compress: false
+          compress: false,
+          // @ts-ignore - glslify options are not typed
+          transform: ['glslify-import']
         })
       ]
     }

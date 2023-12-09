@@ -2,25 +2,11 @@ precision mediump float;
 
 #define PI 3.1415926535897932384626433832795
 
-uniform struct parameters {
-  highp int symbol;
-  highp int width;
-  highp int height;
-  highp int corner_radius;
-  highp int corners;
-  highp int outer_dia;
-  highp int inner_dia;
-  highp int line_width;
-  highp int line_length;
-  highp int angle;
-  highp int gap;
-  highp int num_spokes;
-  highp int round;
-  highp int cut_size;
-  highp int ring_width;
-  highp int ring_gap;
-  highp int num_rings;
-} u_Parameters;
+#pragma glslify: import('../modules/structs/Shapes.glsl')
+uniform Shapes u_Shapes;
+
+#pragma glslify: import('../modules/structs/Parameters.glsl')
+uniform Parameters u_Parameters;
 
 
 // COMMON UNIFORMS
@@ -54,25 +40,40 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
 
+//////////////////////////////
+// Rotation and translation //
+//////////////////////////////
 
-mat2 rotate2d(float _angle) {
-  return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
+vec2 rotateCCW(vec2 p, float angle) {
+  mat2 m = mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+  return p * m;
 }
 
-float pullParam(int offset) {
-  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_SymbolsTextureDimensions;
-  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
-  return pixelValue.x;
+vec2 rotateCW(vec2 p, float angle) {
+  mat2 m = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+  return p * m;
 }
+
+mat2 rotateCCW(float angle) {
+  return mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+}
+
+mat2 rotateCW(float angle) {
+  return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+}
+
+
+#pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+
 
 void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  vec2 Size = vec2(pullParam(u_Parameters.width) * a_ResizeFactor, pullParam(u_Parameters.height) * a_ResizeFactor);
+  vec2 Size = vec2(pullSymbolParameter(u_Parameters.width, int(a_SymNum)) * a_ResizeFactor, pullSymbolParameter(u_Parameters.height, int(a_SymNum)) * a_ResizeFactor);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
-  vec2 RotatedPostion = SizedPosition * rotate2d(radians(a_Rotation));
+  vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
   vec2 OffsetPosition = RotatedPostion + a_Location;
   vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
   vec3 FinalPosition = u_Transform * AspectPosition;

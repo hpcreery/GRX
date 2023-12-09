@@ -1,5 +1,8 @@
 precision highp float;
 
+//////////////////////////////////////
+// Combine distance field functions //
+//////////////////////////////////////
 
 float smoothMerge(float d1, float d2, float k) {
   float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
@@ -541,7 +544,7 @@ float outerBorderMask(float dist, float width) {
   return alpha1 - alpha2;
 }
 
-#pragma glslify: pullSymbolParameter = require('./PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+#pragma glslify: pullSymbolParameter = require(./PullSymbolParameter.frag,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 
 float drawShape(vec2 FragCoord, int SymNum) {

@@ -3,74 +3,11 @@ precision mediump float;
 #define PI 3.1415926535897932384626433832795
 #define DEBUG 0
 
-uniform struct shapes {
-  float Round;
-  float Square;
-  float Rectangle;
-  float Rounded_Rectangle;
-  float Chamfered_Rectangle;
-  float Oval;
-  float Diamond;
-  float Octagon;
-  float Round_Donut;
-  float Square_Donut;
-  float SquareRound_Donut;
-  float Rounded_Square_Donut;
-  float Rectange_Donut;
-  float Rounded_Rectangle_Donut;
-  float Oval_Donut;
-  float Horizontal_Hexagon;
-  float Vertical_Hexagon;
-  float Butterfly;
-  float Square_Butterfly;
-  float Triangle;
-  float Half_Oval;
-  float Rounded_Round_Thermal;
-  float Squared_Round_Thermal;
-  float Square_Thermal;
-  float Open_Corners_Square_Thermal;
-  float Line_Thermal;
-  float Square_Round_Thermal;
-  float Rectangular_Thermal;
-  float Rectangular_Thermal_Open_Corners;
-  float Rounded_Square_Thermal;
-  float Rounded_Square_Thermal_Open_Corners;
-  float Rounded_Rectangular_Thermal;
-  float Oval_Thermal;
-  float Oblong_Thermal;
-  // float Home_Plate;
-  // float Inverted_Home_Plate;
-  // float Flat_Home_Plate;
-  // float Radiused_Inverted_Home_Plate;
-  // float Radiused_Home_Plate;
-  // float Cross;
-  // float Dogbone;
-  // float DPack;
-  float Ellipse;
-  float Moire;
-  float Hole;
-  float Null;
-} u_Shapes;
+#pragma glslify: import('../modules/structs/Shapes.glsl')
+uniform Shapes u_Shapes;
 
-uniform struct parameters {
-  highp int symbol;
-  highp int width;
-  highp int height;
-  highp int corner_radius;
-  highp int corners;
-  highp int outer_dia;
-  highp int inner_dia;
-  highp int line_width;
-  highp int line_length;
-  highp int angle;
-  highp int gap;
-  highp int num_spokes;
-  highp int round;
-  highp int cut_size;
-  highp int ring_width;
-  highp int ring_gap;
-  highp int num_rings;
-} u_Parameters;
+#pragma glslify: import('../modules/structs/Parameters.glsl')
+uniform Parameters u_Parameters;
 
 // COMMIN UNIFORMS
 uniform sampler2D u_SymbolsTexture;
@@ -95,30 +32,13 @@ varying float v_Polarity;
 
 const float ALPHA = 1.0;
 
-// //////////////////////////////////////
-// // Combine distance field functions //
-// //////////////////////////////////////
-
-// float smoothMerge(float d1, float d2, float k) {
-//   float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
-//   return mix(d2, d1, h) - k * h * (1.0 - h);
-// }
+//////////////////////////////////////
+// Combine distance field functions //
+//////////////////////////////////////
 
 float merge(float d1, float d2) {
   return min(d1, d2);
 }
-
-// float mergeExclude(float d1, float d2) {
-//   return min(max(-d1, d2), max(-d2, d1));
-// }
-
-// float substract(float d1, float d2) {
-//   return max(-d1, d2);
-// }
-
-// float intersect(float d1, float d2) {
-//   return max(d1, d2);
-// }
 
 //////////////////////////////
 // Rotation and translation //
@@ -142,11 +62,13 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-
 vec2 translate(vec2 p, vec2 t) {
   return p - t;
 }
 
+//////////////////////////////
+// Distance field functions //
+//////////////////////////////
 
 float boxDist(vec2 p, vec2 size) {
   size /= 2.0;
@@ -157,7 +79,13 @@ float boxDist(vec2 p, vec2 size) {
 
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-#pragma glslify: drawShape = require('../modules/Shapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions,PI=PI,DEBUG=DEBUG)
+#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions,PI=PI,DEBUG=DEBUG)
+
+
+//////////////////////////////
+//     Draw functions       //
+//////////////////////////////
+
 
 float draw(float dist) {
   if (DEBUG == 1) {
