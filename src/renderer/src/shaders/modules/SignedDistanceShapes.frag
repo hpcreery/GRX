@@ -1,5 +1,7 @@
 precision highp float;
 
+#pragma glslify: import('../modules/Constants.glsl')
+
 //////////////////////////////////////
 // Combine distance field functions //
 //////////////////////////////////////

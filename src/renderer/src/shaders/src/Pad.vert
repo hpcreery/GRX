@@ -1,6 +1,6 @@
 precision mediump float;
 
-#define PI 3.1415926535897932384626433832795
+#pragma glslify: import('../modules/Constants.glsl')
 
 #pragma glslify: import('../modules/structs/Shapes.glsl')
 uniform Shapes u_Shapes;
@@ -70,13 +70,12 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  vec2 Size = vec2(pullSymbolParameter(u_Parameters.width, int(a_SymNum)) * a_ResizeFactor, pullSymbolParameter(u_Parameters.height, int(a_SymNum)) * a_ResizeFactor);
+  vec2 Size = vec2(pullSymbolParameter(u_Parameters.width, int(a_SymNum)), pullSymbolParameter(u_Parameters.height, int(a_SymNum)));
 
-  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
+  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
   vec2 OffsetPosition = RotatedPostion + a_Location;
-  vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
-  vec3 FinalPosition = u_Transform * AspectPosition;
+  vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
   v_Aspect = Aspect;
   v_Index = a_Index;

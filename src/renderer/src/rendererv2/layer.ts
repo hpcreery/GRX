@@ -7,17 +7,21 @@ import ArcFrag from '../shaders/src/Arc.frag'
 import ArcVert from '../shaders/src/Arc.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
-import { vec2, vec3 } from 'gl-matrix'
+import { vec2, vec3, mat3 } from 'gl-matrix'
 import { IPlotRecord } from './types'
 import * as Records from './records'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 
 import {
-  SymbolShaderCollection,
+  StandardSymbolShaderCollection,
   ShapeShaderCollection,
   SurfaceShaderCollection
 } from './collections'
+
+import {
+  WorldContext
+} from './engine'
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -100,11 +104,24 @@ interface SurfaceAttributes {
 
 interface CommonAttributes {}
 
-interface CommonUniforms {}
+interface CommonUniforms {
+  u_Transform: mat3
+  u_InverseTransform: mat3
+}
+
+interface LayerTransform {
+  datum: vec2
+  rotation: number
+  scale: number,
+  matrix: mat3
+  inverseMatrix: mat3
+  update: (inputMatrix: mat3) => void
+}
 
 export interface ShapeRendererProps {
   regl: REGL.Regl
   name: string
+  transform?: Partial<LayerTransform>
 }
 
 export class ShapeRenderer {
@@ -121,8 +138,21 @@ export class ShapeRenderer {
   private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
   private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
 
+  public transform: LayerTransform = {
+    datum: vec2.create(),
+    rotation: 0,
+    scale: 1,
+    matrix: mat3.create(),
+    inverseMatrix: mat3.create(),
+    update: (inputMatrix: mat3) => this.updateTransform(inputMatrix)
+  }
+
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
+
+    if (props.transform) {
+      Object.assign(this.transform, props.transform)
+    }
 
     this.pads = new ShapeShaderCollection<Records.Pad_Record>({
       regl: this.regl
@@ -134,7 +164,7 @@ export class ShapeRenderer {
       regl: this.regl
     })
 
-    this.commonConfig = this.regl<CommonUniforms, CommonAttributes>({
+    this.commonConfig = this.regl<CommonUniforms, CommonAttributes, Record<string, never>, WorldContext>({
       depth: {
         enable: true,
         mask: true,
@@ -146,6 +176,8 @@ export class ShapeRenderer {
         face: 'back'
       },
       uniforms: {
+        u_Transform: () => this.transform.matrix,
+        u_InverseTransform: () => this.transform.inverseMatrix,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
@@ -391,11 +423,20 @@ export class ShapeRenderer {
     })
   }
 
+  public updateTransform(inputMatrix: mat3): void {
+    const { rotation, scale, datum } = this.transform
+    mat3.rotate(this.transform.matrix, inputMatrix, rotation * (Math.PI / 180))
+    mat3.translate(this.transform.matrix, this.transform.matrix, datum)
+    mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
+    mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
+  }
+
   public update(data: Records.Shape[]): this {
     const qtyFeatures = data.length
     const pads: Records.Pad_Record[] = []
     const lines: Records.Line_Record[] = []
     const arcs: Records.Arc_Record[] = []
+    const macros: Records.Pad_Record[] = []
 
     // Auto index
     let index = 0
@@ -404,7 +445,12 @@ export class ShapeRenderer {
       record.index = index++ / qtyFeatures
 
       if (record instanceof Records.Pad_Record) {
-        pads.push(record)
+        if (record.symbol.value instanceof Symbols.StandardSymbol) {
+          pads.push(record)
+        } else if (record.symbol.value instanceof Symbols.MacroSymbol) {
+          macros.push(record)
+          // record.symbol.
+        }
         return
       }
       if (record instanceof Records.Line_Record) {
@@ -425,25 +471,19 @@ export class ShapeRenderer {
     this.pads.update(pads.reverse())
     this.lines.update(lines.reverse())
     this.arcs.update(arcs.reverse())
+    this.surfaces.reverse()
 
     return this
   }
 
-  public render(_context: REGL.DefaultContext): void {
-    // this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-    // this.regl.clear({
-    //   framebuffer: this.framebuffer,
-    //   color: [0, 0, 0, 0],
-    //   depth: 0
-    // })
-    // this.framebuffer.use(() => {
+  public render(context: REGL.DefaultContext & WorldContext): void {
+    this.transform.update(context.transform.matrix)
     this.commonConfig(() => {
       this.drawPads()
       this.drawArcs()
       this.drawLines()
       this.drawSurfaces(this.surfaces.length)
     })
-    // })
   }
 }
 
@@ -484,11 +524,9 @@ export default class LayerRenderer extends ShapeRenderer {
   public context: LayerContexts = 'misc'
   public type: LayerTypes = 'document'
 
-  private layerConfig: REGL.DrawCommand<REGL.DefaultContext>
+  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
-
-  macros: { [key: string]: REGL.Framebuffer } = {}
 
   constructor(props: LayerRendererProps) {
     super(props)
@@ -506,7 +544,7 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.layerConfig = this.regl<LayerUniforms, LayerAttributes>({
+    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
       depth: {
         enable: true,
         mask: true,
@@ -518,20 +556,12 @@ export default class LayerRenderer extends ShapeRenderer {
         face: 'back'
       },
       uniforms: {
-        u_Color: () => this.color
+        u_Color: () => this.color,
       }
     })
-
-    // this.macros['test'] = this.regl.framebuffer({
-    //   color: this.regl.texture({
-    //     width: 1,
-    //     height: 1
-    //   }),
-    //   depth: true
-    // })
   }
 
-  public render(context: REGL.DefaultContext): void {
+  public render(context: REGL.DefaultContext & WorldContext): void {
     if (!this.visible) return
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({

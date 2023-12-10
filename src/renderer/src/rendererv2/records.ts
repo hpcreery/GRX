@@ -1,5 +1,5 @@
 import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
-import { ptr } from './utils'
+import { ptr, malloc } from './utils'
 import * as Symbols from './symbols'
 
 export const PAD_RECORD_PARAMETERS = [
@@ -69,24 +69,29 @@ export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
-let defaultSymbol = new Symbols.StandardSymbol({})
-const defaultSymbolPtr = ptr(() => defaultSymbol, (v) => (defaultSymbol = v))
+const defaultSymbolPtr = malloc(new Symbols.StandardSymbol({}))
 
 export class Pad_Record implements TPad_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.PAD
   public index = 0
   public x = 0
   public y = 0
-  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public symbol: ptr<Symbols.StandardSymbol | Symbols.MacroSymbol> = defaultSymbolPtr
   public get sym_num(): number {
     return this.symbol.value.sym_num
+    // if (this.symbol.value instanceof Symbols.StandardSymbol) {
+    //   return this.symbol.value.sym_num
+    // } else {
+    //   // return this.symbol.value.sym_num
+    //   return 0
+    // }
   }
   public resize_factor = 0
   public polarity = 0
   public rotation = 0
   public mirror = 0
 
-  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
+  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol | Symbols.MacroSymbol> }>) {
     Object.assign(this, record)
   }
 
@@ -102,6 +107,28 @@ export class Pad_Record implements TPad_Record, IPlotRecord {
     return Object.fromEntries(PAD_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TPad_Record
   }
 }
+
+const defaultMacroPtr = malloc(new Symbols.MacroSymbol({}))
+
+// export class Macro_Record implements TPad_Record, IPlotRecord {
+//   public type = FeatureTypeIdentifyer.MACRO
+//   public index = 0
+//   public x = 0
+//   public y = 0
+//   public macro: ptr<Symbols.Macro> = defaultMacroPtr
+//   public get sym_num(): number {
+//     return this.macro.value.sym_num
+//   }
+//   public resize_factor = 0
+//   public polarity = 0
+//   public rotation = 0
+//   public mirror = 0
+
+//   constructor(record: Partial<Macro_Record>) {
+//     Object.assign(this, record)
+//   }
+// }
+
 
 // =================
 
@@ -403,26 +430,3 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
 }
 
 export type Shape = Pad_Record | Line_Record | Arc_Record | Surface_Record
-
-export class Macro_Record {
-  public type = FeatureTypeIdentifyer.MACRO
-  public index = 0
-  public name = ''
-  public symbols: Shape[] = []
-
-  constructor(record: Partial<Macro_Record>) {
-    Object.assign(this, record)
-  }
-}
-
-export class Macro_Definition_Record {
-  public type = FeatureTypeIdentifyer.MACRO
-  public index = 0
-  public name = ''
-  public symbols: Shape[] = []
-
-  constructor(record: Partial<Macro_Record>) {
-    Object.assign(this, record)
-  }
-}
-

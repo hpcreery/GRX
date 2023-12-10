@@ -7,8 +7,9 @@ export const FeatureTypeIdentifyer = {
   LINESEGMENT: 'linesegment',
   CONTOUR: 'contour',
   SURFACE: 'surface',
-  SYMBOL: 'symbol',
   MACRO: 'macro',
+  SYMBOL_DEFINITION: 'symbol_defintion',
+  MACRO_DEFINITION: 'macro_definition',
 } as const
 
 export type FeatureTypeIdentifyers = typeof FeatureTypeIdentifyer[keyof typeof FeatureTypeIdentifyer]
@@ -17,6 +18,12 @@ export interface IPlotRecord {
   type: FeatureTypeIdentifyers
   get array(): number[]
   get object(): Record<string, number>
+  get length(): number
+}
+
+export interface ISymbolRecord {
+  type: FeatureTypeIdentifyers
+  get array(): number[]
   get length(): number
 }
 

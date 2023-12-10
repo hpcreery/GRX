@@ -1,6 +1,6 @@
 precision mediump float;
 
-#define PI 3.1415926535897932384626433832795
+#pragma glslify: import('../modules/Constants.glsl')
 
 uniform struct parameters {
   highp int width;
@@ -43,8 +43,7 @@ void main() {
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 OffsetPosition = SizedPosition + Location;
-  vec3 AspectPosition = vec3(OffsetPosition.x * Aspect, OffsetPosition.y, 1);
-  vec3 FinalPosition = u_Transform * AspectPosition;
+  vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
   v_Aspect = Aspect;
   v_Index = a_Index;

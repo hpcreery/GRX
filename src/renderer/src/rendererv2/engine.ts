@@ -2,9 +2,9 @@ import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Symbols from './symbols'
 import * as Records from './records'
-import LayerRenderer from './layer'
+import LayerRenderer, { LayerRendererProps } from './layer'
 import { ptr, malloc } from './utils'
-import { SymbolShaderCollection } from './collections'
+import { StandardSymbolShaderCollection } from './collections'
 
 interface WorldProps {}
 
@@ -23,9 +23,12 @@ interface WorldAttributes {
   a_Vertex_Position: vec2[]
 }
 
-interface WorldContext {
-  outlineMode: boolean
-  transform: mat3
+export interface WorldContext {
+  settings: RenderSettings
+  transform: RenderTransform
+  // transform: mat3
+  // inverseTransform: mat3
+  resolution: vec2
 }
 
 interface ScreenRenderProps {
@@ -74,8 +77,18 @@ interface RenderSettings {
   ZOOM_TO_CURSOR: boolean
 }
 
+interface RenderTransform {
+  zoom: number
+  position: vec2
+  velocity: vec2
+  dragging: boolean
+  matrix: mat3
+  matrixInverse: mat3
+  update: () => void
+}
+
 export class RenderEngine {
-  public SETTINGS: RenderSettings = new Proxy(
+  public settings: RenderSettings = new Proxy(
     {
       MSPFRAME: 1000 / 60,
       get FPS(): number {
@@ -103,12 +116,17 @@ export class RenderEngine {
 
   public pointer: EventTarget = new EventTarget()
 
-  private zoom = 1
-  private position: vec2 = [0, 0]
-  private velocity: vec2 = [0, 0]
-  private dragging = false
-  private transform = mat3.create()
-  private inverseTransform = mat3.create()
+  private transform: RenderTransform = {
+    zoom: 1,
+    position: [0, 0],
+    velocity: [0, 0],
+    dragging: false,
+    matrix: mat3.create(),
+    matrixInverse: mat3.create(),
+    update: (): void => {
+      this.updateTransform()
+    }
+  }
 
   private dirty = true
 
@@ -129,12 +147,12 @@ export class RenderEngine {
 
   regl: REGL.Regl
   world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
-  public symbols: SymbolShaderCollection
+  public symbols: StandardSymbolShaderCollection
 
   // renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
-  private layer_fbo: REGL.Framebuffer2D
+  // private layer_fbo: REGL.Framebuffer2D
 
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
@@ -151,23 +169,24 @@ export class RenderEngine {
       depth: 0
     })
 
-    this.layer_fbo = this.regl.framebuffer()
-    this.regl.clear({
-      framebuffer: this.layer_fbo,
-      depth: 0
-    })
+    // this.layer_fbo = this.regl.framebuffer()
+    // this.regl.clear({
+    //   framebuffer: this.layer_fbo,
+    //   depth: 0
+    // })
 
-    this.symbols = new SymbolShaderCollection({ regl: this.regl })
+    this.symbols = new StandardSymbolShaderCollection({ regl: this.regl })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
       context: {
-        outlineMode: () => this.SETTINGS.OUTLINE_MODE,
-        transform: () => this.transform,
+        settings: this.settings,
+        transform: this.transform,
+        resolution: [this.CONTAINER.clientWidth, this.CONTAINER.clientHeight]
       },
 
       uniforms: {
-        u_Transform: () => this.transform,
-        u_InverseTransform: () => this.inverseTransform,
+        u_Transform: () => this.transform.matrix,
+        u_InverseTransform: () => this.transform.matrixInverse,
         u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
         // u_Resolution: () => [this.CONTAINER.clientWidth, this.CONTAINER.clientHeight],
         u_Screen: () => [
@@ -183,7 +202,7 @@ export class RenderEngine {
               window.devicePixelRatio,
             0.5
           ),
-        u_OutlineMode: () => this.SETTINGS.OUTLINE_MODE,
+        u_OutlineMode: () => this.settings.OUTLINE_MODE,
 
         u_SymbolsTexture: () => this.symbols.texture,
         u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
@@ -269,9 +288,9 @@ export class RenderEngine {
       }
     )
 
-    mat3.identity(this.transform)
-    mat3.identity(this.inverseTransform)
-    this.zoomAtPoint(0, 0, this.zoom)
+    // mat3.identity(this.transform.matrix)
+    // mat3.identity(this.transform.matrixInverse)
+    this.zoomAtPoint(0, 0, this.transform.zoom)
     this.addControls()
     this.render()
     // this.regl.frame(() => this.render())
@@ -287,17 +306,20 @@ export class RenderEngine {
   }
 
   private toss(): void {
-    const { dragging } = this
-    if (this.velocity[0] === 0 && this.velocity[1] === 0) return
+    const { dragging } = this.transform
+    if (this.transform.velocity[0] === 0 && this.transform.velocity[1] === 0) return
     if (dragging) return
-    vec2.add(this.position, this.position, this.velocity)
-    vec2.scale(this.velocity, this.velocity, 0.95)
-    this.updateTransform()
-    if (Math.abs(this.velocity[0]) < 0.05 && Math.abs(this.velocity[1]) < 0.05) {
-      this.velocity[0] = 0
-      this.velocity[1] = 0
+    vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
+    vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
+    this.transform.update()
+    if (
+      Math.abs(this.transform.velocity[0]) < 0.05 &&
+      Math.abs(this.transform.velocity[1]) < 0.05
+    ) {
+      this.transform.velocity[0] = 0
+      this.transform.velocity[1] = 0
     } else {
-      setTimeout(() => this.toss(), this.SETTINGS.MSPFRAME)
+      setTimeout(() => this.toss(), this.settings.MSPFRAME)
       // setTimeout(this.toss.bind(this), this.SETTINGS.MSPFRAME)
     }
   }
@@ -313,13 +335,9 @@ export class RenderEngine {
   }
 
   public getWorldPosition(x: number, y: number): vec2 {
-    const { width, height } = this.CONTAINER.getBoundingClientRect()
-    const aspect = height / width
     const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
-    const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.inverseTransform)
-    const mouse_aspect = vec2.multiply(vec2.create(), mouse, [1 / aspect, 1])
-
-    return mouse_aspect
+    const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
+    return mouse
   }
 
   private addControls(): void {
@@ -336,17 +354,18 @@ export class RenderEngine {
     }
     this.CONTAINER.onwheel = (e): void => {
       const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
-      if (this.SETTINGS.ZOOM_TO_CURSOR) {
+      if (this.settings.ZOOM_TO_CURSOR) {
         this.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
       } else {
         this.zoomAtPoint(width / 2, height / 2, e.deltaY)
       }
     }
     this.CONTAINER.onmousedown = (e): void => {
-      this.dragging = true
+      this.transform.dragging = true
       const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
       const ypos = height - (e.clientY - offsetY)
+      console.log(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
       for (const layer of this.layers) {
         const data = this.regl.read({
           framebuffer: layer.framebuffer,
@@ -362,16 +381,16 @@ export class RenderEngine {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
     this.CONTAINER.onmouseup = (e): void => {
-      this.dragging = false
+      this.transform.dragging = false
       this.toss()
 
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onmousemove = (e): void => {
-      if (!this.dragging) return
-      this.velocity = [e.movementX, e.movementY]
-      vec2.add(this.position, this.position, this.velocity)
-      this.updateTransform()
+      if (!this.transform.dragging) return
+      this.transform.velocity = [e.movementX, e.movementY]
+      vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
+      this.transform.update()
 
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
     }
@@ -380,17 +399,23 @@ export class RenderEngine {
   public addLayer({
     name,
     color,
-    standardSymbols: symbols,
+    context,
+    type,
+    symbols,
+    transform,
+    macros,
     image
-  }: {
-    name: string
-    color?: vec3
-    standardSymbols: ptr<Symbols.StandardSymbol>[]
+  }: Omit<LayerRendererProps, 'regl'> & {
+    symbols: ptr<Symbols.StandardSymbol>[]
+    macros: ptr<Symbols.MacroSymbol>[]
     image: Records.Shape[]
   }): LayerRenderer {
     const layer = new LayerRenderer({
       name,
       color,
+      context,
+      type,
+      transform,
       regl: this.regl
     })
     this.symbols.insert(symbols)
@@ -402,52 +427,53 @@ export class RenderEngine {
 
   public updateTransform(): void {
     // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
-    const { zoom, position } = this
+    const { zoom, position } = this.transform
     // const { width, height } = this.CONTAINER.getBoundingClientRect()
     const width = this.CONTAINER.clientWidth
     const height = this.CONTAINER.clientHeight
-    mat3.projection(this.transform, width, height)
-    mat3.translate(this.transform, this.transform, position)
-    mat3.scale(this.transform, this.transform, [zoom, zoom])
-    mat3.translate(this.transform, this.transform, [width / 2, height / 2])
-    mat3.scale(this.transform, this.transform, [width / 2, -height / 2])
-    mat3.invert(this.inverseTransform, this.transform)
+    mat3.projection(this.transform.matrix, width, height)
+    mat3.translate(this.transform.matrix, this.transform.matrix, position)
+    mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
+    mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+
+    mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
     // logMatrix(this.transform)
-    // logMatrix(this.inverseTransform)
 
     // console.log(s)
     this.render()
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
-    const { zoom } = this
+    const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
-    if (newZoom < this.SETTINGS.MIN_ZOOM) {
-      newZoom = this.SETTINGS.MIN_ZOOM
+    if (newZoom < this.settings.MIN_ZOOM) {
+      newZoom = this.settings.MIN_ZOOM
       zoomBy = newZoom / zoom
-      this.zoom = newZoom
-    } else if (newZoom > this.SETTINGS.MAX_ZOOM) {
-      newZoom = this.SETTINGS.MAX_ZOOM
+      this.transform.zoom = newZoom
+    } else if (newZoom > this.settings.MAX_ZOOM) {
+      newZoom = this.settings.MAX_ZOOM
       zoomBy = newZoom / zoom
-      this.zoom = newZoom
+      this.transform.zoom = newZoom
     } else {
-      this.zoom = newZoom
+      this.transform.zoom = newZoom
     }
-    this.position[0] = x - (x - this.position[0]) * zoomBy
-    this.position[1] = y - (y - this.position[1]) * zoomBy
-    this.updateTransform()
+    this.transform.position[0] = x - (x - this.transform.position[0]) * zoomBy
+    this.transform.position[1] = y - (y - this.transform.position[1]) * zoomBy
+    this.transform.update()
   }
 
   public render(force = false): void {
     if (!this.dirty && !force) return
     this.dirty = false
     this.regl.clear({
-      color: this.SETTINGS.BACKGROUND_COLOR,
+      color: this.settings.BACKGROUND_COLOR,
       depth: 0
     })
-    setTimeout(() => (this.dirty = true), this.SETTINGS.MSPFRAME)
+    setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
@@ -488,9 +514,9 @@ export class RenderEngine {
 
 export function logMatrix(matrix: mat3): void {
   console.log(
-      `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${
-        Math.round(matrix[2] * 100) / 100
-      },\n` +
+    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${
+      Math.round(matrix[2] * 100) / 100
+    },\n` +
       `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${
         Math.round(matrix[5] * 100) / 100
       },\n` +

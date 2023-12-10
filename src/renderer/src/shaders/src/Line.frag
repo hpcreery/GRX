@@ -1,7 +1,6 @@
 precision mediump float;
 
-#define PI 3.1415926535897932384626433832795
-#define DEBUG 0
+#pragma glslify: import('../modules/Constants.glsl')
 
 #pragma glslify: import('../modules/structs/Shapes.glsl')
 uniform Shapes u_Shapes;
@@ -79,7 +78,7 @@ float boxDist(vec2 p, vec2 size) {
 
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions,PI=PI,DEBUG=DEBUG)
+#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 
 //////////////////////////////
@@ -117,9 +116,7 @@ void main() {
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  vec3 AspectPosition = vec3(TransformedPosition.x / v_Aspect, TransformedPosition.y, 1);
-  vec2 OffsetPosition = AspectPosition.xy - Center_Location;
-  // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
+  vec2 OffsetPosition = TransformedPosition.xy - Center_Location;
   vec2 FragCoord = OffsetPosition;
 
   // vec3 color = vec3(1.0);
@@ -140,22 +137,9 @@ void main() {
   float dist = merge(start,end);
   dist = merge(dist, con);
 
+
+  #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist);
 
-  if (DEBUG == 1) {
-    // if(dist < 0.0 && dist > -u_PixelSize * scale) {
-    //   dist = 1.0;
-    // }
-    // gl_FragColor = vec4(-dist, dist, dist, 1.0);
-    vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
-    col *= 1.0 - exp(-6.0 * abs(dist));
-    col *= 0.8 + 0.5 * cos(500.0 * dist);
-    // col = mix(col, vec3(1.0), 1.0 - smoothstep(0.0, u_PixelSize * scale, abs(dist)));
-    if (dist < 0.0 && dist > -u_PixelSize * scale) {
-      col = vec3(1.0, 1.0, 1.0);
-    }
-    gl_FragColor = vec4(col, 1.0);
-    return;
-  }
   gl_FragColor = vec4(color, Alpha);
 }

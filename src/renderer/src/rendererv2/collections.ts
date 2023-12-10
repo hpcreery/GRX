@@ -94,13 +94,13 @@ export class SurfaceShaderCollection implements ShaderCollection<Records.Surface
   }
 }
 
-export class SymbolCollection {
-  public records: Map<string, ptr<Symbols.StandardSymbol>> = new Map<string, ptr<Symbols.StandardSymbol>>()
+export class SymbolCollection<T extends Symbols.MacroSymbol | Symbols.StandardSymbol> {
+  public records: Map<string, ptr<T>> = new Map<string, ptr<T>>()
   get length(): number {
     return this.records.size
   }
 
-  protected makeUnique(symbolPtr: ptr<Symbols.StandardSymbol>): void {
+  protected makeUnique(symbolPtr: ptr<T>): void {
     if (this.records.has(symbolPtr.value.id)) {
       if (this.records.get(symbolPtr.value.id)!.value.array.toString() == symbolPtr.value.array.toString()) {
         console.log(`Identical Symbol with id ${symbolPtr.value.id} already exists`, symbolPtr.value.array.toString())
@@ -120,7 +120,7 @@ export class SymbolCollection {
     return
   }
 
-  public update(symbols: Map<string, ptr<Symbols.StandardSymbol>>): this {
+  public update(symbols: Map<string, ptr<T>>): this {
     this.records.clear()
     for (const [id, symbol] of symbols.entries()) {
       this.makeUnique(symbol)
@@ -129,7 +129,7 @@ export class SymbolCollection {
     return this
   }
 
-  public insert(symbols: ptr<Symbols.StandardSymbol>[]): this {
+  public insert(symbols: ptr<T>[]): this {
     symbols.forEach((symbol) => {
       this.makeUnique(symbol)
       this.records.set(symbol.value.id, symbol)
@@ -138,8 +138,8 @@ export class SymbolCollection {
   }
 }
 
-export class SymbolShaderCollection
-  extends SymbolCollection
+export class StandardSymbolShaderCollection
+  extends SymbolCollection<Symbols.StandardSymbol>
   implements ShaderCollection<Map<string, ptr<Symbols.StandardSymbol>>>
 {
   public texture: REGL.Texture2D
@@ -173,6 +173,7 @@ export class SymbolShaderCollection
   }
 
   public refresh(): this {
+    console.log('refreshing symbols', this.records)
     if (this.length === 0) {
       return this
     }
@@ -194,4 +195,59 @@ export class SymbolShaderCollection
   }
 }
 
-// class MacroCollection implements ShaderCollection<Records.Macro_Record[]> {
+export class MacroSymbolShaderCollection
+  extends SymbolCollection<Symbols.MacroSymbol>
+  implements ShaderCollection<Map<string, ptr<Symbols.MacroSymbol>>>
+{
+  public texture: REGL.Texture2D
+
+  constructor(props: { regl: REGL.Regl; symbols?: ptr<Symbols.MacroSymbol>[] }) {
+    super()
+    // this.records = props.records ?? []
+    ;(props.symbols ?? []).forEach((symbol) => {
+      this.makeUnique(symbol)
+      this.records.set(symbol.value.id, symbol)
+    })
+    this.texture = props.regl.texture()
+    this.refresh()
+  }
+
+  public update(symbols: Map<string, ptr<Symbols.MacroSymbol>>): this {
+    this.records.clear()
+    for (const [id, symbol] of symbols.entries()) {
+      this.makeUnique(symbol)
+      this.records.set(id, symbol)
+    }
+    return this.refresh()
+  }
+
+  public insert(symbols: ptr<Symbols.MacroSymbol>[]): this {
+    symbols.forEach((symbol) => {
+      this.makeUnique(symbol)
+      this.records.set(symbol.value.id, symbol)
+    })
+    return this.refresh()
+  }
+
+  public refresh(): this {
+    console.log('refreshing symbols', this.records)
+    if (this.length === 0) {
+      return this
+    }
+    // const symbols = this.records.map((symbol) => symbol.array)
+    // const symbols = Object.values(this.records).map((symbol) => symbol.array)
+    const symbols = Array.from(this.records.values()).map((symbol, i) => {
+      // symbol.value.sym_num = i
+      return symbol.value.array
+    })
+    // TODO: make symbols not only expend in width but also in height
+    this.texture({
+      width: SYMBOL_PARAMETERS.length,
+      height: symbols.length,
+      type: 'float',
+      format: 'luminance',
+      data: symbols
+    })
+    return this
+  }
+}

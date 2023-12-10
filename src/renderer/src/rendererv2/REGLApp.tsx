@@ -1,6 +1,7 @@
 import React from 'react'
 import '../App.css'
 import {
+  MacroSymbol,
   STANDARD_SYMBOLS,
   STANDARD_SYMBOLS_MAP,
   StandardSymbol
@@ -15,16 +16,18 @@ import {
   Contour_Line_Segment_Record,
 } from './records'
 import { RenderEngine } from './engine'
-import { Button, Switch } from '@mantine/core'
-import { IPlotRecord } from './types'
+import { Button, Switch, Badge } from '@mantine/core'
+import { IPlotRecord, ISymbolRecord } from './types'
 import { ptr, malloc } from './utils'
-import { SymbolCollection } from './collections'
+import { vec2 } from 'gl-matrix'
+import { PointerEvent } from './engine'
 
 // N == Number of Shapes
 const N_PADS = 1000
 const N_LINES = 50
 const N_ARCS = 50
 const N_SURFACES = 3
+const N_MACROS = 10
 
 const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
   .fill(new Surface_Record({}))
@@ -114,82 +117,39 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
 
 const SYMBOLS: ptr<StandardSymbol>[] = []
 
-let round = new StandardSymbol({
-  id: 'round', // id
-  symbol: STANDARD_SYMBOLS_MAP.Round, // symbol
-  width: 0.01, // width, square side, diameter
-  height: 0.01, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  inner_dia: 0.008, // — Inner diameter of the shape
-  line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
-const round_sym_ptr = ptr(() => round, v => round = v)
-SYMBOLS.push(round_sym_ptr)
+new Array<ptr<ISymbolRecord>>(STANDARD_SYMBOLS.length)
+  // .fill(new Symbol({}))
+  .fill(malloc<ISymbolRecord>(new StandardSymbol({})))
+  .map((_, i) => {
+    const sym_ptr = malloc(
+      new StandardSymbol({
+        id: 'symbol' + i, // id
+        symbol: i, // symbol
+        width: 0.01, // width, square side, diameter
+        height: 0.01, // height
+        corner_radius: 0.002, // corner radius
+        corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        outer_dia: 0.01, // — Outer diameter of the shape
+        inner_dia: 0.008, // — Inner diameter of the shape
+        line_width: 0.001, // — Line width of the shape (applies to the whole shape)
+        line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+        angle: 0, // — Angle of the spoke from 0 degrees
+        gap: 0.001, // — Gap
+        num_spokes: 2, // — Number of spokes
+        round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+        cut_size: 0, // — Size of the cut ( see corner radius )
+        ring_width: 0.001, // — Ring width
+        ring_gap: 0.004, // — Ring gap
+        num_rings: 2 // — Number of rings
+      })
+    )
+    SYMBOLS.push(sym_ptr)
+  })
 
-let square = new StandardSymbol({
-  id: 'round', // id
-  symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
-  width: 0.01, // width, square side, diameter
-  height: 0.01, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  inner_dia: 0.008, // — Inner diameter of the shape
-  line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
-const square_sym_ptr = ptr(() => square, v => square = v)
-SYMBOLS.push(square_sym_ptr)
-
-let square2 = new StandardSymbol({
-  id: 'round', // id
-  symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
-  width: 0.01, // width, square side, diameter
-  height: 0.01, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  inner_dia: 0.008, // — Inner diameter of the shape
-  line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
-const square2_sym_ptr = ptr(() => square2, v => square2 = v)
-SYMBOLS.push(square2_sym_ptr)
-
-new Array<ptr<IPlotRecord>>(STANDARD_SYMBOLS.length)
-// .fill(new Symbol({}))
-.fill(malloc<IPlotRecord>(new StandardSymbol({})))
-.map((_, i) => {
-  let sym = new StandardSymbol({
-    id: 'symbol' + i, // id
-    symbol: i, // symbol
+const round_sym_ptr = malloc(
+  new StandardSymbol({
+    id: 'round', // id
+    symbol: STANDARD_SYMBOLS_MAP.Round, // symbol
     width: 0.01, // width, square side, diameter
     height: 0.01, // height
     corner_radius: 0.002, // corner radius
@@ -207,9 +167,57 @@ new Array<ptr<IPlotRecord>>(STANDARD_SYMBOLS.length)
     ring_gap: 0.004, // — Ring gap
     num_rings: 2 // — Number of rings
   })
-  const sym_ptr = ptr(() => sym, v => sym = v)
-  SYMBOLS.push(sym_ptr)
-})
+)
+SYMBOLS.push(round_sym_ptr)
+
+const square_sym_ptr = malloc(
+  new StandardSymbol({
+    id: 'round', // id
+    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.01, // width, square side, diameter
+    height: 0.01, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.01, // — Outer diameter of the shape
+    inner_dia: 0.008, // — Inner diameter of the shape
+    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
+  })
+)
+SYMBOLS.push(square_sym_ptr)
+
+
+const square2_sym_ptr = malloc(
+  new StandardSymbol({
+    id: 'round', // id
+    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.04, // width, square side, diameter
+    height: 0.04, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.01, // — Outer diameter of the shape
+    inner_dia: 0.008, // — Inner diameter of the shape
+    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
+  })
+)
+SYMBOLS.push(square2_sym_ptr)
 
 
 const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
@@ -232,7 +240,9 @@ const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
       // Pad orientation (degrees)
-      rotation: Math.random() * 360,
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // rotation: Math.random() * 360,
+      rotation: 10,
       // 0 = no mirror, 1 = mirror
       mirror: 0
     })
@@ -324,12 +334,55 @@ const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
       symbol: round_sym_ptr,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
-      polarity: 0,
+      polarity: 1,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
     })
   })
+
+const MACROS_ARRAY = new Array<ptr<ISymbolRecord>>(N_MACROS)
+  .fill(malloc(new MacroSymbol({})))
+  .map((_, i) => {
+    return malloc(new MacroSymbol({
+      id: 'macro' + i, // id
+      shapes: [
+        PAD_RECORDS_ARRAY[i],
+        LINE_RECORDS_ARRAY_POS[i],
+        LINE_RECORDS_ARRAY_NEG[i],
+        ARC_RECORDS_ARRAY[i],
+        // SURFACE_RECORDS_ARRAY[i]
+      ]
+    }))
+  })
+
+const MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(N_MACROS)
+  .fill(new Pad_Record({}))
+  .map((_, i) => {
+    return new Pad_Record({
+      // index of feature
+      index: i / N_MACROS,
+      // Center point.
+      x: (Math.random() - 0.5) * 1,
+      y: (Math.random() - 0.5) * 1,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      symbol: MACROS_ARRAY[i % MACROS_ARRAY.length],
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // resize_factor: Math.random() + 1,
+      resize_factor: 1,
+      // Polarity. 0 = negative, 1 = positive
+      polarity: Math.random() > 0.5 ? 1 : 0,
+      // Pad orientation (degrees)
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      rotation: Math.random() * 360,
+      // 0 = no mirror, 1 = mirror
+      mirror: 0
+    })
+  })
+
+console.log(MACRO_RECORDS_ARRAY)
+
 
 
 
@@ -349,41 +402,121 @@ function REGLApp(): JSX.Element {
     // DictionaryUser
     // DictionaryFont
 
-    Engine.SETTINGS.OUTLINE_MODE = false
+    Engine.settings.OUTLINE_MODE = false
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
+    // SYMBOLS.forEach(s => Engine.addSymbol(s.value))
+    // SYMBOLS.forEach(s => s.value.symbol = STANDARD_SYMBOLS_MAP.Round)
 
 
     // Engine.addDictionary({}_)
 
+    Engine.pointer.addEventListener('pointerdown', e => console.log((e as PointerEvent).detail))
+
+    Engine.addLayer({
+      name: 'origin',
+      color: [1, 1, 1],
+      transform: {
+        datum: [0, 0],
+        scale: 1,
+        rotation: 0,
+      },
+      symbols: [round_sym_ptr],
+      macros: [],
+      image: [
+        new Pad_Record({
+          // index of feature
+          index: 0,
+          // Center point.
+          x: 0,
+          y: 0,
+          // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+          // sym_num: STANDARD_SYMBOLS_MAP.Round,
+          symbol: round_sym_ptr,
+          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+          // resize_factor: Math.random() + 1,
+          resize_factor: 1,
+          // Polarity. 0 = negative, 1 = positive
+          polarity: 1,
+          // Pad orientation (degrees)
+          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+          rotation: 0,
+          // 0 = no mirror, 1 = mirror
+          mirror: 0
+        })
+      ]
+    })
+
+    Engine.addLayer({
+      name: 'origin2',
+      color: [1, 0, 0],
+      transform: {
+        datum: [1, -1],
+        scale: 1,
+        rotation: 0,
+      },
+      symbols: [round_sym_ptr],
+      macros: [],
+      image: [
+        new Pad_Record({
+          // index of feature
+          index: 0,
+          // Center point.
+          x: -1,
+          y: 1,
+          // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+          // sym_num: STANDARD_SYMBOLS_MAP.Round,
+          symbol: round_sym_ptr,
+          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+          // resize_factor: Math.random() + 1,
+          resize_factor: 1,
+          // Polarity. 0 = negative, 1 = positive
+          polarity: 1,
+          // Pad orientation (degrees)
+          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+          rotation: 0,
+          // 0 = no mirror, 1 = mirror
+          mirror: 0
+        })
+      ]
+    })
+
     Engine.addLayer({
       name: 'layer0',
-      standardSymbols: SYMBOLS,
-      image: [...PAD_RECORDS_ARRAY]
+      transform: {
+        datum: [0.5, 0],
+        scale: 0.5,
+        rotation: 45,
+      },
+      symbols: SYMBOLS,
+      macros: [],
+      image: PAD_RECORDS_ARRAY
     })
 
     Engine.addLayer({
       name: 'layer1',
-      standardSymbols: SYMBOLS,
+      symbols: SYMBOLS,
+      macros: [],
       image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
     })
 
+    // Engine.addLayer({
+    //   name: 'layer2',
+    //   symbols: SYMBOLS,
+    //   macros: [],
+    //   image: [...ARC_RECORDS_ARRAY]
+    // })
+
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   symbols: [],
+    //   macros: [],
+    //   image: MACRO_RECORDS_ARRAY
+    // })
 
 
-    // let val = 'bob'
-    // const point = ptr(() => val, v => val = v)
-    // const point2 = ptr(() => val, v => val = v)
-    // console.log(val)
-    // point.value = 'jim'
-    // console.log(val)
-    // point2.value = 'joe'
-    // console.log(val)
-
-    // const val2 = malloc<string>('bob')
-    // console.log(val2.value)
-    // const a: ptr<string>[] = []
-    // a.push(val2)
-    // val2.value = 'jim'
-    // console.log(a[0].value)
+    // console.log(Engine.symbols.records.get('round')?.value)
+    // Engine.symbols.refresh()
+    // Engine.render(true)
 
 
     // SYMBOLS_ARRAY.fill(new Symbol({}))
@@ -417,8 +550,23 @@ function REGLApp(): JSX.Element {
 
   return (
     <>
+      <div
+        ref={containerRef}
+        id="container-element"
+        style={{
+          width: '100%',
+          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          zIndex: 0,
+        }}
+      />
       {engine ?
-        <>
+        <div style={{
+          zIndex: 100,
+          // background: 'rgba(0,0,0,0.5)',
+        }}>
           {/* <StatsWidget /> */}
           <Button
             onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
@@ -427,24 +575,15 @@ function REGLApp(): JSX.Element {
           <br />
           Outline Mode
           <Switch
-            defaultChecked={engine.SETTINGS.OUTLINE_MODE}
-            onChange={(e): void => { engine.SETTINGS.OUTLINE_MODE = e.target.checked }} />
+            defaultChecked={engine.settings.OUTLINE_MODE}
+            onChange={(e): void => { engine.settings.OUTLINE_MODE = e.target.checked }} />
           <br />
           Zoom To Cursor
           <Switch
-            defaultChecked={engine.SETTINGS.ZOOM_TO_CURSOR}
-            onChange={(e): void => { engine.SETTINGS.ZOOM_TO_CURSOR = e.target.checked }} />
-        </>
+            defaultChecked={engine.settings.ZOOM_TO_CURSOR}
+            onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
+        </div>
         : null}
-      <div
-        ref={containerRef}
-        id="container-element"
-        style={{
-          width: '100%',
-          height: '100%'
-        }}
-      >
-      </div>
     </>
   )
 }
