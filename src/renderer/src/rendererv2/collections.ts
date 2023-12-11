@@ -42,7 +42,7 @@ export class ShapeShaderCollection<T extends IPlotRecord> implements ShaderColle
     this.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
-      length: this.length * 4,
+      length: this.length * glFloatSize,
       data: numbers
     })
     return this
@@ -103,7 +103,7 @@ export class SymbolCollection<T extends Symbols.MacroSymbol | Symbols.StandardSy
   protected makeUnique(symbolPtr: ptr<T>): void {
     if (this.records.has(symbolPtr.value.id)) {
       if (this.records.get(symbolPtr.value.id)!.value.array.toString() == symbolPtr.value.array.toString()) {
-        console.log(`Identical Symbol with id ${symbolPtr.value.id} already exists`, symbolPtr.value.array.toString())
+        console.log(`Identical Symbol with id ${symbolPtr.value.id} already exists`)
         symbolPtr.value = this.records.get(symbolPtr.value.id)!.value
         return
       }
@@ -195,59 +195,59 @@ export class StandardSymbolShaderCollection
   }
 }
 
-export class MacroSymbolShaderCollection
-  extends SymbolCollection<Symbols.MacroSymbol>
-  implements ShaderCollection<Map<string, ptr<Symbols.MacroSymbol>>>
-{
-  public texture: REGL.Texture2D
+// export class MacroSymbolShaderCollection
+//   extends SymbolCollection<Symbols.MacroSymbol>
+//   implements ShaderCollection<Map<string, ptr<Symbols.MacroSymbol>>>
+// {
+//   public texture: REGL.Texture2D
 
-  constructor(props: { regl: REGL.Regl; symbols?: ptr<Symbols.MacroSymbol>[] }) {
-    super()
-    // this.records = props.records ?? []
-    ;(props.symbols ?? []).forEach((symbol) => {
-      this.makeUnique(symbol)
-      this.records.set(symbol.value.id, symbol)
-    })
-    this.texture = props.regl.texture()
-    this.refresh()
-  }
+//   constructor(props: { regl: REGL.Regl; symbols?: ptr<Symbols.MacroSymbol>[] }) {
+//     super()
+//     // this.records = props.records ?? []
+//     ;(props.symbols ?? []).forEach((symbol) => {
+//       this.makeUnique(symbol)
+//       this.records.set(symbol.value.id, symbol)
+//     })
+//     this.texture = props.regl.texture()
+//     this.refresh()
+//   }
 
-  public update(symbols: Map<string, ptr<Symbols.MacroSymbol>>): this {
-    this.records.clear()
-    for (const [id, symbol] of symbols.entries()) {
-      this.makeUnique(symbol)
-      this.records.set(id, symbol)
-    }
-    return this.refresh()
-  }
+//   public update(symbols: Map<string, ptr<Symbols.MacroSymbol>>): this {
+//     this.records.clear()
+//     for (const [id, symbol] of symbols.entries()) {
+//       this.makeUnique(symbol)
+//       this.records.set(id, symbol)
+//     }
+//     return this.refresh()
+//   }
 
-  public insert(symbols: ptr<Symbols.MacroSymbol>[]): this {
-    symbols.forEach((symbol) => {
-      this.makeUnique(symbol)
-      this.records.set(symbol.value.id, symbol)
-    })
-    return this.refresh()
-  }
+//   public insert(symbols: ptr<Symbols.MacroSymbol>[]): this {
+//     symbols.forEach((symbol) => {
+//       this.makeUnique(symbol)
+//       this.records.set(symbol.value.id, symbol)
+//     })
+//     return this.refresh()
+//   }
 
-  public refresh(): this {
-    console.log('refreshing symbols', this.records)
-    if (this.length === 0) {
-      return this
-    }
-    // const symbols = this.records.map((symbol) => symbol.array)
-    // const symbols = Object.values(this.records).map((symbol) => symbol.array)
-    const symbols = Array.from(this.records.values()).map((symbol, i) => {
-      // symbol.value.sym_num = i
-      return symbol.value.array
-    })
-    // TODO: make symbols not only expend in width but also in height
-    this.texture({
-      width: SYMBOL_PARAMETERS.length,
-      height: symbols.length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols
-    })
-    return this
-  }
-}
+//   public refresh(): this {
+//     console.log('refreshing symbols', this.records)
+//     if (this.length === 0) {
+//       return this
+//     }
+//     // const symbols = this.records.map((symbol) => symbol.array)
+//     // const symbols = Object.values(this.records).map((symbol) => symbol.array)
+//     const symbols = Array.from(this.records.values()).map((symbol, i) => {
+//       // symbol.value.sym_num = i
+//       return symbol.value.array
+//     })
+//     // TODO: make symbols not only expend in width but also in height
+//     this.texture({
+//       width: SYMBOL_PARAMETERS.length,
+//       height: symbols.length,
+//       type: 'float',
+//       format: 'luminance',
+//       data: symbols
+//     })
+//     return this
+//   }
+// }

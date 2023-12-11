@@ -10,6 +10,7 @@ uniform struct parameters {
 } u_Parameters;
 
 // COMMON UNIFORMS
+uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
@@ -67,7 +68,7 @@ float cross2d(in vec2 v0, in vec2 v1) {
   return v0.x * v1.y - v0.y * v1.x;
 }
 
-const int N = 50;
+const int N = 500;
 // #define N 5.0
 
 
@@ -146,7 +147,7 @@ float draw(float dist) {
   if (dist > 0.0) {
     discard;
   }
-  float scale = u_InverseTransform[0][0];
+  float scale = abs(u_InverseTransform[0][0]);
   if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
     discard;
   }
@@ -154,8 +155,6 @@ float draw(float dist) {
 }
 
 void main() {
-
-  float scale = u_InverseTransform[0][0];
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);

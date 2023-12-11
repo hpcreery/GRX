@@ -10,6 +10,7 @@ uniform struct parameters {
 // COMMON UNIFROMS
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
+uniform float u_QtyFeatures;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -36,10 +37,8 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  // vec2 Location = a_Location;
   vec2 Location = vec2((a_Box.y + a_Box.w) / 2.0, (a_Box.x + a_Box.z) / 2.0);
   vec2 Size = vec2(a_Box.y - a_Box.w, a_Box.x - a_Box.z);
-  float Index = a_Index;
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 OffsetPosition = SizedPosition + Location;
@@ -50,6 +49,6 @@ void main() {
   v_Polarity = a_Polarity;
   v_Box = a_Box;
 
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  gl_Position = vec4(FinalPosition.xy, a_Index / u_QtyFeatures, 1);
 
 }

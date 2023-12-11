@@ -670,7 +670,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
   } else if (t_Symbol == u_Shapes.Moire) {
     dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
   } else {
-    dist = -1.0;
+    dist = 1.0;
   }
   return dist;
 }

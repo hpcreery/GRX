@@ -9,10 +9,11 @@ uniform Shapes u_Shapes;
 uniform Parameters u_Parameters;
 
 // COMMON UNIFORMS
-uniform mat3 u_Transform;
-uniform vec2 u_Resolution;
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
+uniform float u_QtyFeatures;
+uniform mat3 u_Transform;
+uniform vec2 u_Resolution;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -75,7 +76,6 @@ void main() {
   vec2 Size = vec2(pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)) + len, pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)));
 
   vec2 Center_Location = (a_Start_Location + a_End_Location) / 2.0;
-  float Index = a_Index;
 
   float dX = a_Start_Location.x - a_End_Location.x;
   float dY = a_Start_Location.y - a_End_Location.y;
@@ -93,6 +93,6 @@ void main() {
   v_End_Location = a_End_Location;
   v_Polarity = a_Polarity;
 
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  gl_Position = vec4(FinalPosition.xy, a_Index / u_QtyFeatures, 1);
 
 }

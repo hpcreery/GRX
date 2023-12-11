@@ -12,6 +12,7 @@ uniform Parameters u_Parameters;
 // COMMON UNIFORMS
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
+uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
@@ -115,7 +116,7 @@ float draw(float dist) {
   if (dist > 0.0) {
     discard;
   }
-  float scale = u_InverseTransform[0][0];
+  float scale = abs(u_InverseTransform[0][0]);
   if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
     discard;
   }
@@ -123,8 +124,6 @@ float draw(float dist) {
 }
 
 void main() {
-
-  float scale = u_InverseTransform[0][0];
 
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
 

@@ -11,6 +11,7 @@ uniform Parameters u_Parameters;
 // COMMIN UNIFORMS
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
+uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
@@ -93,7 +94,7 @@ float draw(float dist) {
   if (dist > 0.0) {
     discard;
   }
-  float scale = u_InverseTransform[0][0];
+  float scale = abs(u_InverseTransform[0][0]);
   if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
     discard;
   }
@@ -107,11 +108,6 @@ float draw(float dist) {
 
 void main() {
 
-  // gl_FragColor = vec4(1.0,1.0,1.0, 1.0);
-  // return;
-
-  float scale = u_InverseTransform[0][0];
-
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
@@ -119,7 +115,6 @@ void main() {
   vec2 OffsetPosition = TransformedPosition.xy - Center_Location;
   vec2 FragCoord = OffsetPosition;
 
-  // vec3 color = vec3(1.0);
   vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
   float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
 

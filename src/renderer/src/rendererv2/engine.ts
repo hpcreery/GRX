@@ -436,7 +436,8 @@ export class RenderEngine {
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
     mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
     mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
 
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
