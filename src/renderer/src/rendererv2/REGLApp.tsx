@@ -32,10 +32,7 @@ const N_MACROS = 10
 const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
   .fill(new Surface_Record({}))
   .map((_, i) => {
-    console.log(i)
     return new Surface_Record({
-      // index of feature
-      // index: i / N_SURFACES,
       polarity: 1,
     }).addContours([
       new Contour_Record({
@@ -55,7 +52,7 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
             xc: 0.015 + i * 0.1,
             yc: -0.005 + i * 0.1,
             // computer the center coordinates of the arc with a radius of 0.1
-            clockwise: 1,
+            clockwise: 0,
           }),
           new Contour_Line_Segment_Record({
             x: 0.05 + i * 0.1,
@@ -113,7 +110,6 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
     ])
   })
 
-// console.log(SURFACE_RECORDS_ARRAY)
 
 const SYMBOLS: ptr<StandardSymbol>[] = []
 
@@ -224,9 +220,6 @@ const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
   .fill(new Pad_Record({}))
   .map((_, i) => {
     return new Pad_Record({
-      // index of feature
-      // index: i / N_PADS,
-      // index: (i) / (N_LINES + N_PADS),
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -252,9 +245,6 @@ const LINE_RECORDS_ARRAY_NEG = new Array<IPlotRecord>(N_LINES)
   .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
-      // index of feature
-      index: i,
-      // index: (i + N_PADS) / (N_LINES + N_PADS),
 
       // Start point.
       xs: (Math.random() - 0.5) * 1,
@@ -279,9 +269,6 @@ const LINE_RECORDS_ARRAY_POS = new Array<IPlotRecord>(N_LINES)
   .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
-      // index of feature
-      index: i,
-
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -314,9 +301,6 @@ const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
       return degrees * (Math.PI / 180);
     }
     return new Arc_Record({
-      // index of feature
-      // index: i / N_ARCS,
-
       // Center point.
       xc: center_x,
       yc: center_y,
@@ -364,8 +348,6 @@ const MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(N_MACROS)
   .fill(new Pad_Record({}))
   .map((_, i) => {
     return new Pad_Record({
-      // index of feature
-      index: i / N_MACROS,
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -386,7 +368,85 @@ const MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(N_MACROS)
     })
   })
 
-console.log(MACRO_RECORDS_ARRAY)
+  const large_square_sym_ptr = malloc(
+    new StandardSymbol({
+      id: 'round', // id
+      symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+      width: 0.5, // width, square side, diameter
+      height: 0.5, // height
+      corner_radius: 0.002, // corner radius
+      corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+      outer_dia: 0.01, // — Outer diameter of the shape
+      inner_dia: 0.008, // — Inner diameter of the shape
+      line_width: 0.001, // — Line width of the shape (applies to the whole shape)
+      line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+      angle: 0, // — Angle of the spoke from 0 degrees
+      gap: 0.001, // — Gap
+      num_spokes: 2, // — Number of spokes
+      round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+      cut_size: 0, // — Size of the cut ( see corner radius )
+      ring_width: 0.001, // — Ring width
+      ring_gap: 0.004, // — Ring gap
+      num_rings: 2 // — Number of rings
+    })
+  )
+
+const OVERLAPPING_PADS_ARRAY = new Array<Pad_Record>(3)
+  .fill(new Pad_Record({}))
+  .map((_, i) => {
+    return new Pad_Record({
+      // Center point.
+      x: i / 8,
+      y: i / 9,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      symbol: large_square_sym_ptr,
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // resize_factor: Math.random() + 1,
+      resize_factor: 1,
+      // Polarity. 0 = negative, 1 = positive
+      polarity: 1,
+      // Pad orientation (degrees)
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // rotation: Math.random() * 360,
+      rotation: 0,
+      // 0 = no mirror, 1 = mirror
+      mirror: 0
+    })
+  })
+
+const OVERLAPPING_MACROS_ARRAY = new Array<ptr<ISymbolRecord>>(1)
+  .fill(malloc(new MacroSymbol({})))
+  .map((_, i) => {
+    return malloc(new MacroSymbol({
+      id: 'macro' + i, // id
+      shapes: OVERLAPPING_PADS_ARRAY
+    }))
+  })
+
+const OVERLAPPING_MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(4)
+.fill(new Pad_Record({}))
+.map((_, i) => {
+  return new Pad_Record({
+    // Center point.
+    x: i / 10,
+    y: -i / 10,
+    // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    // sym_num: STANDARD_SYMBOLS_MAP.Round,
+    symbol: OVERLAPPING_MACROS_ARRAY[0],
+    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    // resize_factor: Math.random() + 1,
+    resize_factor: 1,
+    // Polarity. 0 = negative, 1 = positive
+    polarity: 1,
+    // Pad orientation (degrees)
+    // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+    // rotation: Math.random() * 360,
+    rotation: 0,
+    // 0 = no mirror, 1 = mirror
+    mirror: 0
+  })
+})
 
 
 
@@ -415,7 +475,6 @@ function REGLApp(): JSX.Element {
 
     // Engine.addDictionary({}_)
 
-    Engine.pointer.addEventListener('pointerdown', e => console.log((e as PointerEvent).detail))
 
     Engine.addLayer({
       name: 'origin',
@@ -429,8 +488,6 @@ function REGLApp(): JSX.Element {
       macros: [],
       image: [
         new Pad_Record({
-          // index of feature
-          index: 0,
           // Center point.
           x: 0,
           y: 0,
@@ -491,6 +548,13 @@ function REGLApp(): JSX.Element {
       image: MACRO_RECORDS_ARRAY
     })
 
+    Engine.addLayer({
+      name: 'overlap',
+      symbols: [large_square_sym_ptr],
+      macros: [],
+      image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    })
+
 
     // console.log(Engine.symbols.records.get('round')?.value)
     // Engine.symbols.refresh()
@@ -515,12 +579,12 @@ function REGLApp(): JSX.Element {
     //   set: [...SURFACE_RECORDS_ARRAY]
     // })
 
-    // Engine.pointer.addEventListener('pointerdown', console.log)
+    Engine.pointer.addEventListener('pointerdown', console.log)
 
     setEngine(Engine)
 
     return () => {
-      // Engine.pointer.removeEventListener('pointerdown', console.log)
+      Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }
 

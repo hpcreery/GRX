@@ -68,7 +68,7 @@ float cross2d(in vec2 v0, in vec2 v1) {
   return v0.x * v1.y - v0.y * v1.x;
 }
 
-const int N = 500;
+const int N = 50000;
 // #define N 5.0
 
 

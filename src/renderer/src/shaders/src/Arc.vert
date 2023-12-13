@@ -15,6 +15,7 @@ uniform vec2 u_SymbolsTextureDimensions;
 uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
+uniform float u_IndexOffset;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -111,6 +112,9 @@ void main() {
   v_Center_Location = a_Center_Location;
   v_Clockwise = a_Clockwise;
 
-  gl_Position = vec4(FinalPosition.xy, a_Index / u_QtyFeatures, 1);
+  float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
+
+  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  // gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), a_Index / u_QtyFeatures, 1);
 
 }

@@ -103,6 +103,7 @@ interface CommonUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_QtyFeatures: number
+  u_IndexOffset: number
 }
 
 interface ShapeTransfrom {
@@ -123,6 +124,7 @@ export interface ShapeRendererProps {
 
 interface ShapeRendererCommonContext {
   qtyFeaturesRef: number
+  prevQtyFeaturesRef: number
 }
 
 export class ShapeRenderer {
@@ -194,18 +196,14 @@ export class ShapeRenderer {
         face: 'back'
       },
       context: {
+        prevQtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => (context.qtyFeaturesRef ?? 1) - 1,
         qtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
       },
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
-        u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => {
-          // this.qtyFeatures
-          if (context.qtyFeaturesRef) {
-            console.log('context.qtyFeaturesRef', context.qtyFeaturesRef)
-          }
-          return this.indexOffset * this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
-        },
+        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.indexOffset * (context.prevQtyFeaturesRef ?? 1),
+        u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
