@@ -104,6 +104,7 @@ interface CommonUniforms {
   u_InverseTransform: mat3
   u_QtyFeatures: number
   u_IndexOffset: number
+  u_InvertPolarity: number
 }
 
 interface ShapeTransfrom {
@@ -130,6 +131,7 @@ interface ShapeRendererCommonContext {
 export class ShapeRenderer {
   public regl: REGL.Regl
   public indexOffset = 0
+  public invertPolarity = false
 
   // get index(): number {
   //   return 0
@@ -204,6 +206,7 @@ export class ShapeRenderer {
         u_InverseTransform: () => this.transform.inverseMatrix,
         u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.indexOffset * (context.prevQtyFeaturesRef ?? 1),
         u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
+        u_InvertPolarity: () => this.invertPolarity ? 1 : 0,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
@@ -647,6 +650,7 @@ class MacroRenderer extends ShapeRenderer {
       }
     })
     // !TODO: verify changin the record index updates the macro index
-    this.indexOffset = props.record.index
+    this.indexOffset = this.record.index
+    this.invertPolarity = this.record.polarity === 0
   }
 }

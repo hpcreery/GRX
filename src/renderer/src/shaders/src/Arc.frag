@@ -20,6 +20,7 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
+uniform float u_InvertPolarity;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -32,8 +33,6 @@ varying vec2 v_End_Location;
 varying vec2 v_Center_Location;
 varying float v_Polarity;
 varying float v_Clockwise;
-
-const float ALPHA = 1.0;
 
 //////////////////////////////////////
 // Combine distance field functions //
@@ -133,9 +132,9 @@ void main() {
   // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
   vec2 FragCoord = OffsetPosition;
 
-  // vec3 color = vec3(1.0);
-  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
-  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
+  float polarity = (v_Polarity * (1.0 - u_InvertPolarity)) + ((1.0 - v_Polarity) * u_InvertPolarity);
+  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
+  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
   // ? which one to go by for line width...
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
@@ -166,5 +165,5 @@ void main() {
   #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist);
 
-  gl_FragColor = vec4(color, Alpha);
+  gl_FragColor = vec4(color, alpha);
 }

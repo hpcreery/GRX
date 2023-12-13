@@ -19,6 +19,7 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
+uniform float u_InvertPolarity;
 
 // COMMON VARYTINGS
 varying float v_Aspect;
@@ -31,10 +32,6 @@ varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror;
-
-
-
-const float ALPHA = 1.0;
 
 //////////////////////////////
 // Rotation and translation //
@@ -90,8 +87,9 @@ void main() {
   vec2 OffsetPosition = TransformedPosition.xy - v_Location;
   vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation)) / v_ResizeFactor;
 
-  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
-  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
+  float polarity = (v_Polarity * (1.0 - u_InvertPolarity)) + ((1.0 - v_Polarity) * u_InvertPolarity);
+  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
+  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
   float dist = drawShape(FragCoord, int(v_SymNum));
 
@@ -99,5 +97,5 @@ void main() {
 
   dist = draw(dist);
 
-  gl_FragColor = vec4(color, Alpha);
+  gl_FragColor = vec4(color, alpha);
 }

@@ -2,8 +2,6 @@ precision mediump float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-const float ALPHA = 1.0;
-
 uniform struct parameters {
   highp int width;
   highp int height;
@@ -18,6 +16,7 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
+uniform float u_InvertPolarity;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -161,9 +160,9 @@ void main() {
   vec2 OffsetPosition = TransformedPosition.xy - vec2(0.0, 0.0);
   vec2 FragCoord = OffsetPosition;
 
-  // vec3 color = vec3(1.0);
-  vec3 color = u_Color * max(float(u_OutlineMode), v_Polarity);
-  float Alpha = ALPHA * max(float(u_OutlineMode), v_Polarity);
+  float polarity = (v_Polarity * (1.0 - u_InvertPolarity)) + ((1.0 - v_Polarity) * u_InvertPolarity);
+  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
+  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
   float dist = 12340.0;
 
@@ -298,5 +297,5 @@ void main() {
   #pragma glslify: import('../modules/Debug.glsl')
 
   dist = draw(dist);
-  gl_FragColor = vec4(color, Alpha);
+  gl_FragColor = vec4(color, alpha);
 }
