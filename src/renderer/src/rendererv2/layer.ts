@@ -9,7 +9,7 @@ import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
 import { vec2, vec3, mat3 } from 'gl-matrix'
 import { IPlotRecord } from './types'
-import * as Records from './records'
+import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 
@@ -20,6 +20,7 @@ import {
 } from './collections'
 
 import { WorldContext } from './engine'
+import { malloc, ptr } from './utils'
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -104,14 +105,16 @@ interface CommonUniforms {
   u_InverseTransform: mat3
   u_QtyFeatures: number
   u_IndexOffset: number
-  u_InvertPolarity: number
+  u_Polarity: number
 }
 
 interface ShapeTransfrom {
   datum: vec2
   rotation: number
   scale: number
-  mirror: boolean
+  mirror: number
+  index: number
+  polarity: number
   matrix: mat3
   inverseMatrix: mat3
   update: (inputMatrix: mat3) => void
@@ -130,16 +133,10 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  public indexOffset = 0
-  public invertPolarity = false
 
-  // get index(): number {
-  //   return 0
-  // }
-
-  public pads: ShapeShaderCollection<Records.Pad_Record>
-  public lines: ShapeShaderCollection<Records.Line_Record>
-  public arcs: ShapeShaderCollection<Records.Arc_Record>
+  public pads: ShapeShaderCollection<Records.Pad>
+  public lines: ShapeShaderCollection<Records.Line>
+  public arcs: ShapeShaderCollection<Records.Arc>
   public surfaces: SurfaceShaderCollection[] = []
   public macros: MacroRenderer[] = []
 
@@ -157,7 +154,9 @@ export class ShapeRenderer {
     datum: vec2.create(),
     rotation: 0,
     scale: 1,
-    mirror: false,
+    mirror: 0,
+    index: 0,
+    polarity: 1,
     matrix: mat3.create(),
     inverseMatrix: mat3.create(),
     update: (inputMatrix: mat3) => this.updateTransform(inputMatrix)
@@ -170,13 +169,13 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    this.pads = new ShapeShaderCollection<Records.Pad_Record>({
+    this.pads = new ShapeShaderCollection<Records.Pad>({
       regl: this.regl
     })
-    this.lines = new ShapeShaderCollection<Records.Line_Record>({
+    this.lines = new ShapeShaderCollection<Records.Line>({
       regl: this.regl
     })
-    this.arcs = new ShapeShaderCollection<Records.Arc_Record>({
+    this.arcs = new ShapeShaderCollection<Records.Arc>({
       regl: this.regl
     })
 
@@ -204,9 +203,9 @@ export class ShapeRenderer {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
-        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.indexOffset * (context.prevQtyFeaturesRef ?? 1),
+        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.transform.index * (context.prevQtyFeaturesRef ?? 1),
         u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
-        u_InvertPolarity: () => this.invertPolarity ? 1 : 0,
+        u_Polarity: () => this.transform.polarity,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
@@ -454,47 +453,45 @@ export class ShapeRenderer {
     mat3.rotate(this.transform.matrix, inputMatrix, rotation * (Math.PI / 180))
     mat3.translate(this.transform.matrix, this.transform.matrix, datum)
     mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
-    if (this.transform.mirror) {
-      mat3.scale(this.transform.matrix, this.transform.matrix, [-1, 1])
-    }
+    mat3.scale(this.transform.matrix, this.transform.matrix, [this.transform.mirror ? -1 : 1, 1])
     mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
   }
 
-  public update(data: Records.Shape[]): this {
-    const pads: Records.Pad_Record[] = []
-    const lines: Records.Line_Record[] = []
-    const arcs: Records.Arc_Record[] = []
+  public update(data: ptr<Records.Shape>[]): this {
+    const pads: ptr<Records.Pad>[] = []
+    const lines: ptr<Records.Line>[] = []
+    const arcs: ptr<Records.Arc>[] = []
 
     // Auto index
     let index = 0
     data.forEach((record) => {
       // Auto index
-      record.index = index++
+      record.value.index = index++
 
-      if (record instanceof Records.Pad_Record) {
-        if (record.symbol.value instanceof Symbols.StandardSymbol) {
-          pads.push(record)
-        } else if (record.symbol.value instanceof Symbols.MacroSymbol) {
+      if (record.value instanceof Records.Pad) {
+        if (record.value.symbol.value instanceof Symbols.StandardSymbol) {
+          pads.push(record as ptr<Records.Pad>)
+        } else if (record.value.symbol.value instanceof Symbols.MacroSymbol) {
           this.macros.push(
             new MacroRenderer({
               regl: this.regl,
-              name: record.symbol.value.id,
-              record
+              name: record.value.symbol.value.id,
+              record: record as ptr<Records.Pad>
             })
           )
         }
         return
       }
-      if (record instanceof Records.Line_Record) {
-        lines.push(record)
+      if (record.value instanceof Records.Line) {
+        lines.push(record as ptr<Records.Line>)
         return
       }
-      if (record instanceof Records.Arc_Record) {
-        arcs.push(record)
+      if (record.value instanceof Records.Arc) {
+        arcs.push(record as ptr<Records.Arc>)
         return
       }
-      if (record instanceof Records.Surface_Record) {
-        this.surfaces.push(new SurfaceShaderCollection({ regl: this.regl, record }))
+      if (record.value instanceof Records.Surface) {
+        this.surfaces.push(new SurfaceShaderCollection({ regl: this.regl, record: record as ptr<Records.Surface> }))
         return
       }
     })
@@ -619,38 +616,42 @@ export default class LayerRenderer extends ShapeRenderer {
 }
 
 interface MacroRendererProps extends LayerRendererProps {
-  record: Records.Pad_Record
+  record: ptr<Records.Pad>
 }
 
 class MacroRenderer extends ShapeRenderer {
-  public record: Records.Pad_Record = new Records.Pad_Record({})
+  public record: ptr<Records.Pad> = malloc(new Records.Pad({}))
   constructor(props: MacroRendererProps) {
     super(props)
 
-    if (props.record.symbol.value instanceof Symbols.MacroSymbol) {
-      this.update(props.record.symbol.value.shapes)
+    if (props.record.value.symbol.value instanceof Symbols.MacroSymbol) {
+      this.update(props.record.value.symbol.value.shapes as ptr<Records.Shape>[])
     } else {
       throw new Error('MacroRenderer requires a Shape Record with a MacroSymbol')
     }
 
     this.record = props.record
+    // !TODO: verify changin the record index updates the macro index
     Object.assign(this.transform, {
       record: props.record,
       get datum() {
-        return vec2.fromValues(this.record.x, this.record.y)
+        return vec2.fromValues(this.record.value.x, this.record.value.y)
       },
       get rotation() {
-        return this.record.rotation
+        return this.record.value.rotation
       },
       get scale() {
-        return this.record.resize_factor
+        return this.record.value.resize_factor
       },
       get mirror() {
-        return this.record.mirror === 1
+        return this.record.value.mirror
+      },
+      get index() {
+        return this.record.value.index
+      },
+      get polarity() {
+        return this.record.value.polarity
       }
     })
-    // !TODO: verify changin the record index updates the macro index
-    this.indexOffset = this.record.index
-    this.invertPolarity = this.record.polarity === 0
   }
 }

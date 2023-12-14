@@ -1,6 +1,6 @@
 import REGL from 'regl'
 import { IPlotRecord } from './types'
-import * as Records from './records'
+import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 import { ptr, malloc } from './utils'
@@ -16,20 +16,20 @@ interface ShaderCollection<T> {
   refresh: () => this
 }
 
-export class ShapeShaderCollection<T extends IPlotRecord> implements ShaderCollection<T[]> {
-  public records: T[] = []
+export class ShapeShaderCollection<T extends IPlotRecord> implements ShaderCollection<ptr<T>[]> {
+  public records: ptr<T>[] = []
   get length(): number {
     return this.records.length
   }
   public buffer: REGL.Buffer
 
-  constructor(props: { regl: REGL.Regl; records?: T[] }) {
+  constructor(props: { regl: REGL.Regl; records?: ptr<T>[] }) {
     this.records = props.records ?? []
     this.buffer = props.regl.buffer(0)
     this.refresh()
   }
 
-  public update(data: T[]): this {
+  public update(data: ptr<T>[]): this {
     this.records = data
     return this.refresh()
   }
@@ -37,7 +37,7 @@ export class ShapeShaderCollection<T extends IPlotRecord> implements ShaderColle
   public refresh(): this {
     const numbers: number[][] = []
     this.records.forEach((record) => {
-      numbers.push(record.array)
+      numbers.push(record.value.array)
     })
     this.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
@@ -49,29 +49,29 @@ export class ShapeShaderCollection<T extends IPlotRecord> implements ShaderColle
   }
 }
 
-export class SurfaceShaderCollection implements ShaderCollection<Records.Surface_Record> {
-  public records: Records.Surface_Record = new Records.Surface_Record({})
+export class SurfaceShaderCollection implements ShaderCollection<ptr<Records.Surface>> {
+  public records: ptr<Records.Surface> = malloc(new Records.Surface({}))
   get length(): number {
-    return this.records.length
+    return this.records.value.length
   }
   public contourTexture: REGL.Texture2D
   public attributeBuffer: REGL.Buffer
 
-  constructor(props: { regl: REGL.Regl; record?: Records.Surface_Record }) {
-    this.records = props.record ?? new Records.Surface_Record({})
+  constructor(props: { regl: REGL.Regl; record?: ptr<Records.Surface> }) {
+    this.records = props.record ?? malloc(new Records.Surface({}))
     this.contourTexture = props.regl.texture()
     this.attributeBuffer = props.regl.buffer(0)
     this.refresh()
   }
 
-  public update(record: Records.Surface_Record): this {
+  public update(record: ptr<Records.Surface>): this {
     this.records = record
     return this.refresh()
   }
 
   public refresh(): this {
-    const surfaces = this.records.array
-    const surfaceCountours = this.records.contoursArray
+    const surfaces = this.records.value.array
+    const surfaceCountours = this.records.value.contoursArray
     const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
     const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
       return surfaceCountours[index] ?? Records.END_SURFACE_ID

@@ -71,27 +71,21 @@ export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
 const defaultSymbolPtr = malloc(new Symbols.StandardSymbol({}))
 
-export class Pad_Record implements TPad_Record, IPlotRecord {
+export class Pad implements TPad_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.PAD
   public index = 0
   public x = 0
   public y = 0
-  public symbol: ptr<Symbols.StandardSymbol | Symbols.MacroSymbol> = defaultSymbolPtr
+  public symbol: ptr<Symbols.Symbol> = defaultSymbolPtr
   public get sym_num(): number {
     return this.symbol.value.sym_num
-    // if (this.symbol.value instanceof Symbols.StandardSymbol) {
-    //   return this.symbol.value.sym_num
-    // } else {
-    //   // return this.symbol.value.sym_num
-    //   return 0
-    // }
   }
   public resize_factor = 0
   public polarity = 0
   public rotation = 0
   public mirror = 0
 
-  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol | Symbols.MacroSymbol> }>) {
+  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.Symbol> }>) {
     Object.assign(this, record)
   }
 
@@ -108,33 +102,11 @@ export class Pad_Record implements TPad_Record, IPlotRecord {
   }
 }
 
-const defaultMacroPtr = malloc(new Symbols.MacroSymbol({}))
-
-// export class Macro_Record implements TPad_Record, IPlotRecord {
-//   public type = FeatureTypeIdentifyer.MACRO
-//   public index = 0
-//   public x = 0
-//   public y = 0
-//   public macro: ptr<Symbols.Macro> = defaultMacroPtr
-//   public get sym_num(): number {
-//     return this.macro.value.sym_num
-//   }
-//   public resize_factor = 0
-//   public polarity = 0
-//   public rotation = 0
-//   public mirror = 0
-
-//   constructor(record: Partial<Macro_Record>) {
-//     Object.assign(this, record)
-//   }
-// }
-
-
 // =================
 
 export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
-export class Line_Record implements TLine_Record, IPlotRecord {
+export class Line implements TLine_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.LINE
   public index = 0
   public xs = 0
@@ -168,7 +140,7 @@ export class Line_Record implements TLine_Record, IPlotRecord {
 
 export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
-export class Arc_Record implements TArc_Record, IPlotRecord {
+export class Arc implements TArc_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.ARC
   public index = 0
   public xs = 0
@@ -201,13 +173,13 @@ export class Arc_Record implements TArc_Record, IPlotRecord {
   }
 }
 
-export type TSurface_Record = typeof SURFACE_RECORD_PARAMETERS_MAP
-export type TContour_Record = typeof CONTOUR_RECORD_PARAMETERS_MAP
-export type TContourLineSegment_Record = typeof CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
-export type TContourArcSegment_Record = typeof CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP
+export type TSurface = typeof SURFACE_RECORD_PARAMETERS_MAP
+export type TContour = typeof CONTOUR_RECORD_PARAMETERS_MAP
+export type TContourLineSegment = typeof CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
+export type TContourArcSegment = typeof CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP
 
 export const CONTOUR_ARC_SEGMENT_ID = Math.random() * 1000000
-export class Contour_Arc_Segment_Record implements TContourArcSegment_Record, IPlotRecord {
+export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   public type = FeatureTypeIdentifyer.ARCSEGMENT
   public id = CONTOUR_ARC_SEGMENT_ID
   public x = 0
@@ -216,7 +188,7 @@ export class Contour_Arc_Segment_Record implements TContourArcSegment_Record, IP
   public yc = 0
   public clockwise = 0
 
-  constructor(segment: Partial<Omit<TContourArcSegment_Record, 'id'>>) {
+  constructor(segment: Partial<Omit<TContourArcSegment, 'id'>>) {
     Object.assign(this, segment)
   }
 
@@ -228,21 +200,21 @@ export class Contour_Arc_Segment_Record implements TContourArcSegment_Record, IP
     return CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS.map((key) => this[key])
   }
 
-  public get object(): TContourArcSegment_Record {
+  public get object(): TContourArcSegment {
     return Object.fromEntries(
       CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS.map((key) => [key, this[key]])
-    ) as TContourArcSegment_Record
+    ) as TContourArcSegment
   }
 }
 
 export const CONTOUR_LINE_SEGMENT_ID = Math.random() * 1000000
-export class Contour_Line_Segment_Record implements TContourLineSegment_Record, IPlotRecord {
+export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   public type = FeatureTypeIdentifyer.LINESEGMENT
   public id = CONTOUR_LINE_SEGMENT_ID
   public x = 0
   public y = 0
 
-  constructor(segment: Partial<Omit<TContourLineSegment_Record, 'id'>>) {
+  constructor(segment: Partial<Omit<TContourLineSegment, 'id'>>) {
     Object.assign(this, segment)
   }
 
@@ -254,25 +226,25 @@ export class Contour_Line_Segment_Record implements TContourLineSegment_Record, 
     return CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS.map((key) => this[key])
   }
 
-  public get object(): TContourLineSegment_Record {
+  public get object(): TContourLineSegment {
     return Object.fromEntries(
       CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS.map((key) => [key, this[key]])
-    ) as TContourLineSegment_Record
+    ) as TContourLineSegment
   }
 }
 
 export const CONTOUR_ID = Math.random() * 1000000
 export const END_CONTOUR_ID = Math.random() * 1000000
-export class Contour_Record implements TContour_Record, IPlotRecord {
+export class Contour implements TContour, IPlotRecord {
   // 1 == island, 0 == hole
   public type = FeatureTypeIdentifyer.CONTOUR
   public poly_type: 1 | 0 = 1
   public id = CONTOUR_ID
   public xs = 0
   public ys = 0
-  public segments: (Contour_Arc_Segment_Record | Contour_Line_Segment_Record)[] = []
+  public segments: (Contour_Arc_Segment | Contour_Line_Segment)[] = []
 
-  constructor(contour: Partial<Omit<TContour_Record, 'id'>>) {
+  constructor(contour: Partial<Omit<TContour, 'id'>>) {
     Object.assign(this, contour)
   }
 
@@ -345,31 +317,31 @@ export class Contour_Record implements TContour_Record, IPlotRecord {
     )
   }
 
-  public get object(): TContour_Record {
+  public get object(): TContour {
     return Object.fromEntries(
       CONTOUR_RECORD_PARAMETERS.map((key) => [key, this[key]])
-    ) as TContour_Record
+    ) as TContour
   }
 
-  public addSegments(segments: (Contour_Arc_Segment_Record | Contour_Line_Segment_Record)[]): this {
+  public addSegments(segments: (Contour_Arc_Segment | Contour_Line_Segment)[]): this {
     for (const segment of segments) {
       this.addSegment(segment)
     }
     return this
   }
 
-  public addSegment(segment: Contour_Arc_Segment_Record | Contour_Line_Segment_Record): this {
+  public addSegment(segment: Contour_Arc_Segment | Contour_Line_Segment): this {
     this.segments.push(segment)
     return this
   }
 }
 
 export const END_SURFACE_ID = Math.random() * 1000000
-export class Surface_Record implements TSurface_Record, IPlotRecord {
+export class Surface implements TSurface, IPlotRecord {
   public type = FeatureTypeIdentifyer.SURFACE
   public index = 0
   public polarity = 0
-  public contours: Contour_Record[] = []
+  public contours: Contour[] = []
 
   public get left(): number {
     return Math.min(...this.contours.map((contour) => contour.left))
@@ -387,7 +359,7 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
     return Math.min(...this.contours.map((contour) => contour.bottom))
   }
 
-  constructor(record: Partial<Omit<TSurface_Record, 'id'>>) {
+  constructor(record: Partial<Omit<TSurface, 'id'>>) {
     Object.assign(this, record)
   }
 
@@ -410,23 +382,23 @@ export class Surface_Record implements TSurface_Record, IPlotRecord {
     return this.contours.reduce((acc, contour) => acc + contour.segments.length, 0)
   }
 
-  public get object(): TSurface_Record {
+  public get object(): TSurface {
     return Object.fromEntries(
       SURFACE_RECORD_PARAMETERS.map((key) => [key, this[key]])
-    ) as TSurface_Record
+    ) as TSurface
   }
 
-  public addContours(contour: Contour_Record[]): this {
+  public addContours(contour: Contour[]): this {
     for (const c of contour) {
       this.addContour(c)
     }
     return this
   }
 
-  public addContour(contour: Contour_Record): this {
+  public addContour(contour: Contour): this {
     this.contours.push(contour)
     return this
   }
 }
 
-export type Shape = Pad_Record | Line_Record | Arc_Record | Surface_Record
+export type Shape = Pad | Line | Arc | Surface

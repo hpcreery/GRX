@@ -1,7 +1,7 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
 import * as Symbols from './symbols'
-import * as Records from './records'
+import * as Records from './shapes'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { ptr, malloc } from './utils'
 import { StandardSymbolShaderCollection } from './collections'
@@ -403,12 +403,11 @@ export class RenderEngine {
     type,
     symbols,
     transform,
-    macros,
     image
   }: Omit<LayerRendererProps, 'regl'> & {
     symbols: ptr<Symbols.StandardSymbol>[]
     macros: ptr<Symbols.MacroSymbol>[]
-    image: Records.Shape[]
+    image: ptr<Records.Shape>[]
   }): LayerRenderer {
     const layer = new LayerRenderer({
       name,

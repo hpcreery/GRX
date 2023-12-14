@@ -1,5 +1,6 @@
 import { ISymbolRecord, FeatureTypeIdentifyer, toMap } from './types'
-import { Shape } from './records'
+import { Shape } from './shapes'
+import { ptr } from './utils'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -122,24 +123,26 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
 }
 
 export type TMacroSymbol = {
-  shapes: Shape[]
+  shapes: ptr<Shape>[]
 }
 
 export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public type = FeatureTypeIdentifyer.MACRO_DEFINITION
   public id = ''
   public sym_num = 0
-  public shapes: Shape[] = []
+  public shapes: ptr<Shape>[] = []
 
   constructor(macro: Partial<TMacroSymbol & { id: string }>) {
     Object.assign(this, macro)
   }
 
   public get array(): number[] {
-    return this.shapes.flatMap((shape) => shape.array)
+    return this.shapes.flatMap((shape) => shape.value.array)
   }
 
   public get length(): number {
     return this.shapes.length
   }
 }
+
+export type Symbol = StandardSymbol | MacroSymbol

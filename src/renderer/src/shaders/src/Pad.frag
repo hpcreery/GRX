@@ -19,7 +19,7 @@ uniform vec2 u_Screen;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
-uniform float u_InvertPolarity;
+uniform float u_Polarity;
 
 // COMMON VARYTINGS
 varying float v_Aspect;
@@ -87,7 +87,7 @@ void main() {
   vec2 OffsetPosition = TransformedPosition.xy - v_Location;
   vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation)) / v_ResizeFactor;
 
-  float polarity = (v_Polarity * (1.0 - u_InvertPolarity)) + ((1.0 - v_Polarity) * u_InvertPolarity);
+  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
