@@ -12,11 +12,14 @@ import { IPlotRecord } from './types'
 import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
+// import ObservableSlim from 'observable-slim'
+import onChange from 'on-change'
 
 import {
-  StandardSymbolShaderCollection,
-  ShapeShaderCollection,
-  SurfaceShaderCollection
+  SymbolShaderCollection,
+  PrimitiveShaderCollection,
+  SurfaceShaderCollection,
+  MacroCollection
 } from './collections'
 
 import { WorldContext } from './engine'
@@ -106,6 +109,8 @@ interface CommonUniforms {
   u_QtyFeatures: number
   u_IndexOffset: number
   u_Polarity: number
+  u_SymbolsTexture: REGL.Texture2D
+  u_SymbolsTextureDimensions: vec2
 }
 
 interface ShapeTransfrom {
@@ -122,7 +127,7 @@ interface ShapeTransfrom {
 
 export interface ShapeRendererProps {
   regl: REGL.Regl
-  name: string
+  image: ptr<Records.Shape>[]
   transform?: Partial<ShapeTransfrom>
 }
 
@@ -133,15 +138,18 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
+  private dirty = true
+  public readonly records: ptr<Records.Shape>[] = onChange([], (path, value, prev, apply) => {
+    console.log('records changed', path, value, prev)
+    this.dirty = true
+  })
 
-  public pads: ShapeShaderCollection<Records.Pad>
-  public lines: ShapeShaderCollection<Records.Line>
-  public arcs: ShapeShaderCollection<Records.Arc>
-  public surfaces: SurfaceShaderCollection[] = []
-  public macros: MacroRenderer[] = []
+  public primativesCollection: PrimitiveShaderCollection
+  public surfacesCollection: SurfaceShaderCollection
+  public macroCollection: MacroCollection
 
   public get qtyFeatures(): number {
-    return this.pads.length + this.lines.length + this.arcs.length + this.surfaces.length + this.macros.length
+    return this.records.length
   }
 
   private commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
@@ -149,6 +157,8 @@ export class ShapeRenderer {
   private drawLines: REGL.DrawCommand<REGL.DefaultContext>
   private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
   private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
+
+  public symbols: SymbolShaderCollection
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -169,16 +179,6 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    this.pads = new ShapeShaderCollection<Records.Pad>({
-      regl: this.regl
-    })
-    this.lines = new ShapeShaderCollection<Records.Line>({
-      regl: this.regl
-    })
-    this.arcs = new ShapeShaderCollection<Records.Arc>({
-      regl: this.regl
-    })
-
     this.commonConfig = this.regl<
       CommonUniforms,
       CommonAttributes,
@@ -197,14 +197,24 @@ export class ShapeRenderer {
         face: 'back'
       },
       context: {
-        prevQtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => (context.qtyFeaturesRef ?? 1) - 1,
-        qtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
+        prevQtyFeaturesRef: (
+          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
+        ) => (context.qtyFeaturesRef ?? 1) - 1,
+        qtyFeaturesRef: (
+          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
+        ) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
       },
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
-        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => this.transform.index * (context.prevQtyFeaturesRef ?? 1),
-        u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
+        u_SymbolsTexture: () => this.symbols.texture,
+        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height],
+        u_IndexOffset: (
+          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
+        ) => this.transform.index * (context.prevQtyFeaturesRef ?? 1),
+        u_QtyFeatures: (
+          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
+        ) => context.qtyFeaturesRef ?? 1,
         u_Polarity: () => this.transform.polarity,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
@@ -242,42 +252,42 @@ export class ShapeRenderer {
 
       attributes: {
         a_Index: {
-          buffer: () => this.lines.buffer,
+          buffer: () => this.primativesCollection.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
-          buffer: () => this.lines.buffer,
+          buffer: () => this.primativesCollection.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
-          buffer: () => this.lines.buffer,
+          buffer: () => this.primativesCollection.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.lines.buffer,
+          buffer: () => this.primativesCollection.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.lines.buffer,
+          buffer: () => this.primativesCollection.lines.buffer,
           stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
           offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.lines.length
+      instances: () => this.primativesCollection.lines.length
     })
 
     this.drawPads = this.regl<PadUniforms, PadAttributes>({
@@ -289,56 +299,56 @@ export class ShapeRenderer {
 
       attributes: {
         a_Index: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Location: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_ResizeFactor: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Rotation: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
           divisor: 1
         },
 
         a_Mirror: {
-          buffer: () => this.pads.buffer,
+          buffer: () => this.primativesCollection.pads.buffer,
           stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
           offset: PAD_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.pads.length
+      instances: () => this.primativesCollection.pads.length
     })
 
     this.drawArcs = this.regl<ArcUniforms, ArcAttributes>({
@@ -350,56 +360,56 @@ export class ShapeRenderer {
 
       attributes: {
         a_Index: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Start_Location: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
           divisor: 1
         },
 
         a_End_Location: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
           divisor: 1
         },
 
         a_Center_Location: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
           divisor: 1
         },
 
         a_SymNum: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Clockwise: {
-          buffer: () => this.arcs.buffer,
+          buffer: () => this.primativesCollection.arcs.buffer,
           stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
           offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
           divisor: 1
         }
       },
 
-      instances: () => this.arcs.length
+      instances: () => this.primativesCollection.arcs.length
     })
 
     this.drawSurfaces = this.regl<SurfaceUniforms, SurfaceAttributes>({
@@ -409,10 +419,10 @@ export class ShapeRenderer {
 
       uniforms: {
         u_ContoursTexture: (_context: REGL.DefaultContext, _props, batchId: number) =>
-          this.surfaces[batchId].contourTexture,
+          this.surfacesCollection.surfaces[batchId].contourTexture,
         u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
-          this.surfaces[batchId].contourTexture.width,
-          this.surfaces[batchId].contourTexture.height
+          this.surfacesCollection.surfaces[batchId].contourTexture.width,
+          this.surfacesCollection.surfaces[batchId].contourTexture.height
         ],
         u_EndSurfaceId: Records.END_SURFACE_ID,
         u_ContourId: Records.CONTOUR_ID,
@@ -424,21 +434,21 @@ export class ShapeRenderer {
       attributes: {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributeBuffer,
+            this.surfacesCollection.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributeBuffer,
+            this.surfacesCollection.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Box: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.surfaces[batchId].attributeBuffer,
+            this.surfacesCollection.surfaces[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies right, bottom, left is next in vec4
           divisor: 1
         }
@@ -446,6 +456,26 @@ export class ShapeRenderer {
 
       instances: 1
     })
+
+
+    this.records.push(...(props.image ?? []))
+    this.symbols = new SymbolShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.primativesCollection = new PrimitiveShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.surfacesCollection = new SurfaceShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.macroCollection = new MacroCollection({
+      regl: this.regl,
+      records: this.records
+    })
+
   }
 
   public updateTransform(inputMatrix: mat3): void {
@@ -457,63 +487,22 @@ export class ShapeRenderer {
     mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
   }
 
-  public update(data: ptr<Records.Shape>[]): this {
-    const pads: ptr<Records.Pad>[] = []
-    const lines: ptr<Records.Line>[] = []
-    const arcs: ptr<Records.Arc>[] = []
-
-    // Auto index
-    let index = 0
-    data.forEach((record) => {
-      // Auto index
-      record.value.index = index++
-
-      if (record.value instanceof Records.Pad) {
-        if (record.value.symbol.value instanceof Symbols.StandardSymbol) {
-          pads.push(record as ptr<Records.Pad>)
-        } else if (record.value.symbol.value instanceof Symbols.MacroSymbol) {
-          this.macros.push(
-            new MacroRenderer({
-              regl: this.regl,
-              name: record.value.symbol.value.id,
-              record: record as ptr<Records.Pad>
-            })
-          )
-        }
-        return
-      }
-      if (record.value instanceof Records.Line) {
-        lines.push(record as ptr<Records.Line>)
-        return
-      }
-      if (record.value instanceof Records.Arc) {
-        arcs.push(record as ptr<Records.Arc>)
-        return
-      }
-      if (record.value instanceof Records.Surface) {
-        this.surfaces.push(new SurfaceShaderCollection({ regl: this.regl, record: record as ptr<Records.Surface> }))
-        return
-      }
-    })
-
-    // Reverse order to draw from the top down
-    this.pads.update(pads.reverse())
-    this.lines.update(lines.reverse())
-    this.arcs.update(arcs.reverse())
-    this.surfaces.reverse()
-    this.macros.reverse()
-
-    return this
-  }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.transform.update(context.transform.matrix)
+    if (this.dirty) {
+      this.symbols.refresh()
+      this.primativesCollection.refresh()
+      this.surfacesCollection.refresh()
+      this.macroCollection.refresh()
+      this.dirty = false
+    }
     this.commonConfig(() => {
       this.drawPads()
       this.drawArcs()
       this.drawLines()
-      this.drawSurfaces(this.surfaces.length)
-      this.macros.forEach((macro) => {
+      this.drawSurfaces(this.surfacesCollection.surfaces.length)
+      this.macroCollection.macros.forEach((macro) => {
         macro.render(context)
       })
     })
@@ -539,6 +528,7 @@ export const LayerType = {
 export type LayerTypes = (typeof LayerType)[keyof typeof LayerType]
 
 export interface LayerRendererProps extends ShapeRendererProps {
+  name: string
   color?: vec3
   context?: LayerContexts
   type?: LayerTypes
@@ -615,25 +605,23 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
-interface MacroRendererProps extends LayerRendererProps {
-  record: ptr<Records.Pad>
+interface MacroRendererProps extends Omit<ShapeRendererProps, 'image'|'transform'> {
+  pad: ptr<Records.Pad>
 }
 
-class MacroRenderer extends ShapeRenderer {
-  public record: ptr<Records.Pad> = malloc(new Records.Pad({}))
+export class MacroRenderer extends ShapeRenderer {
+  public pad: ptr<Records.Pad> = malloc(new Records.Pad({}))
   constructor(props: MacroRendererProps) {
-    super(props)
-
-    if (props.record.value.symbol.value instanceof Symbols.MacroSymbol) {
-      this.update(props.record.value.symbol.value.shapes as ptr<Records.Shape>[])
-    } else {
+    if (!(props.pad.value.symbol.value instanceof Symbols.MacroSymbol)) {
       throw new Error('MacroRenderer requires a Shape Record with a MacroSymbol')
     }
+    const image = props.pad.value.symbol.value.shapes
+    super({ ...props, image })
 
-    this.record = props.record
+    this.pad = props.pad
     // !TODO: verify changin the record index updates the macro index
     Object.assign(this.transform, {
-      record: props.record,
+      record: props.pad,
       get datum() {
         return vec2.fromValues(this.record.value.x, this.record.value.y)
       },

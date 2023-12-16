@@ -4,7 +4,7 @@ import * as Symbols from './symbols'
 import * as Records from './shapes'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { ptr, malloc } from './utils'
-import { StandardSymbolShaderCollection } from './collections'
+// import { StandardSymbolShaderCollection } from './collections'
 
 interface WorldProps {}
 
@@ -15,8 +15,6 @@ interface WorldUniforms {
   u_Screen: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
 }
 
 interface WorldAttributes {
@@ -26,8 +24,6 @@ interface WorldAttributes {
 export interface WorldContext {
   settings: RenderSettings
   transform: RenderTransform
-  // transform: mat3
-  // inverseTransform: mat3
   resolution: vec2
 }
 
@@ -38,10 +34,6 @@ interface ScreenRenderProps {
 interface ScreenRenderUniforms {
   render_tex: REGL.Framebuffer
 }
-
-// interface FrameBufferRenderProps {
-//   frameBuffer: REGL.Framebuffer
-// }
 
 export interface RenderEngineConfig {
   container: HTMLElement
@@ -147,12 +139,9 @@ export class RenderEngine {
 
   regl: REGL.Regl
   world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
-  public symbols: StandardSymbolShaderCollection
 
-  // renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
-  // private layer_fbo: REGL.Framebuffer2D
 
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
@@ -168,14 +157,6 @@ export class RenderEngine {
     this.regl.clear({
       depth: 0
     })
-
-    // this.layer_fbo = this.regl.framebuffer()
-    // this.regl.clear({
-    //   framebuffer: this.layer_fbo,
-    //   depth: 0
-    // })
-
-    this.symbols = new StandardSymbolShaderCollection({ regl: this.regl })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
       context: {
@@ -204,8 +185,6 @@ export class RenderEngine {
           ),
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
 
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -228,15 +207,6 @@ export class RenderEngine {
       count: 6,
       offset: 0
     })
-
-    // this.renderToFrameBuffer = this.regl<
-    //   Record<string, never>,
-    //   Record<string, never>,
-    //   FrameBufferRenderProps
-    // >({
-    //   framebuffer: (_context: REGL.DefaultContext, props: FrameBufferRenderProps) =>
-    //     props.frameBuffer
-    // })
 
     this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
       {
@@ -288,8 +258,6 @@ export class RenderEngine {
       }
     )
 
-    // mat3.identity(this.transform.matrix)
-    // mat3.identity(this.transform.matrixInverse)
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.addControls()
     this.render()
@@ -297,7 +265,6 @@ export class RenderEngine {
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     // new ResizeObserver(this.resize.bind(this)).observe(this.CONTAINER)
 
-    // this.renderTick()
   }
 
   private resize(): void {
@@ -401,25 +368,18 @@ export class RenderEngine {
     color,
     context,
     type,
-    symbols,
     transform,
     image
-  }: Omit<LayerRendererProps, 'regl'> & {
-    symbols: ptr<Symbols.StandardSymbol>[]
-    macros: ptr<Symbols.MacroSymbol>[]
-    image: ptr<Records.Shape>[]
-  }): LayerRenderer {
+  }: Omit<LayerRendererProps, 'regl'>): LayerRenderer {
     const layer = new LayerRenderer({
       name,
+      image,
       color,
       context,
       type,
       transform,
       regl: this.regl
     })
-    this.symbols.insert(symbols)
-    console.log(this.symbols.records)
-    layer.update(image)
     this.layers.push(layer)
     return layer
   }

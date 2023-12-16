@@ -19,10 +19,10 @@ import {
 import * as Shapes from './shapes'
 import { RenderEngine } from './engine'
 import { Button, Switch, Badge } from '@mantine/core'
-import { IPlotRecord, ISymbolRecord } from './types'
+// import { IPlotRecord, ISymbolRecord } from './types'
 import { ptr, malloc } from './utils'
-import { vec2 } from 'gl-matrix'
-import { PointerEvent } from './engine'
+// import { vec2 } from 'gl-matrix'
+// import { PointerEvent } from './engine'
 
 // N == Number of Shapes
 const N_PADS = 1000
@@ -292,7 +292,7 @@ new Array<number>(N_LINES)
   })
 
 
-const ARC_RECORDS_ARRAY: ptr<Shapes.Shape>[] = []
+const ARC_RECORDS_ARRAY: ptr<Shapes.Arc>[] = []
 new Array<number>(N_ARCS)
   .fill(0).map((_, i) => {
     const start_angle = Math.abs(Math.random()) * 360
@@ -408,7 +408,7 @@ new Array<number>(3)
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
-      polarity: 0,
+      polarity: 1,
       // Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
@@ -428,7 +428,7 @@ new Array<number>(1)
     })))
   })
 
-const OVERLAPPING_MACRO_RECORDS_ARRAY: ptr<Shapes.Shape>[] = []
+const OVERLAPPING_MACRO_RECORDS_ARRAY: ptr<Shapes.Pad>[] = []
 new Array<number>(4)
   .fill(0).map((_, i) => {
     OVERLAPPING_MACRO_RECORDS_ARRAY.push(malloc(new Pad({
@@ -442,7 +442,7 @@ new Array<number>(4)
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
-      polarity: 0,
+      polarity: 1,
       // Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
@@ -480,37 +480,35 @@ function REGLApp(): JSX.Element {
     // Engine.addDictionary({}_)
 
 
-    Engine.addLayer({
-      name: 'origin',
-      color: [1, 1, 1],
-      transform: {
-        datum: [0, 0],
-        scale: 1,
-        rotation: 0,
-      },
-      symbols: [round_sym_ptr],
-      macros: [],
-      image: [
-        malloc(new Pad({
-          // Center point.
-          x: 0,
-          y: 0,
-          // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-          // sym_num: STANDARD_SYMBOLS_MAP.Round,
-          symbol: round_sym_ptr,
-          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-          // resize_factor: Math.random() + 1,
-          resize_factor: 1,
-          // Polarity. 0 = negative, 1 = positive
-          polarity: 1,
-          // Pad orientation (degrees)
-          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
-          rotation: 0,
-          // 0 = no mirror, 1 = mirror
-          mirror: 0
-        }))
-      ]
-    })
+    // Engine.addLayer({
+    //   name: 'origin',
+    //   color: [1, 1, 1],
+    //   transform: {
+    //     datum: [0, 0],
+    //     scale: 1,
+    //     rotation: 0,
+    //   },
+    //   image: [
+    //     malloc(new Pad({
+    //       // Center point.
+    //       x: 0,
+    //       y: 0,
+    //       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    //       // sym_num: STANDARD_SYMBOLS_MAP.Round,
+    //       symbol: round_sym_ptr,
+    //       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    //       // resize_factor: Math.random() + 1,
+    //       resize_factor: 1,
+    //       // Polarity. 0 = negative, 1 = positive
+    //       polarity: 1,
+    //       // Pad orientation (degrees)
+    //       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+    //       rotation: 0,
+    //       // 0 = no mirror, 1 = mirror
+    //       mirror: 0
+    //     }))
+    //   ]
+    // })
 
     // Engine.addLayer({
     //   name: 'layer0',
@@ -537,27 +535,44 @@ function REGLApp(): JSX.Element {
     //   macros: [],
     //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
     // })
+    const layer2 = Engine.addLayer({
+      name: 'layer2',
+      image: ARC_RECORDS_ARRAY
+    })
 
     // Engine.addLayer({
-    //   name: 'layer2',
-    //   symbols: SYMBOLS,
-    //   macros: [],
-    //   image: [...ARC_RECORDS_ARRAY]
+    //   name: 'layer3',
+    //   image: MACRO_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      symbols: SYMBOLS,
-      macros: [],
-      image: MACRO_RECORDS_ARRAY
-    })
-
-    Engine.addLayer({
+    const macroLayer = Engine.addLayer({
       name: 'overlap',
-      symbols: [large_square_sym_ptr],
-      macros: [],
       image: OVERLAPPING_MACRO_RECORDS_ARRAY
     })
+
+
+    // setInterval(() => {
+    //   // arcs.value.map(a => a.value.polarity = 0)
+    //   // arcs.value[0].value.polarity = 0
+    //   layer2.records.map(a => a.value.polarity = Math.random() > 0.5 ? 1 : 0)
+    //   console.log('triggering update')
+    //   // console.log(macroLayer.records.map(a => a.value.polarity))
+    //   // macroLayer.records.map(a => a.value.polarity = 0)
+    //   macroLayer.records.map(record => {
+    //     if (record.value instanceof Pad && record.value.symbol.value instanceof MacroSymbol) {
+    //       record.value.x = Math.random()
+    //       record.value.y = Math.random()
+    //       record.value.symbol.value.shapes.map(shape => {
+    //         if (shape.value instanceof Pad) {
+    //           shape.value.polarity = Math.random() > 0.5 ? 1 : 0
+    //         }
+    //       })
+    //     }
+    //   })
+    //   console.log(macroLayer.records)
+    //   console.log('triggered update')
+    //   Engine.render(true)
+    // }, 2000)
 
 
     // console.log(Engine.symbols.records.get('round')?.value)
@@ -573,10 +588,10 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    // Engine.addLayer({
-    //   name: 'layer3',
-    //   data: [...SURFACE_RECORDS_ARRAY]
-    // })
+    Engine.addLayer({
+      name: 'layer3',
+      image: [...SURFACE_RECORDS_ARRAY]
+    })
 
     // Engine.addLayer({
     //   name: 'layer3',
