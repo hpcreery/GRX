@@ -141,6 +141,7 @@ export class ShapeRenderer {
   private dirty = true
   public readonly records: ptr<Records.Shape>[] = onChange([], (path, value, prev, apply) => {
     console.log('records changed', path, value, prev)
+    onChange.target(this.records).map((record, i) => record.value.index = i)
     this.dirty = true
   })
 
