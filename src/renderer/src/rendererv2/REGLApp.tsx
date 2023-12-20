@@ -519,7 +519,6 @@ function REGLApp(): JSX.Element {
       },
       image: PAD_RECORDS_ARRAY
     })
-    console.log('PAD_RECORDS_ARRAY', PAD_RECORDS_ARRAY)
 
     Engine.addLayer({
       name: 'layer1',

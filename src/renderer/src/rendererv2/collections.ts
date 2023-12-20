@@ -2,8 +2,9 @@ import REGL from 'regl'
 import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-import { FeatureTypeIdentifyer, FeatureTypeIdentifyers } from './types'
+import { FeatureTypeIdentifyer } from './types'
 import { MacroRenderer } from './layer'
+import onChange from 'on-change'
 
 const { SURFACE_RECORD_PARAMETERS } = Records
 
@@ -162,41 +163,23 @@ export class SymbolCollection {
     return this.symbols.size
   }
 
-  // protected makeUnique(symbol: Symbols.StandardSymbol): string {
-  //   if (this.symbols.has(symbol.id)) {
-  //     if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
-  //       console.log(`Identical Symbol with id ${symbol.id} already exists`)
-  //       const sym = this.symbols.get(symbol.id)
-  //       symbol = sym as Symbols.StandardSymbol
-  //       return symbol.id
-  //     }
-  //     if (symbol.id.match(/\+\d+$/)) {
-  //       const [base, count] = symbol.id.split('+')
-  //       symbol.id = `${base}+${Number(count) + 1}`
-  //       return this.makeUnique(symbol)
-  //     }
-  //     symbol.id = `${symbol.id}+${1}`
-  //     return this.makeUnique(symbol)
-  //   }
-  //   return symbol.id
-  // }
-
-  protected makeUnique(record: Records.Pad | Records.Line | Records.Arc): string {
-    if (this.symbols.has(record.symbol.id)) {
-      if (this.symbols.get(record.symbol.id)!.array.toString() == record.symbol.array.toString()) {
-        console.log(`Identical Symbol with id ${record.symbol.id} already exists`)
-        record.symbol = this.symbols.get(record.symbol.id) as Symbols.StandardSymbol
-        return record.symbol.id
+  protected makeUnique(symbol: Symbols.StandardSymbol): string {
+    if (this.symbols.has(symbol.id)) {
+      if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
+        // console.log(`Identical Symbol with id ${symbol.id} already exists`)
+        const sym = this.symbols.get(symbol.id)
+        symbol = sym as Symbols.StandardSymbol
+        return symbol.id
       }
-      if (record.symbol.id.match(/\+\d+$/)) {
-        const [base, count] = record.symbol.id.split('+')
-        record.symbol.id = `${base}+${Number(count) + 1}`
-        return this.makeUnique(record)
+      if (symbol.id.match(/\+\d+$/)) {
+        const [base, count] = symbol.id.split('+')
+        symbol.id = `${base}+${Number(count) + 1}`
+        return this.makeUnique(symbol)
       }
-      record.symbol.id = `${record.symbol.id}+${1}`
-      return this.makeUnique(record)
+      symbol.id = `${symbol.id}+${1}`
+      return this.makeUnique(symbol)
     }
-    return record.symbol.id
+    return symbol.id
   }
 }
 
@@ -219,7 +202,7 @@ export class SymbolShaderCollection extends SymbolCollection {
         return
       }
       if (record.symbol instanceof Symbols.StandardSymbol) {
-        this.makeUnique(record)
+        this.makeUnique(record.symbol)
         this.symbols.set(record.symbol.id, record.symbol as Symbols.StandardSymbol)
       } else if (record.symbol instanceof Symbols.MacroSymbol) {
         record.symbol.shapes.forEach((shape) => {
@@ -227,7 +210,7 @@ export class SymbolShaderCollection extends SymbolCollection {
             return
           }
           if (shape.symbol instanceof Symbols.StandardSymbol) {
-            this.makeUnique(shape)
+            this.makeUnique(shape.symbol)
             this.symbols.set(shape.symbol.id, shape.symbol as Symbols.StandardSymbol)
           }
         })
@@ -244,7 +227,8 @@ export class SymbolShaderCollection extends SymbolCollection {
       return this
     }
     const symbols = Array.from(this.symbols.values()).map((symbol, i) => {
-      symbol.sym_num = i
+      // symbol.sym_num = i
+      onChange.target(symbol).sym_num = i
       return symbol.array
     })
     this.texture({

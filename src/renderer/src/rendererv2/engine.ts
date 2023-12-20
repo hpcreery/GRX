@@ -1,10 +1,6 @@
 import REGL from 'regl'
-import { mat3, vec2, vec3 } from 'gl-matrix'
-import * as Symbols from './symbols'
-import * as Records from './shapes'
+import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
-import { ptr, malloc } from './utils'
-// import { StandardSymbolShaderCollection } from './collections'
 
 interface WorldProps {}
 
