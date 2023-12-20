@@ -1,5 +1,4 @@
 import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
-import { ptr, malloc } from './utils'
 import * as Symbols from './symbols'
 
 export const PAD_RECORD_PARAMETERS = [
@@ -69,23 +68,21 @@ export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
-const defaultSymbolPtr = malloc(new Symbols.StandardSymbol({}))
-
 export class Pad implements TPad_Record, IPlotRecord {
   public type = FeatureTypeIdentifyer.PAD
   public index = 0
   public x = 0
   public y = 0
-  public symbol: ptr<Symbols.Symbol> = defaultSymbolPtr
+  public symbol: Symbols.Symbol = new Symbols.StandardSymbol({})
   public get sym_num(): number {
-    return this.symbol.value.sym_num
+    return this.symbol.sym_num
   }
   public resize_factor = 0
   public polarity = 0
   public rotation = 0
   public mirror = 0
 
-  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: ptr<Symbols.Symbol> }>) {
+  constructor(record: Partial<Omit<TPad_Record, 'sym_num'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)
   }
 
@@ -113,13 +110,13 @@ export class Line implements TLine_Record, IPlotRecord {
   public ys = 0
   public xe = 0
   public ye = 0
-  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
   public get sym_num(): number {
-    return this.symbol.value.sym_num
+    return this.symbol.sym_num
   }
   public polarity = 0
 
-  constructor(record: Partial<Omit<TLine_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
+  constructor(record: Partial<Omit<TLine_Record, 'sym_num'> & { symbol: Symbols.StandardSymbol }>) {
     Object.assign(this, record)
   }
 
@@ -149,14 +146,14 @@ export class Arc implements TArc_Record, IPlotRecord {
   public ye = 0
   public xc = 0
   public yc = 0
-  public symbol: ptr<Symbols.StandardSymbol> = defaultSymbolPtr
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
   public get sym_num(): number {
-    return this.symbol.value.sym_num
+    return this.symbol.sym_num
   }
   public polarity = 0
   public clockwise = 0
 
-  constructor(record: Partial<Omit<TArc_Record, 'sym_num'> & { symbol: ptr<Symbols.StandardSymbol> }>) {
+  constructor(record: Partial<Omit<TArc_Record, 'sym_num'> & { symbol: Symbols.StandardSymbol }>) {
     Object.assign(this, record)
   }
 
@@ -401,4 +398,5 @@ export class Surface implements TSurface, IPlotRecord {
   }
 }
 
+export type Primitive = Pad | Line | Arc
 export type Shape = Pad | Line | Arc | Surface

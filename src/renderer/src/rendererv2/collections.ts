@@ -2,9 +2,8 @@ import REGL from 'regl'
 import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-import { ptr, malloc } from './utils'
 import { FeatureTypeIdentifyer, FeatureTypeIdentifyers } from './types'
-import {MacroRenderer} from './layer'
+import { MacroRenderer } from './layer'
 
 const { SURFACE_RECORD_PARAMETERS } = Records
 
@@ -19,7 +18,7 @@ const { SYMBOL_PARAMETERS } = Symbols
 // }
 
 export class PrimitiveShaderCollection {
-  public records: ptr<Records.Shape>[] = []
+  public records: Records.Shape[] = []
 
   public pads: {
     buffer: REGL.Buffer
@@ -34,7 +33,7 @@ export class PrimitiveShaderCollection {
     length: number
   }
 
-  constructor(props: { regl: REGL.Regl; records: ptr<Records.Shape>[] }) {
+  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
     const { regl, records } = props
     this.pads = {
       buffer: regl.buffer(0),
@@ -49,71 +48,73 @@ export class PrimitiveShaderCollection {
       length: 0
     }
     this.records = records
-    this.refresh()
+    // this.refresh()
   }
 
   public refresh(): this {
-    console.log('refreshing primitives', this.records.length)
     const padPrimatives = this.records.filter(
       (record) =>
-        record.value.type == FeatureTypeIdentifyer.PAD &&
-        record.value.symbol.value instanceof Symbols.StandardSymbol
-    )
+        record.type == FeatureTypeIdentifyer.PAD && record.symbol instanceof Symbols.StandardSymbol
+    ).reverse()
     this.pads.length = padPrimatives.length
+    // console.log('padPrimatives', padPrimatives)
     this.pads.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
       length: this.pads.length * glFloatSize,
       data: padPrimatives.map((record) => {
-        return record.value.array
+        return record.array
       })
     })
     const linePrimatives = this.records.filter(
       (record) =>
-        record.value.type == FeatureTypeIdentifyer.LINE &&
-        record.value.symbol.value instanceof Symbols.StandardSymbol
-    )
+        record.type == FeatureTypeIdentifyer.LINE && record.symbol instanceof Symbols.StandardSymbol
+    ).reverse()
     this.lines.length = linePrimatives.length
     this.lines.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
       length: this.lines.length * glFloatSize,
       data: linePrimatives.map((record) => {
-        return record.value.array
+        return record.array
       })
     })
     const arcPrimatives = this.records.filter(
       (record) =>
-        record.value.type == FeatureTypeIdentifyer.ARC &&
-        record.value.symbol.value instanceof Symbols.StandardSymbol
-    )
+        record.type == FeatureTypeIdentifyer.ARC && record.symbol instanceof Symbols.StandardSymbol
+    ).reverse()
     this.arcs.length = arcPrimatives.length
     this.arcs.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
       type: 'float',
       length: this.arcs.length * glFloatSize,
       data: arcPrimatives.map((record) => {
-        return record.value.array
+        return record.array
       })
     })
 
+    // console.log('refreshing primitives', {
+    //   pads: this.pads.length,
+    //   lines: this.lines.length,
+    //   arcs: this.arcs.length
+    // })
     return this
   }
 }
 
 export class SurfaceShaderCollection {
-  public records: ptr<Records.Shape>[] = []
+  public records: Records.Shape[] = []
   private regl: REGL.Regl
   public surfaces: {
     contourTexture: REGL.Texture2D
     attributeBuffer: REGL.Buffer
   }[] = []
 
-  constructor(props: { regl: REGL.Regl; records: ptr<Records.Shape>[] }) {
+  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
     const { regl, records } = props
     this.records = records
     this.regl = regl
-    this.refresh()
+    // this.refresh()
   }
 
   public refresh(): this {
@@ -122,13 +123,12 @@ export class SurfaceShaderCollection {
       surface.attributeBuffer.destroy()
     })
     this.surfaces.length = 0
-    console.log('refreshing surfaces', this.records.length)
     this.records.forEach((record) => {
-      if (record.value.type != FeatureTypeIdentifyer.SURFACE) {
+      if (record.type != FeatureTypeIdentifyer.SURFACE) {
         return
       }
-      const surfaces = record.value.array
-      const surfaceCountours = record.value.contoursArray
+      const surfaces = record.array
+      const surfaceCountours = record.contoursArray
       const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
         return surfaceCountours[index] ?? Records.END_SURFACE_ID
@@ -150,93 +150,87 @@ export class SurfaceShaderCollection {
         })
       })
     })
-    return this
-  }
-}
-
-export class MacroCollection {
-  public records: ptr<Records.Shape>[] = []
-  public macros: MacroRenderer[] = []
-  private regl: REGL.Regl
-  constructor(props: { regl: REGL.Regl; records: ptr<Records.Shape>[] }) {
-    const { records, regl } = props
-    this.regl = regl
-    this.records = records
-    this.refresh()
-  }
-
-  public refresh(): this {
-    this.macros.length = 0
-    this.records.forEach((record) => {
-      if (record.value.type != FeatureTypeIdentifyer.PAD) {
-        return
-      }
-      if (record.value.symbol.value instanceof Symbols.MacroSymbol) {
-        this.macros.push(new MacroRenderer({
-          regl: this.regl,
-          pad: record as ptr<Records.Pad>,
-        }))
-      }
-    })
+    this.surfaces.reverse()
+    // console.log('refreshing surfaces', this.surfaces.length)
     return this
   }
 }
 
 export class SymbolCollection {
-  public symbols: Map<string, ptr<Symbols.StandardSymbol>> = new Map<
-    string,
-    ptr<Symbols.StandardSymbol>
-  >()
+  public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
   get length(): number {
     return this.symbols.size
   }
 
-  protected makeUnique(symbolPtr: ptr<Symbols.StandardSymbol>): string {
-    if (this.symbols.has(symbolPtr.value.id)) {
-      if (
-        this.symbols.get(symbolPtr.value.id)!.value.array.toString() ==
-        symbolPtr.value.array.toString()
-      ) {
-        console.log(`Identical Symbol with id ${symbolPtr.value.id} already exists`)
-        symbolPtr.value = this.symbols.get(symbolPtr.value.id)!.value
-        return symbolPtr.value.id
+  // protected makeUnique(symbol: Symbols.StandardSymbol): string {
+  //   if (this.symbols.has(symbol.id)) {
+  //     if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
+  //       console.log(`Identical Symbol with id ${symbol.id} already exists`)
+  //       const sym = this.symbols.get(symbol.id)
+  //       symbol = sym as Symbols.StandardSymbol
+  //       return symbol.id
+  //     }
+  //     if (symbol.id.match(/\+\d+$/)) {
+  //       const [base, count] = symbol.id.split('+')
+  //       symbol.id = `${base}+${Number(count) + 1}`
+  //       return this.makeUnique(symbol)
+  //     }
+  //     symbol.id = `${symbol.id}+${1}`
+  //     return this.makeUnique(symbol)
+  //   }
+  //   return symbol.id
+  // }
+
+  protected makeUnique(record: Records.Pad | Records.Line | Records.Arc): string {
+    if (this.symbols.has(record.symbol.id)) {
+      if (this.symbols.get(record.symbol.id)!.array.toString() == record.symbol.array.toString()) {
+        console.log(`Identical Symbol with id ${record.symbol.id} already exists`)
+        record.symbol = this.symbols.get(record.symbol.id) as Symbols.StandardSymbol
+        return record.symbol.id
       }
-      if (symbolPtr.value.id.match(/\+\d+$/)) {
-        const [base, count] = symbolPtr.value.id.split('+')
-        symbolPtr.value.id = `${base}+${Number(count) + 1}`
-        return this.makeUnique(symbolPtr)
+      if (record.symbol.id.match(/\+\d+$/)) {
+        const [base, count] = record.symbol.id.split('+')
+        record.symbol.id = `${base}+${Number(count) + 1}`
+        return this.makeUnique(record)
       }
-      symbolPtr.value.id = `${symbolPtr.value.id}+${1}`
-      return this.makeUnique(symbolPtr)
+      record.symbol.id = `${record.symbol.id}+${1}`
+      return this.makeUnique(record)
     }
-    return symbolPtr.value.id
+    return record.symbol.id
   }
 }
 
 export class SymbolShaderCollection extends SymbolCollection {
-  public records: ptr<Records.Shape>[] = []
+  public records: Records.Shape[] = []
   public texture: REGL.Texture2D
 
-  constructor(props: { regl: REGL.Regl; records: ptr<Records.Shape>[] }) {
+  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
     super()
     const { regl, records } = props
     this.records = records
     this.texture = regl.texture()
-    this.refresh()
+    // this.refresh()
   }
 
   public refresh(): this {
     this.symbols.clear()
     this.records.forEach((record) => {
-      if (record.value.type == FeatureTypeIdentifyer.SURFACE) {
+      if (record.type == FeatureTypeIdentifyer.SURFACE) {
         return
       }
-      if (record.value.symbol.value instanceof Symbols.StandardSymbol) {
-        this.makeUnique(record.value.symbol as ptr<Symbols.StandardSymbol>)
-        this.symbols.set(
-          record.value.symbol.value.id,
-          record.value.symbol as ptr<Symbols.StandardSymbol>
-        )
+      if (record.symbol instanceof Symbols.StandardSymbol) {
+        this.makeUnique(record)
+        this.symbols.set(record.symbol.id, record.symbol as Symbols.StandardSymbol)
+      } else if (record.symbol instanceof Symbols.MacroSymbol) {
+        record.symbol.shapes.forEach((shape) => {
+          if (shape.type == FeatureTypeIdentifyer.SURFACE) {
+            return
+          }
+          if (shape.symbol instanceof Symbols.StandardSymbol) {
+            this.makeUnique(shape)
+            this.symbols.set(shape.symbol.id, shape.symbol as Symbols.StandardSymbol)
+          }
+        })
       }
     })
     if (this.symbols.size === 0) {
@@ -250,8 +244,8 @@ export class SymbolShaderCollection extends SymbolCollection {
       return this
     }
     const symbols = Array.from(this.symbols.values()).map((symbol, i) => {
-      symbol.value.sym_num = i
-      return symbol.value.array
+      symbol.sym_num = i
+      return symbol.array
     })
     this.texture({
       width: SYMBOL_PARAMETERS.length,
@@ -260,6 +254,54 @@ export class SymbolShaderCollection extends SymbolCollection {
       format: 'luminance',
       data: symbols
     })
+    console.log('refreshing symbols', this.symbols.size)
+    return this
+  }
+}
+
+export class MacroCollection {
+  public records: Records.Shape[] = []
+  public macros: Map<
+    string,
+    {
+      renderer: MacroRenderer
+      records: Records.Pad[]
+    }
+  > = new Map<
+    string,
+    {
+      renderer: MacroRenderer
+      records: Records.Pad[]
+    }
+  >()
+  private regl: REGL.Regl
+  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
+    const { records, regl } = props
+    this.regl = regl
+    this.records = records
+    // this.refresh()
+  }
+
+  public refresh(): this {
+    this.macros.clear()
+    this.records.forEach((record) => {
+      if (record.type != FeatureTypeIdentifyer.PAD) {
+        return
+      }
+      if (record.symbol instanceof Symbols.MacroSymbol) {
+        if (!this.macros.has(record.symbol.id)) {
+          this.macros.set(record.symbol.id, {
+            renderer: new MacroRenderer({
+              regl: this.regl,
+              image: record.symbol.shapes
+            }),
+            records: []
+          })
+        }
+        this.macros.get(record.symbol.id)!.records.push(record as Records.Pad)
+      }
+    })
+    // console.log('refreshed macros', this.macros.size)
     return this
   }
 }

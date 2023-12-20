@@ -20,7 +20,6 @@ import * as Shapes from './shapes'
 import { RenderEngine } from './engine'
 import { Button, Switch, Badge } from '@mantine/core'
 // import { IPlotRecord, ISymbolRecord } from './types'
-import { ptr, malloc } from './utils'
 // import { vec2 } from 'gl-matrix'
 // import { PointerEvent } from './engine'
 
@@ -31,11 +30,11 @@ const N_ARCS = 50
 const N_SURFACES = 3
 const N_MACROS = 10
 
-const SURFACE_RECORDS_ARRAY: ptr<Shapes.Shape>[] = []
+const SURFACE_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_SURFACES)
   .fill(0)
   .map((_, i) => {
-    SURFACE_RECORDS_ARRAY.push(malloc(new Surface({
+    SURFACE_RECORDS_ARRAY.push(new Surface({
       polarity: 1,
     }).addContours([
       new Contour({
@@ -110,17 +109,17 @@ new Array<number>(N_SURFACES)
             y: 0.04 + i * 0.1,
           }),
         ])
-    ])))
+    ]))
   })
 
 
-const SYMBOLS: ptr<StandardSymbol>[] = []
+const SYMBOLS: StandardSymbol[] = []
 
 new Array<number>(STANDARD_SYMBOLS.length)
   // .fill(new Symbol({}))
   .fill(0)
   .map((_, i) => {
-    const sym_ptr = malloc(
+    const sym_ptr =
       new StandardSymbol({
         id: 'symbol' + i, // id
         symbol: i, // symbol
@@ -141,11 +140,11 @@ new Array<number>(STANDARD_SYMBOLS.length)
         ring_gap: 0.004, // — Ring gap
         num_rings: 2 // — Number of rings
       })
-    )
+
     SYMBOLS.push(sym_ptr)
   })
 
-const round_sym_ptr = malloc(
+const round_sym_ptr =
   new StandardSymbol({
     id: 'round', // id
     symbol: STANDARD_SYMBOLS_MAP.Round, // symbol
@@ -166,10 +165,10 @@ const round_sym_ptr = malloc(
     ring_gap: 0.004, // — Ring gap
     num_rings: 2 // — Number of rings
   })
-)
+
 SYMBOLS.push(round_sym_ptr)
 
-const square_sym_ptr = malloc(
+const square_sym_ptr =
   new StandardSymbol({
     id: 'round', // id
     symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
@@ -190,11 +189,11 @@ const square_sym_ptr = malloc(
     ring_gap: 0.004, // — Ring gap
     num_rings: 2 // — Number of rings
   })
-)
+
 SYMBOLS.push(square_sym_ptr)
 
 
-const square2_sym_ptr = malloc(
+const square2_sym_ptr =
   new StandardSymbol({
     id: 'round', // id
     symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
@@ -215,14 +214,14 @@ const square2_sym_ptr = malloc(
     ring_gap: 0.004, // — Ring gap
     num_rings: 2 // — Number of rings
   })
-)
+
 SYMBOLS.push(square2_sym_ptr)
 
 
-const PAD_RECORDS_ARRAY: ptr<Shapes.Shape>[] = []
+const PAD_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_PADS)
   .fill(0).map((_, i) => {
-    PAD_RECORDS_ARRAY.push(malloc(new Pad({
+    PAD_RECORDS_ARRAY.push(new Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -241,13 +240,13 @@ new Array<number>(N_PADS)
       rotation: 10,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })))
+    }))
   })
 
-const LINE_RECORDS_ARRAY_NEG: ptr<Shapes.Shape>[] = []
+const LINE_RECORDS_ARRAY_NEG: Shapes.Shape[] = []
 new Array<number>(N_LINES)
   .fill(0).map((_, i) => {
-    LINE_RECORDS_ARRAY_NEG.push(malloc(new Line({
+    LINE_RECORDS_ARRAY_NEG.push(new Line({
 
       // Start point.
       xs: (Math.random() - 0.5) * 1,
@@ -265,13 +264,13 @@ new Array<number>(N_LINES)
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       polarity: 0,
-    })))
+    }))
   })
 
-const LINE_RECORDS_ARRAY_POS: ptr<Shapes.Shape>[] = []
+const LINE_RECORDS_ARRAY_POS: Shapes.Shape[] = []
 new Array<number>(N_LINES)
   .fill(0).map((_, i) => {
-    LINE_RECORDS_ARRAY_POS.push(malloc(new Line({
+    LINE_RECORDS_ARRAY_POS.push(new Line({
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -288,11 +287,11 @@ new Array<number>(N_LINES)
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       polarity: 1,
-    })))
+    }))
   })
 
 
-const ARC_RECORDS_ARRAY: ptr<Shapes.Arc>[] = []
+const ARC_RECORDS_ARRAY: Shapes.Arc[] = []
 new Array<number>(N_ARCS)
   .fill(0).map((_, i) => {
     const start_angle = Math.abs(Math.random()) * 360
@@ -303,7 +302,7 @@ new Array<number>(N_ARCS)
     function degreesToRadians(degrees: number): number {
       return degrees * (Math.PI / 180);
     }
-    ARC_RECORDS_ARRAY.push(malloc(new Arc({
+    ARC_RECORDS_ARRAY.push(new Arc({
       // Center point.
       xc: center_x,
       yc: center_y,
@@ -325,13 +324,13 @@ new Array<number>(N_ARCS)
       // polarity: Math.random() > 0.5 ? 1 : 0,
       clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
-    })))
+    }))
   })
 
-const MACROS_ARRAY: ptr<Symbols.Symbol>[] = []
+const MACROS_ARRAY: Symbols.Symbol[] = []
 new Array<number>(1)
   .fill(0).map((_, i) => {
-    MACROS_ARRAY.push(malloc(new MacroSymbol({
+    MACROS_ARRAY.push(new MacroSymbol({
       id: 'macro' + i, // id
       shapes: [
         PAD_RECORDS_ARRAY[i],
@@ -344,13 +343,13 @@ new Array<number>(1)
         ARC_RECORDS_ARRAY[i + 1],
         SURFACE_RECORDS_ARRAY[i]
       ]
-    })))
+    }))
   })
 
-const MACRO_RECORDS_ARRAY: ptr<Shapes.Shape>[] = []
+const MACRO_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_MACROS)
   .fill(0).map((_, i) => {
-    MACRO_RECORDS_ARRAY.push(malloc(new Pad({
+    MACRO_RECORDS_ARRAY.push(new Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -368,10 +367,10 @@ new Array<number>(N_MACROS)
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })))
+    }))
   })
 
-const large_square_sym_ptr = malloc(
+const large_square_sym_ptr =
   new StandardSymbol({
     id: 'round', // id
     symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
@@ -392,12 +391,12 @@ const large_square_sym_ptr = malloc(
     ring_gap: 0.004, // — Ring gap
     num_rings: 2 // — Number of rings
   })
-)
 
-const OVERLAPPING_PADS_ARRAY: ptr<Pad>[] = []
+
+const OVERLAPPING_PADS_ARRAY: Pad[] = []
 new Array<number>(3)
   .fill(0).map((_, i) => {
-    OVERLAPPING_PADS_ARRAY.push(malloc(new Pad({
+    OVERLAPPING_PADS_ARRAY.push(new Pad({
       // Center point.
       x: i / 8,
       y: i / 9,
@@ -415,23 +414,23 @@ new Array<number>(3)
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })))
+    }))
   })
 
-const OVERLAPPING_MACROS_ARRAY: ptr<Symbols.Symbol>[] = []
+const OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
 new Array<number>(1)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACROS_ARRAY.push(malloc(new MacroSymbol({
+    OVERLAPPING_MACROS_ARRAY.push(new MacroSymbol({
       id: 'macro' + i, // id
       shapes: OVERLAPPING_PADS_ARRAY
-    })))
+    }))
   })
 
-const OVERLAPPING_MACRO_RECORDS_ARRAY: ptr<Shapes.Pad>[] = []
-new Array<number>(4)
+const OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
+new Array<number>(10)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACRO_RECORDS_ARRAY.push(malloc(new Pad({
+    OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Pad({
       // Center point.
       x: i / 10,
       y: -i / 10,
@@ -449,7 +448,7 @@ new Array<number>(4)
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })))
+    }))
   })
 
 
@@ -510,40 +509,38 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    // Engine.addLayer({
-    //   name: 'layer0',
-    //   transform: {
-    //     datum: [0.5, 0],
-    //     scale: 1,
-    //     rotation: 0,
-    //     mirror: true,
-    //   },
-    //   symbols: SYMBOLS,
-    //   macros: [],
-    //   image: PAD_RECORDS_ARRAY
-    // })
+    Engine.addLayer({
+      name: 'layer0',
+      transform: {
+        datum: [0.5, 0],
+        scale: 1,
+        rotation: 0,
+        mirror: 1,
+      },
+      image: PAD_RECORDS_ARRAY
+    })
+    console.log('PAD_RECORDS_ARRAY', PAD_RECORDS_ARRAY)
 
-    // Engine.addLayer({
-    //   name: 'layer1',
-    //   transform: {
-    //     // datum: [0.5, 0],
-    //     // scale: 1,
-    //     // rotation: 0,
-    //     // mirror: true,
-    //   },
-    //   symbols: SYMBOLS,
-    //   macros: [],
-    //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
-    // })
+    Engine.addLayer({
+      name: 'layer1',
+      transform: {
+        // datum: [0.5, 0],
+        // scale: 1,
+        // rotation: 0,
+        // mirror: true,
+      },
+      image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
+    })
+
     const layer2 = Engine.addLayer({
       name: 'layer2',
       image: ARC_RECORDS_ARRAY
     })
 
-    // Engine.addLayer({
-    //   name: 'layer3',
-    //   image: MACRO_RECORDS_ARRAY
-    // })
+    Engine.addLayer({
+      name: 'layer3',
+      image: MACRO_RECORDS_ARRAY
+    })
 
     const macroLayer = Engine.addLayer({
       name: 'overlap',
@@ -551,26 +548,34 @@ function REGLApp(): JSX.Element {
     })
 
 
-    // setInterval(() => {
+    // setTimeout(() => {
     //   // arcs.value.map(a => a.value.polarity = 0)
     //   // arcs.value[0].value.polarity = 0
-    //   layer2.records.map(a => a.value.polarity = Math.random() > 0.5 ? 1 : 0)
+    //   // layer2.records.map(a => a.value.polarity = Math.random() > 0.5 ? 1 : 0)
     //   console.log('triggering update')
     //   // console.log(macroLayer.records.map(a => a.value.polarity))
     //   // macroLayer.records.map(a => a.value.polarity = 0)
     //   macroLayer.records.map(record => {
-    //     if (record.value instanceof Pad && record.value.symbol.value instanceof MacroSymbol) {
-    //       record.value.x = Math.random()
-    //       record.value.y = Math.random()
-    //       record.value.symbol.value.shapes.map(shape => {
-    //         if (shape.value instanceof Pad) {
-    //           shape.value.polarity = Math.random() > 0.5 ? 1 : 0
-    //         }
-    //       })
+    //     if (record instanceof Pad && record.symbol instanceof MacroSymbol) {
+    //       // record.value.x = Math.random()
+    //       // record.value.y = Math.random()
+    //       record.polarity = 0
+    //       record.polarity = 1
+    //       record.polarity = Math.random() > 0.5 ? 1 : 0
+    //       // record.value.symbol.value.shapes.map(shape => {
+    //       //   if (shape.value instanceof Pad) {
+    //       //     shape.value.polarity = Math.random() > 0.5 ? 1 : 0
+    //       //   }
+    //       // })
+    //       // record.value.symbol.value.shapes.map(shape => {
+    //       //   if (shape.value instanceof Pad) {
+    //       //     shape.value.polarity = Math.random() > 0.5 ? 1 : 0
+    //       //   }
+    //       // })
     //     }
     //   })
-    //   console.log(macroLayer.records)
-    //   console.log('triggered update')
+    //   // console.log(macroLayer.records)
+    //   // console.log('triggered update')
     //   Engine.render(true)
     // }, 2000)
 
@@ -588,10 +593,10 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      image: [...SURFACE_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   image: [...SURFACE_RECORDS_ARRAY]
+    // })
 
     // Engine.addLayer({
     //   name: 'layer3',
@@ -628,7 +633,7 @@ function REGLApp(): JSX.Element {
           zIndex: 100,
           // background: 'rgba(0,0,0,0.5)',
         }}>
-          {/* <StatsWidget /> */}
+          <StatsWidget />
           <Button
             onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
             Randomize Colors

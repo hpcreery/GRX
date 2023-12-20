@@ -123,21 +123,21 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
 }
 
 export type TMacroSymbol = {
-  shapes: ptr<Shape>[]
+  shapes: Shape[]
 }
 
 export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public type = FeatureTypeIdentifyer.MACRO_DEFINITION
   public id = ''
   public sym_num = 0
-  public shapes: ptr<Shape>[] = []
+  public shapes: Shape[] = []
 
   constructor(macro: Partial<TMacroSymbol & { id: string }>) {
     Object.assign(this, macro)
   }
 
   public get array(): number[] {
-    return this.shapes.flatMap((shape) => shape.value.array)
+    return this.shapes.flatMap((shape) => shape.array)
   }
 
   public get length(): number {

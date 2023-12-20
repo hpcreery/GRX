@@ -175,7 +175,7 @@ export class RenderEngine {
           window.screen.height * window.devicePixelRatio
         ],
         u_PixelSize: () =>
-          3.7 /
+          4.5 /
           Math.pow(
             window.screen.width *
               window.devicePixelRatio *
@@ -184,7 +184,6 @@ export class RenderEngine {
             0.5
           ),
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
-
       },
 
       attributes: {
@@ -332,7 +331,7 @@ export class RenderEngine {
       const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
       const ypos = height - (e.clientY - offsetY)
-      console.log(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
+      // console.log(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
       for (const layer of this.layers) {
         const data = this.regl.read({
           framebuffer: layer.framebuffer,

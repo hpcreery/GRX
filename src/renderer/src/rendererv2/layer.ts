@@ -8,11 +8,9 @@ import ArcVert from '../shaders/src/Arc.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
 import { vec2, vec3, mat3 } from 'gl-matrix'
-import { IPlotRecord } from './types'
 import * as Records from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-// import ObservableSlim from 'observable-slim'
 import onChange from 'on-change'
 
 import {
@@ -23,7 +21,6 @@ import {
 } from './collections'
 
 import { WorldContext } from './engine'
-import { malloc, ptr } from './utils'
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -127,7 +124,7 @@ interface ShapeTransfrom {
 
 export interface ShapeRendererProps {
   regl: REGL.Regl
-  image: ptr<Records.Shape>[]
+  image: Records.Shape[]
   transform?: Partial<ShapeTransfrom>
 }
 
@@ -138,16 +135,17 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  private dirty = true
-  public readonly records: ptr<Records.Shape>[] = onChange([], (path, value, prev, apply) => {
-    console.log('records changed', path, value, prev)
-    onChange.target(this.records).map((record, i) => record.value.index = i)
+  private dirty = false
+  public readonly records: Records.Shape[] = onChange([], (path, value, prev, apply) => {
+    console.log('records changed', { path, value, prev, apply })
+    onChange.target(this.records).map((record, i) => (record.index = i))
     this.dirty = true
   })
 
   public primativesCollection: PrimitiveShaderCollection
   public surfacesCollection: SurfaceShaderCollection
   public macroCollection: MacroCollection
+  public symbolsCollection: SymbolShaderCollection
 
   public get qtyFeatures(): number {
     return this.records.length
@@ -158,8 +156,7 @@ export class ShapeRenderer {
   private drawLines: REGL.DrawCommand<REGL.DefaultContext>
   private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
   private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
-
-  public symbols: SymbolShaderCollection
+  private drawMacros: (context: REGL.DefaultContext & WorldContext) => this
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -200,7 +197,7 @@ export class ShapeRenderer {
       context: {
         prevQtyFeaturesRef: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => (context.qtyFeaturesRef ?? 1) - 1,
+        ) => context.qtyFeaturesRef ?? 1,
         qtyFeaturesRef: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
         ) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
@@ -208,14 +205,27 @@ export class ShapeRenderer {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height],
+        u_SymbolsTexture: () => this.symbolsCollection.texture,
+        u_SymbolsTextureDimensions: () => [
+          this.symbolsCollection.texture.width,
+          this.symbolsCollection.texture.height
+        ],
         u_IndexOffset: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => this.transform.index * (context.prevQtyFeaturesRef ?? 1),
+        ) => {
+          const ioff =
+            (this.transform.index * (context.qtyFeaturesRef ?? 1)) /
+            (context.prevQtyFeaturesRef ?? 1) || 0
+          // console.log(this.transform.datum.toString(), 'u_IndexOffset', ioff)
+          return ioff
+        },
         u_QtyFeatures: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => context.qtyFeaturesRef ?? 1,
+        ) => {
+          const qtyFeatures = context.qtyFeaturesRef ?? 1
+          // console.log(this.transform.datum.toString(), 'u_QtyFeatures', qtyFeatures)
+          return qtyFeatures
+        },
         u_Polarity: () => this.transform.polarity,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
@@ -458,9 +468,18 @@ export class ShapeRenderer {
       instances: 1
     })
 
+    this.drawMacros = (context: REGL.DefaultContext & WorldContext): this => {
+      this.macroCollection.macros.forEach((macro) => {
+        macro.records.forEach((record) => {
+          macro.renderer.updateTransformFromPad(record)
+          macro.renderer.render(context)
+        })
+      })
+      return this
+    }
 
-    this.records.push(...(props.image ?? []))
-    this.symbols = new SymbolShaderCollection({
+    this.records.push(...props.image)
+    this.symbolsCollection = new SymbolShaderCollection({
       regl: this.regl,
       records: this.records
     })
@@ -476,7 +495,6 @@ export class ShapeRenderer {
       regl: this.regl,
       records: this.records
     })
-
   }
 
   public updateTransform(inputMatrix: mat3): void {
@@ -488,11 +506,10 @@ export class ShapeRenderer {
     mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
   }
 
-
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.transform.update(context.transform.matrix)
     if (this.dirty) {
-      this.symbols.refresh()
+      this.symbolsCollection.refresh()
       this.primativesCollection.refresh()
       this.surfacesCollection.refresh()
       this.macroCollection.refresh()
@@ -503,9 +520,7 @@ export class ShapeRenderer {
       this.drawArcs()
       this.drawLines()
       this.drawSurfaces(this.surfacesCollection.surfaces.length)
-      this.macroCollection.macros.forEach((macro) => {
-        macro.render(context)
-      })
+      this.drawMacros(context)
     })
   }
 }
@@ -606,41 +621,19 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
-interface MacroRendererProps extends Omit<ShapeRendererProps, 'image'|'transform'> {
-  pad: ptr<Records.Pad>
-}
+interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {}
 
 export class MacroRenderer extends ShapeRenderer {
-  public pad: ptr<Records.Pad> = malloc(new Records.Pad({}))
   constructor(props: MacroRendererProps) {
-    if (!(props.pad.value.symbol.value instanceof Symbols.MacroSymbol)) {
-      throw new Error('MacroRenderer requires a Shape Record with a MacroSymbol')
-    }
-    const image = props.pad.value.symbol.value.shapes
-    super({ ...props, image })
+    super(props)
+  }
 
-    this.pad = props.pad
-    // !TODO: verify changin the record index updates the macro index
-    Object.assign(this.transform, {
-      record: props.pad,
-      get datum() {
-        return vec2.fromValues(this.record.value.x, this.record.value.y)
-      },
-      get rotation() {
-        return this.record.value.rotation
-      },
-      get scale() {
-        return this.record.value.resize_factor
-      },
-      get mirror() {
-        return this.record.value.mirror
-      },
-      get index() {
-        return this.record.value.index
-      },
-      get polarity() {
-        return this.record.value.polarity
-      }
-    })
+  public updateTransformFromPad(pad: Records.Pad): void {
+    this.transform.datum = vec2.fromValues(pad.x, pad.y)
+    this.transform.rotation = pad.rotation
+    this.transform.scale = pad.resize_factor
+    this.transform.mirror = pad.mirror
+    this.transform.index = pad.index
+    this.transform.polarity = pad.polarity
   }
 }
