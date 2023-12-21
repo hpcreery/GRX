@@ -19,7 +19,7 @@ const { SYMBOL_PARAMETERS } = Symbols
 // }
 
 export class PrimitiveShaderCollection {
-  public records: Records.Shape[] = []
+  private records: Records.Shape[] = []
 
   public pads: {
     buffer: REGL.Buffer
@@ -104,7 +104,7 @@ export class PrimitiveShaderCollection {
 }
 
 export class SurfaceShaderCollection {
-  public records: Records.Shape[] = []
+  private records: Records.Shape[] = []
   private regl: REGL.Regl
   public surfaces: {
     contourTexture: REGL.Texture2D
@@ -184,7 +184,7 @@ export class SymbolCollection {
 }
 
 export class SymbolShaderCollection extends SymbolCollection {
-  public records: Records.Shape[] = []
+  private records: Records.Shape[] = []
   public texture: REGL.Texture2D
 
   constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
@@ -244,7 +244,7 @@ export class SymbolShaderCollection extends SymbolCollection {
 }
 
 export class MacroCollection {
-  public records: Records.Shape[] = []
+  private records: Records.Shape[] = []
   public macros: Map<
     string,
     {

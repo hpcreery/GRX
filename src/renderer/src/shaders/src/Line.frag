@@ -93,8 +93,7 @@ float draw(float dist) {
   if (dist > 0.0) {
     discard;
   }
-  float scale = abs(u_InverseTransform[0][0]);
-  if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
+  if (dist * float(u_OutlineMode) < -u_PixelSize) {
     discard;
   }
   // if(outline) {

@@ -170,15 +170,7 @@ export class RenderEngine {
           window.screen.width * window.devicePixelRatio,
           window.screen.height * window.devicePixelRatio
         ],
-        u_PixelSize: () =>
-          4.5 /
-          Math.pow(
-            window.screen.width *
-              window.devicePixelRatio *
-              window.screen.height *
-              window.devicePixelRatio,
-            0.5
-          ),
+        u_PixelSize: () => .0023 * window.devicePixelRatio / this.transform.zoom,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
       },
 
@@ -388,10 +380,11 @@ export class RenderEngine {
     mat3.projection(this.transform.matrix, width, height)
     mat3.translate(this.transform.matrix, this.transform.matrix, position)
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
     mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
     mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width / 2, width / height / 2])
 
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 

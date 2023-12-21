@@ -66,8 +66,7 @@ float draw(float dist) {
   if (dist > 0.0) {
     discard;
   }
-  float scale = abs(u_InverseTransform[0][0]);
-  if (dist * float(u_OutlineMode) < -scale * u_PixelSize) {
+  if (dist * float(u_OutlineMode) < -u_PixelSize) {
     discard;
   }
   // if(outline) {
@@ -91,7 +90,7 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
-  float dist = drawShape(FragCoord, int(v_SymNum));
+  float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
 
   #pragma glslify: import('../modules/Debug.glsl')
 
