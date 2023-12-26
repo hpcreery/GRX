@@ -1,11 +1,6 @@
 import React from 'react'
 import '../App.css'
-import {
-  MacroSymbol,
-  STANDARD_SYMBOLS,
-  STANDARD_SYMBOLS_MAP,
-  StandardSymbol
-} from './symbols'
+import { MacroSymbol, STANDARD_SYMBOLS, STANDARD_SYMBOLS_MAP, StandardSymbol } from './symbols'
 import {
   Pad_Record,
   Line_Record,
@@ -13,7 +8,7 @@ import {
   Surface_Record,
   Contour_Record,
   Contour_Arc_Segment_Record,
-  Contour_Line_Segment_Record,
+  Contour_Line_Segment_Record
 } from './records'
 import { RenderEngine } from './engine'
 import { Button, Switch, Badge } from '@mantine/core'
@@ -21,6 +16,9 @@ import { IPlotRecord, ISymbolRecord } from './types'
 import { ptr, malloc } from './utils'
 import { vec2 } from 'gl-matrix'
 import { PointerEvent } from './engine'
+
+import { test } from '../../lib/gdsii/parser2/parser'
+import { addGDSII } from '../../lib/gdsii/parser2/converter'
 
 // N == Number of Shapes
 const N_PADS = 1000
@@ -33,83 +31,80 @@ const SURFACE_RECORDS_ARRAY = new Array<IPlotRecord>(N_SURFACES)
   .fill(new Surface_Record({}))
   .map((_, i) => {
     return new Surface_Record({
-      polarity: 1,
+      polarity: 1
     }).addContours([
       new Contour_Record({
         poly_type: 1,
         // Start point.
         xs: 0 + i * 0.1,
-        ys: 0 + i * 0.1,
-      })
-        .addSegments([
-          // new Contour_Line_Segment_Record({
-          //   x: 0.2 + i,
-          //   y: -0.2 + i,
-          // }),
-          new Contour_Arc_Segment_Record({
-            x: 0.02 + i * 0.1,
-            y: -0.02 + i * 0.1,
-            xc: 0.015 + i * 0.1,
-            yc: -0.005 + i * 0.1,
-            // computer the center coordinates of the arc with a radius of 0.1
-            clockwise: 0,
-          }),
-          new Contour_Line_Segment_Record({
-            x: 0.05 + i * 0.1,
-            y: -0.02 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: 0.05 + i * 0.1,
-            y: 0.05 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: -0.05 + i * 0.1,
-            y: 0.05 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: -0.05 + i * 0.1,
-            y: -0.05 + i * 0.1,
-          }),
-          // new Contour_Arc_Segment_Record({
-          //   x: -0.5 + i,
-          //   y: -0.5 + i,
-          //   xc: -0.5 + i,
-          //   yc: 0 + i,
-          //   // computer the center coordinates of the arc with a radius of 0.1
-          //   clockwise: 0,
-          // }),
-          new Contour_Line_Segment_Record({
-            x: 0 + i * 0.1,
-            y: 0 + i * 0.1,
-          }),
-        ]),
+        ys: 0 + i * 0.1
+      }).addSegments([
+        // new Contour_Line_Segment_Record({
+        //   x: 0.2 + i,
+        //   y: -0.2 + i,
+        // }),
+        new Contour_Arc_Segment_Record({
+          x: 0.02 + i * 0.1,
+          y: -0.02 + i * 0.1,
+          xc: 0.015 + i * 0.1,
+          yc: -0.005 + i * 0.1,
+          // computer the center coordinates of the arc with a radius of 0.1
+          clockwise: 0
+        }),
+        new Contour_Line_Segment_Record({
+          x: 0.05 + i * 0.1,
+          y: -0.02 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: 0.05 + i * 0.1,
+          y: 0.05 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: -0.05 + i * 0.1,
+          y: 0.05 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: -0.05 + i * 0.1,
+          y: -0.05 + i * 0.1
+        }),
+        // new Contour_Arc_Segment_Record({
+        //   x: -0.5 + i,
+        //   y: -0.5 + i,
+        //   xc: -0.5 + i,
+        //   yc: 0 + i,
+        //   // computer the center coordinates of the arc with a radius of 0.1
+        //   clockwise: 0,
+        // }),
+        new Contour_Line_Segment_Record({
+          x: 0 + i * 0.1,
+          y: 0 + i * 0.1
+        })
+      ]),
       new Contour_Record({
         poly_type: 0,
         // Start point.
         xs: 0.04 + i * 0.1,
-        ys: 0.04 + i * 0.1,
-      })
-        .addSegments([
-          new Contour_Line_Segment_Record({
-            x: 0.04 + i * 0.1,
-            y: 0.03 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: 0.03 + i * 0.1,
-            y: 0.03 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: 0.03 + i * 0.1,
-            y: 0.04 + i * 0.1,
-          }),
-          new Contour_Line_Segment_Record({
-            x: 0.04 + i * 0.1,
-            y: 0.04 + i * 0.1,
-          }),
-        ])
+        ys: 0.04 + i * 0.1
+      }).addSegments([
+        new Contour_Line_Segment_Record({
+          x: 0.04 + i * 0.1,
+          y: 0.03 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: 0.03 + i * 0.1,
+          y: 0.03 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: 0.03 + i * 0.1,
+          y: 0.04 + i * 0.1
+        }),
+        new Contour_Line_Segment_Record({
+          x: 0.04 + i * 0.1,
+          y: 0.04 + i * 0.1
+        })
+      ])
     ])
   })
-
 
 const SYMBOLS: ptr<StandardSymbol>[] = []
 
@@ -190,7 +185,6 @@ const square_sym_ptr = malloc(
 )
 SYMBOLS.push(square_sym_ptr)
 
-
 const square2_sym_ptr = malloc(
   new StandardSymbol({
     id: 'round', // id
@@ -215,37 +209,33 @@ const square2_sym_ptr = malloc(
 )
 SYMBOLS.push(square2_sym_ptr)
 
-
-const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS)
-  .fill(new Pad_Record({}))
-  .map((_, i) => {
-    return new Pad_Record({
-      // Center point.
-      x: (Math.random() - 0.5) * 1,
-      y: (Math.random() - 0.5) * 1,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: i % Object.keys(STANDARD_SYMBOLS).length,
-      symbol: SYMBOLS[i % SYMBOLS.length],
-      // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
-      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-      resize_factor: Math.random() + 1,
-      // Polarity. 0 = negative, 1 = positive
-      // polarity: i % 2,
-      polarity: Math.random() > 0.5 ? 1 : 0,
-      // Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
-      // rotation: Math.random() * 360,
-      rotation: 10,
-      // 0 = no mirror, 1 = mirror
-      mirror: 0
-    })
+const PAD_RECORDS_ARRAY = new Array<IPlotRecord>(N_PADS).fill(new Pad_Record({})).map((_, i) => {
+  return new Pad_Record({
+    // Center point.
+    x: (Math.random() - 0.5) * 1,
+    y: (Math.random() - 0.5) * 1,
+    // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    // sym_num: i % Object.keys(STANDARD_SYMBOLS).length,
+    symbol: SYMBOLS[i % SYMBOLS.length],
+    // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
+    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    resize_factor: Math.random() + 1,
+    // Polarity. 0 = negative, 1 = positive
+    // polarity: i % 2,
+    polarity: Math.random() > 0.5 ? 1 : 0,
+    // Pad orientation (degrees)
+    // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+    // rotation: Math.random() * 360,
+    rotation: 10,
+    // 0 = no mirror, 1 = mirror
+    mirror: 0
   })
+})
 
 const LINE_RECORDS_ARRAY_NEG = new Array<IPlotRecord>(N_LINES)
   .fill(new Line_Record({}))
   .map((_, i) => {
     return new Line_Record({
-
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -261,7 +251,7 @@ const LINE_RECORDS_ARRAY_NEG = new Array<IPlotRecord>(N_LINES)
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
-      polarity: 0,
+      polarity: 0
     })
   })
 
@@ -284,64 +274,63 @@ const LINE_RECORDS_ARRAY_POS = new Array<IPlotRecord>(N_LINES)
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
-      polarity: 1,
+      polarity: 1
     })
   })
 
+const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS).fill(new Arc_Record({})).map((_, i) => {
+  const start_angle = Math.abs(Math.random()) * 360
+  const end_angle = Math.abs(Math.random()) * 360
+  const radius = Math.abs(Math.random()) * 0.1
+  const center_x = (Math.random() - 0.5) * 1
+  const center_y = (Math.random() - 0.5) * 1
+  function degreesToRadians(degrees: number): number {
+    return degrees * (Math.PI / 180)
+  }
+  return new Arc_Record({
+    // Center point.
+    xc: center_x,
+    yc: center_y,
 
-const ARC_RECORDS_ARRAY = new Array<IPlotRecord>(N_ARCS)
-  .fill(new Arc_Record({}))
-  .map((_, i) => {
-    const start_angle = Math.abs(Math.random()) * 360
-    const end_angle = Math.abs(Math.random()) * 360
-    const radius = Math.abs(Math.random()) * 0.1
-    const center_x = (Math.random() - 0.5) * 1
-    const center_y = (Math.random() - 0.5) * 1
-    function degreesToRadians(degrees: number): number {
-      return degrees * (Math.PI / 180);
-    }
-    return new Arc_Record({
-      // Center point.
-      xc: center_x,
-      yc: center_y,
+    // Start point.
+    xs: center_x + Math.cos(degreesToRadians(start_angle)) * radius,
+    ys: center_y + Math.sin(degreesToRadians(start_angle)) * radius,
 
-      // Start point.
-      xs: center_x + Math.cos(degreesToRadians(start_angle)) * radius,
-      ys: center_y + Math.sin(degreesToRadians(start_angle)) * radius,
+    // End point.
+    xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
+    ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
 
-      // End point.
-      xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
-      ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
-
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
-      symbol: round_sym_ptr,
-      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-      // Polarity. 0 = negative, 1 = positive
-      polarity: 1,
-      // polarity: Math.random() > 0.5 ? 1 : 0,
-      clockwise: Math.random() > 0.5 ? 1 : 0,
-      // clockwise: 0,
-    })
+    // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    // sym_num: STANDARD_SYMBOLS_MAP.Round,
+    symbol: round_sym_ptr,
+    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    // Polarity. 0 = negative, 1 = positive
+    polarity: 1,
+    // polarity: Math.random() > 0.5 ? 1 : 0,
+    clockwise: Math.random() > 0.5 ? 1 : 0
+    // clockwise: 0,
   })
+})
 
 const MACROS_ARRAY = new Array<ptr<ISymbolRecord>>(1)
   .fill(malloc(new MacroSymbol({})))
   .map((_, i) => {
-    return malloc(new MacroSymbol({
-      id: 'macro' + i, // id
-      shapes: [
-        PAD_RECORDS_ARRAY[i],
-        PAD_RECORDS_ARRAY[i + 1],
-        LINE_RECORDS_ARRAY_POS[i],
-        LINE_RECORDS_ARRAY_POS[i + 1],
-        LINE_RECORDS_ARRAY_NEG[i],
-        LINE_RECORDS_ARRAY_NEG[i + 1],
-        ARC_RECORDS_ARRAY[i],
-        ARC_RECORDS_ARRAY[i + 1],
-        SURFACE_RECORDS_ARRAY[i]
-      ]
-    }))
+    return malloc(
+      new MacroSymbol({
+        id: 'macro' + i, // id
+        shapes: [
+          PAD_RECORDS_ARRAY[i],
+          PAD_RECORDS_ARRAY[i + 1],
+          LINE_RECORDS_ARRAY_POS[i],
+          LINE_RECORDS_ARRAY_POS[i + 1],
+          LINE_RECORDS_ARRAY_NEG[i],
+          LINE_RECORDS_ARRAY_NEG[i + 1],
+          ARC_RECORDS_ARRAY[i],
+          ARC_RECORDS_ARRAY[i + 1],
+          SURFACE_RECORDS_ARRAY[i]
+        ]
+      })
+    )
   })
 
 const MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(N_MACROS)
@@ -368,72 +357,37 @@ const MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(N_MACROS)
     })
   })
 
-  const large_square_sym_ptr = malloc(
-    new StandardSymbol({
-      id: 'round', // id
-      symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
-      width: 0.5, // width, square side, diameter
-      height: 0.5, // height
-      corner_radius: 0.002, // corner radius
-      corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-      outer_dia: 0.01, // — Outer diameter of the shape
-      inner_dia: 0.008, // — Inner diameter of the shape
-      line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-      line_length: 0.02, // — Line length of the shape (applies to the whole shape)
-      angle: 0, // — Angle of the spoke from 0 degrees
-      gap: 0.001, // — Gap
-      num_spokes: 2, // — Number of spokes
-      round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-      cut_size: 0, // — Size of the cut ( see corner radius )
-      ring_width: 0.001, // — Ring width
-      ring_gap: 0.004, // — Ring gap
-      num_rings: 2 // — Number of rings
-    })
-  )
-
-const OVERLAPPING_PADS_ARRAY = new Array<Pad_Record>(3)
-  .fill(new Pad_Record({}))
-  .map((_, i) => {
-    return new Pad_Record({
-      // Center point.
-      x: i / 8,
-      y: i / 9,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
-      symbol: large_square_sym_ptr,
-      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-      // resize_factor: Math.random() + 1,
-      resize_factor: 1,
-      // Polarity. 0 = negative, 1 = positive
-      polarity: 1,
-      // Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
-      // rotation: Math.random() * 360,
-      rotation: 0,
-      // 0 = no mirror, 1 = mirror
-      mirror: 0
-    })
+const large_square_sym_ptr = malloc(
+  new StandardSymbol({
+    id: 'round', // id
+    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.5, // width, square side, diameter
+    height: 0.5, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.01, // — Outer diameter of the shape
+    inner_dia: 0.008, // — Inner diameter of the shape
+    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
   })
+)
 
-const OVERLAPPING_MACROS_ARRAY = new Array<ptr<ISymbolRecord>>(1)
-  .fill(malloc(new MacroSymbol({})))
-  .map((_, i) => {
-    return malloc(new MacroSymbol({
-      id: 'macro' + i, // id
-      shapes: OVERLAPPING_PADS_ARRAY
-    }))
-  })
-
-const OVERLAPPING_MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(4)
-.fill(new Pad_Record({}))
-.map((_, i) => {
+const OVERLAPPING_PADS_ARRAY = new Array<Pad_Record>(3).fill(new Pad_Record({})).map((_, i) => {
   return new Pad_Record({
     // Center point.
-    x: i / 10,
-    y: -i / 10,
+    x: i / 8,
+    y: i / 9,
     // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
     // sym_num: STANDARD_SYMBOLS_MAP.Round,
-    symbol: OVERLAPPING_MACROS_ARRAY[0],
+    symbol: large_square_sym_ptr,
     // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
     // resize_factor: Math.random() + 1,
     resize_factor: 1,
@@ -448,8 +402,40 @@ const OVERLAPPING_MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(4)
   })
 })
 
+const OVERLAPPING_MACROS_ARRAY = new Array<ptr<ISymbolRecord>>(1)
+  .fill(malloc(new MacroSymbol({})))
+  .map((_, i) => {
+    return malloc(
+      new MacroSymbol({
+        id: 'macro' + i, // id
+        shapes: OVERLAPPING_PADS_ARRAY
+      })
+    )
+  })
 
-
+const OVERLAPPING_MACRO_RECORDS_ARRAY = new Array<IPlotRecord>(4)
+  .fill(new Pad_Record({}))
+  .map((_, i) => {
+    return new Pad_Record({
+      // Center point.
+      x: i / 10,
+      y: -i / 10,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      symbol: OVERLAPPING_MACROS_ARRAY[0],
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // resize_factor: Math.random() + 1,
+      resize_factor: 1,
+      // Polarity. 0 = negative, 1 = positive
+      polarity: 1,
+      // Pad orientation (degrees)
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // rotation: Math.random() * 360,
+      rotation: 0,
+      // 0 = no mirror, 1 = mirror
+      mirror: 0
+    })
+  })
 
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
@@ -459,7 +445,7 @@ function REGLApp(): JSX.Element {
     const Engine = new RenderEngine({
       container: containerRef.current,
       attributes: {
-        antialias: false,
+        antialias: false
       }
     })
 
@@ -472,41 +458,39 @@ function REGLApp(): JSX.Element {
     // SYMBOLS.forEach(s => Engine.addSymbol(s.value))
     // SYMBOLS.forEach(s => s.value.symbol = STANDARD_SYMBOLS_MAP.Round)
 
-
     // Engine.addDictionary({}_)
 
-
-    Engine.addLayer({
-      name: 'origin',
-      color: [1, 1, 1],
-      transform: {
-        datum: [0, 0],
-        scale: 1,
-        rotation: 0,
-      },
-      symbols: [round_sym_ptr],
-      macros: [],
-      image: [
-        new Pad_Record({
-          // Center point.
-          x: 0,
-          y: 0,
-          // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-          // sym_num: STANDARD_SYMBOLS_MAP.Round,
-          symbol: round_sym_ptr,
-          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-          // resize_factor: Math.random() + 1,
-          resize_factor: 1,
-          // Polarity. 0 = negative, 1 = positive
-          polarity: 1,
-          // Pad orientation (degrees)
-          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
-          rotation: 0,
-          // 0 = no mirror, 1 = mirror
-          mirror: 0
-        })
-      ]
-    })
+    // Engine.addLayer({
+    //   name: 'origin',
+    //   color: [1, 1, 1],
+    //   transform: {
+    //     datum: [0, 0],
+    //     scale: 1,
+    //     rotation: 0,
+    //   },
+    //   symbols: [round_sym_ptr],
+    //   macros: [],
+    //   image: [
+    //     new Pad_Record({
+    //       // Center point.
+    //       x: 0,
+    //       y: 0,
+    //       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+    //       // sym_num: STANDARD_SYMBOLS_MAP.Round,
+    //       symbol: round_sym_ptr,
+    //       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    //       // resize_factor: Math.random() + 1,
+    //       resize_factor: 1,
+    //       // Polarity. 0 = negative, 1 = positive
+    //       polarity: 1,
+    //       // Pad orientation (degrees)
+    //       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+    //       rotation: 0,
+    //       // 0 = no mirror, 1 = mirror
+    //       mirror: 0
+    //     })
+    //   ]
+    // })
 
     // Engine.addLayer({
     //   name: 'layer0',
@@ -514,7 +498,7 @@ function REGLApp(): JSX.Element {
     //     datum: [0.5, 0],
     //     scale: 1,
     //     rotation: 0,
-    //     mirror: true,
+    //     mirror: true
     //   },
     //   symbols: SYMBOLS,
     //   macros: [],
@@ -541,37 +525,38 @@ function REGLApp(): JSX.Element {
     //   image: [...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      symbols: SYMBOLS,
-      macros: [],
-      image: MACRO_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   symbols: SYMBOLS,
+    //   macros: [],
+    //   image: MACRO_RECORDS_ARRAY
+    // })
 
-    Engine.addLayer({
-      name: 'overlap',
-      symbols: [large_square_sym_ptr],
-      macros: [],
-      image: OVERLAPPING_MACRO_RECORDS_ARRAY
-    })
-
+    // Engine.addLayer({
+    //   name: 'overlap',
+    //   symbols: [large_square_sym_ptr],
+    //   macros: [],
+    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // })
 
     // console.log(Engine.symbols.records.get('round')?.value)
     // Engine.symbols.refresh()
     // Engine.render(true)
-
 
     // SYMBOLS_ARRAY.fill(new Symbol({}))
 
     // Engine.addLayer({
     //   name: 'layer2',
     //   symbols: SYMBOLS_ARRAY,
+    //   macros: [],
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
     // Engine.addLayer({
     //   name: 'layer3',
-    //   data: [...SURFACE_RECORDS_ARRAY]
+    //   symbols: [],
+    //   macros: [],
+    //   image: [...SURFACE_RECORDS_ARRAY]
     // })
 
     // Engine.addLayer({
@@ -579,15 +564,23 @@ function REGLApp(): JSX.Element {
     //   set: [...SURFACE_RECORDS_ARRAY]
     // })
 
-    Engine.pointer.addEventListener('pointerdown', console.log)
+    test().then((bnf) => {
+      console.log(bnf)
+      addGDSII(Engine, bnf)
+    })
+    // addGDSII(Engine, {})
+    // console.log('Engine', Engine)
+    // Engine.render(true)
 
     setEngine(Engine)
+    // engine?.render(true)
+
+    // Engine.pointer.addEventListener('pointerdown', console.log)
 
     return () => {
-      Engine.pointer.removeEventListener('pointerdown', console.log)
+      // Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }
-
   }, [])
 
   return (
@@ -601,31 +594,43 @@ function REGLApp(): JSX.Element {
           position: 'absolute',
           top: 0,
           left: 0,
-          zIndex: 0,
+          zIndex: 0
         }}
       />
-      {engine ?
-        <div style={{
-          zIndex: 100,
-          // background: 'rgba(0,0,0,0.5)',
-        }}>
+      {engine ? (
+        <div
+          style={{
+            zIndex: 100
+            // background: 'rgba(0,0,0,0.5)',
+          }}
+        >
           {/* <StatsWidget /> */}
           <Button
-            onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
+            onClick={(): void => {
+              engine.layers.map((l) => (l.color = [Math.random(), Math.random(), Math.random()])) &&
+                engine.render(true)
+            }}
+          >
             Randomize Colors
           </Button>
           <br />
           Outline Mode
           <Switch
             defaultChecked={engine.settings.OUTLINE_MODE}
-            onChange={(e): void => { engine.settings.OUTLINE_MODE = e.target.checked }} />
+            onChange={(e): void => {
+              engine.settings.OUTLINE_MODE = e.target.checked
+            }}
+          />
           <br />
           Zoom To Cursor
           <Switch
             defaultChecked={engine.settings.ZOOM_TO_CURSOR}
-            onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
+            onChange={(e): void => {
+              engine.settings.ZOOM_TO_CURSOR = e.target.checked
+            }}
+          />
         </div>
-        : null}
+      ) : null}
     </>
   )
 }
@@ -660,26 +665,26 @@ function StatsWidget(): JSX.Element {
     requestAnimationFrame(updateFPS)
   }, [])
 
-
   return (
-    <div style={{
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      padding: 10,
-      background: 'rgba(0,0,0,0.5)',
-      color: 'white',
-      fontFamily: 'monospace',
-      fontSize: 12,
-      pointerEvents: 'none',
-      zIndex: 100,
-      userSelect: 'none',
-    }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        padding: 10,
+        background: 'rgba(0,0,0,0.5)',
+        color: 'white',
+        fontFamily: 'monospace',
+        fontSize: 12,
+        pointerEvents: 'none',
+        zIndex: 100,
+        userSelect: 'none'
+      }}
+    >
       <div>FPS: {fps}</div>
       <div>Avg FPS: {avgFPS}</div>
     </div>
   )
 }
-
 
 export default REGLApp
