@@ -1,5 +1,6 @@
 import { ISymbolRecord, FeatureTypeIdentifyer, toMap } from './types'
-import { Shape } from './records'
+import { Shape } from './shapes'
+import { ptr } from './utils'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -143,3 +144,5 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
     return this.shapes.length
   }
 }
+
+export type Symbol = StandardSymbol | MacroSymbol

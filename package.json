@@ -60,6 +60,7 @@
     "glslify": "^7.1.1",
     "mantine-contextmenu": "^1.2.5",
     "ndarray": "^1.0.19",
+    "on-change": "^5.0.0",
     "pixi-graphpaper": "^2.0.1",
     "pixi-viewport": "^5.0.1",
     "pixi.js": "^7.2.4",

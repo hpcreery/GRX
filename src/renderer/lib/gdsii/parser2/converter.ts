@@ -9,14 +9,14 @@ import {
   StandardSymbol
 } from '../../../src/rendererv2/symbols'
 import {
-  Pad_Record,
-  Line_Record,
-  Arc_Record,
-  Surface_Record,
-  Contour_Record,
-  Contour_Arc_Segment_Record,
-  Contour_Line_Segment_Record
-} from '../../../src/rendererv2/records'
+  Pad,
+  Line,
+  Arc,
+  Surface,
+  Contour,
+  Contour_Arc_Segment,
+  Contour_Line_Segment
+} from '../../../src/rendererv2/shapes'
 import { RenderEngine } from '../../../src/rendererv2/engine'
 import { IPlotRecord, ISymbolRecord } from '../../../src/rendererv2/types'
 
@@ -27,8 +27,8 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
   // const scale = gdsii.UNITS.userUnit / gdsii.UNITS.databaseUnit
   console.log('scale', scale)
 
-  // const cells = new Map<string, Array<Surface_Record>>()
-  // const layers = new Map<number, Array<Surface_Record>>()
+  // const cells = new Map<string, Array<Surface>>()
+  // const layers = new Map<number, Array<Surface>>()
   // const macros: MacroSymbol[] = []
   // const symbols: ISymbolRecord[] = []
 
@@ -39,7 +39,7 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
         case 'box':
         case 'boundary':
           console.log('boundary', element)
-          let contour = new Contour_Record({
+          let contour = new Contour({
             poly_type: 1,
             // Start point.
             xs: element.el.XY[0].x * scale,
@@ -47,20 +47,20 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
           })
           for (const xy of element.el.XY) {
             contour = contour.addSegments([
-              new Contour_Line_Segment_Record({
+              new Contour_Line_Segment({
                 x: xy.x * scale,
                 y: xy.y * scale
               })
             ])
           }
           contour = contour.addSegments([
-            new Contour_Line_Segment_Record({
+            new Contour_Line_Segment({
               x: element.el.XY[0].x * scale,
               y: element.el.XY[0].y * scale
             })
           ])
           shapes.push(
-            new Surface_Record({
+            new Surface({
               polarity: 1
             }).addContour(contour)
           )
@@ -94,34 +94,34 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
     })
   }
 
-  // const SURFACE_RECORDS_ARRAY: Array<Surface_Record> = []
-  // SURFACE_RECORDS_ARRAY.push(
-  //   new Surface_Record({
+  // const SURFACES_ARRAY: Array<Surface> = []
+  // SURFACES_ARRAY.push(
+  //   new Surface({
   //     polarity: 1
   //   }).addContours([
-  //     new Contour_Record({
+  //     new Contour({
   //       poly_type: 1,
   //       // Start point.
   //       xs: 0,
   //       ys: 0
   //     }).addSegments([
-  //       new Contour_Line_Segment_Record({
+  //       new Contour_Line_Segment({
   //         x: 0.05,
   //         y: -0.02
   //       }),
-  //       new Contour_Line_Segment_Record({
+  //       new Contour_Line_Segment({
   //         x: 0.05,
   //         y: 0.05
   //       }),
-  //       new Contour_Line_Segment_Record({
+  //       new Contour_Line_Segment({
   //         x: -0.05,
   //         y: 0.05
   //       }),
-  //       new Contour_Line_Segment_Record({
+  //       new Contour_Line_Segment({
   //         x: -0.05,
   //         y: -0.05
   //       }),
-  //       new Contour_Line_Segment_Record({
+  //       new Contour_Line_Segment({
   //         x: 0,
   //         y: 0
   //       })
@@ -132,6 +132,6 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
   //   name: 'gdslayer3',
   //   symbols: [],
   //   macros: [],
-  //   image: [...SURFACE_RECORDS_ARRAY]
+  //   image: [...SURFACES_ARRAY]
   // })
 }

@@ -1,10 +1,6 @@
 import REGL from 'regl'
-import { mat3, vec2, vec3 } from 'gl-matrix'
-import * as Symbols from './symbols'
-import * as Records from './records'
+import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
-import { ptr, malloc } from './utils'
-import { StandardSymbolShaderCollection } from './collections'
 
 interface WorldProps {}
 
@@ -15,8 +11,6 @@ interface WorldUniforms {
   u_Screen: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
-  u_SymbolsTexture: REGL.Texture2D
-  u_SymbolsTextureDimensions: vec2
 }
 
 interface WorldAttributes {
@@ -26,8 +20,6 @@ interface WorldAttributes {
 export interface WorldContext {
   settings: RenderSettings
   transform: RenderTransform
-  // transform: mat3
-  // inverseTransform: mat3
   resolution: vec2
 }
 
@@ -38,10 +30,6 @@ interface ScreenRenderProps {
 interface ScreenRenderUniforms {
   render_tex: REGL.Framebuffer
 }
-
-// interface FrameBufferRenderProps {
-//   frameBuffer: REGL.Framebuffer
-// }
 
 export interface RenderEngineConfig {
   container: HTMLElement
@@ -147,12 +135,9 @@ export class RenderEngine {
 
   regl: REGL.Regl
   world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
-  public symbols: StandardSymbolShaderCollection
 
-  // renderToFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderProps>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
-  // private layer_fbo: REGL.Framebuffer2D
 
   constructor({ container, attributes }: RenderEngineConfig) {
     this.CONTAINER = container
@@ -168,14 +153,6 @@ export class RenderEngine {
     this.regl.clear({
       depth: 0
     })
-
-    // this.layer_fbo = this.regl.framebuffer()
-    // this.regl.clear({
-    //   framebuffer: this.layer_fbo,
-    //   depth: 0
-    // })
-
-    this.symbols = new StandardSymbolShaderCollection({ regl: this.regl })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
       context: {
@@ -193,19 +170,8 @@ export class RenderEngine {
           window.screen.width * window.devicePixelRatio,
           window.screen.height * window.devicePixelRatio
         ],
-        u_PixelSize: () =>
-          3.7 /
-          Math.pow(
-            window.screen.width *
-              window.devicePixelRatio *
-              window.screen.height *
-              window.devicePixelRatio,
-            0.5
-          ),
+        u_PixelSize: () => .0023 * window.devicePixelRatio / this.transform.zoom,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
-
-        u_SymbolsTexture: () => this.symbols.texture,
-        u_SymbolsTextureDimensions: () => [this.symbols.texture.width, this.symbols.texture.height]
       },
 
       attributes: {
@@ -228,15 +194,6 @@ export class RenderEngine {
       count: 6,
       offset: 0
     })
-
-    // this.renderToFrameBuffer = this.regl<
-    //   Record<string, never>,
-    //   Record<string, never>,
-    //   FrameBufferRenderProps
-    // >({
-    //   framebuffer: (_context: REGL.DefaultContext, props: FrameBufferRenderProps) =>
-    //     props.frameBuffer
-    // })
 
     this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
       {
@@ -288,8 +245,6 @@ export class RenderEngine {
       }
     )
 
-    // mat3.identity(this.transform.matrix)
-    // mat3.identity(this.transform.matrixInverse)
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.addControls()
     this.render()
@@ -297,7 +252,6 @@ export class RenderEngine {
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     // new ResizeObserver(this.resize.bind(this)).observe(this.CONTAINER)
 
-    // this.renderTick()
   }
 
   private resize(): void {
@@ -365,7 +319,7 @@ export class RenderEngine {
       const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
       const ypos = height - (e.clientY - offsetY)
-      console.log(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
+      // console.log(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
       for (const layer of this.layers) {
         const data = this.regl.read({
           framebuffer: layer.framebuffer,
@@ -401,26 +355,18 @@ export class RenderEngine {
     color,
     context,
     type,
-    symbols,
     transform,
-    macros,
     image
-  }: Omit<LayerRendererProps, 'regl'> & {
-    symbols: ptr<Symbols.StandardSymbol>[]
-    macros: ptr<Symbols.MacroSymbol>[]
-    image: Records.Shape[]
-  }): LayerRenderer {
+  }: Omit<LayerRendererProps, 'regl'>): LayerRenderer {
     const layer = new LayerRenderer({
       name,
+      image,
       color,
       context,
       type,
       transform,
       regl: this.regl
     })
-    this.symbols.insert(symbols)
-    console.log(this.symbols.records)
-    layer.update(image)
     this.layers.push(layer)
     return layer
   }
@@ -434,10 +380,11 @@ export class RenderEngine {
     mat3.projection(this.transform.matrix, width, height)
     mat3.translate(this.transform.matrix, this.transform.matrix, position)
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
     mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
     mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width / 2, width / height / 2])
 
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
