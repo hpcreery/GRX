@@ -498,42 +498,42 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    Engine.addLayer({
-      name: 'layer0',
-      transform: {
-        datum: [0.5, 0],
-        scale: 1,
-        rotation: 0,
-        mirror: 1
-      },
-      image: PAD_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer0',
+    //   transform: {
+    //     datum: [0.5, 0],
+    //     scale: 1,
+    //     rotation: 0,
+    //     mirror: 1
+    //   },
+    //   image: PAD_RECORDS_ARRAY
+    // })
 
-    Engine.addLayer({
-      name: 'layer1',
-      transform: {
-        // datum: [0.5, 0],
-        // scale: 1,
-        // rotation: 0,
-        // mirror: true,
-      },
-      image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
-    })
+    // Engine.addLayer({
+    //   name: 'layer1',
+    //   transform: {
+    //     // datum: [0.5, 0],
+    //     // scale: 1,
+    //     // rotation: 0,
+    //     // mirror: true,
+    //   },
+    //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
+    // })
 
-    const layer2 = Engine.addLayer({
-      name: 'layer2',
-      image: ARC_RECORDS_ARRAY
-    })
+    // const layer2 = Engine.addLayer({
+    //   name: 'layer2',
+    //   image: ARC_RECORDS_ARRAY
+    // })
 
     Engine.addLayer({
       name: 'layer3',
       image: MACRO_RECORDS_ARRAY
     })
 
-    const macroLayer = Engine.addLayer({
-      name: 'overlap',
-      image: OVERLAPPING_MACRO_RECORDS_ARRAY
-    })
+    // const macroLayer = Engine.addLayer({
+    //   name: 'overlap',
+    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // })
 
     // Engine.addLayer({
     //   name: 'overlap',
@@ -597,7 +597,7 @@ function REGLApp(): JSX.Element {
     // })
 
     test().then((bnf) => {
-      console.log(bnf)
+      // console.log(bnf)
       addGDSII(Engine, bnf)
     })
     // addGDSII(Engine, {})

@@ -57,10 +57,10 @@ function record_reader(stream: ArrayBuffer): RecordToken[] {
     } else {
       console.warn('unknown dataType', dataType)
     }
-    console.log(
-      `[RECORD] ${GDSII.RecordTypes[recordType].name}(${word3Length}bytes of ${dataType}) =`,
-      data
-    )
+    // console.log(
+    //   `[RECORD] ${GDSII.RecordTypes[recordType].name}(${word3Length}bytes of ${dataType}) =`,
+    //   data
+    // )
     tokens.push({
       recordType,
       data
@@ -210,7 +210,7 @@ export class Parser {
         console.warn(`unknown token ${token} (${GDSII.RecordDefinitions[token.recordType]})`)
       }
 
-      console.log('bnf', this.bnf)
+      // console.log('bnf', this.bnf)
     }
 
     console.log('bnf', this.bnf)

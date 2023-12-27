@@ -67,7 +67,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     dataType: DataType.EightByteReal,
     description: 'Database units, size of database unit in user units',
     parse: (p: PARSER.Parser, data: number[]): TREE.UNITS => {
-      console.log('UNITS', data)
+      // console.log('UNITS', data)
       return {
         userUnit: data[0],
         databaseUnit: data[1]
@@ -77,7 +77,10 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
   0x04: {
     name: 'ENDLIB',
     dataType: DataType.NoData,
-    description: 'Library end'
+    description: 'Library end',
+    parse: (p: PARSER.Parser, data: number[]): TREE.ENDLIB => {
+      return {}
+    }
   },
   0x05: {
     name: 'BGNSTR',
@@ -110,7 +113,10 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
   0x07: {
     name: 'ENDSTR',
     dataType: DataType.NoData,
-    description: 'Structure end'
+    description: 'Structure end',
+    parse: (p: PARSER.Parser, data: number[]): TREE.ENDSTR => {
+      return {}
+    }
   },
   0x08: {
     name: 'BOUNDARY',
@@ -185,7 +191,10 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
   0x11: {
     name: 'ENDEL',
     dataType: DataType.NoData,
-    description: 'Element end'
+    description: 'Element end',
+    parse: (p: PARSER.Parser, data: number[]): TREE.ENDEL => {
+      return {}
+    }
   },
   0x12: {
     name: 'SNAME',
@@ -281,7 +290,12 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
   0x21: {
     name: 'PATHTYPE',
     dataType: DataType.TwoByteSignedInteger,
-    description: 'PATHTYPE'
+    description: 'PATHTYPE',
+    parse: (p: PARSER.Parser, data: number[]): TREE.PATHTYPE => {
+      return {
+        pathtype: data[0]
+      }
+    }
   },
   0x22: {
     name: 'GENERATIONS',
