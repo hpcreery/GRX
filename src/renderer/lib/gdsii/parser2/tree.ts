@@ -177,7 +177,7 @@ export type GDSIIBNF = {
   LIBNAME: LIBNAME
   FormatType?: FormatType
   UNITS: UNITS
-  structure?: structure[]
+  structure: structure[]
   ENDLIB: ENDLIB
 }
 
@@ -190,7 +190,7 @@ export type FormatType = {
 export type structure = {
   BGNSTR: BGNSTR
   STRNAME: STRNAME
-  element?: element[]
+  element: element[]
   ENDSTR: ENDSTR
 }
 
@@ -198,6 +198,7 @@ export type element = {
   el?: boundary | path | sref | aref | text | node | box
   property?: property[]
   ENDEL: ENDEL
+  type: 'boundary' | 'path' | 'sref' | 'aref' | 'text' | 'node' | 'box'
 }
 
 export type boundary = {

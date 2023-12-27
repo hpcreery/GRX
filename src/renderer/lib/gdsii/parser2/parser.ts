@@ -1,5 +1,6 @@
 import struct from './struct'
-import gdsiiFile from './test/example.gds2?url'
+// import gdsiiFile from './test/example.gds2?url'
+import gdsiiFile from './test/inv.gds2?url'
 
 import * as GDSII from './gdsii'
 import * as TREE from './tree'
@@ -19,12 +20,15 @@ function isEmpty(obj) {
   return Object.keys(obj).length === 0
 }
 
+const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
+
 // LEXER
 
 // Generator for complete records from a GDSII stream file.
-function record_reader(stream: ArrayBuffer): RecordToken[] {
+async function record_reader(stream: ArrayBuffer): Promise<RecordToken[]> {
   let i = 0
   let tokens: RecordToken[] = []
+  console.log('stream.byteLength', stream.byteLength)
   while (i < stream.byteLength) {
     const recordHeader = stream.slice(i, i + 4)
     if (recordHeader.byteLength < 4) {
@@ -33,6 +37,11 @@ function record_reader(stream: ArrayBuffer): RecordToken[] {
     }
     const [word1, word2] = struct('>HH').unpack(recordHeader)
     const recordLength = word1
+    if (recordLength < 4) {
+      // return
+      // throw new Error('recordLength < 4')
+      console.warn('recordLength < 4')
+    }
     const recordType = Math.floor(word2 / 256)
     const dataType = word2 & 0x00ff
     const word3 = stream.slice(i + 4, i + recordLength)
@@ -57,15 +66,20 @@ function record_reader(stream: ArrayBuffer): RecordToken[] {
     } else {
       console.warn('unknown dataType', dataType)
     }
-    // console.log(
-    //   `[RECORD] ${GDSII.RecordTypes[recordType].name}(${word3Length}bytes of ${dataType}) =`,
-    //   data
-    // )
+    console.log(
+      `[RECORD] ${GDSII.RecordDefinitions[recordType].name}(${word3Length}bytes of ${dataType} at ${i} (${stream.byteLength})) =`,
+      data
+    )
+    if (recordType === GDSII.RecordTypes.ENDLIB) {
+      console.log('ENDLIB')
+      break
+    }
     tokens.push({
       recordType,
       data
     })
     i += recordLength
+    // await sleep(100)
   }
   return tokens
 }
@@ -87,7 +101,7 @@ export async function test() {
   const buffer = await (await fetch(gdsiiFile)).arrayBuffer()
   // console.log('buffer', buffer)
   // console.log(buf2hex(buffer))
-  const tokens = record_reader(buffer)
+  const tokens = await record_reader(buffer)
   const p = new Parser(tokens)
   // converter.convert(p.bnf)
   return p.bnf
@@ -97,15 +111,6 @@ type RecordToken = {
   recordType: number
   data: ArrayBuffer | number[] | string
 }
-
-// type kwargsType = {
-//   layer?: TREE.LAYER
-//   datatype?: TREE.DATATYPE
-//   xy?: TREE.XY
-//   ref_cell?: TREE.SNAME
-//   text?: TREE.TEXT
-//   colrow?: TREE.COLROW
-// }
 
 export class Parser {
   tokens: RecordToken[] = []
@@ -118,8 +123,11 @@ export class Parser {
 
     let cell: Partial<TREE.structure> = {}
     let element: Partial<TREE.element> = {}
+    // let el: Partial<
+    //   TREE.boundary | TREE.path | TREE.sref | TREE.aref | TREE.text | TREE.node | TREE.box
+    // > = {}
     let el: Partial<
-      TREE.boundary | TREE.path | TREE.sref | TREE.aref | TREE.text | TREE.node | TREE.box
+      TREE.boundary & TREE.path & TREE.sref & TREE.aref & TREE.text & TREE.node & TREE.box
     > = {}
     let strans: Partial<TREE.strans> = {}
     let property: Partial<TREE.property> = {}
@@ -144,7 +152,9 @@ export class Parser {
         cell.STRNAME = this.parseNode<TREE.STRNAME>(GDSII.RecordTypes.STRNAME)
       } else if (token.recordType === GDSII.RecordTypes.ENDSTR) {
         cell.ENDSTR = this.parseNode<TREE.ENDSTR>(GDSII.RecordTypes.ENDSTR)
-        this.bnf.structure ? this.bnf.structure.push(cell) : (this.bnf.structure = [cell])
+        this.bnf.structure
+          ? this.bnf.structure.push(cell as TREE.structure)
+          : (this.bnf.structure = [cell as TREE.structure])
         cell = {}
       } else if (token.recordType === GDSII.RecordTypes.BOUNDARY) {
         element = { type: 'boundary' }
@@ -168,22 +178,33 @@ export class Parser {
         el.XY = this.parseNode<TREE.XY>(GDSII.RecordTypes.XY)
       } else if (token.recordType === GDSII.RecordTypes.ENDEL) {
         element.ENDEL = this.parseNode<TREE.ENDEL>(GDSII.RecordTypes.ENDEL)
-        if (!isEmpty(strans)) el.strans = strans
-        element.el = el
-        cell.element ? cell.element.push(element) : (cell.element = [element])
+        if (!isEmpty(strans)) el.strans = strans as TREE.strans
+        element.el = el as
+          | TREE.boundary
+          | TREE.path
+          | TREE.sref
+          | TREE.aref
+          | TREE.text
+          | TREE.node
+          | TREE.box
+        cell.element
+          ? cell.element.push(element as TREE.element)
+          : (cell.element = [element as TREE.element])
         el = {}
         element = {}
         strans = {}
       } else if (token.recordType === GDSII.RecordTypes.SNAME) {
         el.SNAME = this.parseNode<TREE.SNAME>(GDSII.RecordTypes.SNAME)
       } else if (token.recordType === GDSII.RecordTypes.COLROW) {
-        if (el.type === 'aref') {
+        if (element.type === 'aref') {
           ;(el as TREE.aref).COLROW = this.parseNode<TREE.COLROW>(GDSII.RecordTypes.COLROW)
         }
       } else if (token.recordType === GDSII.RecordTypes.ELFLAGS) {
-        element.ELFLAGS = this.parseNode<TREE.ELFLAGS>(GDSII.RecordTypes.ELFLAGS)
+        ;(element as TREE.boundary).ELFLAGS = this.parseNode<TREE.ELFLAGS>(
+          GDSII.RecordTypes.ELFLAGS
+        )
       } else if (token.recordType === GDSII.RecordTypes.PLEX) {
-        element.PLEX = this.parseNode<TREE.PLEX>(GDSII.RecordTypes.PLEX)
+        ;(element as TREE.boundary).PLEX = this.parseNode<TREE.PLEX>(GDSII.RecordTypes.PLEX)
       } else if (token.recordType === GDSII.RecordTypes.PATHTYPE) {
         el.PATHTYPE = this.parseNode<TREE.PATHTYPE>(GDSII.RecordTypes.PATHTYPE)
       } else if (token.recordType === GDSII.RecordTypes.STRANS) {
@@ -204,7 +225,9 @@ export class Parser {
         property.PROPATTR = this.parseNode<TREE.PROPATTR>(GDSII.RecordTypes.PROPATTR)
       } else if (token.recordType === GDSII.RecordTypes.PROPVALUE) {
         property.PROPVALUE = this.parseNode<TREE.PROPVALUE>(GDSII.RecordTypes.PROPVALUE)
-        el.property ? el.property.push(property) : (el.property = [property])
+        element.property
+          ? element.property.push(property as TREE.property)
+          : (element.property = [property as TREE.property])
         property = {}
       } else {
         console.warn(`unknown token ${token} (${GDSII.RecordDefinitions[token.recordType]})`)
@@ -240,7 +263,7 @@ export class Parser {
     }
     // only advance if we successfully parsed the token
     // this.index++
-    return recordDefinition.parse!(this, token.data as number[]) as T
+    return recordDefinition.parse!(token.data as number[]) as T
   }
 
   currentNodeIs(recordType: number): boolean {

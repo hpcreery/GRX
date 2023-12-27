@@ -1,6 +1,4 @@
 import * as TREE from './tree'
-import * as PARSER from './parser'
-// }
 
 // Data types
 export enum DataType {
@@ -20,7 +18,7 @@ export type RecordDefinition = {
   // format: string
   dataType: DataType
   description: string
-  parse?: (p: PARSER.Parser, data: any) => any
+  parse?: (data: any) => any
 }
 
 export const RecordDefinitions: { [key: number]: RecordDefinition } = {
@@ -28,7 +26,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'HEADER',
     dataType: DataType.TwoByteSignedInteger,
     description: 'File header (version number, date, time)',
-    parse: (p: PARSER.Parser, data: number[]): TREE.HEADER => {
+    parse: (data: number[]): TREE.HEADER => {
       return {
         version: data[0]
       }
@@ -38,7 +36,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'BGNLIB',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Library begin, last modification date and time',
-    parse: (p: PARSER.Parser, data: number[]): TREE.BGNLIB => {
+    parse: (data: number[]): TREE.BGNLIB => {
       const year = data[2]
       const month = data[3]
       const day = data[4]
@@ -56,7 +54,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'LIBNAME',
     dataType: DataType.ASCIIString,
     description: 'Library name',
-    parse: (p: PARSER.Parser, data: string): TREE.LIBNAME => {
+    parse: (data: string): TREE.LIBNAME => {
       return {
         name: data
       }
@@ -66,7 +64,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'UNITS',
     dataType: DataType.EightByteReal,
     description: 'Database units, size of database unit in user units',
-    parse: (p: PARSER.Parser, data: number[]): TREE.UNITS => {
+    parse: (data: number[]): TREE.UNITS => {
       // console.log('UNITS', data)
       return {
         userUnit: data[0],
@@ -78,7 +76,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDLIB',
     dataType: DataType.NoData,
     description: 'Library end',
-    parse: (p: PARSER.Parser, data: number[]): TREE.ENDLIB => {
+    parse: (data: number[]): TREE.ENDLIB => {
       return {}
     }
   },
@@ -86,7 +84,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'BGNSTR',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Structure begin, last modification date and time',
-    parse: (p: PARSER.Parser, data: number[]): TREE.BGNLIB => {
+    parse: (data: number[]): TREE.BGNLIB => {
       const year = data[2]
       const month = data[3]
       const day = data[4]
@@ -104,7 +102,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'STRNAME',
     dataType: DataType.ASCIIString,
     description: 'Structure name',
-    parse: (p: PARSER.Parser, data: string): TREE.STRNAME => {
+    parse: (data: string): TREE.STRNAME => {
       return {
         name: data
       }
@@ -114,7 +112,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDSTR',
     dataType: DataType.NoData,
     description: 'Structure end',
-    parse: (p: PARSER.Parser, data: number[]): TREE.ENDSTR => {
+    parse: (data: number[]): TREE.ENDSTR => {
       return {}
     }
   },
@@ -147,7 +145,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'LAYER',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Layer number',
-    parse: (p: PARSER.Parser, data: number[]): TREE.LAYER => {
+    parse: (data: number[]): TREE.LAYER => {
       return {
         layer: data[0]
       }
@@ -157,7 +155,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'DATATYPE',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Data type',
-    parse: (p: PARSER.Parser, data: number[]): TREE.DATATYPE => {
+    parse: (data: number[]): TREE.DATATYPE => {
       return {
         datatype: data[0]
       }
@@ -167,7 +165,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'WIDTH',
     dataType: DataType.FourByteSignedInteger,
     description: 'Width',
-    parse: (p: PARSER.Parser, data: number[]): TREE.WIDTH => {
+    parse: (data: number[]): TREE.WIDTH => {
       return {
         width: data[0]
       }
@@ -177,7 +175,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'XY',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Point list',
-    parse: (p: PARSER.Parser, data: number[]): TREE.XY => {
+    parse: (data: number[]): TREE.XY => {
       const xy: TREE.XY = []
       for (let i = 0; i < data.length; i += 2) {
         xy.push({
@@ -192,7 +190,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDEL',
     dataType: DataType.NoData,
     description: 'Element end',
-    parse: (p: PARSER.Parser, data: number[]): TREE.ENDEL => {
+    parse: (data: number[]): TREE.ENDEL => {
       return {}
     }
   },
@@ -200,7 +198,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'SNAME',
     dataType: DataType.ASCIIString,
     description: 'Structure name. Contains the name of a referenced structure',
-    parse: (p: PARSER.Parser, data: string): TREE.SNAME => {
+    parse: (data: string): TREE.SNAME => {
       return {
         name: data
       }
@@ -210,7 +208,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'COLROW',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Columns, rows',
-    parse: (p: PARSER.Parser, data: number[]): TREE.COLROW => {
+    parse: (data: number[]): TREE.COLROW => {
       return {
         cols: data[0],
         rows: data[1]
@@ -236,7 +234,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'STRING',
     dataType: DataType.ASCIIString,
     description: 'String',
-    parse: (p: PARSER.Parser, data: string): TREE.STRING => {
+    parse: (data: string): TREE.STRING => {
       return {
         string: data
       }
@@ -246,7 +244,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'STRANS',
     dataType: DataType.TwoByteSignedInteger,
     description: 'Transformation',
-    parse: (p: PARSER.Parser, data: number[]): TREE.STRANS => {
+    parse: (data: number[]): TREE.STRANS => {
       return {
         // bit 0
         reflectAboutX: (data[0] & 0x8000) !== 0,
@@ -261,7 +259,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'MAG',
     dataType: DataType.EightByteReal,
     description: 'MAG',
-    parse: (p: PARSER.Parser, data: number[]): TREE.MAG => {
+    parse: (data: number[]): TREE.MAG => {
       return {
         mag: data[0]
       }
@@ -271,7 +269,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ANGLE',
     dataType: DataType.EightByteReal,
     description: 'ANGLE',
-    parse: (p: PARSER.Parser, data: number[]): TREE.ANGLE => {
+    parse: (data: number[]): TREE.ANGLE => {
       return {
         angle: data[0]
       }
@@ -291,7 +289,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'PATHTYPE',
     dataType: DataType.TwoByteSignedInteger,
     description: 'PATHTYPE',
-    parse: (p: PARSER.Parser, data: number[]): TREE.PATHTYPE => {
+    parse: (data: number[]): TREE.PATHTYPE => {
       return {
         pathtype: data[0]
       }

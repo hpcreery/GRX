@@ -525,10 +525,10 @@ function REGLApp(): JSX.Element {
     //   image: ARC_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      image: MACRO_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   image: MACRO_RECORDS_ARRAY
+    // })
 
     // const macroLayer = Engine.addLayer({
     //   name: 'overlap',
@@ -597,7 +597,7 @@ function REGLApp(): JSX.Element {
     // })
 
     test().then((bnf) => {
-      // console.log(bnf)
+      console.log(bnf)
       addGDSII(Engine, bnf)
     })
     // addGDSII(Engine, {})
