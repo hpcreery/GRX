@@ -1,4 +1,4 @@
-import * as TREE from './tree'
+import * as TREE from './gdsii_tree'
 
 // Data types
 export enum DataType {

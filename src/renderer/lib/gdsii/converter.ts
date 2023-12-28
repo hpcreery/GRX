@@ -1,13 +1,11 @@
-import * as GDSII from './gdsii'
-import * as TREE from './tree'
-import * as parser from './parser'
+import * as TREE from './gdsii_tree'
 
 import {
   MacroSymbol,
   STANDARD_SYMBOLS,
   STANDARD_SYMBOLS_MAP,
   StandardSymbol
-} from '../../../src/rendererv2/symbols'
+} from '../../src/rendererv2/symbols'
 import {
   Pad,
   Line,
@@ -17,10 +15,9 @@ import {
   // Contour_Arc_Segment,
   Contour_Line_Segment,
   Shape
-} from '../../../src/rendererv2/shapes'
-// import * as Shapes from '../../../src/rendererv2/shapes'
-import { RenderEngine } from '../../../src/rendererv2/engine'
-// import { IPlotRecord, ISymbolRecord } from '../../../src/rendererv2/types'
+} from '../../src/rendererv2/shapes'
+// import * as Shapes from '../../src/rendererv2/shapes'
+import { RenderEngine } from '../../src/rendererv2/engine'
 
 // CELL structure and DATATYPE information is lost in the conversion.
 
@@ -41,7 +38,7 @@ type LayerHierarchy = {
   }
 }
 
-export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
+export function convert(gdsii: TREE.GDSIIBNF) {
   const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
   console.log('scale', scale)
 
@@ -241,10 +238,5 @@ export function addGDSII(engine: RenderEngine, gdsii: TREE.GDSIIBNF) {
     }
   }
 
-  for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-    engine.addLayer({
-      name: layer,
-      image: shapes.shapes
-    })
-  }
+  return layerHierarchy
 }

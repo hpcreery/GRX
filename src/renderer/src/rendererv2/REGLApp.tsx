@@ -18,8 +18,7 @@ import { Button, Switch, Badge } from '@mantine/core'
 // import { vec2 } from 'gl-matrix'
 // import { PointerEvent } from './engine'
 
-import { test } from '../../lib/gdsii/parser2/parser'
-import { addGDSII } from '../../lib/gdsii/parser2/converter'
+import { addGDSII } from '../../lib/gdsii/index'
 
 // N == Number of Shapes
 const N_PADS = 1000
@@ -596,11 +595,8 @@ function REGLApp(): JSX.Element {
     //   set: [...SURFACE_RECORDS_ARRAY]
     // })
 
-    test().then((bnf) => {
-      console.log(bnf)
-      addGDSII(Engine, bnf)
-    })
-    // addGDSII(Engine, {})
+    addGDSII(Engine)
+
     // console.log('Engine', Engine)
     // Engine.render(true)
 
