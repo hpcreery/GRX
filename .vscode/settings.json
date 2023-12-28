@@ -9,7 +9,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "editor.formatOnSave": true,
-  "cSpell.words": ["Comlink", "Pixi", "uncull"],
+  "editor.formatOnSave": false,
+  "cSpell.words": [
+    "Comlink",
+    "Pixi",
+    "uncull"
+  ],
   "vue.codeActions.enabled": false
 }

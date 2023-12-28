@@ -116,7 +116,6 @@ new Array<number>(N_SURFACES)
 const SYMBOLS: StandardSymbol[] = []
 
 new Array<number>(STANDARD_SYMBOLS.length)
-  // .fill(new Symbol({}))
   .fill(0)
   .map((_, i) => {
     const sym_ptr =

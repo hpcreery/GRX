@@ -170,7 +170,7 @@ export class RenderEngine {
           window.screen.width * window.devicePixelRatio,
           window.screen.height * window.devicePixelRatio
         ],
-        u_PixelSize: () => .0023 * window.devicePixelRatio / this.transform.zoom,
+        u_PixelSize: () => .0023 / (this.transform.zoom * window.devicePixelRatio),
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
       },
 
