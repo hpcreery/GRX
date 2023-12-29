@@ -175,7 +175,7 @@ export type TContour = typeof CONTOUR_RECORD_PARAMETERS_MAP
 export type TContourLineSegment = typeof CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
 export type TContourArcSegment = typeof CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP
 
-export const CONTOUR_ARC_SEGMENT_ID = Math.random() * 1000000
+export const CONTOUR_ARC_SEGMENT_ID = Math.random()
 export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   public type = FeatureTypeIdentifyer.ARCSEGMENT
   public id = CONTOUR_ARC_SEGMENT_ID
@@ -204,7 +204,7 @@ export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   }
 }
 
-export const CONTOUR_LINE_SEGMENT_ID = Math.random() * 1000000
+export const CONTOUR_LINE_SEGMENT_ID = Math.random()
 export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   public type = FeatureTypeIdentifyer.LINESEGMENT
   public id = CONTOUR_LINE_SEGMENT_ID
@@ -230,8 +230,8 @@ export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   }
 }
 
-export const CONTOUR_ID = Math.random() * 1000000
-export const END_CONTOUR_ID = Math.random() * 1000000
+export const CONTOUR_ID = Math.random()
+export const END_CONTOUR_ID = Math.random()
 export class Contour implements TContour, IPlotRecord {
   // 1 == island, 0 == hole
   public type = FeatureTypeIdentifyer.CONTOUR
@@ -333,7 +333,7 @@ export class Contour implements TContour, IPlotRecord {
   }
 }
 
-export const END_SURFACE_ID = Math.random() * 1000000
+export const END_SURFACE_ID = Math.random()
 export class Surface implements TSurface, IPlotRecord {
   public type = FeatureTypeIdentifyer.SURFACE
   public index = 0

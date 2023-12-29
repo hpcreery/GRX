@@ -128,7 +128,7 @@ export class SurfaceShaderCollection {
       if (record.type != FeatureTypeIdentifyer.SURFACE) {
         return
       }
-      const surfaces = record.array
+      const surfaceParameters = record.array
       const surfaceCountours = record.contoursArray
       const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
@@ -141,13 +141,15 @@ export class SurfaceShaderCollection {
           type: 'float',
           format: 'luminance',
           wrap: 'clamp',
+          // mag: 'linear',
+          // min: 'linear',
           data: newData
         }),
         attributeBuffer: this.regl.buffer({
           usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
           type: 'float',
           length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-          data: surfaces
+          data: surfaceParameters
         })
       })
     })

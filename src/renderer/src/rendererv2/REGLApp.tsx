@@ -44,9 +44,9 @@ new Array<number>(N_SURFACES)
         ys: 0 + i * 0.1,
       })
         .addSegments([
-          // new Contour_Line_Segment_Record({
-          //   x: 0.2 + i,
-          //   y: -0.2 + i,
+          // new Contour_Line_Segment({
+          //   x: 0.02 + i * 0.1,
+          //   y: -0.02 + i * 0.1,
           // }),
           new Contour_Arc_Segment({
             x: 0.02 + i * 0.1,
@@ -108,7 +108,31 @@ new Array<number>(N_SURFACES)
             x: 0.04 + i * 0.1,
             y: 0.04 + i * 0.1,
           }),
-        ])
+        ]),
+        // new Contour({
+        //   poly_type: 0,
+        //   // Start point.
+        //   xs: 0.04 + i * 0.1,
+        //   ys: 0.04 + i * 0.1,
+        // })
+        //   .addSegments([
+        //     new Contour_Line_Segment({
+        //       x: 0.04 + i * 0.1,
+        //       y: 0.03 + i * 0.1,
+        //     }),
+        //     new Contour_Line_Segment({
+        //       x: 0.03 + i * 0.1,
+        //       y: 0.03 + i * 0.1,
+        //     }),
+        //     new Contour_Line_Segment({
+        //       x: 0.03 + i * 0.1,
+        //       y: 0.04 + i * 0.1,
+        //     }),
+        //     new Contour_Line_Segment({
+        //       x: 0.04 + i * 0.1,
+        //       y: 0.04 + i * 0.1,
+        //     }),
+        //   ])
     ]))
   })
 
@@ -332,14 +356,14 @@ new Array<number>(1)
     MACROS_ARRAY.push(new MacroSymbol({
       id: 'macro' + i, // id
       shapes: [
-        PAD_RECORDS_ARRAY[i],
-        PAD_RECORDS_ARRAY[i + 1],
-        LINE_RECORDS_ARRAY_POS[i],
-        LINE_RECORDS_ARRAY_POS[i + 1],
-        LINE_RECORDS_ARRAY_NEG[i],
-        LINE_RECORDS_ARRAY_NEG[i + 1],
-        ARC_RECORDS_ARRAY[i],
-        ARC_RECORDS_ARRAY[i + 1],
+        // PAD_RECORDS_ARRAY[i],
+        // PAD_RECORDS_ARRAY[i + 1],
+        // LINE_RECORDS_ARRAY_POS[i],
+        // LINE_RECORDS_ARRAY_POS[i + 1],
+        // LINE_RECORDS_ARRAY_NEG[i],
+        // LINE_RECORDS_ARRAY_NEG[i + 1],
+        // ARC_RECORDS_ARRAY[i],
+        // ARC_RECORDS_ARRAY[i + 1],
         SURFACE_RECORDS_ARRAY[i]
       ]
     }))
@@ -363,7 +387,7 @@ new Array<number>(N_MACROS)
       // Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
-      rotation: 0,
+      rotation: 20,
       // 0 = no mirror, 1 = mirror
       mirror: 0
     }))
@@ -508,42 +532,42 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    Engine.addLayer({
-      name: 'layer0',
-      transform: {
-        datum: [0.5, 0],
-        scale: 1,
-        rotation: 0,
-        mirror: 1,
-      },
-      image: PAD_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer0',
+    //   transform: {
+    //     datum: [0.5, 0],
+    //     scale: 1,
+    //     rotation: 0,
+    //     mirror: 1,
+    //   },
+    //   image: PAD_RECORDS_ARRAY
+    // })
 
-    Engine.addLayer({
-      name: 'layer1',
-      transform: {
-        // datum: [0.5, 0],
-        // scale: 1,
-        // rotation: 0,
-        // mirror: true,
-      },
-      image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
-    })
+    // Engine.addLayer({
+    //   name: 'layer1',
+    //   transform: {
+    //     // datum: [0.5, 0],
+    //     // scale: 1,
+    //     // rotation: 0,
+    //     // mirror: true,
+    //   },
+    //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
+    // })
 
-    const layer2 = Engine.addLayer({
-      name: 'layer2',
-      image: ARC_RECORDS_ARRAY
-    })
+    // const layer2 = Engine.addLayer({
+    //   name: 'layer2',
+    //   image: ARC_RECORDS_ARRAY
+    // })
 
     Engine.addLayer({
       name: 'layer3',
       image: MACRO_RECORDS_ARRAY
     })
 
-    const macroLayer = Engine.addLayer({
-      name: 'overlap',
-      image: OVERLAPPING_MACRO_RECORDS_ARRAY
-    })
+    // const macroLayer = Engine.addLayer({
+    //   name: 'overlap',
+    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // })
 
 
     // setTimeout(() => {
@@ -591,10 +615,10 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    // Engine.addLayer({
-    //   name: 'layer3',
-    //   image: [...SURFACE_RECORDS_ARRAY]
-    // })
+    Engine.addLayer({
+      name: 'layer309',
+      image: SURFACE_RECORDS_ARRAY
+    })
 
     // Engine.addLayer({
     //   name: 'layer3',
