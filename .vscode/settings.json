@@ -15,5 +15,6 @@
     "Pixi",
     "uncull"
   ],
-  "vue.codeActions.enabled": false
+  "vue.codeActions.enabled": false,
+  "files.eol": "\n"
 }
