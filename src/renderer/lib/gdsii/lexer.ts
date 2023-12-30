@@ -6,7 +6,7 @@ import { RecordToken } from './types'
 // Generator for complete records from a GDSII stream file.
 export function record_reader(stream: ArrayBuffer): RecordToken[] {
   let i = 0
-  let tokens: RecordToken[] = []
+  const tokens: RecordToken[] = []
   console.log('stream.byteLength', stream.byteLength)
   while (i < stream.byteLength) {
     const recordHeader = stream.slice(i, i + 4)
@@ -64,12 +64,12 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
 }
 
 function eightByteRealToFloat(value: ArrayBuffer): number {
-  let view = new DataView(value)
-  let short1 = view.getUint16(0, false)
-  let short2 = view.getUint16(2, false)
-  let long3 = view.getUint32(4, false)
-  let exponent = (short1 & 0x7f00) / 256 - 64
-  let mantissa = (((short1 & 0x00ff) * 65536 + short2) * 4294967296 + long3) / 72057594037927936.0
+  const view = new DataView(value)
+  const short1 = view.getUint16(0, false)
+  const short2 = view.getUint16(2, false)
+  const long3 = view.getUint32(4, false)
+  const exponent = (short1 & 0x7f00) / 256 - 64
+  const mantissa = (((short1 & 0x00ff) * 65536 + short2) * 4294967296 + long3) / 72057594037927936.0
   if (short1 & 0x8000) {
     return -mantissa * Math.pow(16.0, exponent)
   }

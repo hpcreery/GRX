@@ -16,7 +16,7 @@ export type UNITS = {
   databaseUnit: number
 }
 
-export type ENDLIB = {}
+export type ENDLIB = Record<string, never> //{}
 
 export type BGNSTR = {
   lastModificationDate: number
@@ -27,17 +27,17 @@ export type STRNAME = {
   name: string
 }
 
-export type ENDSTR = {}
+export type ENDSTR = Record<string, never> //{}
 
-export type BOUNDARY = {}
+export type BOUNDARY = Record<string, never> //{}
 
-export type PATH = {}
+export type PATH = Record<string, never> //{}
 
-export type SREF = {}
+export type SREF = Record<string, never> //{}
 
-export type AREF = {}
+export type AREF = Record<string, never> //{}
 
-export type TEXT = {}
+export type TEXT = Record<string, never> //{}
 
 export type LAYER = {
   layer: number
@@ -56,7 +56,7 @@ export type XY = {
   y: number
 }[]
 
-export type ENDEL = {}
+export type ENDEL = Record<string, never> //{}
 
 export type SNAME = {
   name: string
@@ -67,7 +67,7 @@ export type COLROW = {
   rows: number
 }
 
-export type NODE = {}
+export type NODE = Record<string, never> //{}
 
 export type TEXTTYPE = {
   texttype: number
@@ -113,17 +113,17 @@ export type GENERATIONS = {
   generations: number[]
 }
 
-export type ATTRTABLE = {}
+export type ATTRTABLE = Record<string, never> //{}
 
-export type STYPTABLE = {}
+export type STYPTABLE = Record<string, never> //{}
 
-export type STRTYPE = {}
+export type STRTYPE = Record<string, never> //{}
 
-export type ELFLAGS = {}
+export type ELFLAGS = Record<string, never> //{}
 
-export type LINKTYPE = {}
+export type LINKTYPE = Record<string, never> //{}
 
-export type LINKKEYS = {}
+export type LINKKEYS = Record<string, never> //{}
 
 export type NODETYPE = {
   nodetype: number
@@ -137,9 +137,9 @@ export type PROPVALUE = {
   value: string
 }
 
-export type BOX = {}
+export type BOX = Record<string, never> //{}
 
-export type BOXTYPE = {}
+export type BOXTYPE = Record<string, never> //{}
 
 export type PLEX = {
   plex: number
@@ -157,7 +157,7 @@ export type STRCLASS = {
   strclass: number
 }
 
-export type RESERVED = {}
+export type RESERVED = Record<string, never> //{}
 
 export type FORMAT = {
   format: number
@@ -167,7 +167,7 @@ export type MASK = {
   mask: string
 }
 
-export type ENDMASKS = {}
+export type ENDMASKS = Record<string, never> //{}
 
 // ### STRUCTURE ###
 

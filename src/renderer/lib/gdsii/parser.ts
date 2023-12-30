@@ -9,8 +9,8 @@ import { RecordToken } from './types'
 // http://www.artwork.com/gdsii/gdsii/
 // http://www.buchanan1.net/stream_description.html
 
-export function parse(tokens: RecordToken[]) {
-  let bnf: Partial<TREE.GDSIIBNF> = {}
+export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
+  const bnf: Partial<TREE.GDSIIBNF> = {}
   let cell: Partial<TREE.structure> = {}
   let element: Partial<TREE.element> = {}
   // let el: Partial<
@@ -85,12 +85,12 @@ export function parse(tokens: RecordToken[]) {
       el.SNAME = parseRecord<TREE.SNAME>(token)
     } else if (token.recordType === GDSII.RecordTypes.COLROW) {
       if (element.type === 'aref') {
-        ;(el as TREE.aref).COLROW = parseRecord<TREE.COLROW>(token)
+        (el as TREE.aref).COLROW = parseRecord<TREE.COLROW>(token)
       }
     } else if (token.recordType === GDSII.RecordTypes.ELFLAGS) {
-      ;(element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
+      (element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
     } else if (token.recordType === GDSII.RecordTypes.PLEX) {
-      ;(element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
+      (element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
     } else if (token.recordType === GDSII.RecordTypes.PATHTYPE) {
       el.PATHTYPE = parseRecord<TREE.PATHTYPE>(token)
     } else if (token.recordType === GDSII.RecordTypes.STRANS) {
@@ -125,7 +125,8 @@ export function parse(tokens: RecordToken[]) {
   function parseRecord<T>(token: RecordToken): T {
     // check to see if it has parse function
     const recordDefinition = GDSII.RecordDefinitions[token.recordType]
-    if (!recordDefinition.hasOwnProperty('parse')) {
+    // if (!recordDefinition.hasOwnProperty('parse')) {
+    if (!recordDefinition.parse) {
       console.warn(
         `RecordDefinition ${recordDefinition.name} (${token.recordType}) does not have a parse function`
       )

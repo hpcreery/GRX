@@ -42,7 +42,7 @@ export default function struct(format) {
   const t = lut('<' === m[1]),
     lu = (n, c) => t[c](n ? parseInt(n, 10) : 1)
   while ((m = refmt.exec(format))) {
-    ;((r, s, f) => {
+    ((r, s, f) => {
       for (let i = 0; i < r; ++i, size += s) {
         if (f) {
           fns.push(f(size))

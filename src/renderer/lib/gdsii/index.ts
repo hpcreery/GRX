@@ -8,7 +8,7 @@ import * as CONVERTER from './converter'
 
 import { RenderEngine } from '../../src/rendererv2/engine'
 
-export async function addGDSII(engine: RenderEngine) {
+export async function addGDSII(engine: RenderEngine): Promise<void> {
   const buffer = await (await fetch(gdsiiFile)).arrayBuffer()
   // console.log(utils.buf2hex(buffer))
   const tokens = LEXER.record_reader(buffer)
@@ -16,6 +16,7 @@ export async function addGDSII(engine: RenderEngine) {
   const layerHierarchy = CONVERTER.convert(bnf)
 
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
+    console.log('layer', layer)
     engine.addLayer({
       name: layer,
       image: shapes.shapes
