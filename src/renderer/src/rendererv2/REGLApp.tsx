@@ -430,7 +430,8 @@ new Array<number>(3)
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
-      polarity: 1,
+      // polarity: 1,
+      polarity: i % 2 == 0 ? 1 : 0,
       // Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
@@ -450,6 +451,16 @@ new Array<number>(1)
     }))
   })
 
+const SPOOF_OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
+
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    SPOOF_OVERLAPPING_MACROS_ARRAY.push(new MacroSymbol({
+      id: 'macro' + i, // id
+      shapes: [OVERLAPPING_PADS_ARRAY[0]]
+    }))
+  })
+
 const OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
 new Array<number>(10)
   .fill(0).map((_, i) => {
@@ -464,7 +475,8 @@ new Array<number>(10)
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
-      polarity: 1,
+      // polarity: 1,
+      polarity: i % 2 == 0 ? 1 : 0,
       // Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
@@ -474,6 +486,30 @@ new Array<number>(10)
     }))
   })
 
+const SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
+new Array<number>(10)
+  .fill(0).map((_, i) => {
+    SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Pad({
+      // Center point.
+      x: i / 10 + 1,
+      y: -i / 10 + 1,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
+      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      symbol: SPOOF_OVERLAPPING_MACROS_ARRAY[0],
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // resize_factor: Math.random() + 1,
+      resize_factor: 1,
+      // Polarity. 0 = negative, 1 = positive
+      // polarity: 1,
+      polarity: i % 2 == 0 ? 1 : 0,
+      // Pad orientation (degrees)
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // rotation: Math.random() * 360,
+      rotation: 0,
+      // 0 = no mirror, 1 = mirror
+      mirror: 0
+    }))
+  })
 
 
 
@@ -494,6 +530,7 @@ function REGLApp(): JSX.Element {
     // DictionaryFont
 
     Engine.settings.OUTLINE_MODE = false
+    Engine.settings.FLATTEN_MACROS = false
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
     // SYMBOLS.forEach(s => Engine.addSymbol(s.value))
     // SYMBOLS.forEach(s => s.value.symbol = STANDARD_SYMBOLS_MAP.Round)
@@ -559,15 +596,15 @@ function REGLApp(): JSX.Element {
     //   image: ARC_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      image: MACRO_RECORDS_ARRAY
-    })
-
-    // const macroLayer = Engine.addLayer({
-    //   name: 'overlap',
-    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   image: MACRO_RECORDS_ARRAY
     // })
+
+    const macroLayer = Engine.addLayer({
+      name: 'overlap',
+      image: [...OVERLAPPING_MACRO_RECORDS_ARRAY]
+    })
 
 
     // setTimeout(() => {
@@ -581,9 +618,10 @@ function REGLApp(): JSX.Element {
     //     if (record instanceof Pad && record.symbol instanceof MacroSymbol) {
     //       // record.value.x = Math.random()
     //       // record.value.y = Math.random()
-    //       record.polarity = 0
-    //       record.polarity = 1
-    //       record.polarity = Math.random() > 0.5 ? 1 : 0
+    //       // record.polarity = 0
+    //       // record.polarity = 1
+    //       // record.polarity = Math.random() > 0.5 ? 1 : 0
+    //       record.polarity = record.index % 2 == 0 ? 1 : 0
     //       // record.value.symbol.value.shapes.map(shape => {
     //       //   if (shape.value instanceof Pad) {
     //       //     shape.value.polarity = Math.random() > 0.5 ? 1 : 0
@@ -615,10 +653,10 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: 'layer309',
-      image: SURFACE_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer309',
+    //   image: SURFACE_RECORDS_ARRAY
+    // })
 
     // Engine.addLayer({
     //   name: 'layer3',

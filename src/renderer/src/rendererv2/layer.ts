@@ -150,12 +150,12 @@ export class ShapeRenderer {
     return this.records.length
   }
 
-  private commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  private drawPads: REGL.DrawCommand<REGL.DefaultContext>
-  private drawLines: REGL.DrawCommand<REGL.DefaultContext>
-  private drawArcs: REGL.DrawCommand<REGL.DefaultContext>
-  private drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
-  private drawMacros: (context: REGL.DefaultContext & WorldContext) => this
+  protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  protected drawPads: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawLines: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawArcs: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawMacros: (context: REGL.DefaultContext & WorldContext) => this
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -214,7 +214,7 @@ export class ShapeRenderer {
         ) => {
           const ioff =
             (this.transform.index * (context.qtyFeaturesRef ?? 1)) /
-            (context.prevQtyFeaturesRef ?? 1) || 0
+              (context.prevQtyFeaturesRef ?? 1) || 0
           // console.log(this.transform.datum.toString(), 'u_IndexOffset', ioff)
           return ioff
         },
@@ -623,8 +623,74 @@ export default class LayerRenderer extends ShapeRenderer {
 interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {}
 
 export class MacroRenderer extends ShapeRenderer {
+  public framebuffer: REGL.Framebuffer2D
+  private drawFrameBuffer: REGL.DrawCommand
   constructor(props: MacroRendererProps) {
     super(props)
+
+    this.framebuffer = this.regl.framebuffer({
+      depth: true
+    })
+
+    this.drawFrameBuffer = this.regl({
+      vert: `
+      precision mediump float;
+      uniform float u_Index;
+      uniform float u_IndexOffset;
+      uniform float u_QtyFeatures;
+      attribute vec2 a_Vertex_Position;
+      varying float v_Index;
+
+      varying vec2 v_UV;
+      void main () {
+        float Index = u_IndexOffset / u_QtyFeatures;
+        v_UV = a_Vertex_Position;
+        v_Index =  Index;
+        gl_Position = vec4(a_Vertex_Position, Index, 1.0);
+      }
+    `,
+      frag: `
+      precision mediump float;
+      uniform sampler2D u_RenderTexture;
+      uniform sampler2D u_DepthTexture;
+      uniform float u_Polarity;
+      uniform bool u_OutlineMode;
+      varying vec2 v_UV;
+      varying float v_Index;
+      void main () {
+        vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        if (color.r == 0.0 && color.g == 0.0 && color.b == 0.0) {
+          discard;
+        }
+        if (u_Polarity == 0.0 && !u_OutlineMode) {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+          return;
+        }
+        gl_FragColor = color;
+        // gl_FragColor = vec4(v_Index, 0.0, 0.0, 1.0);
+      }
+    `,
+      depth: {
+        enable: true,
+        mask: true,
+        func: 'greater',
+        range: [0, 1]
+      },
+      uniforms: {
+        u_RenderTexture: () => this.framebuffer,
+        u_Index: () => {
+          console.log('u_Index', this.transform.index)
+          return this.transform.index
+        },
+        u_Polarity: () => this.transform.polarity
+      },
+      attributes: {
+        a_Index: () => {
+          console.log('a_Index', this.transform.index)
+          return this.transform.index
+        }
+      }
+    })
   }
 
   public updateTransformFromPad(pad: Records.Pad): void {
@@ -634,5 +700,28 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.mirror = pad.mirror
     this.transform.index = pad.index
     this.transform.polarity = pad.polarity
+  }
+
+  public render(context: REGL.DefaultContext & WorldContext): void {
+    if (context.settings.FLATTEN_MACROS === false) {
+      super.render(context)
+      return
+    }
+    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.regl.clear({
+      framebuffer: this.framebuffer,
+      color: [0, 0, 0, 1],
+      stencil: 0,
+      depth: 0
+    })
+    const tempPol = this.transform.polarity
+    this.transform.polarity = 1
+    this.framebuffer.use(() => {
+      super.render(context)
+    })
+    this.transform.polarity = tempPol
+    this.commonConfig(() => {
+      this.drawFrameBuffer()
+    })
   }
 }

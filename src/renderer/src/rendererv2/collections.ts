@@ -53,10 +53,13 @@ export class PrimitiveShaderCollection {
   }
 
   public refresh(): this {
-    const padPrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.PAD && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
+    const padPrimatives = this.records
+      .filter(
+        (record) =>
+          record.type == FeatureTypeIdentifyer.PAD &&
+          record.symbol instanceof Symbols.StandardSymbol
+      )
+      .reverse()
     this.pads.length = padPrimatives.length
     // console.log('padPrimatives', padPrimatives)
     this.pads.buffer({
@@ -67,10 +70,13 @@ export class PrimitiveShaderCollection {
         return record.array
       })
     })
-    const linePrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.LINE && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
+    const linePrimatives = this.records
+      .filter(
+        (record) =>
+          record.type == FeatureTypeIdentifyer.LINE &&
+          record.symbol instanceof Symbols.StandardSymbol
+      )
+      .reverse()
     this.lines.length = linePrimatives.length
     this.lines.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
@@ -80,10 +86,13 @@ export class PrimitiveShaderCollection {
         return record.array
       })
     })
-    const arcPrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.ARC && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
+    const arcPrimatives = this.records
+      .filter(
+        (record) =>
+          record.type == FeatureTypeIdentifyer.ARC &&
+          record.symbol instanceof Symbols.StandardSymbol
+      )
+      .reverse()
     this.arcs.length = arcPrimatives.length
     this.arcs.buffer({
       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
@@ -159,10 +168,46 @@ export class SurfaceShaderCollection {
   }
 }
 
-export class SymbolCollection {
+// export class SymbolCollection {
+//   public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
+//   get length(): number {
+//     return this.symbols.size
+//   }
+
+//   protected makeUnique(symbol: Symbols.StandardSymbol): string {
+//     if (this.symbols.has(symbol.id)) {
+//       if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
+//         // console.log(`Identical Symbol with id ${symbol.id} already exists`)
+//         const sym = this.symbols.get(symbol.id)
+//         symbol = sym as Symbols.StandardSymbol
+//         return symbol.id
+//       }
+//       // console.log(`Unsimilar Symbol with id ${symbol.id} already exists`)
+//       if (symbol.id.match(/\+\d+$/)) {
+//         const [base, count] = symbol.id.split('+')
+//         symbol.id = `${base}+${Number(count) + 1}`
+//         return this.makeUnique(symbol)
+//       }
+//       symbol.id = `${symbol.id}+${1}`
+//       return this.makeUnique(symbol)
+//     }
+//     return symbol.id
+//   }
+// }
+
+export class SymbolShaderCollection {
+  private records: Records.Shape[] = []
+  public texture: REGL.Texture2D
   public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
   get length(): number {
     return this.symbols.size
+  }
+
+  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
+    const { regl, records } = props
+    this.records = records
+    this.texture = regl.texture()
+    // this.refresh()
   }
 
   protected makeUnique(symbol: Symbols.StandardSymbol): string {
@@ -173,6 +218,7 @@ export class SymbolCollection {
         symbol = sym as Symbols.StandardSymbol
         return symbol.id
       }
+      // console.log(`Unsimilar Symbol with id ${symbol.id} already exists`)
       if (symbol.id.match(/\+\d+$/)) {
         const [base, count] = symbol.id.split('+')
         symbol.id = `${base}+${Number(count) + 1}`
@@ -182,19 +228,6 @@ export class SymbolCollection {
       return this.makeUnique(symbol)
     }
     return symbol.id
-  }
-}
-
-export class SymbolShaderCollection extends SymbolCollection {
-  private records: Records.Shape[] = []
-  public texture: REGL.Texture2D
-
-  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
-    super()
-    const { regl, records } = props
-    this.records = records
-    this.texture = regl.texture()
-    // this.refresh()
   }
 
   public refresh(): this {
@@ -252,20 +285,44 @@ export class MacroCollection {
     {
       renderer: MacroRenderer
       records: Records.Pad[]
+      macro: Symbols.MacroSymbol
     }
   > = new Map<
     string,
     {
       renderer: MacroRenderer
       records: Records.Pad[]
+      macro: Symbols.MacroSymbol
     }
   >()
+  // public type: typeof FlattenedMacroRenderer | typeof MacroRenderer
   private regl: REGL.Regl
   constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
     const { records, regl } = props
     this.regl = regl
     this.records = records
+    // this.type = props.type
     // this.refresh()
+  }
+
+  protected makeUnique(symbol: Symbols.MacroSymbol): string {
+    if (this.macros.has(symbol.id)) {
+      if (this.macros.get(symbol.id)!.macro.shapes.toString() == symbol.shapes.toString()) {
+        // console.log(`Identical Macro with id ${symbol.id} already exists`)
+        const sym = this.macros.get(symbol.id)
+        symbol = sym!.macro
+        return symbol.id
+      }
+      // console.log(`Unsimilar Macro with id ${symbol.id} already exists`)
+      if (symbol.id.match(/\+\d+$/)) {
+        const [base, count] = symbol.id.split('+')
+        symbol.id = `${base}+${Number(count) + 1}`
+        return this.makeUnique(symbol)
+      }
+      symbol.id = `${symbol.id}+${1}`
+      return this.makeUnique(symbol)
+    }
+    return symbol.id
   }
 
   public refresh(): this {
@@ -275,16 +332,24 @@ export class MacroCollection {
         return
       }
       if (record.symbol instanceof Symbols.MacroSymbol) {
+        this.makeUnique(record.symbol)
         if (!this.macros.has(record.symbol.id)) {
+          // const { type } = this
+          // const a = new type()
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
               image: record.symbol.shapes
             }),
-            records: []
+
+            records: [],
+            macro: record.symbol
           })
         }
         this.macros.get(record.symbol.id)!.records.push(record as Records.Pad)
+        this.macros.get(record.symbol.id)!.records.sort((a, b) => {
+          return b.index - a.index
+        })
       }
     })
     // console.log('refreshed macros', this.macros.size)

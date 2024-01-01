@@ -145,4 +145,10 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   }
 }
 
+export class FlatMacroSymbol extends MacroSymbol {
+  constructor(macro: Partial<TMacroSymbol & { id: string }>) {
+    super(macro)
+  }
+}
+
 export type Symbol = StandardSymbol | MacroSymbol

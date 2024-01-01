@@ -28,7 +28,7 @@ interface ScreenRenderProps {
 }
 
 interface ScreenRenderUniforms {
-  render_tex: REGL.Framebuffer
+  u_RenderTexture: REGL.Framebuffer
 }
 
 export interface RenderEngineConfig {
@@ -63,6 +63,7 @@ interface RenderSettings {
   MAX_ZOOM: number
   MIN_ZOOM: number
   ZOOM_TO_CURSOR: boolean
+  FLATTEN_MACROS: boolean
 }
 
 interface RenderTransform {
@@ -89,7 +90,8 @@ export class RenderEngine {
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true
+      ZOOM_TO_CURSOR: true,
+      FLATTEN_MACROS: false
     },
     {
       set: (target, name, value): boolean => {
@@ -144,14 +146,14 @@ export class RenderEngine {
 
     this.regl = REGL({
       container,
-      extensions: ['angle_instanced_arrays', 'OES_texture_float'],
+      extensions: ['angle_instanced_arrays', 'OES_texture_float', 'webgl_depth_texture', 'EXT_frag_depth'],
       attributes,
       profile: true
     })
     console.log('WEBGL LIMITS', this.regl.limits)
 
     this.regl.clear({
-      depth: 0
+      depth: 0,
     })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
@@ -208,10 +210,10 @@ export class RenderEngine {
       `,
         frag: `
         precision mediump float;
-        uniform sampler2D render_tex;
+        uniform sampler2D u_RenderTexture;
         varying vec2 v_UV;
         void main () {
-          gl_FragColor = texture2D(render_tex, (v_UV * 0.5) + 0.5);
+          gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
         }
       `,
 
@@ -240,7 +242,7 @@ export class RenderEngine {
         },
 
         uniforms: {
-          render_tex: (_context: REGL.DefaultContext, props: ScreenRenderProps) => props.frameBuffer
+          u_RenderTexture: (_context: REGL.DefaultContext, props: ScreenRenderProps) => props.frameBuffer
         }
       }
     )
@@ -419,7 +421,7 @@ export class RenderEngine {
     this.dirty = false
     this.regl.clear({
       color: this.settings.BACKGROUND_COLOR,
-      depth: 0
+      depth: 0,
     })
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
