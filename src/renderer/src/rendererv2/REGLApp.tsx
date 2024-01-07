@@ -1,21 +1,6 @@
 import React from 'react'
 import '../App.css'
-import {
-  MacroSymbol,
-  STANDARD_SYMBOLS,
-  STANDARD_SYMBOLS_MAP,
-  StandardSymbol
-} from './symbols'
 import * as Symbols from './symbols'
-import {
-  Pad,
-  Line,
-  Arc,
-  Surface,
-  Contour,
-  Contour_Arc_Segment,
-  Contour_Line_Segment,
-} from './shapes'
 import * as Shapes from './shapes'
 import { RenderEngine } from './engine'
 import { Button, Switch, Badge } from '@mantine/core'
@@ -34,41 +19,41 @@ const SURFACE_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_SURFACES)
   .fill(0)
   .map((_, i) => {
-    SURFACE_RECORDS_ARRAY.push(new Surface({
+    SURFACE_RECORDS_ARRAY.push(new Shapes.Surface({
       polarity: 1,
     }).addContours([
-      new Contour({
+      new Shapes.Contour({
         poly_type: 1,
         // Start point.
         xs: 0 + i * 0.1,
         ys: 0 + i * 0.1,
       })
         .addSegments([
-          // new Contour_Line_Segment({
+          // new Shapes.Contour_Line_Segment({
           //   x: 0.02 + i * 0.1,
           //   y: -0.02 + i * 0.1,
           // }),
-          new Contour_Arc_Segment({
+          new Shapes.Contour_Arc_Segment({
             x: 0.02 + i * 0.1,
             y: -0.02 + i * 0.1,
             xc: 0.015 + i * 0.1,
             yc: -0.005 + i * 0.1,
-            // computer the center coordinates of the arc with a radius of 0.1
+            // computer the center coordinates of the Shapes.Arc with a radius of 0.1
             clockwise: 0,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.05 + i * 0.1,
             y: -0.02 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.05 + i * 0.1,
             y: 0.05 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: -0.05 + i * 0.1,
             y: 0.05 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: -0.05 + i * 0.1,
             y: -0.05 + i * 0.1,
           }),
@@ -77,73 +62,73 @@ new Array<number>(N_SURFACES)
           //   y: -0.5 + i,
           //   xc: -0.5 + i,
           //   yc: 0 + i,
-          //   // computer the center coordinates of the arc with a radius of 0.1
+          //   // computer the center coordinates of the Shapes.Arc with a radius of 0.1
           //   clockwise: 0,
           // }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0 + i * 0.1,
             y: 0 + i * 0.1,
           }),
         ]),
-      new Contour({
+      new Shapes.Contour({
         poly_type: 0,
         // Start point.
         xs: 0.04 + i * 0.1,
         ys: 0.04 + i * 0.1,
       })
         .addSegments([
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.04 + i * 0.1,
             y: 0.03 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.03 + i * 0.1,
             y: 0.03 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.03 + i * 0.1,
             y: 0.04 + i * 0.1,
           }),
-          new Contour_Line_Segment({
+          new Shapes.Contour_Line_Segment({
             x: 0.04 + i * 0.1,
             y: 0.04 + i * 0.1,
           }),
         ]),
-        // new Contour({
-        //   poly_type: 0,
-        //   // Start point.
-        //   xs: 0.04 + i * 0.1,
-        //   ys: 0.04 + i * 0.1,
-        // })
-        //   .addSegments([
-        //     new Contour_Line_Segment({
-        //       x: 0.04 + i * 0.1,
-        //       y: 0.03 + i * 0.1,
-        //     }),
-        //     new Contour_Line_Segment({
-        //       x: 0.03 + i * 0.1,
-        //       y: 0.03 + i * 0.1,
-        //     }),
-        //     new Contour_Line_Segment({
-        //       x: 0.03 + i * 0.1,
-        //       y: 0.04 + i * 0.1,
-        //     }),
-        //     new Contour_Line_Segment({
-        //       x: 0.04 + i * 0.1,
-        //       y: 0.04 + i * 0.1,
-        //     }),
-        //   ])
+      // new Shapes.Contour({
+      //   poly_type: 0,
+      //   // Start point.
+      //   xs: 0.04 + i * 0.1,
+      //   ys: 0.04 + i * 0.1,
+      // })
+      //   .addSegments([
+      //     new Shapes.Contour_Line_Segment({
+      //       x: 0.04 + i * 0.1,
+      //       y: 0.03 + i * 0.1,
+      //     }),
+      //     new Shapes.Contour_Line_Segment({
+      //       x: 0.03 + i * 0.1,
+      //       y: 0.03 + i * 0.1,
+      //     }),
+      //     new Shapes.Contour_Line_Segment({
+      //       x: 0.03 + i * 0.1,
+      //       y: 0.04 + i * 0.1,
+      //     }),
+      //     new Shapes.Contour_Line_Segment({
+      //       x: 0.04 + i * 0.1,
+      //       y: 0.04 + i * 0.1,
+      //     }),
+      //   ])
     ]))
   })
 
 
-const SYMBOLS: StandardSymbol[] = []
+const SYMBOLS: Symbols.StandardSymbol[] = []
 
-new Array<number>(STANDARD_SYMBOLS.length)
+new Array<number>(Symbols.STANDARD_SYMBOLS.length)
   .fill(0)
   .map((_, i) => {
-    const sym_ptr =
-      new StandardSymbol({
+    const sym =
+      new Symbols.StandardSymbol({
         id: 'symbol' + i, // id
         symbol: i, // symbol
         width: 0.01, // width, square side, diameter
@@ -152,8 +137,8 @@ new Array<number>(STANDARD_SYMBOLS.length)
         corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
         outer_dia: 0.01, // — Outer diameter of the shape
         inner_dia: 0.008, // — Inner diameter of the shape
-        line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-        line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+        line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+        line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
         angle: 0, // — Angle of the spoke from 0 degrees
         gap: 0.001, // — Gap
         num_spokes: 2, // — Number of spokes
@@ -164,21 +149,21 @@ new Array<number>(STANDARD_SYMBOLS.length)
         num_rings: 2 // — Number of rings
       })
 
-    SYMBOLS.push(sym_ptr)
+    SYMBOLS.push(sym)
   })
 
-const round_sym_ptr =
-  new StandardSymbol({
+const round_sym =
+  new Symbols.StandardSymbol({
     id: 'round', // id
-    symbol: STANDARD_SYMBOLS_MAP.Round, // symbol
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
     width: 0.01, // width, square side, diameter
     height: 0.01, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
     inner_dia: 0.008, // — Inner diameter of the shape
-    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
     gap: 0.001, // — Gap
     num_spokes: 2, // — Number of spokes
@@ -189,20 +174,20 @@ const round_sym_ptr =
     num_rings: 2 // — Number of rings
   })
 
-SYMBOLS.push(round_sym_ptr)
+SYMBOLS.push(round_sym)
 
-const square_sym_ptr =
-  new StandardSymbol({
+const square_sym =
+  new Symbols.StandardSymbol({
     id: 'round', // id
-    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
     width: 0.01, // width, square side, diameter
     height: 0.01, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
     inner_dia: 0.008, // — Inner diameter of the shape
-    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
     gap: 0.001, // — Gap
     num_spokes: 2, // — Number of spokes
@@ -213,21 +198,21 @@ const square_sym_ptr =
     num_rings: 2 // — Number of rings
   })
 
-SYMBOLS.push(square_sym_ptr)
+SYMBOLS.push(square_sym)
 
 
-const square2_sym_ptr =
-  new StandardSymbol({
+const square2_sym =
+  new Symbols.StandardSymbol({
     id: 'round', // id
-    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
     width: 0.04, // width, square side, diameter
     height: 0.04, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
     inner_dia: 0.008, // — Inner diameter of the shape
-    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
     gap: 0.001, // — Gap
     num_spokes: 2, // — Number of spokes
@@ -238,26 +223,26 @@ const square2_sym_ptr =
     num_rings: 2 // — Number of rings
   })
 
-SYMBOLS.push(square2_sym_ptr)
+SYMBOLS.push(square2_sym)
 
 
 const PAD_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_PADS)
   .fill(0).map((_, i) => {
-    PAD_RECORDS_ARRAY.push(new Pad({
+    PAD_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: i % Object.keys(STANDARD_SYMBOLS).length,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: i % Object.keys(Symbols.STANDARD_SYMBOLS).length,
       symbol: SYMBOLS[i % SYMBOLS.length],
-      // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
+      // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       resize_factor: Math.random() + 1,
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
-      // Pad orientation (degrees)
+      // Shapes.Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 10,
@@ -269,7 +254,7 @@ new Array<number>(N_PADS)
 const LINE_RECORDS_ARRAY_NEG: Shapes.Shape[] = []
 new Array<number>(N_LINES)
   .fill(0).map((_, i) => {
-    LINE_RECORDS_ARRAY_NEG.push(new Line({
+    LINE_RECORDS_ARRAY_NEG.push(new Shapes.Line({
 
       // Start point.
       xs: (Math.random() - 0.5) * 1,
@@ -279,9 +264,9 @@ new Array<number>(N_LINES)
       xe: (Math.random() - 0.5) * 1,
       ye: (Math.random() - 0.5) * 1,
 
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
-      symbol: i % 2 == 0 ? square_sym_ptr : round_sym_ptr,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: i % 2 == 0 ? square_sym : round_sym,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
@@ -293,7 +278,7 @@ new Array<number>(N_LINES)
 const LINE_RECORDS_ARRAY_POS: Shapes.Shape[] = []
 new Array<number>(N_LINES)
   .fill(0).map((_, i) => {
-    LINE_RECORDS_ARRAY_POS.push(new Line({
+    LINE_RECORDS_ARRAY_POS.push(new Shapes.Line({
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -302,9 +287,9 @@ new Array<number>(N_LINES)
       xe: (Math.random() - 0.5) * 1,
       ye: (Math.random() - 0.5) * 1,
 
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
-      symbol: i % 2 == 0 ? square_sym_ptr : round_sym_ptr,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: i % 2 == 0 ? square_sym : round_sym,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
@@ -325,7 +310,7 @@ new Array<number>(N_ARCS)
     function degreesToRadians(degrees: number): number {
       return degrees * (Math.PI / 180);
     }
-    ARC_RECORDS_ARRAY.push(new Arc({
+    ARC_RECORDS_ARRAY.push(new Shapes.Arc({
       // Center point.
       xc: center_x,
       yc: center_y,
@@ -338,9 +323,9 @@ new Array<number>(N_ARCS)
       xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
       ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
 
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
-      symbol: round_sym_ptr,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: round_sym,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
       polarity: 1,
@@ -351,9 +336,9 @@ new Array<number>(N_ARCS)
   })
 
 const MACROS_ARRAY: Symbols.Symbol[] = []
-new Array<number>(1)
+new Array<number>(10)
   .fill(0).map((_, i) => {
-    MACROS_ARRAY.push(new MacroSymbol({
+    MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: [
         // PAD_RECORDS_ARRAY[i],
@@ -372,19 +357,19 @@ new Array<number>(1)
 const MACRO_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_MACROS)
   .fill(0).map((_, i) => {
-    MACRO_RECORDS_ARRAY.push(new Pad({
+    MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
       symbol: MACROS_ARRAY[0],
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
       polarity: Math.random() > 0.5 ? 1 : 0,
-      // Pad orientation (degrees)
+      // Shapes.Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 20,
@@ -393,18 +378,18 @@ new Array<number>(N_MACROS)
     }))
   })
 
-const large_square_sym_ptr =
-  new StandardSymbol({
+const large_square_sym =
+  new Symbols.StandardSymbol({
     id: 'round', // id
-    symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
     width: 0.5, // width, square side, diameter
     height: 0.5, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
     inner_dia: 0.008, // — Inner diameter of the shape
-    line_width: 0.001, // — Line width of the shape (applies to the whole shape)
-    line_length: 0.02, // — Line length of the shape (applies to the whole shape)
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
     gap: 0.001, // — Gap
     num_spokes: 2, // — Number of spokes
@@ -416,23 +401,23 @@ const large_square_sym_ptr =
   })
 
 
-const OVERLAPPING_PADS_ARRAY: Pad[] = []
+const OVERLAPPING_PADS_ARRAY: Shapes.Pad[] = []
 new Array<number>(3)
   .fill(0).map((_, i) => {
-    OVERLAPPING_PADS_ARRAY.push(new Pad({
+    OVERLAPPING_PADS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 8,
       y: i / 9,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
-      symbol: large_square_sym_ptr,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: large_square_sym,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
       // Polarity. 0 = negative, 1 = positive
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
-      // Pad orientation (degrees)
+      // Shapes.Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
@@ -445,7 +430,7 @@ const OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
 new Array<number>(1)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACROS_ARRAY.push(new MacroSymbol({
+    OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: OVERLAPPING_PADS_ARRAY
     }))
@@ -455,7 +440,7 @@ const SPOOF_OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
 new Array<number>(1)
   .fill(0).map((_, i) => {
-    SPOOF_OVERLAPPING_MACROS_ARRAY.push(new MacroSymbol({
+    SPOOF_OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: [OVERLAPPING_PADS_ARRAY[0]]
     }))
@@ -464,12 +449,12 @@ new Array<number>(1)
 const OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
 new Array<number>(10)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Pad({
+    OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 10,
       y: -i / 10,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
       symbol: OVERLAPPING_MACROS_ARRAY[0],
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
@@ -477,7 +462,7 @@ new Array<number>(10)
       // Polarity. 0 = negative, 1 = positive
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
-      // Pad orientation (degrees)
+      // Shapes.Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
@@ -489,12 +474,12 @@ new Array<number>(10)
 const SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
 new Array<number>(10)
   .fill(0).map((_, i) => {
-    SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Pad({
+    SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 10 + 1,
       y: -i / 10 + 1,
-      // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-      // sym_num: STANDARD_SYMBOLS_MAP.Round,
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
       symbol: SPOOF_OVERLAPPING_MACROS_ARRAY[0],
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
@@ -502,7 +487,7 @@ new Array<number>(10)
       // Polarity. 0 = negative, 1 = positive
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
-      // Pad orientation (degrees)
+      // Shapes.Pad orientation (degrees)
       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
@@ -511,7 +496,62 @@ new Array<number>(10)
     }))
   })
 
+const POLYLINE_RECORDS_ARRAY: Shapes.PolyLine[] = []
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    POLYLINE_RECORDS_ARRAY.push(new Shapes.PolyLine({
+      // Start point.
+      // xs: (Math.random() - 0.5) * 1,
+      // ys: (Math.random() - 0.5) * 1,
+      xs: 0,
+      ys: 0,
 
+      cornertype: 'miter',
+
+      pathtype: 'square',
+      // Polarity. 0 = negative, 1 = positive
+      // polarity: i % 2,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 1,
+      width: 0.05,
+    }).addLines([
+      {
+        x: (Math.random() - 0.5) * 1,
+        y: (Math.random() - 0.5) * 1,
+      },
+      {
+        x: (Math.random() - 0.5) * 1,
+        y: (Math.random() - 0.5) * 1,
+      },
+      {
+        x: (Math.random() - 0.5) * 1,
+        y: (Math.random() - 0.5) * 1,
+      },
+      {
+        x: (Math.random() - 0.5) * 1,
+        y: (Math.random() - 0.5) * 1,
+      },
+      {
+        x: 0.0,
+        y: 0.5,
+      },
+      {
+        x: 0.5,
+        y: 0.5,
+      },
+      {
+        x: 0.0,
+        y: -1.0,
+      },
+      {
+        x: -0.5,
+        y: -0.5,
+      }
+    ]))
+
+  })
+
+console.log(POLYLINE_RECORDS_ARRAY)
 
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
@@ -529,11 +569,11 @@ function REGLApp(): JSX.Element {
     // DictionaryUser
     // DictionaryFont
 
-    Engine.settings.OUTLINE_MODE = false
-    Engine.settings.FLATTEN_MACROS = false
+    Engine.settings.OUTLINE_MODE = true
+    Engine.settings.FLATTEN_MACROS = true
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
     // SYMBOLS.forEach(s => Engine.addSymbol(s.value))
-    // SYMBOLS.forEach(s => s.value.symbol = STANDARD_SYMBOLS_MAP.Round)
+    // SYMBOLS.forEach(s => s.value.symbol = Symbols.STANDARD_SYMBOLS_MAP.Round)
 
 
     // Engine.addDictionary({}_)
@@ -548,19 +588,19 @@ function REGLApp(): JSX.Element {
     //     rotation: 0,
     //   },
     //   image: [
-    //     malloc(new Pad({
+    //     malloc(new Shapes.Pad({
     //       // Center point.
     //       x: 0,
     //       y: 0,
-    //       // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-    //       // sym_num: STANDARD_SYMBOLS_MAP.Round,
-    //       symbol: round_sym_ptr,
+    //       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+    //       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+    //       symbol: round_sym,
     //       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
     //       // resize_factor: Math.random() + 1,
     //       resize_factor: 1,
     //       // Polarity. 0 = negative, 1 = positive
     //       polarity: 1,
-    //       // Pad orientation (degrees)
+    //       // Shapes.Pad orientation (degrees)
     //       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
     //       rotation: 0,
     //       // 0 = no mirror, 1 = mirror
@@ -601,11 +641,15 @@ function REGLApp(): JSX.Element {
     //   image: MACRO_RECORDS_ARRAY
     // })
 
-    const macroLayer = Engine.addLayer({
-      name: 'overlap',
-      image: [...OVERLAPPING_MACRO_RECORDS_ARRAY]
-    })
+    // const macroLayer = Engine.addLayer({
+    //   name: 'overlap',
+    //   image: [...OVERLAPPING_MACRO_RECORDS_ARRAY]
+    // })
 
+    const polylineLayer = Engine.addLayer({
+      name: 'polyline',
+      image: [...POLYLINE_RECORDS_ARRAY]
+    })
 
     // setTimeout(() => {
     //   // arcs.value.map(a => a.value.polarity = 0)
@@ -615,7 +659,7 @@ function REGLApp(): JSX.Element {
     //   // console.log(macroLayer.records.map(a => a.value.polarity))
     //   // macroLayer.records.map(a => a.value.polarity = 0)
     //   macroLayer.records.map(record => {
-    //     if (record instanceof Pad && record.symbol instanceof MacroSymbol) {
+    //     if (record instanceof Shapes.Pad && record.symbol instanceof Symbols.MacroSymbol) {
     //       // record.value.x = Math.random()
     //       // record.value.y = Math.random()
     //       // record.polarity = 0
@@ -623,12 +667,12 @@ function REGLApp(): JSX.Element {
     //       // record.polarity = Math.random() > 0.5 ? 1 : 0
     //       record.polarity = record.index % 2 == 0 ? 1 : 0
     //       // record.value.symbol.value.shapes.map(shape => {
-    //       //   if (shape.value instanceof Pad) {
+    //       //   if (shape.value instanceof Shapes.Pad) {
     //       //     shape.value.polarity = Math.random() > 0.5 ? 1 : 0
     //       //   }
     //       // })
     //       // record.value.symbol.value.shapes.map(shape => {
-    //       //   if (shape.value instanceof Pad) {
+    //       //   if (shape.value instanceof Shapes.Pad) {
     //       //     shape.value.polarity = Math.random() > 0.5 ? 1 : 0
     //       //   }
     //       // })
@@ -653,10 +697,10 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    // Engine.addLayer({
-    //   name: 'layer309',
-    //   image: SURFACE_RECORDS_ARRAY
-    // })
+    Engine.addLayer({
+      name: 'layer309',
+      image: SURFACE_RECORDS_ARRAY
+    })
 
     // Engine.addLayer({
     //   name: 'layer3',
