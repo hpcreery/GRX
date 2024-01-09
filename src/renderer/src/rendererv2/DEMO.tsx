@@ -3,7 +3,7 @@ import '../App.css'
 import * as Symbols from './symbols'
 import * as Shapes from './shapes'
 import { RenderEngine } from './engine'
-import { Button, Switch, Badge } from '@mantine/core'
+import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { IPlotRecord, ISymbolRecord } from './types'
 // import { vec2 } from 'gl-matrix'
 // import { PointerEvent } from './engine'
@@ -565,18 +565,10 @@ function REGLApp(): JSX.Element {
       }
     })
 
-    // DictionaryStandard
-    // DictionaryUser
-    // DictionaryFont
-
     Engine.settings.OUTLINE_MODE = true
     Engine.settings.FLATTEN_MACROS = true
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
-    // SYMBOLS.forEach(s => Engine.addSymbol(s.value))
-    // SYMBOLS.forEach(s => s.value.symbol = Symbols.STANDARD_SYMBOLS_MAP.Round)
 
-
-    // Engine.addDictionary({}_)
 
 
     // Engine.addLayer({
@@ -609,27 +601,27 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    // Engine.addLayer({
-    //   name: 'layer0',
-    //   transform: {
-    //     datum: [0.5, 0],
-    //     scale: 1,
-    //     rotation: 0,
-    //     mirror: 1,
-    //   },
-    //   image: PAD_RECORDS_ARRAY
-    // })
+    Engine.addLayer({
+      name: 'pads',
+      transform: {
+        datum: [0.5, 0],
+        scale: 1,
+        rotation: 0,
+        mirror: 1,
+      },
+      image: PAD_RECORDS_ARRAY
+    })
 
-    // Engine.addLayer({
-    //   name: 'layer1',
-    //   transform: {
-    //     // datum: [0.5, 0],
-    //     // scale: 1,
-    //     // rotation: 0,
-    //     // mirror: true,
-    //   },
-    //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
-    // })
+    Engine.addLayer({
+      name: '+/- lines',
+      transform: {
+        // datum: [0.5, 0],
+        // scale: 1,
+        // rotation: 0,
+        // mirror: true,
+      },
+      image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
+    })
 
     // const layer2 = Engine.addLayer({
     //   name: 'layer2',
@@ -641,10 +633,10 @@ function REGLApp(): JSX.Element {
     //   image: MACRO_RECORDS_ARRAY
     // })
 
-    // const macroLayer = Engine.addLayer({
-    //   name: 'overlap',
-    //   image: [...OVERLAPPING_MACRO_RECORDS_ARRAY]
-    // })
+    const macroLayer = Engine.addLayer({
+      name: 'overlapping-macro',
+      image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    })
 
     const polylineLayer = Engine.addLayer({
       name: 'polyline',
@@ -689,23 +681,19 @@ function REGLApp(): JSX.Element {
     // Engine.render(true)
 
 
-    // SYMBOLS_ARRAY.fill(new Symbol({}))
-
-    // Engine.addLayer({
-    //   name: 'layer2',
-    //   symbols: SYMBOLS_ARRAY,
-    //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
-    // })
 
     Engine.addLayer({
-      name: 'layer309',
+      name: 'surface-arc-combo',
+      image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
+    })
+
+    Engine.addLayer({
+      name: 'surfaces',
       image: SURFACE_RECORDS_ARRAY
     })
 
-    // Engine.addLayer({
-    //   name: 'layer3',
-    //   set: [...SURFACE_RECORDS_ARRAY]
-    // })
+    Engine.layers.map(l => l.visible = false)
+    Engine.render(true)
 
     Engine.pointer.addEventListener('pointerdown', console.log)
 
@@ -733,9 +721,9 @@ function REGLApp(): JSX.Element {
         }}
       />
       {engine ?
-        <div style={{
-          zIndex: 100,
-          // background: 'rgba(0,0,0,0.5)',
+
+        <Box style={{
+          width: '100px'
         }}>
           <StatsWidget />
           <Button
@@ -752,7 +740,23 @@ function REGLApp(): JSX.Element {
           <Switch
             defaultChecked={engine.settings.ZOOM_TO_CURSOR}
             onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
-        </div>
+          {
+            engine.layers.map((layer, i) => {
+              return (
+                <div key={i}>
+                  {layer.name}
+                  <Switch
+                    defaultChecked={layer.visible}
+                    onChange={(e): void => {
+                      layer.visible = e.target.checked
+                      engine.render(true)
+                    }} />
+                </div>
+              )
+            })
+          }
+        </Box>
+
         : null}
     </>
   )

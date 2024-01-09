@@ -85,7 +85,7 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           position="center"
           spacing="xl"
           mih={220}
-          sx={{ pointerEvents: 'none' }}
+          // sx={{ pointerEvents: 'none' }}
           style={{ zIndex: 40 }}
         >
           <Dropzone.Accept>
@@ -142,13 +142,13 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
               // display: 'block'
             }
           }}
-          styles={{
-            viewport: {
-              '&& > div': {
-                display: 'block !important'
-              }
-            }
-          }}
+          // styles={{
+          //   viewport: {
+          //     '&& > div': {
+          //       display: 'block !important'
+          //     }
+          //   }
+          // }}
         >
           <Group position="center" grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
