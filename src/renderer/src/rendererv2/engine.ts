@@ -198,7 +198,7 @@ export class RenderEngine {
     this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
       {
         vert: `
-        precision mediump float;
+        precision highp float;
         attribute vec2 a_Vertex_Position;
         varying vec2 v_UV;
         void main () {
@@ -207,7 +207,7 @@ export class RenderEngine {
         }
       `,
         frag: `
-        precision mediump float;
+        precision highp float;
         uniform sampler2D u_RenderTexture;
         varying vec2 v_UV;
         void main () {

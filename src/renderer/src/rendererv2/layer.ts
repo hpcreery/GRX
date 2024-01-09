@@ -657,7 +657,7 @@ export class MacroRenderer extends ShapeRenderer {
       REGL.DefaultContext & WorldContext
     >({
       vert: `
-      precision mediump float;
+      precision highp float;
 
       uniform float u_Index;
       uniform float u_QtyFeatures;
@@ -675,7 +675,7 @@ export class MacroRenderer extends ShapeRenderer {
       }
     `,
       frag: `
-      precision mediump float;
+      precision highp float;
 
       uniform sampler2D u_RenderTexture;
       uniform float u_Polarity;
