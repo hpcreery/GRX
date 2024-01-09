@@ -130,9 +130,10 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public readonly type = FeatureTypeIdentifyer.MACRO_DEFINITION
   public id = ''
   public sym_num = malloc<number>(0)
+  public flatten = false
   public shapes: Shape[] = []
 
-  constructor(macro: Partial<TMacroSymbol & { id: string }>) {
+  constructor(macro: Partial<TMacroSymbol & { id: string, flatten: boolean }>) {
     Object.assign(this, macro)
   }
 

@@ -632,13 +632,18 @@ interface MacroUniforms {
 }
 interface MacroAttributes {}
 
-interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {}
+interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {
+  flatten: boolean
+}
 
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
+  public flatten: boolean
   private drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   constructor(props: MacroRendererProps) {
     super(props)
+
+    this.flatten = props.flatten
 
     this.framebuffer = this.regl.framebuffer({
       depth: true
@@ -719,7 +724,7 @@ export class MacroRenderer extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    if (context.settings.FLATTEN_MACROS === false) {
+    if (this.flatten === false) {
       super.render(context)
       return
     }

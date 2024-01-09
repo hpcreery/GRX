@@ -63,7 +63,6 @@ interface RenderSettings {
   MAX_ZOOM: number
   MIN_ZOOM: number
   ZOOM_TO_CURSOR: boolean
-  FLATTEN_MACROS: boolean
 }
 
 interface RenderTransform {
@@ -91,7 +90,6 @@ export class RenderEngine {
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
       ZOOM_TO_CURSOR: true,
-      FLATTEN_MACROS: false
     },
     {
       set: (target, name, value): boolean => {

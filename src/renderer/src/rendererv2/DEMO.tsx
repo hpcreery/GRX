@@ -432,7 +432,11 @@ new Array<number>(1)
   .fill(0).map((_, i) => {
     OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
-      shapes: OVERLAPPING_PADS_ARRAY
+      shapes: OVERLAPPING_PADS_ARRAY,
+      // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
+      // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
+      // negatives will act like holes in the macro, rather than being drawn as negative shapes.
+      flatten: false
     }))
   })
 
@@ -442,7 +446,11 @@ new Array<number>(1)
   .fill(0).map((_, i) => {
     SPOOF_OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
-      shapes: [OVERLAPPING_PADS_ARRAY[0]]
+      shapes: [OVERLAPPING_PADS_ARRAY[0]],
+      // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
+      // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
+      // negatives will act like holes in the macro, rather than being drawn as negative shapes.
+      flatten: true
     }))
   })
 
@@ -566,7 +574,7 @@ function REGLApp(): JSX.Element {
     })
 
     Engine.settings.OUTLINE_MODE = true
-    Engine.settings.FLATTEN_MACROS = true
+    // Engine.settings.FLATTEN_MACROS = true
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
 
 

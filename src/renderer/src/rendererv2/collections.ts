@@ -317,7 +317,8 @@ export class MacroShaderCollection {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
-              image: record.symbol.shapes
+              image: record.symbol.shapes,
+              flatten: record.symbol.flatten,
             }),
 
             records: [],
