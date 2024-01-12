@@ -12,6 +12,7 @@ export const FeatureTypeIdentifyer = {
   MACRO: 'macro',
   SYMBOL_DEFINITION: 'symbol_defintion',
   MACRO_DEFINITION: 'macro_definition',
+  STEP_AND_REPEAT: 'step_and_repeat',
 } as const
 
 export type FeatureTypeIdentifyers = typeof FeatureTypeIdentifyer[keyof typeof FeatureTypeIdentifyer]
