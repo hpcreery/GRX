@@ -4,6 +4,7 @@ import { MacroSymbol, STANDARD_SYMBOLS_MAP, StandardSymbol } from '../../src/ren
 import {
   Pad,
   Line,
+  PolyLine,
   // Arc,
   Surface,
   Contour,
@@ -34,7 +35,6 @@ type LayerHierarchy = {
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
-  console.log('scale', scale)
 
   const availableCells = new Set<string>()
   const referencedCells = new Set<string>()
@@ -51,7 +51,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
       switch (element.type) {
         case 'box':
         case 'boundary': {
-          console.log('boundary|box', element)
+          // console.log('boundary|box', element)
           el = element.el as TREE.boundary | TREE.box
           let contour = new Contour({
             poly_type: 1,
@@ -87,71 +87,40 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
 
         case 'path':
           {
-            console.log('path', element)
+            // console.log('path', element)
             el = element.el as TREE.path
             const width = (el.WIDTH ? el.WIDTH.width : 0.001) * scale
 
-            const round_sym_ptr = new StandardSymbol({
-              id: 'round', // id
-              symbol: STANDARD_SYMBOLS_MAP.Round, // symbol
-              width: width, // width, square side, diameter
-              height: width, // height
-              outer_dia: width // — Outer diameter of the shape
-            })
-            const square_sym_ptr = new StandardSymbol({
-              id: 'square', // id
-              symbol: STANDARD_SYMBOLS_MAP.Square, // symbol
-              width: width, // width, square side, diameter
-              height: width, // height
-              outer_dia: width // — Outer diameter of the shape
-            })
-
-            const lines: Shape[] = []
+            const lines: { x: number; y: number; }[] = []
             for (const [i, xy] of el.XY.entries()) {
               if (i == 0) continue
-              const line = new Line({
-                // Start point.
-                xs: el.XY[i - 1].x * scale,
-                ys: el.XY[i - 1].y * scale,
-
-                // End point.
-                xe: xy.x * scale,
-                ye: xy.y * scale,
-
-                // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-                // sym_num: i % 2 == 0 ? STANDARD_SYMBOLS_MAP.Square : STANDARD_SYMBOLS_MAP.Round,
-                symbol: [square_sym_ptr, round_sym_ptr, square_sym_ptr][
-                  el.PATHTYPE ? el.PATHTYPE.pathtype : 0
-                ],
-                // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-                polarity: 1 // Polarity. 0 = negative, 1 = positive
-              })
+              const line= {
+                x: xy.x * scale,
+                y: xy.y * scale,
+              }
               lines.push(line)
             }
-            const macro = new MacroSymbol({
-              id: Math.random().toString(),
-              shapes: lines
-            })
-            const pad = new Pad({
-              x: 0,
-              y: 0,
-              symbol: macro, // The index, in the feature symbol names section, of the symbol to be used to draw the pad.
-              resize_factor: 1,
-              polarity: 1 // Polarity. 0 = negative, 1 = positive
-              // Pad orientation (degrees)
-              // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
-              // rotation: element.el.ANGLE ? element.el.ANGLE.angle : 0,
-              // mirror: element.el.STRANS ? (element.el.STRANS.mirror ? 1 : 0) : 0 // 0 = no mirror, 1 = mirror
-            })
+            let polyline = new PolyLine({
+              // Start point.
+              xs: el.XY[0].x * scale,
+              ys: el.XY[0].y * scale,
+              // GDSII spec. 0=Flush, 1=Half Round Extension, 2=Half Width Extension, 4=Custom Extension
+              cornertype: ['miter', 'round', 'miter', undefined][el.PATHTYPE ? el.PATHTYPE.pathtype : 0] as 'miter' | 'round' | undefined,
+              pathtype: ['none', 'round', 'square', 'none'][el.PATHTYPE ? el.PATHTYPE.pathtype : 0] as 'none' | 'round' | 'square',
+              // Polarity. 0 = negative, 1 = positive
+              polarity: 1,
+              width: width,
+            }).addLines(lines)
+            
             gdsiiHierarchy[cellName].push({
               layer: el.LAYER.layer,
-              shape: pad
+              shape: polyline
             })
           }
           break
 
         case 'sref': {
-          console.log('sref', element)
+          // console.log('sref', element)
           el = element.el as TREE.sref
           const srefName = el.SNAME.name
           referencedCells.add(srefName)
@@ -193,7 +162,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   const topLevelCells = Array.from(availableCells).filter(function (obj) {
     return Array.from(referencedCells).indexOf(obj) == -1
   })
-  console.log('topLevelCells', topLevelCells)
+  // console.log('topLevelCells', topLevelCells)
 
   // convert GDSIIHierarchy to LayerHierarchy
 

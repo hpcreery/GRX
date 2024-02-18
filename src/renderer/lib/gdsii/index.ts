@@ -1,5 +1,6 @@
 // import gdsiiFile from './testdata/example.gds2?url'
-import gdsiiFile from './testdata/inv.gds2?url'
+// import gdsiiFile from './testdata/inv.gds2?url'
+import gdsiiFile from './testdata/example1.gds?url'
 
 import * as LEXER from './lexer'
 import * as PARSER from './parser'
@@ -16,7 +17,6 @@ export async function addGDSII(engine: RenderEngine): Promise<void> {
   const layerHierarchy = CONVERTER.convert(bnf)
 
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-    console.log('layer', layer)
     engine.addLayer({
       name: layer,
       image: shapes.shapes

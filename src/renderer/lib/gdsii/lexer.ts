@@ -7,19 +7,20 @@ import { RecordToken } from './types'
 export function record_reader(stream: ArrayBuffer): RecordToken[] {
   let i = 0
   const tokens: RecordToken[] = []
-  console.log('stream.byteLength', stream.byteLength)
+  // console.log('stream.byteLength', stream.byteLength)
   while (i < stream.byteLength) {
     const recordHeader = stream.slice(i, i + 4)
     if (recordHeader.byteLength < 4) {
       // return
       throw new Error('recordHeader.byteLength < 4')
+      // console.warn('recordHeader.byteLength < 4')
     }
     const [word1, word2] = struct('>HH').unpack(recordHeader)
     const recordLength = word1
     if (recordLength < 4) {
       // return
-      // throw new Error('recordLength < 4')
-      console.warn('recordLength < 4')
+      throw new Error('GDSII recordLength < 4')
+      // console.warn('GDSII recordLength < 4')
     }
     const recordType = Math.floor(word2 / 256)
     const dataType = word2 & 0x00ff
