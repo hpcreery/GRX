@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
@@ -52,7 +52,7 @@ void main() {
 
   float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
 
-  // gl_Position = vec4(FinalPosition.xy, a_Index / u_QtyFeatures, 1);
-  gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), Index, 1);
+  gl_Position = vec4(FinalPosition.xy, a_Index / u_QtyFeatures, 1);
+  // gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), Index, 1);
 
 }

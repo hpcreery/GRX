@@ -240,15 +240,15 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                 }}
                 variant="subtle"
                 color="gray"
-                styles={(theme) => ({
-                  root: {
-                    color: theme.colorScheme == 'dark' ? theme.colors.gray[4] : theme.colors.gray[9]
-                  },
-                  inner: {
-                    justifyContent: 'flex-start',
-                    paddingLeft: 10
-                  }
-                })}
+                // styles={(theme) => ({
+                //   root: {
+                //     color: theme.colorScheme == 'dark' ? theme.colors.gray[4] : theme.colors.gray[9]
+                //   },
+                //   inner: {
+                //     justifyContent: 'flex-start',
+                //     paddingLeft: 10
+                //   }
+                // })}
                 leftIcon={
                   visible ? (
                     <IconCircleFilled
@@ -292,16 +292,16 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
               onClick={deleteLayer}
               variant="subtle"
               color="gray"
-              styles={() => ({
-                icon: {
-                  margin: 0,
-                  marginRight: 0
-                },
-                leftIcon: {
-                  margin: 0,
-                  marginRight: 0
-                }
-              })}
+              // styles={() => ({
+              //   icon: {
+              //     margin: 0,
+              //     marginRight: 0
+              //   },
+              //   leftIcon: {
+              //     margin: 0,
+              //     marginRight: 0
+              //   }
+              // })}
             />
           </animated.div>
           <FeatureHistogramModal

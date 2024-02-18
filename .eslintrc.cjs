@@ -31,7 +31,7 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': ['off'], //'error',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-var-requires': 'off',
-    'linebreak-style': ['error', 'unix'],
+    // 'linebreak-style': ['error', 'unix'],
     '@typescript-eslint/no-empty-interface': 'off',
     // 'prettier/prettier': [
     //   'error',

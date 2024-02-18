@@ -1,6 +1,6 @@
 import { ISymbolRecord, FeatureTypeIdentifyer, toMap } from './types'
 import { Shape } from './shapes'
-import { ptr } from './utils'
+import { malloc, ptr } from './utils'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -88,10 +88,10 @@ export const SYMBOL_PARAMETERS_MAP = toMap(SYMBOL_PARAMETERS)
 export type TStandardSymbol = typeof SYMBOL_PARAMETERS_MAP
 
 export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
-  public type = FeatureTypeIdentifyer.SYMBOL_DEFINITION
+  public readonly type = FeatureTypeIdentifyer.SYMBOL_DEFINITION
   public id = ''
   public symbol = STANDARD_SYMBOLS_MAP.Null
-  public sym_num = 0
+  public sym_num = malloc<number>(0)
   public width = 0
   public height = 0
   public corner_radius = 0
@@ -127,21 +127,29 @@ export type TMacroSymbol = {
 }
 
 export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
-  public type = FeatureTypeIdentifyer.MACRO_DEFINITION
+  public readonly type = FeatureTypeIdentifyer.MACRO_DEFINITION
   public id = ''
-  public sym_num = 0
+  public sym_num = malloc<number>(0)
+  public flatten = false
   public shapes: Shape[] = []
 
-  constructor(macro: Partial<TMacroSymbol & { id: string }>) {
+  constructor(macro: Partial<TMacroSymbol & { id: string, flatten: boolean }>) {
     Object.assign(this, macro)
   }
 
   public get array(): number[] {
-    return this.shapes.flatMap((shape) => shape.array)
+    // return this.shapes.flatMap((shape) => shape.array)
+    return []
   }
 
   public get length(): number {
     return this.shapes.length
+  }
+}
+
+export class FlatMacroSymbol extends MacroSymbol {
+  constructor(macro: Partial<TMacroSymbol & { id: string }>) {
+    super(macro)
   }
 }
 

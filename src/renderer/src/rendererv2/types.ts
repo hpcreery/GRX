@@ -1,3 +1,4 @@
+import { vec2 } from 'gl-matrix'
 
 export const FeatureTypeIdentifyer = {
   PAD: 'pad',
@@ -7,6 +8,7 @@ export const FeatureTypeIdentifyer = {
   LINESEGMENT: 'linesegment',
   CONTOUR: 'contour',
   SURFACE: 'surface',
+  POLYLINE: 'polyline',
   MACRO: 'macro',
   SYMBOL_DEFINITION: 'symbol_defintion',
   MACRO_DEFINITION: 'macro_definition',
@@ -29,4 +31,11 @@ export interface ISymbolRecord {
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
+}
+
+export interface Transform {
+  datum: vec2
+  rotation: number
+  scale: number
+  mirror: number
 }

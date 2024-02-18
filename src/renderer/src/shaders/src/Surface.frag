@@ -1,4 +1,4 @@
-precision mediump float;
+precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
@@ -79,7 +79,7 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-// float udSegment( in vec2 p, in vec2 a, in vec2 b )
+// float sdSegment( in vec2 p, in vec2 a, in vec2 b )
 // {
 //     vec2 ba = b-a;
 //     vec2 pa = p-a;
@@ -119,7 +119,7 @@ vec4 texelFetch(sampler2D tex, vec2 texSize, vec2 pixelCoord) {
 float getValueByIndexFromTexture(float index) {
   float col = mod(index, u_ContoursTextureDimensions.x);
   float row = floor(index / u_ContoursTextureDimensions.x);
-  return texelFetch(u_ContoursTexture, u_ContoursTextureDimensions, vec2(col, row)).x;
+  return float(texelFetch(u_ContoursTexture, u_ContoursTextureDimensions, vec2(col, row)));
 }
 
 float getValueByIndexFromTexture(int index) {
@@ -166,7 +166,7 @@ void main() {
   float dist = 12340.0;
 
   float angle = 0.0;
-    // float N = 16.0;
+  // float N = 16.0;
 
 
   // float t = speed * iTime;
@@ -213,7 +213,7 @@ void main() {
 
       current_poly_type = getValueByIndexFromTexture(typeIndex + u_ContourParameters.poly_type);
 
-      offset += 2;
+      offset += 3;
       continue;
     }
 

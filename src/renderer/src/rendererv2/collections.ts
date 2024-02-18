@@ -1,176 +1,216 @@
 import REGL from 'regl'
-import * as Records from './shapes'
+import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 import { FeatureTypeIdentifyer } from './types'
 import { MacroRenderer } from './layer'
 import onChange from 'on-change'
 
-const { SURFACE_RECORD_PARAMETERS } = Records
+const { SURFACE_RECORD_PARAMETERS } = Shapes
 
 const { SYMBOL_PARAMETERS } = Symbols
 
-// interface ShaderCollection<T> {
-//   dirty: boolean
-//   length: number
-//   records: T
-//   // update: (data: T) => this
-//   refresh: () => this
-// }
-
-export class PrimitiveShaderCollection {
-  private records: Records.Shape[] = []
-
-  public pads: {
-    buffer: REGL.Buffer
-    length: number
-  }
-  public lines: {
-    buffer: REGL.Buffer
-    length: number
-  }
-  public arcs: {
-    buffer: REGL.Buffer
-    length: number
-  }
-
-  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
-    const { regl, records } = props
-    this.pads = {
-      buffer: regl.buffer(0),
-      length: 0
-    }
-    this.lines = {
-      buffer: regl.buffer(0),
-      length: 0
-    }
-    this.arcs = {
-      buffer: regl.buffer(0),
-      length: 0
-    }
-    this.records = records
-    // this.refresh()
-  }
-
-  public refresh(): this {
-    const padPrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.PAD && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
-    this.pads.length = padPrimatives.length
-    // console.log('padPrimatives', padPrimatives)
-    this.pads.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.pads.length * glFloatSize,
-      data: padPrimatives.map((record) => {
-        return record.array
-      })
-    })
-    const linePrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.LINE && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
-    this.lines.length = linePrimatives.length
-    this.lines.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.lines.length * glFloatSize,
-      data: linePrimatives.map((record) => {
-        return record.array
-      })
-    })
-    const arcPrimatives = this.records.filter(
-      (record) =>
-        record.type == FeatureTypeIdentifyer.ARC && record.symbol instanceof Symbols.StandardSymbol
-    ).reverse()
-    this.arcs.length = arcPrimatives.length
-    this.arcs.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.arcs.length * glFloatSize,
-      data: arcPrimatives.map((record) => {
-        return record.array
-      })
-    })
-
-    // console.log('refreshing primitives', {
-    //   pads: this.pads.length,
-    //   lines: this.lines.length,
-    //   arcs: this.arcs.length
-    // })
-    return this
-  }
+interface shapesList {
+  pads: Shapes.Pad[]
+  lines: Shapes.Line[]
+  arcs: Shapes.Arc[]
+  surfaces: Shapes.Surface[]
+  clear: () => void
 }
 
-export class SurfaceShaderCollection {
-  private records: Records.Shape[] = []
+export class ShapesShaderCollection {
   private regl: REGL.Regl
-  public surfaces: {
-    contourTexture: REGL.Texture2D
-    attributeBuffer: REGL.Buffer
-  }[] = []
+  private records: Shapes.Shape[] = []
 
-  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
+  public symbolsCollection: SymbolShaderCollection
+
+  public shapes: shapesList
+
+  public shaderAttachment: {
+    pads: {
+      buffer: REGL.Buffer
+      length: number
+    }
+    lines: {
+      buffer: REGL.Buffer
+      length: number
+    }
+    arcs: {
+      buffer: REGL.Buffer
+      length: number
+    }
+    surfaces: {
+      contourTexture: REGL.Texture2D
+      attributeBuffer: REGL.Buffer
+    }[]
+  }
+
+  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
     const { regl, records } = props
-    this.records = records
     this.regl = regl
-    // this.refresh()
+    this.records = records
+    this.symbolsCollection = new SymbolShaderCollection({
+      regl
+    })
+    this.shapes = {
+      pads: [],
+      lines: [],
+      arcs: [],
+      surfaces: [],
+      clear: function (): void {
+        this.pads.length = 0
+        this.lines.length = 0
+        this.arcs.length = 0
+        this.surfaces.length = 0
+      }
+    }
+    this.shaderAttachment = {
+      pads: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      lines: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      arcs: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      surfaces: []
+    }
   }
 
   public refresh(): this {
-    this.surfaces.map((surface) => {
+    this.symbolsCollection.symbols.clear()
+    this.shapes.clear()
+    this.shaderAttachment.surfaces.map((surface) => {
       surface.contourTexture.destroy()
       surface.attributeBuffer.destroy()
     })
-    this.surfaces.length = 0
+    this.shaderAttachment.surfaces.length = 0
+
     this.records.forEach((record) => {
-      if (record.type != FeatureTypeIdentifyer.SURFACE) {
+      if (record instanceof Shapes.Surface) {
+        this.shapes.surfaces.push(record)
+      } else if (record instanceof Shapes.Pad && record.symbol instanceof Symbols.StandardSymbol) {
+        this.shapes.pads.push(record)
+      } else if (record instanceof Shapes.Line && record.symbol instanceof Symbols.StandardSymbol) {
+        this.shapes.lines.push(record)
+      } else if (record instanceof Shapes.Arc && record.symbol instanceof Symbols.StandardSymbol) {
+        this.shapes.arcs.push(record)
+      } else if (record instanceof Shapes.PolyLine) {
+        drawPolyline(record, this.shapes)
+      }
+    })
+
+    this.shapes.pads.forEach((record) => {
+      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
         return
       }
-      const surfaces = record.array
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.lines.forEach((record) => {
+      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.arcs.forEach((record) => {
+      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+
+    this.symbolsCollection.refresh()
+
+    // inverse order to render from front to back to save on overdraw
+    this.shapes.pads.sort((a, b) => b.index - a.index)
+    this.shapes.lines.sort((a, b) => b.index - a.index)
+    this.shapes.arcs.sort((a, b) => b.index - a.index)
+    this.shapes.surfaces.sort((a, b) => b.index - a.index)
+
+    this.shaderAttachment.pads.length = this.shapes.pads.length
+    this.shaderAttachment.lines.length = this.shapes.lines.length
+    this.shaderAttachment.arcs.length = this.shapes.arcs.length
+
+    this.shaderAttachment.pads.buffer({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: this.shapes.pads.length * glFloatSize,
+      data: this.shapes.pads.map((record) => {
+        return record.array
+      })
+    })
+    this.shaderAttachment.lines.buffer({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: this.shapes.lines.length * glFloatSize,
+      data: this.shapes.lines.map((record) => {
+        return record.array
+      })
+    })
+    this.shaderAttachment.arcs.buffer({
+      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+      type: 'float',
+      length: this.shapes.arcs.length * glFloatSize,
+      data: this.shapes.arcs.map((record) => {
+        return record.array
+      })
+    })
+
+    this.shapes.surfaces.forEach((record) => {
+      const surfaceParameters = record.array
       const surfaceCountours = record.contoursArray
       const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
-        return surfaceCountours[index] ?? Records.END_SURFACE_ID
+        return surfaceCountours[index] ?? Shapes.END_SURFACE_ID
       })
-      this.surfaces.push({
+      this.shaderAttachment.surfaces.push({
         contourTexture: this.regl.texture({
           width: radius,
           height: radius,
           type: 'float',
           format: 'luminance',
           wrap: 'clamp',
+          // mag: 'linear',
+          // min: 'linear',
           data: newData
         }),
         attributeBuffer: this.regl.buffer({
           usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
           type: 'float',
           length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-          data: surfaces
+          data: surfaceParameters
         })
       })
     })
-    this.surfaces.reverse()
-    // console.log('refreshing surfaces', this.surfaces.length)
+
     return this
   }
 }
 
-export class SymbolCollection {
+export class SymbolShaderCollection {
+  public texture: REGL.Texture2D
   public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
   get length(): number {
     return this.symbols.size
+  }
+
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
+    this.texture = regl.texture()
   }
 
   protected makeUnique(symbol: Symbols.StandardSymbol): string {
     if (this.symbols.has(symbol.id)) {
       if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
         // console.log(`Identical Symbol with id ${symbol.id} already exists`)
-        const sym = this.symbols.get(symbol.id)
-        symbol = sym as Symbols.StandardSymbol
+        symbol.sym_num = this.symbols.get(symbol.id)!.sym_num
         return symbol.id
       }
+      // console.log(`Unsimilar Symbol with id ${symbol.id} already exists`)
       if (symbol.id.match(/\+\d+$/)) {
         const [base, count] = symbol.id.split('+')
         symbol.id = `${base}+${Number(count) + 1}`
@@ -181,41 +221,19 @@ export class SymbolCollection {
     }
     return symbol.id
   }
-}
 
-export class SymbolShaderCollection extends SymbolCollection {
-  private records: Records.Shape[] = []
-  public texture: REGL.Texture2D
+  public add(symbol: Symbols.StandardSymbol): this {
+    this.makeUnique(symbol)
+    this.symbols.set(symbol.id, symbol)
+    return this
+  }
 
-  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
-    super()
-    const { regl, records } = props
-    this.records = records
-    this.texture = regl.texture()
-    // this.refresh()
+  public remove(symbol: Symbols.StandardSymbol): this {
+    this.symbols.delete(symbol.id)
+    return this
   }
 
   public refresh(): this {
-    this.symbols.clear()
-    this.records.forEach((record) => {
-      if (record.type == FeatureTypeIdentifyer.SURFACE) {
-        return
-      }
-      if (record.symbol instanceof Symbols.StandardSymbol) {
-        this.makeUnique(record.symbol)
-        this.symbols.set(record.symbol.id, record.symbol as Symbols.StandardSymbol)
-      } else if (record.symbol instanceof Symbols.MacroSymbol) {
-        record.symbol.shapes.forEach((shape) => {
-          if (shape.type == FeatureTypeIdentifyer.SURFACE) {
-            return
-          }
-          if (shape.symbol instanceof Symbols.StandardSymbol) {
-            this.makeUnique(shape.symbol)
-            this.symbols.set(shape.symbol.id, shape.symbol as Symbols.StandardSymbol)
-          }
-        })
-      }
-    })
     if (this.symbols.size === 0) {
       this.texture({
         width: 1,
@@ -228,7 +246,7 @@ export class SymbolShaderCollection extends SymbolCollection {
     }
     const symbols = Array.from(this.symbols.values()).map((symbol, i) => {
       // symbol.sym_num = i
-      onChange.target(symbol).sym_num = i
+      onChange.target(symbol).sym_num.value = i
       return symbol.array
     })
     this.texture({
@@ -243,27 +261,48 @@ export class SymbolShaderCollection extends SymbolCollection {
   }
 }
 
-export class MacroCollection {
-  private records: Records.Shape[] = []
+export class MacroShaderCollection {
+  private records: Shapes.Shape[] = []
   public macros: Map<
     string,
     {
       renderer: MacroRenderer
-      records: Records.Pad[]
+      records: Shapes.Pad[]
+      macro: Symbols.MacroSymbol
     }
   > = new Map<
     string,
     {
       renderer: MacroRenderer
-      records: Records.Pad[]
+      records: Shapes.Pad[]
+      macro: Symbols.MacroSymbol
     }
   >()
   private regl: REGL.Regl
-  constructor(props: { regl: REGL.Regl; records: Records.Shape[] }) {
+  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
     const { records, regl } = props
     this.regl = regl
     this.records = records
-    // this.refresh()
+  }
+
+  protected makeUnique(symbol: Symbols.MacroSymbol): string {
+    if (this.macros.has(symbol.id)) {
+      if (this.macros.get(symbol.id)!.macro.shapes.toString() == symbol.shapes.toString()) {
+        // console.log(`Identical Macro with id ${symbol.id} already exists`)
+        const sym = this.macros.get(symbol.id)
+        symbol = sym!.macro
+        return symbol.id
+      }
+      // console.log(`Unsimilar Macro with id ${symbol.id} already exists`)
+      if (symbol.id.match(/\+\d+$/)) {
+        const [base, count] = symbol.id.split('+')
+        symbol.id = `${base}+${Number(count) + 1}`
+        return this.makeUnique(symbol)
+      }
+      symbol.id = `${symbol.id}+${1}`
+      return this.makeUnique(symbol)
+    }
+    return symbol.id
   }
 
   public refresh(): this {
@@ -273,19 +312,184 @@ export class MacroCollection {
         return
       }
       if (record.symbol instanceof Symbols.MacroSymbol) {
+        this.makeUnique(record.symbol)
         if (!this.macros.has(record.symbol.id)) {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
-              image: record.symbol.shapes
+              image: record.symbol.shapes,
+              flatten: record.symbol.flatten,
             }),
-            records: []
+
+            records: [],
+            macro: record.symbol
           })
         }
-        this.macros.get(record.symbol.id)!.records.push(record as Records.Pad)
+        this.macros.get(record.symbol.id)!.records.push(record as Shapes.Pad)
       }
+    })
+    this.macros.forEach((macro) => {
+      macro.records.sort((a, b) => {
+        return b.index - a.index
+      })
     })
     // console.log('refreshed macros', this.macros.size)
     return this
+  }
+}
+
+
+function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
+  let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
+  if (record.pathtype == 'round') {
+    endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Round
+  } else if (record.pathtype == 'square') {
+    endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Square
+  }
+
+  const endSymbol = new Symbols.StandardSymbol({
+    id: 'polyline-cap',
+    symbol: endSymbolType,
+    width: record.width,
+    height: record.width,
+    outer_dia: record.width
+  })
+
+  const lineSymbol = new Symbols.StandardSymbol({
+    id: 'polyline-line',
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    width: record.width,
+    height: record.width,
+    outer_dia: record.width
+  })
+
+  let prevx = record.xs
+  let prevy = record.ys
+  for (let i = 0; i < record.lines.length; i++) {
+    const { x, y } = record.lines[i]
+    const prevAngle = Math.atan2(y - prevy, x - prevx)
+    const prevAngleDeg = (prevAngle * 180) / Math.PI
+
+    if (i == 0) {
+      shapes.pads.push(
+        new Shapes.Pad({
+          x: prevx,
+          y: prevy,
+          rotation: prevAngleDeg,
+          symbol: endSymbol,
+          polarity: record.polarity,
+          index: record.index
+        })
+      )
+    }
+
+    const line = new Shapes.Line({
+      xs: prevx,
+      ys: prevy,
+      xe: x,
+      ye: y,
+      symbol: lineSymbol,
+      polarity: record.polarity,
+      index: record.index
+    })
+    shapes.lines.push(line)
+
+    if (i == record.lines.length - 1) {
+      shapes.pads.push(
+        new Shapes.Pad({
+          x: x,
+          y: y,
+          rotation: prevAngleDeg,
+          symbol: endSymbol,
+          polarity: record.polarity,
+          index: record.index
+        })
+      )
+    } else {
+      const nextAngle = Math.atan2(record.lines[i + 1].y - y, record.lines[i + 1].x - x)
+      if (record.cornertype == 'round') {
+        shapes.pads.push(
+          new Shapes.Pad({
+            x: x,
+            y: y,
+            symbol: endSymbol,
+            polarity: record.polarity,
+            index: record.index
+          })
+        )
+      } else if (record.cornertype == 'chamfer') {
+        const deltaAngle = Math.abs(nextAngle - prevAngle)
+        const base = Math.abs(record.width * Math.sin(deltaAngle / 2))
+        const height = Math.abs(record.width * Math.cos(deltaAngle / 2)) / 2
+        let angle = (prevAngle + nextAngle) / 2
+        if (nextAngle - prevAngle < 0) {
+          angle += Math.PI
+        }
+        const angle2 = angle + Math.PI / 2
+        const offsetx = Math.cos(angle2) * -(height / 2)
+        const offsety = Math.sin(angle2) * -(height / 2)
+        const tringle = new Symbols.StandardSymbol({
+          id: 'polyline-chamfer',
+          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
+          width: base,
+          height: height
+        })
+        const pad = new Shapes.Pad({
+          x: x + offsetx,
+          y: y + offsety,
+          rotation: (angle * 180) / Math.PI,
+          symbol: tringle,
+          polarity: record.polarity,
+          index: record.index
+        })
+        shapes.pads.push(pad)
+      } else if (record.cornertype == 'miter') {
+        const deltaAngle = Math.abs(nextAngle - prevAngle)
+        const base = Math.abs(record.width * Math.sin(deltaAngle / 2))
+        const height = Math.abs(record.width * Math.cos(deltaAngle / 2)) / 2
+        let angle = (prevAngle + nextAngle) / 2
+        if (nextAngle - prevAngle < 0) {
+          angle += Math.PI
+        }
+        const angle2 = angle + Math.PI / 2
+        const offsetx = Math.cos(angle2) * -(height / 2)
+        const offsety = Math.sin(angle2) * -(height / 2)
+        const tringle = new Symbols.StandardSymbol({
+          id: 'polyline-chamfer',
+          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
+          width: base,
+          height: height
+        })
+        const pad = new Shapes.Pad({
+          x: x + offsetx,
+          y: y + offsety,
+          rotation: (angle * 180) / Math.PI,
+          symbol: tringle,
+          polarity: record.polarity,
+          index: record.index
+        })
+        shapes.pads.push(pad)
+        const height2 = Math.abs((base / 2) * Math.tan(deltaAngle / 2))
+        const offsetx2 = Math.cos(angle2) * -(height + height2 / 2)
+        const offsety2 = Math.sin(angle2) * -(height + height2 / 2)
+        const tringle2 = new Symbols.StandardSymbol({
+          id: 'polyline-chamfer',
+          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
+          width: base,
+          height: height2
+        })
+        const pad2 = new Shapes.Pad({
+          x: x + offsetx2,
+          y: y + offsety2,
+          rotation: ((angle + Math.PI) * 180) / Math.PI,
+          symbol: tringle2,
+          polarity: record.polarity,
+          index: record.index
+        })
+        shapes.pads.push(pad2)
+      }
+    }
+    prevx = x
+    prevy = y
   }
 }
