@@ -130,10 +130,10 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             continue
           }
           // convert shape to translated shape by making it a macro then placing as a pad
-          for (const gdsiiCell of gdsiiHierarchy[srefName]) {
+          for (const [idx, cell] of gdsiiHierarchy[srefName].entries()) {
             const macro = new MacroSymbol({
-              id: srefName,
-              shapes: [gdsiiCell.shape]
+              id: `${srefName} ${idx}`,
+              shapes: [cell.shape]
             })
             const pad = new Pad({
               x: el.XY[0].x * scale,
@@ -147,7 +147,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
               mirror: el.STRANS ? (el.STRANS.mirror ? 1 : 0) : 0 // 0 = no mirror, 1 = mirror
             })
             gdsiiHierarchy[cellName].push({
-              layer: gdsiiCell.layer,
+              layer: cell.layer,
               shape: pad
             })
           }
