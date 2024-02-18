@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifyer, toMap } from './types'
+import { IPlotRecord, FeatureTypeIdentifyer, toMap, Transform } from './types'
 import * as Symbols from './symbols'
 
 export const PAD_RECORD_PARAMETERS = [
@@ -408,20 +408,35 @@ export class PolyLine {
   public xs = 0
   public ys = 0
   public lines: { x: number; y: number }[] = []
+
   constructor(props: Partial<Omit<PolyLine, 'type'>>) {
     Object.assign(this, props)
   }
+
   public addLines(lines: { x: number; y: number }[]): this {
     for (const line of lines) {
       this.addLine(line)
     }
     return this
   }
+
   public addLine(line: { x: number; y: number }): this {
     this.lines.push(line)
     return this
   }
 }
 
+export class StepAndRepeat {
+  public readonly type = FeatureTypeIdentifyer.STEP_AND_REPEAT
+  public index = 0
+  public id = ''
+  public shapes: Shape[] = []
+  public repeats: Transform[] = []
+
+  constructor(props: Partial<Omit<StepAndRepeat, 'type'>>) {
+    Object.assign(this, props)
+  }
+}
+
 export type Primitive = Pad | Line | Arc
-export type Shape = Primitive | Surface | PolyLine
+export type Shape = Primitive | Surface | PolyLine | StepAndRepeat

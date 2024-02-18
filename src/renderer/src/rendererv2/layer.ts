@@ -14,7 +14,7 @@ import { glFloatSize } from './constants'
 import onChange from 'on-change'
 import { Transform } from './types'
 
-import { ShapesShaderCollection, MacroShaderCollection } from './collections'
+import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from './collections'
 
 import { WorldContext } from './engine'
 
@@ -135,6 +135,7 @@ export class ShapeRenderer {
 
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
+  public stepAndRepeatCollection: StepAndRepeatCollection
 
   public get qtyFeatures(): number {
     return this.records.length
@@ -146,6 +147,7 @@ export class ShapeRenderer {
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawMacros: (context: REGL.DefaultContext & WorldContext) => this
+  protected drawStepAndRepeats: (context: REGL.DefaultContext & WorldContext) => this
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -491,12 +493,25 @@ export class ShapeRenderer {
       return this
     }
 
+    this.drawStepAndRepeats = (context: REGL.DefaultContext & WorldContext): this => {
+      this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
+        stepAndRepeat.render(context)
+      })
+      return this
+    }
+
+
+
     this.records.push(...props.image)
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
       records: this.records
     })
     this.macroCollection = new MacroShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
       records: this.records
     })
@@ -516,6 +531,7 @@ export class ShapeRenderer {
     if (this.dirty) {
       this.shapeCollection.refresh()
       this.macroCollection.refresh()
+      this.stepAndRepeatCollection.refresh()
       this.dirty = false
     }
     this.commonConfig(() => {
@@ -524,6 +540,7 @@ export class ShapeRenderer {
       this.drawLines()
       this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces.length)
       this.drawMacros(context)
+      this.drawStepAndRepeats(context)
     })
   }
 }
@@ -743,6 +760,31 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.polarity = tempPol
     this.commonConfig(() => {
       this.drawFrameBuffer()
+    })
+  }
+}
+
+export class StepAndRepeatRenderer extends ShapeRenderer {
+  public repeats: Transform[]
+
+  constructor(props: ShapeRendererProps & { repeats: Transform[] }) {
+    super(props)
+    this.repeats = props.repeats
+  }
+
+  public updateTransformFromRepeat(repeat: Transform): void {
+    this.transform.datum = repeat.datum
+    this.transform.rotation = repeat.rotation
+    this.transform.scale = repeat.scale
+    this.transform.mirror = repeat.mirror
+    this.transform.index = 0
+    this.transform.polarity = 1
+  }
+
+  public render(context: REGL.DefaultContext & WorldContext): void {
+    this.repeats.forEach((repeat) => {
+      this.updateTransformFromRepeat(repeat)
+      super.render(context)
     })
   }
 }

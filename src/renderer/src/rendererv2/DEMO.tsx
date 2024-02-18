@@ -565,7 +565,36 @@ new Array<number>(1)
 
   })
 
-console.log(POLYLINE_RECORDS_ARRAY)
+const DUPLICATE_POLYLINE_RECORDS_ARRAY: Shapes.StepAndRepeat[] = []
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    DUPLICATE_POLYLINE_RECORDS_ARRAY.push(
+      new Shapes.StepAndRepeat({
+        shapes: POLYLINE_RECORDS_ARRAY,
+        repeats: [
+        {
+          datum: [0, 0],
+          mirror: 0,
+          rotation: 0,
+          scale: 1,
+        },
+        {
+          datum: [1, 0],
+          mirror: 1,
+          rotation: 0,
+          scale: 1,
+        },
+        // {
+        //   datum: [0, 0],
+        //   mirror: 0,
+        //   rotation: 0,
+        //   scale: 2,
+        // }
+      ]
+      })
+    )
+
+  })
 
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
@@ -654,7 +683,12 @@ function REGLApp(): JSX.Element {
 
     const polylineLayer = Engine.addLayer({
       name: 'polyline',
-      image: [...POLYLINE_RECORDS_ARRAY]
+      image: POLYLINE_RECORDS_ARRAY
+    })
+
+    Engine.addLayer({
+      name: 'duplicate-polyline',
+      image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     })
 
     // setTimeout(() => {

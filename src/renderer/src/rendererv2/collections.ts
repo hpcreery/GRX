@@ -2,8 +2,8 @@ import REGL from 'regl'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-import { FeatureTypeIdentifyer } from './types'
-import { MacroRenderer } from './layer'
+import { FeatureTypeIdentifyer, Transform } from './types'
+import { MacroRenderer, StepAndRepeatRenderer } from './layer'
 import onChange from 'on-change'
 
 const { SURFACE_RECORD_PARAMETERS } = Shapes
@@ -318,7 +318,7 @@ export class MacroShaderCollection {
             renderer: new MacroRenderer({
               regl: this.regl,
               image: record.symbol.shapes,
-              flatten: record.symbol.flatten,
+              flatten: record.symbol.flatten
             }),
 
             records: [],
@@ -338,6 +338,34 @@ export class MacroShaderCollection {
   }
 }
 
+export class StepAndRepeatCollection {
+  private records: Shapes.Shape[] = []
+  public steps: StepAndRepeatRenderer[] = []
+  private regl: REGL.Regl
+
+  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
+    const { records, regl } = props
+    this.regl = regl
+    this.records = records
+  }
+
+  public refresh(): this {
+    this.steps.length = 0
+    this.records.forEach((record) => {
+      if (record.type != FeatureTypeIdentifyer.STEP_AND_REPEAT) {
+        return
+      }
+      this.steps.push(
+        new StepAndRepeatRenderer({
+          regl: this.regl,
+          image: record.shapes,
+          repeats: record.repeats
+        })
+      )
+    })
+    return this
+  }
+}
 
 function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
   let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
