@@ -263,6 +263,7 @@ export class RenderEngine {
     const { dragging } = this.transform
     if (this.transform.velocity[0] === 0 && this.transform.velocity[1] === 0) return
     if (dragging) return
+    // const vel_rounded = this.transform.velocity.map((v) => Math.round(v)) as vec2
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
     this.transform.update()

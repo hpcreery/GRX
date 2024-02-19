@@ -16,7 +16,7 @@ export const STANDARD_SYMBOLS = [
   'Square_Donut',
   'SquareRound_Donut',
   'Rounded_Square_Donut',
-  'Rectange_Donut',
+  'Rectangle_Donut',
   'Rounded_Rectangle_Donut',
   'Oval_Donut',
   'Horizontal_Hexagon',
@@ -38,6 +38,10 @@ export const STANDARD_SYMBOLS = [
   'Rounded_Rectangular_Thermal',
   'Oval_Thermal',
   'Oblong_Thermal',
+  'Ellipse',
+  'Moire',
+  'Hole',
+  'Polygon'
 
   // ! Implement these symbols
 
@@ -52,15 +56,8 @@ export const STANDARD_SYMBOLS = [
   // "DPack",
 
   // https://www.artwork.com/ipc2581/IPC-2581C.pdf
-  // "Hexagon"
-  // "Hexagon_Donut"
-  // "Octagon_Donut"
   // "Hexagon_Thermal"
   // "Octagon_Thermal"
-
-  'Ellipse',
-  'Moire',
-  'Hole'
 ] as const
 export const SYMBOL_PARAMETERS = [
   'symbol',
@@ -122,6 +119,238 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
   }
 }
 
+
+export class RoundSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Round, ...symbol })
+  }
+}
+
+export class HoleSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Hole, ...symbol })
+  }
+}
+
+export class SquareSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square, ...symbol })
+  }
+}
+
+export class RectangleSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle, ...symbol })
+  }
+}
+
+export class RoundedRectangleSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius' | 'corners' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Rectangle, ...symbol })
+  }
+}
+
+export class ChamferedRectangleSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius' | 'corners' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Chamfered_Rectangle, ...symbol })
+  }
+}
+
+export class OvalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Oval, ...symbol })
+  }
+}
+
+export class DiamondSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Diamond, ...symbol })
+  }
+}
+
+export class OctagonSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Octagon, ...symbol })
+  }
+}
+
+export class RoundDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Round_Donut, ...symbol })
+  }
+}
+
+export class SquareDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Donut, ...symbol })
+  }
+}
+
+export class SquareRoundDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.SquareRound_Donut, ...symbol })
+  }
+}
+
+export class RoundedSquareDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'corner_radius' | 'corners'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Square_Donut, ...symbol })
+  }
+}
+
+export class RectangleDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'line_width' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Donut, ...symbol })
+  }
+}
+
+export class RoundedRectangleDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius' | 'corners' | 'line_width' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Rectangle_Donut, ...symbol })
+  }
+}
+
+export class OvalDonutSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'line_width' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Oval_Donut, ...symbol })
+  }
+}
+
+export class HorizontalHexagonSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Horizontal_Hexagon, ...symbol })
+  }
+}
+
+export class VerticalHexagonSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Vertical_Hexagon, ...symbol })
+  }
+}
+
+export class ButterflySymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Butterfly, ...symbol })
+  }
+}
+
+export class SquareButterflySymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Butterfly, ...symbol })
+  }
+}
+
+export class TriangleSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Triangle, ...symbol })
+  }
+}
+
+export class HalfOvalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Half_Oval, ...symbol })
+  }
+}
+
+export class RoundedRoundThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Round_Thermal, ...symbol })
+  }
+}
+
+export class SquaredRoundThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Squared_Round_Thermal, ...symbol })
+  }
+}
+
+export class SquareThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Thermal, ...symbol })
+  }
+}
+
+export class OpenCornersSquareThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'angle' | 'num_spokes' | 'gap' | 'line_width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Open_Corners_Square_Thermal, ...symbol })
+  }
+}
+
+export class LineThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Line_Thermal, ...symbol })
+  }
+}
+
+export class SquareRoundThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Round_Thermal, ...symbol })
+  }
+}
+
+export class RectangularThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'angle' | 'num_spokes' | 'gap' | 'line_width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangular_Thermal, ...symbol })
+  }
+}
+
+export class RectangularThermalOpenCornersSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'angle' | 'num_spokes' | 'gap' | 'line_width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangular_Thermal_Open_Corners, ...symbol })
+  }
+}
+
+export class RoundedSquareThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'corner_radius' | 'corners' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Square_Thermal, ...symbol })
+  }
+}
+
+export class RoundedSquareThermalOpenCornersSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'inner_dia' | 'corner_radius' | 'corners' | 'angle' | 'num_spokes' | 'gap'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Square_Thermal_Open_Corners, ...symbol })
+  }
+}
+
+export class RoundedRectangularThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'corner_radius' | 'corners' | 'angle' | 'num_spokes' | 'gap' | 'line_width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Rectangular_Thermal, ...symbol })
+  }
+}
+
+export class OvalThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'angle' | 'num_spokes' | 'gap' | 'line_width'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Oval_Thermal, ...symbol })
+  }
+}
+
+export class OblongThermalSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height' | 'angle' | 'num_spokes' | 'gap' | 'line_width' | 'round'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Oblong_Thermal, ...symbol })
+  }
+}
+
+export class EllipseSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'width' | 'height'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Ellipse, ...symbol })
+  }
+}
+
+export class MoireSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'ring_width' | 'ring_gap' | 'num_rings' | 'line_width' | 'line_length' | 'angle'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Moire, ...symbol })
+  }
+}
+
+export class PolygonSymbol extends StandardSymbol {
+  constructor(symbol: Partial<Pick<TStandardSymbol, 'outer_dia' | 'corners' | 'line_width' | 'inner_dia'> & { id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Polygon, ...symbol })
+  }
+}
+
+
+
+
 export type TMacroSymbol = {
   shapes: Shape[]
 }
@@ -133,7 +362,7 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public flatten = false
   public shapes: Shape[] = []
 
-  constructor(macro: Partial<TMacroSymbol & { id: string, flatten: boolean }>) {
+  constructor(macro: Partial<TMacroSymbol & { id: string; flatten: boolean }>) {
     Object.assign(this, macro)
   }
 

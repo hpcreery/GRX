@@ -3,7 +3,9 @@ import { vec2 } from 'gl-matrix'
 export const FeatureTypeIdentifyer = {
   PAD: 'pad',
   LINE: 'line',
+  BRUSHED_LINE: 'brushedline',
   ARC: 'arc',
+  BRUSHED_ARC: 'brushedarc',
   ARCSEGMENT: 'arcsegment',
   LINESEGMENT: 'linesegment',
   CONTOUR: 'contour',

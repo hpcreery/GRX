@@ -154,8 +154,6 @@ void main() {
 
   float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
   float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
-  // float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, t_Width));
-  // vec2 p, float radius, float angle, float width
   float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
   con = substract(con, abs(circleDist(FragCoord, radius)) - t_Width / 2.0);
   float dist = merge(start, end);

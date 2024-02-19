@@ -49,7 +49,6 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-
 vec2 translate(vec2 p, vec2 t) {
   return p - t;
 }
@@ -524,6 +523,22 @@ float moireDist(vec2 p, float ring_width, float ring_gap, float num_rings, float
   return min(rings, lines);
 }
 
+// signed distance to a n-star polygon with external angle en
+float regularPolygonDist(in vec2 p, in float r, in int n) {
+    // these 4 lines can be precomputed for a given shape
+  float an = PI / float(n);
+  vec2 acs = vec2(cos(an), sin(an));
+
+    // reduce to first sector
+  float bn = mod(atan(p.y, p.x), 2.0 * an) - an;
+  p = length(p) * vec2(cos(bn), abs(sin(bn)));
+
+    // line sdf
+  p -= r * acs;
+  p.y += clamp(-p.y, 0.0, r * acs.y);
+  return length(p) * sign(p.x);
+}
+
 ///////////////////////
 // Masks for drawing //
 ///////////////////////
@@ -548,7 +563,6 @@ float outerBorderMask(float dist, float width) {
 
 #pragma glslify: pullSymbolParameter = require(./PullSymbolParameter.frag,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-
 float drawShape(vec2 FragCoord, int SymNum) {
 
   float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
@@ -569,109 +583,147 @@ float drawShape(vec2 FragCoord, int SymNum) {
   float t_Ring_Gap = pullSymbolParameter(u_Parameters.ring_gap, SymNum);
   float t_Num_Rings = pullSymbolParameter(u_Parameters.num_rings, SymNum);
 
-  float dist = 0.0;
+  float dist = 10.0;
 
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
-    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
-    dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
-  } else if (t_Symbol == u_Shapes.Rounded_Rectangle) {
-    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
-  } else if (t_Symbol == u_Shapes.Oval) {
-    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
-  } else if (t_Symbol == u_Shapes.Chamfered_Rectangle) {
-    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
-  } else if (t_Symbol == u_Shapes.Diamond) {
-    dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
-  } else if (t_Symbol == u_Shapes.Octagon) {
-    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
-  } else if (t_Symbol == u_Shapes.Round_Donut) {
-    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
-    float OuterCircle = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
-    dist = substract(InnerCircle, OuterCircle);
-  } else if (t_Symbol == u_Shapes.Square_Donut) {
-    float InnerSquare = boxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia));
-    float OuterSquare = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
-    dist = substract(InnerSquare, OuterSquare);
-  } else if (t_Symbol == u_Shapes.SquareRound_Donut) {
-    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
-    float OuterCircle = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
-    dist = substract(InnerCircle, OuterCircle);
-  } else if (t_Symbol == u_Shapes.Rounded_Square_Donut) {
-    float InnerSquare = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Outer_Dia - t_Inner_Dia) / 2.0, t_Corners);
-    float OuterSquare = roundBoxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia), t_Corner_Radius, t_Corners);
-    dist = substract(InnerSquare, OuterSquare);
-  } else if (t_Symbol == u_Shapes.Rectange_Donut) {
-    float InnerRect = boxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0));
-    float OuterRect = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
-    dist = substract(InnerRect, OuterRect);
-  } else if (t_Symbol == u_Shapes.Rounded_Rectangle_Donut) {
-    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
-    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
-    dist = substract(InnerRect, OuterRect);
-  } else if (t_Symbol == u_Shapes.Oval_Donut) {
-    float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
-    float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
-    dist = substract(InnerOval, OuterOval);
-  } else if (t_Symbol == u_Shapes.Horizontal_Hexagon) {
-    dist = horizHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
-  } else if (t_Symbol == u_Shapes.Vertical_Hexagon) {
-    dist = verticalHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
-  } else if (t_Symbol == u_Shapes.Butterfly) {
-    dist = butterflyDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  } else if (t_Symbol == u_Shapes.Square_Butterfly) {
-    dist = squareButterflydist(FragCoord.xy, t_Width / 2.0);
-  } else if (t_Symbol == u_Shapes.Triangle) {
-    dist = triangleDist(FragCoord.xy, t_Width, t_Height);
-  } else if (t_Symbol == u_Shapes.Half_Oval) {
-    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0, 9.0);
-  } else if (t_Symbol == u_Shapes.Rounded_Round_Thermal) {
-    dist = roundedRoundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
-  } else if (t_Symbol == u_Shapes.Squared_Round_Thermal) {
-    dist = roundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
-  } else if (t_Symbol == u_Shapes.Square_Thermal) {
-    dist = squareThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
-  } else if (t_Symbol == u_Shapes.Open_Corners_Square_Thermal) {
-    dist = boxThermalOpenCornersDist(FragCoord.xy, t_Outer_Dia, t_Outer_Dia, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
-  } else if (t_Symbol == u_Shapes.Line_Thermal) {
-    dist = lineThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
-  } else if (t_Symbol == u_Shapes.Square_Round_Thermal) {
-    float outerbox = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
-    float innercircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
-    float d = substract(innercircle, outerbox);
-    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
-    dist = therm;
-  } else if (t_Symbol == u_Shapes.Rectangular_Thermal) {
-    dist = boxThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
-  } else if (t_Symbol == u_Shapes.Rectangular_Thermal_Open_Corners) {
-    dist = boxThermalOpenCornersDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
-  } else if (t_Symbol == u_Shapes.Rounded_Square_Thermal || t_Symbol == u_Shapes.Rounded_Square_Thermal_Open_Corners) {
-    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia), t_Corner_Radius, t_Corners);
-    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Outer_Dia - t_Inner_Dia) / 2.0, t_Corners);
-    float d = substract(InnerRect, OuterRect);
-    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
-    dist = therm;
-  } else if (t_Symbol == u_Shapes.Rounded_Rectangular_Thermal) {
-    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
-    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
-    float d = substract(InnerRect, OuterRect);
-    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
-    dist = therm;
-  } else if (t_Symbol == u_Shapes.Oval_Thermal) {
-    float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
-    float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
-    float d = substract(InnerOval, OuterOval);
-    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
-    dist = therm;
-  } else if (t_Symbol == u_Shapes.Oblong_Thermal) {
-    dist = oblongThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Round);
-  } else if (t_Symbol == u_Shapes.Ellipse) {
-    dist = ellipseDist(FragCoord.xy, vec2(t_Width / 2.0, t_Height / 2.0));
-  } else if (t_Symbol == u_Shapes.Moire) {
-    dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
-  } else {
-    dist = 1.0;
-  }
+#pragma dynamic_shape  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+#pragma dynamic_shape(Round,Hole)    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
+#pragma dynamic_shape(Round,Hole)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Round,Hole)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Round,Hole)      dist = max(dist, hole);
+#pragma dynamic_shape(Round,Hole)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+#pragma dynamic_shape(Square,Rectangle)    dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
+#pragma dynamic_shape(Square,Rectangle)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Square,Rectangle)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Square,Rectangle)      dist = max(dist, hole);
+#pragma dynamic_shape(Square,Rectangle)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Rectangle) {
+#pragma dynamic_shape(Rounded_Rectangle)    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Rounded_Rectangle)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Rounded_Rectangle)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Rounded_Rectangle)      dist = max(dist, hole);
+#pragma dynamic_shape(Rounded_Rectangle)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Oval) {
+#pragma dynamic_shape(Oval)    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
+#pragma dynamic_shape(Oval)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Oval)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Oval)      dist = max(dist, hole);
+#pragma dynamic_shape(Oval)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Chamfered_Rectangle) {
+#pragma dynamic_shape(Chamfered_Rectangle)    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Chamfered_Rectangle)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Chamfered_Rectangle)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Chamfered_Rectangle)      dist = max(dist, hole);
+#pragma dynamic_shape(Chamfered_Rectangle)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Diamond) {
+#pragma dynamic_shape(Diamond)    dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
+#pragma dynamic_shape(Diamond)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Diamond)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Diamond)      dist = max(dist, hole);
+#pragma dynamic_shape(Diamond)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Octagon) {
+#pragma dynamic_shape(Octagon)    dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
+#pragma dynamic_shape(Octagon)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Octagon)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Octagon)      dist = max(dist, hole);
+#pragma dynamic_shape(Octagon)    }
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Round_Donut) {
+#pragma dynamic_shape(Round_Donut)    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Round_Donut)    float OuterCircle = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
+#pragma dynamic_shape(Round_Donut)    dist = substract(InnerCircle, OuterCircle);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Square_Donut) {
+#pragma dynamic_shape(Square_Donut)    float InnerSquare = boxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia));
+#pragma dynamic_shape(Square_Donut)    float OuterSquare = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
+#pragma dynamic_shape(Square_Donut)    dist = substract(InnerSquare, OuterSquare);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.SquareRound_Donut) {
+#pragma dynamic_shape(SquareRound_Donut)    float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(SquareRound_Donut)    float OuterCircle = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
+#pragma dynamic_shape(SquareRound_Donut)    dist = substract(InnerCircle, OuterCircle);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Square_Donut) {
+#pragma dynamic_shape(Rounded_Square_Donut)    float InnerSquare = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Outer_Dia - t_Inner_Dia) / 2.0, t_Corners);
+#pragma dynamic_shape(Rounded_Square_Donut)    float OuterSquare = roundBoxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Rounded_Square_Donut)    dist = substract(InnerSquare, OuterSquare);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rectangle_Donut) {
+#pragma dynamic_shape(Rectangle_Donut)    float InnerRect = boxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0));
+#pragma dynamic_shape(Rectangle_Donut)    float OuterRect = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
+#pragma dynamic_shape(Rectangle_Donut)    dist = substract(InnerRect, OuterRect);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Rectangle_Donut) {
+#pragma dynamic_shape(Rounded_Rectangle_Donut)    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Rounded_Rectangle_Donut)    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
+#pragma dynamic_shape(Rounded_Rectangle_Donut)    dist = substract(InnerRect, OuterRect);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Oval_Donut) {
+#pragma dynamic_shape(Oval_Donut)    float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
+#pragma dynamic_shape(Oval_Donut)    float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
+#pragma dynamic_shape(Oval_Donut)    dist = substract(InnerOval, OuterOval);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Horizontal_Hexagon) {
+#pragma dynamic_shape(Horizontal_Hexagon)    dist = horizHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Vertical_Hexagon) {
+#pragma dynamic_shape(Vertical_Hexagon)    dist = verticalHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Butterfly) {
+#pragma dynamic_shape(Butterfly)    dist = butterflyDist(FragCoord.xy, t_Outer_Dia / 2.0);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Square_Butterfly) {
+#pragma dynamic_shape(Square_Butterfly)    dist = squareButterflydist(FragCoord.xy, t_Width / 2.0);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Triangle) {
+#pragma dynamic_shape(Triangle)    dist = triangleDist(FragCoord.xy, t_Width, t_Height);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Half_Oval) {
+#pragma dynamic_shape(Half_Oval)    dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0, 9.0);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Round_Thermal) {
+#pragma dynamic_shape(Rounded_Round_Thermal)    dist = roundedRoundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Squared_Round_Thermal) {
+#pragma dynamic_shape(Squared_Round_Thermal)    dist = roundThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Square_Thermal) {
+#pragma dynamic_shape(Square_Thermal)    dist = squareThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Open_Corners_Square_Thermal) {
+#pragma dynamic_shape(Open_Corners_Square_Thermal)    dist = boxThermalOpenCornersDist(FragCoord.xy, t_Outer_Dia, t_Outer_Dia, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Line_Thermal) {
+#pragma dynamic_shape(Line_Thermal)    dist = lineThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Square_Round_Thermal) {
+#pragma dynamic_shape(Square_Round_Thermal)    float outerbox = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
+#pragma dynamic_shape(Square_Round_Thermal)    float innercircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Square_Round_Thermal)    float d = substract(innercircle, outerbox);
+#pragma dynamic_shape(Square_Round_Thermal)    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
+#pragma dynamic_shape(Square_Round_Thermal)    dist = therm;
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rectangular_Thermal) {
+#pragma dynamic_shape(Rectangular_Thermal)    dist = boxThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rectangular_Thermal_Open_Corners) {
+#pragma dynamic_shape(Rectangular_Thermal_Open_Corners)    dist = boxThermalOpenCornersDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Square_Thermal || t_Symbol == u_Shapes.Rounded_Square_Thermal_Open_Corners) {
+#pragma dynamic_shape(Rounded_Square_Thermal,Rounded_Square_Thermal_Open_Corners)    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Rounded_Square_Thermal,Rounded_Square_Thermal_Open_Corners)    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Outer_Dia - t_Inner_Dia) / 2.0, t_Corners);
+#pragma dynamic_shape(Rounded_Square_Thermal,Rounded_Square_Thermal_Open_Corners)    float d = substract(InnerRect, OuterRect);
+#pragma dynamic_shape(Rounded_Square_Thermal,Rounded_Square_Thermal_Open_Corners)    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
+#pragma dynamic_shape(Rounded_Square_Thermal,Rounded_Square_Thermal_Open_Corners)    dist = therm;
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Rounded_Rectangular_Thermal) {
+#pragma dynamic_shape(Rounded_Rectangular_Thermal)    float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+#pragma dynamic_shape(Rounded_Rectangular_Thermal)    float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
+#pragma dynamic_shape(Rounded_Rectangular_Thermal)    float d = substract(InnerRect, OuterRect);
+#pragma dynamic_shape(Rounded_Rectangular_Thermal)    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
+#pragma dynamic_shape(Rounded_Rectangular_Thermal)    dist = therm;
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Oval_Thermal) {
+#pragma dynamic_shape(Oval_Thermal)    float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
+#pragma dynamic_shape(Oval_Thermal)    float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
+#pragma dynamic_shape(Oval_Thermal)    float d = substract(InnerOval, OuterOval);
+#pragma dynamic_shape(Oval_Thermal)    float therm = max(d, spokeDist(FragCoord.xy, t_Angle, t_Num_Spokes, t_Gap));
+#pragma dynamic_shape(Oval_Thermal)    dist = therm;
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Oblong_Thermal) {
+#pragma dynamic_shape(Oblong_Thermal)    dist = oblongThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Round);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Ellipse) {
+#pragma dynamic_shape(Ellipse)    dist = ellipseDist(FragCoord.xy, vec2(t_Width / 2.0, t_Height / 2.0));
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Moire) {
+#pragma dynamic_shape(Moire)    dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
+#pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Polygon) {
+#pragma dynamic_shape(Polygon)    dist = regularPolygonDist(FragCoord.xy, t_Outer_Dia / 2.0, int(t_Corners));
+#pragma dynamic_shape(Polygon)    if (t_Line_Width != 0.0) {
+#pragma dynamic_shape(Polygon)      float inner = -1.0 * regularPolygonDist(FragCoord.xy, (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
+#pragma dynamic_shape(Polygon)      dist = max(dist, inner);
+#pragma dynamic_shape(Polygon)    }
+#pragma dynamic_shape(Polygon)    if (t_Inner_Dia != 0.0) {
+#pragma dynamic_shape(Polygon)      float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
+#pragma dynamic_shape(Polygon)      dist = max(dist, hole);
+#pragma dynamic_shape(Polygon)    }
+#pragma dynamic_shape  } else {
+#pragma dynamic_shape    dist = 1.0;
+#pragma dynamic_shape  }
   return dist;
 }
 

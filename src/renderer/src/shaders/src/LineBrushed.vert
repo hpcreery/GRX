@@ -8,7 +8,6 @@ uniform Shapes u_Shapes;
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
 
-
 // COMMON UNIFORMS
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
@@ -24,24 +23,25 @@ attribute vec2 a_Vertex_Position;
 varying float v_Aspect;
 
 
-// ARC ATTRIBUTES
+// LINE ATTRIBUTES
 attribute float a_Index;
 attribute vec2 a_Start_Location;
 attribute vec2 a_End_Location;
-attribute vec2 a_Center_Location;
 attribute float a_SymNum;
+attribute float a_ResizeFactor;
 attribute float a_Polarity;
-attribute float a_Clockwise;
+attribute float a_Rotation;
+attribute float a_Mirror;
 
-// ARC VARYINGS
+// LINE VARYINGS
 varying float v_Index;
 varying vec2 v_Start_Location;
 varying vec2 v_End_Location;
-varying vec2 v_Center_Location;
 varying float v_SymNum;
+varying float v_ResizeFactor;
 varying float v_Polarity;
-varying float v_Clockwise;
-
+varying float v_Rotation;
+varying float v_Mirror;
 
 //////////////////////////////
 // Rotation and translation //
@@ -65,43 +65,37 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
+float pullParam(int offset) {
+  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_SymbolsTextureDimensions;
+  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
+  return pixelValue.x;
+}
+
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+
 
 void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  vec2 ShapeSize = vec2(pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)), pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)));
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
+  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float OD = max(t_Outer_Dia, max(t_Width, t_Height)) * 1.5 * a_ResizeFactor;
+  float len = distance(a_Start_Location, a_End_Location);
+  // vec2 Size = vec2(pullParam(u_Parameters.outer_dia) + len, pullParam(u_Parameters.outer_dia));
+  vec2 Size = vec2(OD + len, OD);
 
-  float radius = distance(a_Start_Location, a_Center_Location);
-  float radius2 = distance(a_End_Location, a_Center_Location);
-  vec2 Size = vec2(radius * 2.0, radius * 2.0) + ShapeSize;
+  vec2 Center_Location = (a_Start_Location + a_End_Location) / 2.0;
 
   float dX = a_Start_Location.x - a_End_Location.x;
   float dY = a_Start_Location.y - a_End_Location.y;
-  float Rotation = atan(dY, dX);
+  float Rotation = atan(dY/dX);
 
-  float angle_dot = acos(dot(normalize(a_Start_Location - a_Center_Location), normalize(a_End_Location - a_Center_Location)));
-  vec3 cross_prod = cross(vec3(a_Start_Location - a_Center_Location, 0), vec3(a_End_Location - a_Center_Location, 0));
-  float cw = sign(cross_prod.z);
-
-  float Sagitta = radius * (1.0 - cos((angle_dot / 2.0)));
-  float Width = length(a_Start_Location - a_End_Location);
-  if (cw == -1.0 && a_Clockwise == 0.0 ) {
-    Sagitta = radius * (1.0 + cos((angle_dot / 2.0)));
-    Width = radius * 2.0;
-  }
-  if (cw == 1.0 && a_Clockwise == 1.0) {
-    Sagitta = radius * (1.0 + cos((angle_dot / 2.0)));
-    Width = radius * 2.0;
-  }
-
-  Size = vec2(Width, Sagitta) + ShapeSize;
-
-  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) + vec2(0.0, (a_Clockwise == 0.0 ? 1.0 : -1.0) * (radius - (Sagitta / 2.0)));
+  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);
-  vec2 OffsetPosition = RotatedPostion + a_Center_Location;
-  vec3 FinalPosition = u_Transform * vec3(OffsetPosition, 1);
+  vec2 OffsetPosition = RotatedPostion + Center_Location;
+  vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
   v_Aspect = Aspect;
   v_Index = a_Index;
@@ -109,10 +103,13 @@ void main() {
   v_Start_Location = a_Start_Location;
   v_End_Location = a_End_Location;
   v_Polarity = a_Polarity;
-  v_Center_Location = a_Center_Location;
-  v_Clockwise = a_Clockwise;
+  v_ResizeFactor = a_ResizeFactor;
+  v_Rotation = a_Rotation;
+  v_Mirror = a_Mirror;
 
   float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
+  // gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), a_Index / u_QtyFeatures, 1);
+
 }

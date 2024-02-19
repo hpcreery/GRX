@@ -29,7 +29,10 @@ varying float v_Index;
 varying float v_SymNum;
 varying vec2 v_Start_Location;
 varying vec2 v_End_Location;
+varying float v_ResizeFactor;
 varying float v_Polarity;
+varying float v_Rotation;
+varying float v_Mirror;
 
 //////////////////////////////////////
 // Combine distance field functions //
@@ -69,22 +72,56 @@ vec2 translate(vec2 p, vec2 t) {
 // Distance field functions //
 //////////////////////////////
 
+
+
 float boxDist(vec2 p, vec2 size) {
   size /= 2.0;
   vec2 d = abs(p) - size;
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
-
-
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
+float brushEndsDist(vec2 p) {
+  vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
+  float start = drawShape(translate(p, (v_Start_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
+  float end = drawShape(translate(p, (v_End_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
+  return merge(start,end);
+}
 
 //////////////////////////////
 //     Draw functions       //
 //////////////////////////////
 
+const int BRUSH_ITERATIONS = 64;
+float brush(vec2 p)
+{
+  vec2 dir = normalize(v_End_Location - v_Start_Location);
+
+	// distance traveled
+	float dt = 0.0;
+  float climb = 0.0;
+  float returnValue = 0.0;
+	for (int i = 0; i < BRUSH_ITERATIONS; ++i)
+	{
+    // distance to scene at current position
+		float sd = brushEndsDist(p - dir * dt);
+    if (i == 0) {
+      climb = sign(brushEndsDist(p + dir * u_PixelSize) - sd);
+    }
+    // float climb = brushEndsDist(p - dir * (dt - u_PixelSize));
+
+    // early out when this ray is guaranteed to be full shadow
+    if (sd <= u_PixelSize * 0.5) {
+      returnValue = 1.0;
+      break;
+    }
+
+		dt += max(u_PixelSize, abs(sd)) * -climb;
+	}
+	return returnValue;
+}
 
 float draw(float dist) {
   if (DEBUG == 1) {
@@ -118,20 +155,28 @@ void main() {
   float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
   // ? which one to go by for line width...
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
-  float OD = max(t_Outer_Dia, max(t_Width, t_Height));
+  // float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
+  // float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  // float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  // float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
-  float dX = v_Start_Location.x - v_End_Location.x;
-  float dY = v_Start_Location.y - v_End_Location.y;
-  float len = distance(v_Start_Location, v_End_Location);
-  float angle = atan(dY/dX);
-  float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-angle), int(v_SymNum));
-  float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-angle), int(v_SymNum));
-  float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, OD));
-  float dist = merge(start,end);
-  dist = merge(dist, con);
+  // float dX = v_Start_Location.x - v_End_Location.x;
+  // float dY = v_Start_Location.y - v_End_Location.y;
+  // float len = distance(v_Start_Location, v_End_Location);
+  // float angle = atan(dY/dX);
+  // vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
+  // float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
+  // float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
+  // float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, OD));
+  // float dist = merge(start,end);
+  // dist = merge(dist, con);
+
+  float dist = brushEndsDist(FragCoord);
+  float br = brush(FragCoord);
+  // dist = min(dist, br);
+  if (br == 1.0) {
+    dist = min(dist, -u_PixelSize / 2.0);
+  }
 
 
   #pragma glslify: import('../modules/Debug.glsl')

@@ -75,7 +75,10 @@ void main() {
   vec2 Size = vec2(pullSymbolParameter(u_Parameters.width, int(a_SymNum)), pullSymbolParameter(u_Parameters.height, int(a_SymNum)));
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
-  vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
+  vec2 RotatedPostion = SizedPosition * rotateCCW(radians(a_Rotation));
+  if (a_Mirror == 1.0) {
+    RotatedPostion.x = -RotatedPostion.x;
+  }
   vec2 OffsetPosition = RotatedPostion + a_Location;
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
@@ -91,6 +94,4 @@ void main() {
   float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
-  // gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), a_Index / u_QtyFeatures, 1);
-
 }

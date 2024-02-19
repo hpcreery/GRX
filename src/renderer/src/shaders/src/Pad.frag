@@ -84,7 +84,11 @@ void main() {
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
   vec2 OffsetPosition = TransformedPosition.xy - v_Location;
-  vec2 FragCoord = OffsetPosition * rotateCW(radians(-v_Rotation)) / v_ResizeFactor;
+  if (v_Mirror == 1.0) {
+    OffsetPosition.x = -OffsetPosition.x;
+  }
+  vec2 FragCoord = OffsetPosition * rotateCW(radians(v_Rotation)) / v_ResizeFactor;
+
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);

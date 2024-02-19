@@ -9,6 +9,7 @@ import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { PointerEvent } from './engine'
 
 // N == Number of Shapes
+// const N_PADS = Symbols.STANDARD_SYMBOLS.length
 const N_PADS = 1000
 const N_LINES = 50
 const N_ARCS = 50
@@ -136,9 +137,9 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length)
         corner_radius: 0.002, // corner radius
         corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
         outer_dia: 0.01, // — Outer diameter of the shape
-        inner_dia: 0.008, // — Inner diameter of the shape
+        inner_dia: 0.0075, // — Inner diameter of the shape
         line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-        line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+        line_length: 0.01, // — Shapes.Line length of the shape (applies to the whole shape)
         angle: 0, // — Angle of the spoke from 0 degrees
         gap: 0.001, // — Gap
         num_spokes: 2, // — Number of spokes
@@ -161,7 +162,7 @@ const round_sym =
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
-    inner_dia: 0.008, // — Inner diameter of the shape
+    // inner_dia: 0.008, // — Inner diameter of the shape
     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
     line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
@@ -185,7 +186,7 @@ const square_sym =
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
-    inner_dia: 0.008, // — Inner diameter of the shape
+    // inner_dia: 0.0, // — Inner diameter of the shape
     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
     line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
@@ -209,8 +210,8 @@ const square2_sym =
     height: 0.04, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-    outer_dia: 0.01, // — Outer diameter of the shape
-    inner_dia: 0.008, // — Inner diameter of the shape
+    outer_dia: 0.04, // — Outer diameter of the shape
+    // inner_dia: 0.038, // — Inner diameter of the shape
     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
     line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
@@ -226,6 +227,45 @@ const square2_sym =
 SYMBOLS.push(square2_sym)
 
 
+const polygon_sym =
+  new Symbols.StandardSymbol({
+    id: 'round', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Polygon, // symbol
+    width: 0.04, // width, square side, diameter
+    height: 0.04, // height
+    // corner_radius: 0.002, // corner radius
+    corners: 8, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.04, // — Outer diameter of the shape
+    // inner_dia: 0.008, // — Inner diameter of the shape
+    // line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    // angle: 0, // — Angle of the spoke from 0 degrees
+    // gap: 0.001, // — Gap
+    // num_spokes: 2, // — Number of spokes
+    // round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    // cut_size: 0, // — Size of the cut ( see corner radius )
+    // ring_width: 0.001, // — Ring width
+    // ring_gap: 0.004, // — Ring gap
+    // num_rings: 2 // — Number of rings
+  })
+
+// SYMBOLS.push(square2_sym)
+
+const polygons = [
+  new Shapes.Pad({
+    // Start point.
+    x: 0,
+    y: 0,
+    // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+    symbol: polygon_sym,
+    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    // Polarity. 0 = negative, 1 = positive
+    // polarity: i % 2,
+    // polarity: Math.random() > 0.5 ? 1 : 0,
+    polarity: 1,
+  })
+]
+
 const PAD_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_PADS)
   .fill(0).map((_, i) => {
@@ -233,9 +273,12 @@ new Array<number>(N_PADS)
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
+      // x: i / 10,
+      // y: 0,
       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
       // sym_num: i % Object.keys(Symbols.STANDARD_SYMBOLS).length,
-      symbol: SYMBOLS[i % SYMBOLS.length],
+      // symbol: SYMBOLS[i % SYMBOLS.length],
+      symbol: square_sym,
       // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       resize_factor: Math.random() + 1,
@@ -243,10 +286,11 @@ new Array<number>(N_PADS)
       // polarity: i % 2,
       polarity: Math.random() > 0.5 ? 1 : 0,
       // Shapes.Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
-      rotation: 10,
+      rotation: 20,
       // 0 = no mirror, 1 = mirror
+      // mirror: i % 2,
       mirror: 0
     }))
   })
@@ -298,6 +342,50 @@ new Array<number>(N_LINES)
     }))
   })
 
+const brush_sym =
+  new Symbols.StandardSymbol({
+    id: 'brush', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
+    width: 0.2, // width, square side, diameter
+    height: 0.2, // height
+    // corner_radius: 0.002, // corner radius
+    // corners: 3, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.2, // — Outer diameter of the shape
+    inner_dia: 0.1, // — Inner diameter of the shape
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 4, // — Number of spokes
+    // round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    // cut_size: 0, // — Size of the cut ( see corner radius )
+    // ring_width: 0.001, // — Ring width
+    // ring_gap: 0.004, // — Ring gap
+    // num_rings: 2 // — Number of rings
+  })
+
+const LINE_BRUSH_RECORDS_ARRAY_POS: Shapes.Shape[] = []
+new Array<number>(10)
+  .fill(0).map((_, i) => {
+    LINE_BRUSH_RECORDS_ARRAY_POS.push(new Shapes.BrushedLine({
+      // Start point.
+      xs: (Math.random() - 0.5) * 10,
+      ys: (Math.random() - 0.5) * 10,
+
+      // End point.
+      xe: (Math.random() - 0.5) * 10,
+      ye: (Math.random() - 0.5) * 10,
+
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: brush_sym,
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // Polarity. 0 = negative, 1 = positive
+      // polarity: i % 2,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 1,
+    }))
+  })
 
 const ARC_RECORDS_ARRAY: Shapes.Arc[] = []
 new Array<number>(N_ARCS)
@@ -370,7 +458,7 @@ new Array<number>(N_MACROS)
       // Polarity. 0 = negative, 1 = positive
       polarity: Math.random() > 0.5 ? 1 : 0,
       // Shapes.Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 20,
       // 0 = no mirror, 1 = mirror
@@ -418,7 +506,7 @@ new Array<number>(3)
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
       // Shapes.Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
@@ -471,7 +559,7 @@ new Array<number>(10)
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
       // Shapes.Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
@@ -496,7 +584,7 @@ new Array<number>(10)
       // polarity: 1,
       polarity: i % 2 == 0 ? 1 : 0,
       // Shapes.Pad orientation (degrees)
-      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+      // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
@@ -630,7 +718,7 @@ function REGLApp(): JSX.Element {
           // Polarity. 0 = negative, 1 = positive
           polarity: 1,
           // Shapes.Pad orientation (degrees)
-          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always counterclockwise as viewed from the board TOP (primary side).
+          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
           rotation: 0,
           // 0 = no mirror, 1 = mirror
           mirror: 0
@@ -640,12 +728,12 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'pads',
-      transform: {
-        datum: [0.5, 0],
-        scale: 1,
-        rotation: 0,
-        mirror: 1,
-      },
+      // transform: {
+      //   datum: [0.5, 0],
+      //   scale: 1,
+      //   rotation: 0,
+      //   mirror: 1,
+      // },
       image: PAD_RECORDS_ARRAY
     })
 
@@ -670,19 +758,24 @@ function REGLApp(): JSX.Element {
     //   image: MACRO_RECORDS_ARRAY
     // })
 
-    const macroLayer = Engine.addLayer({
-      name: 'overlapping-macro',
-      image: OVERLAPPING_MACRO_RECORDS_ARRAY
-    })
+    // const macroLayer = Engine.addLayer({
+    //   name: 'overlapping-macro',
+    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // })
 
-    const polylineLayer = Engine.addLayer({
-      name: 'polyline',
-      image: POLYLINE_RECORDS_ARRAY
-    })
+    // const polylineLayer = Engine.addLayer({
+    //   name: 'polyline',
+    //   image: POLYLINE_RECORDS_ARRAY
+    // })
+
+    // Engine.addLayer({
+    //   name: 'duplicate-polyline',
+    //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
+    // })
 
     Engine.addLayer({
-      name: 'duplicate-polyline',
-      image: DUPLICATE_POLYLINE_RECORDS_ARRAY
+      name: 'brush lines',
+      image: LINE_BRUSH_RECORDS_ARRAY_POS
     })
 
     // setTimeout(() => {
@@ -724,17 +817,27 @@ function REGLApp(): JSX.Element {
 
 
 
-    Engine.addLayer({
-      name: 'surface-arc-combo',
-      image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
-    })
+    // Engine.addLayer({
+    //   name: 'surface-arc-combo',
+    //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
+    // })
 
     Engine.addLayer({
       name: 'surfaces',
       image: SURFACE_RECORDS_ARRAY
     })
 
-    Engine.layers.map(l => l.visible = false)
+    // Engine.addLayer({
+    //   name: 'polygon',
+    //   image: polygons
+    // })
+
+    Engine.layers.map(l => {
+      l.visible = false
+      if (l.name === 'brush lines') {
+        l.visible = true
+      }
+    })
     Engine.render(true)
 
     Engine.pointer.addEventListener('pointerdown', console.log)

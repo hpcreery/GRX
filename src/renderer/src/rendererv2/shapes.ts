@@ -20,6 +20,18 @@ export const LINE_RECORD_PARAMETERS = [
   'sym_num',
   'polarity'
 ] as const
+export const BRUSHED_LINE_RECORD_PARAMETERS = [
+  'index',
+  'xs',
+  'ys',
+  'xe',
+  'ye',
+  'sym_num',
+  'resize_factor',
+  'polarity',
+  'rotation',
+  'mirror'
+] as const
 export const ARC_RECORD_PARAMETERS = [
   'index',
   'xs',
@@ -31,6 +43,20 @@ export const ARC_RECORD_PARAMETERS = [
   'sym_num',
   'polarity',
   'clockwise'
+] as const
+export const BRUSHED_ARC_RECORD_PARAMETERS = [
+  'index',
+  'xs',
+  'ys',
+  'xe',
+  'ye',
+  'xc',
+  'yc',
+  'sym_num',
+  'resize_factor',
+  'polarity',
+  'rotation',
+  'mirror'
 ] as const
 export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
 export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS = [
@@ -56,7 +82,9 @@ export const SURFACE_RECORD_PARAMETERS = [
 
 export const PAD_RECORD_PARAMETERS_MAP = toMap(PAD_RECORD_PARAMETERS)
 export const LINE_RECORD_PARAMETERS_MAP = toMap(LINE_RECORD_PARAMETERS)
+export const BRUSHED_LINE_RECORD_PARAMETERS_MAP = toMap(BRUSHED_LINE_RECORD_PARAMETERS)
 export const ARC_RECORD_PARAMETERS_MAP = toMap(ARC_RECORD_PARAMETERS)
+export const BRUSHED_ARC_RECORD_PARAMETERS_MAP = toMap(BRUSHED_ARC_RECORD_PARAMETERS)
 export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
   CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS
 )
@@ -65,6 +93,8 @@ export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
 )
 export const CONTOUR_RECORD_PARAMETERS_MAP = toMap(CONTOUR_RECORD_PARAMETERS)
 export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
+
+// =================
 
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
@@ -137,6 +167,43 @@ export class Line implements TLine_Record, IPlotRecord {
 
 // =================
 
+export type TBrushedLine_Record = typeof BRUSHED_LINE_RECORD_PARAMETERS_MAP
+
+export class BrushedLine implements TBrushedLine_Record, IPlotRecord {
+  public readonly type = FeatureTypeIdentifyer.BRUSHED_LINE
+  public index = 0
+  public xs = 0
+  public ys = 0
+  public xe = 0
+  public ye = 0
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
+  public get sym_num(): number {
+    return this.symbol.sym_num.value
+  }
+  public resize_factor = 1
+  public polarity = 1
+  public rotation = 0
+  public mirror = 0
+
+  constructor(record: Partial<Omit<TBrushedLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
+    Object.assign(this, record)
+  }
+
+  public get length(): number {
+    return BRUSHED_LINE_RECORD_PARAMETERS.length
+  }
+
+  public get array(): number[] {
+    return BRUSHED_LINE_RECORD_PARAMETERS.map((key) => this[key])
+  }
+
+  public get object(): TPad_Record {
+    return Object.fromEntries(BRUSHED_LINE_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TPad_Record
+  }
+}
+
+// =================
+
 export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
 export class Arc implements TArc_Record, IPlotRecord {
@@ -171,6 +238,45 @@ export class Arc implements TArc_Record, IPlotRecord {
 
   public get object(): TArc_Record {
     return Object.fromEntries(ARC_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TArc_Record
+  }
+}
+
+// =================
+
+export type TBrushedArc_Record = typeof BRUSHED_ARC_RECORD_PARAMETERS_MAP
+
+export class BrushedArc implements TBrushedArc_Record, IPlotRecord {
+  public readonly type = FeatureTypeIdentifyer.BRUSHED_ARC
+  public index = 0
+  public xs = 0
+  public ys = 0
+  public xe = 0
+  public ye = 0
+  public xc = 0
+  public yc = 0
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
+  public get sym_num(): number {
+    return this.symbol.sym_num.value
+  }
+  public resize_factor = 1
+  public polarity = 1
+  public rotation = 0
+  public mirror = 0
+
+  constructor(record: Partial<Omit<TBrushedArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
+    Object.assign(this, record)
+  }
+
+  public get length(): number {
+    return BRUSHED_ARC_RECORD_PARAMETERS.length
+  }
+
+  public get array(): number[] {
+    return BRUSHED_ARC_RECORD_PARAMETERS.map((key) => this[key])
+  }
+
+  public get object(): TBrushedArc_Record {
+    return Object.fromEntries(BRUSHED_ARC_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TBrushedArc_Record
   }
 }
 
@@ -439,4 +545,5 @@ export class StepAndRepeat {
 }
 
 export type Primitive = Pad | Line | Arc
-export type Shape = Primitive | Surface | PolyLine | StepAndRepeat
+export type Brushes = BrushedLine | BrushedArc
+export type Shape = Primitive | Brushes | Surface | PolyLine | StepAndRepeat

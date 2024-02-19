@@ -6,6 +6,23 @@ import { FeatureTypeIdentifyer, Transform } from './types'
 import { MacroRenderer, StepAndRepeatRenderer } from './layer'
 import onChange from 'on-change'
 
+import PadFrag from '../shaders/src/Pad.frag'
+import PadVert from '../shaders/src/Pad.vert'
+import LineFrag from '../shaders/src/Line.frag'
+import LineVert from '../shaders/src/Line.vert'
+import LineBrushedFrag from '../shaders/src/LineBrushed.frag'
+import LineBrushedVert from '../shaders/src/LineBrushed.vert'
+import ArcFrag from '../shaders/src/Arc.frag'
+import ArcVert from '../shaders/src/Arc.vert'
+import SurfaceFrag from '../shaders/src/Surface.frag'
+import SurfaceVert from '../shaders/src/Surface.vert'
+import { ptr, malloc } from './utils'
+
+// const SurfaceFragPtr = malloc(SurfaceFrag)
+// const SurfaceVertPtr = malloc(SurfaceVert)
+
+const dynamicShapeRegex = /^#pragma dynamic_shape\(?(?<shapes>(?:\w|,)+)?\)?/gm
+
 const { SURFACE_RECORD_PARAMETERS } = Shapes
 
 const { SYMBOL_PARAMETERS } = Symbols
@@ -14,6 +31,8 @@ interface shapesList {
   pads: Shapes.Pad[]
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
+  brushedLines: Shapes.BrushedLine[]
+  brushedArcs: Shapes.BrushedArc[]
   surfaces: Shapes.Surface[]
   clear: () => void
 }
@@ -28,20 +47,44 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: {
     pads: {
+      frag: string
+      vert: string
       buffer: REGL.Buffer
       length: number
     }
     lines: {
+      frag: string
+      vert: string
       buffer: REGL.Buffer
       length: number
     }
     arcs: {
+      frag: string
+      vert: string
       buffer: REGL.Buffer
       length: number
     }
     surfaces: {
-      contourTexture: REGL.Texture2D
-      attributeBuffer: REGL.Buffer
+      frag: string
+      vert: string
+      elements: {
+        contourTexture: REGL.Texture2D
+        attributeBuffer: REGL.Buffer
+      }[]
+    }
+    brushedLines: {
+      symbol: keyof typeof Symbols.STANDARD_SYMBOLS_MAP
+      frag: string
+      vert: string
+      buffer: REGL.Buffer
+      length: number
+    }[]
+    brushedArcs: {
+      symbol: keyof typeof Symbols.STANDARD_SYMBOLS_MAP
+      frag: string
+      vert: string
+      buffer: REGL.Buffer
+      length: number
     }[]
   }
 
@@ -56,6 +99,8 @@ export class ShapesShaderCollection {
       pads: [],
       lines: [],
       arcs: [],
+      brushedLines: [],
+      brushedArcs: [],
       surfaces: [],
       clear: function (): void {
         this.pads.length = 0
@@ -66,29 +111,70 @@ export class ShapesShaderCollection {
     }
     this.shaderAttachment = {
       pads: {
+        frag: PadFrag.replace(dynamicShapeRegex, ''),
+        vert: PadVert,
         buffer: regl.buffer(0),
         length: 0
       },
       lines: {
+        frag: LineFrag.replace(dynamicShapeRegex, ''),
+        vert: LineVert,
         buffer: regl.buffer(0),
         length: 0
       },
       arcs: {
+        frag: ArcFrag.replace(dynamicShapeRegex, ''),
+        vert: ArcVert,
         buffer: regl.buffer(0),
         length: 0
       },
-      surfaces: []
+      surfaces: {
+        frag: SurfaceFrag,
+        vert: SurfaceVert,
+        elements: []
+      },
+      brushedLines: Symbols.STANDARD_SYMBOLS.map((symbol, key) => {
+        const frag = LineBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
+          if (shapes && shapes.split(',').includes(symbol)) {
+            return ''
+          }
+          return match
+        })
+        return {
+          symbol: symbol,
+          frag: frag,
+          vert: LineBrushedVert,
+          buffer: regl.buffer(0),
+          length: 0
+        }
+      }),
+      brushedArcs: Symbols.STANDARD_SYMBOLS.map((symbol, key) => {
+        const frag = LineFrag.replace(dynamicShapeRegex, (match, shapes) => {
+          if (shapes && shapes.split(',').includes(symbol)) {
+            return ''
+          }
+          return match
+        })
+        return {
+          symbol: symbol,
+          frag: frag,
+          vert: ArcVert,
+          buffer: regl.buffer(0),
+          length: 0
+        }
+      }),
     }
+    // console.log('ShapesShaderCollection', this.shaderAttachment.brushedLines)
   }
 
   public refresh(): this {
     this.symbolsCollection.symbols.clear()
     this.shapes.clear()
-    this.shaderAttachment.surfaces.map((surface) => {
+    this.shaderAttachment.surfaces.elements.map((surface) => {
       surface.contourTexture.destroy()
       surface.attributeBuffer.destroy()
     })
-    this.shaderAttachment.surfaces.length = 0
+    this.shaderAttachment.surfaces.elements.length = 0
 
     this.records.forEach((record) => {
       if (record instanceof Shapes.Surface) {
@@ -99,6 +185,10 @@ export class ShapesShaderCollection {
         this.shapes.lines.push(record)
       } else if (record instanceof Shapes.Arc && record.symbol instanceof Symbols.StandardSymbol) {
         this.shapes.arcs.push(record)
+      } else if (record instanceof Shapes.BrushedLine && record.symbol instanceof Symbols.StandardSymbol) {
+        this.shapes.brushedLines.push(record)
+      } else if (record instanceof Shapes.BrushedArc && record.symbol instanceof Symbols.StandardSymbol) {
+        this.shapes.brushedArcs.push(record)
       } else if (record instanceof Shapes.PolyLine) {
         drawPolyline(record, this.shapes)
       }
@@ -122,6 +212,18 @@ export class ShapesShaderCollection {
       }
       this.symbolsCollection.add(record.symbol)
     })
+    this.shapes.brushedLines.forEach((record) => {
+      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.brushedArcs.forEach((record) => {
+      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
 
     this.symbolsCollection.refresh()
 
@@ -130,6 +232,8 @@ export class ShapesShaderCollection {
     this.shapes.lines.sort((a, b) => b.index - a.index)
     this.shapes.arcs.sort((a, b) => b.index - a.index)
     this.shapes.surfaces.sort((a, b) => b.index - a.index)
+    this.shapes.brushedLines.sort((a, b) => b.index - a.index)
+    this.shapes.brushedArcs.sort((a, b) => b.index - a.index)
 
     this.shaderAttachment.pads.length = this.shapes.pads.length
     this.shaderAttachment.lines.length = this.shapes.lines.length
@@ -167,7 +271,7 @@ export class ShapesShaderCollection {
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
         return surfaceCountours[index] ?? Shapes.END_SURFACE_ID
       })
-      this.shaderAttachment.surfaces.push({
+      this.shaderAttachment.surfaces.elements.push({
         contourTexture: this.regl.texture({
           width: radius,
           height: radius,
@@ -183,6 +287,36 @@ export class ShapesShaderCollection {
           type: 'float',
           length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
           data: surfaceParameters
+        })
+      })
+    })
+
+    this.shaderAttachment.brushedLines.forEach((attachment) => {
+      const shapes = this.shapes.brushedLines.filter((record) => {
+        return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[attachment.symbol]
+      })
+      attachment.length = shapes.length
+      attachment.buffer({
+        usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+        type: 'float',
+        length: shapes.length * glFloatSize,
+        data: shapes.map((record) => {
+          return record.array
+        })
+      })
+    })
+
+    this.shaderAttachment.brushedArcs.forEach((attachment) => {
+      const shapes = this.shapes.brushedArcs.filter((record) => {
+        return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[attachment.symbol]
+      })
+      attachment.length = shapes.length
+      attachment.buffer({
+        usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+        type: 'float',
+        length: shapes.length * glFloatSize,
+        data: shapes.map((record) => {
+          return record.array
         })
       })
     })

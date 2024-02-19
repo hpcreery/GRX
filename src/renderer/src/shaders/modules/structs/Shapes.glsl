@@ -11,7 +11,7 @@ struct Shapes {
   float Square_Donut;
   float SquareRound_Donut;
   float Rounded_Square_Donut;
-  float Rectange_Donut;
+  float Rectangle_Donut;
   float Rounded_Rectangle_Donut;
   float Oval_Donut;
   float Horizontal_Hexagon;
@@ -45,4 +45,5 @@ struct Shapes {
   float Moire;
   float Hole;
   float Null;
+  float Polygon;
 };

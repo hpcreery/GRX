@@ -59,12 +59,6 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-float pullParam(int offset) {
-  vec2 texcoord = (vec2(float(offset), a_SymNum) + 0.5) / u_SymbolsTextureDimensions;
-  vec4 pixelValue = texture2D(u_SymbolsTexture, texcoord);
-  return pixelValue.x;
-}
-
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 
@@ -72,9 +66,12 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
+  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float OD = max(t_Outer_Dia, max(t_Width, t_Height));// * 1.5;
   float len = distance(a_Start_Location, a_End_Location);
-  // vec2 Size = vec2(pullParam(u_Parameters.outer_dia) + len, pullParam(u_Parameters.outer_dia));
-  vec2 Size = vec2(pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)) + len, pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)));
+  vec2 Size = vec2(OD + len, OD);
 
   vec2 Center_Location = (a_Start_Location + a_End_Location) / 2.0;
 
@@ -97,6 +94,4 @@ void main() {
   float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
-  // gl_Position = vec4(clamp(FinalPosition.xy, vec2(-1.0, -1.0), vec2(1.0, 1.0)), a_Index / u_QtyFeatures, 1);
-
 }

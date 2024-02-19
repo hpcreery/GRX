@@ -1,12 +1,4 @@
 import REGL from 'regl'
-import PadFrag from '../shaders/src/Pad.frag'
-import PadVert from '../shaders/src/Pad.vert'
-import LineFrag from '../shaders/src/Line.frag'
-import LineVert from '../shaders/src/Line.vert'
-import ArcFrag from '../shaders/src/Arc.frag'
-import ArcVert from '../shaders/src/Arc.vert'
-import SurfaceFrag from '../shaders/src/Surface.frag'
-import SurfaceVert from '../shaders/src/Surface.vert'
 import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
@@ -14,15 +6,21 @@ import { glFloatSize } from './constants'
 import onChange from 'on-change'
 import { Transform } from './types'
 
-import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from './collections'
+import {
+  ShapesShaderCollection,
+  MacroShaderCollection,
+  StepAndRepeatCollection
+} from './collections'
 
 import { WorldContext } from './engine'
 
 const {
   LINE_RECORD_PARAMETERS,
+  BRUSHED_LINE_RECORD_PARAMETERS,
   PAD_RECORD_PARAMETERS,
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
+  BRUSHED_LINE_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
   ARC_RECORD_PARAMETERS_MAP,
   SURFACE_RECORD_PARAMETERS_MAP,
@@ -31,7 +29,7 @@ const {
   CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
 } = Shapes
 
-const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
+const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP, SYMBOL_PARAMETERS } = Symbols
 
 type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
   buffer:
@@ -75,6 +73,17 @@ interface LineAttributes {
   a_End_Location: CustomAttributeConfig
   a_Index: CustomAttributeConfig
   a_Polarity: CustomAttributeConfig
+}
+
+interface BrushedLineAttributes {
+  a_SymNum: CustomAttributeConfig
+  a_Start_Location: CustomAttributeConfig
+  a_End_Location: CustomAttributeConfig
+  a_Index: CustomAttributeConfig
+  a_Polarity: CustomAttributeConfig
+  a_ResizeFactor: CustomAttributeConfig
+  a_Rotation: CustomAttributeConfig
+  a_Mirror: CustomAttributeConfig
 }
 
 interface ArcAttributes {
@@ -144,10 +153,14 @@ export class ShapeRenderer {
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  protected drawBrushedLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  // protected drawBrushedArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawMacros: (context: REGL.DefaultContext & WorldContext) => this
   protected drawStepAndRepeats: (context: REGL.DefaultContext & WorldContext) => this
+
+  // protected readonly brushIndex: number = 0
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -167,6 +180,20 @@ export class ShapeRenderer {
     if (props.transform) {
       Object.assign(this.transform, props.transform)
     }
+
+    this.records.push(...props.image)
+    this.shapeCollection = new ShapesShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.macroCollection = new MacroShaderCollection({
+      regl: this.regl,
+      records: this.records
+    })
+    this.stepAndRepeatCollection = new StepAndRepeatCollection({
+      regl: this.regl,
+      records: this.records
+    })
 
     this.commonConfig = this.regl<
       CommonUniforms,
@@ -245,59 +272,6 @@ export class ShapeRenderer {
       }
     })
 
-    this.drawLines = this.regl<
-      LineUniforms,
-      LineAttributes,
-      Record<string, never>,
-      Record<string, never>,
-      REGL.DefaultContext & WorldContext
-    >({
-      frag: LineFrag,
-
-      vert: LineVert,
-
-      uniforms: {},
-
-      attributes: {
-        a_Index: {
-          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
-
-        a_Start_Location: {
-          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-          divisor: 1
-        },
-
-        a_End_Location: {
-          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-          divisor: 1
-        },
-
-        a_SymNum: {
-          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
-
-        a_Polarity: {
-          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
-          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        }
-      },
-
-      instances: () => this.shapeCollection.shaderAttachment.lines.length
-    })
-
     this.drawPads = this.regl<
       PadUniforms,
       PadAttributes,
@@ -305,9 +279,9 @@ export class ShapeRenderer {
       Record<string, never>,
       REGL.DefaultContext & WorldContext
     >({
-      frag: PadFrag,
+      frag: this.shapeCollection.shaderAttachment.pads.frag,
 
-      vert: PadVert,
+      vert: this.shapeCollection.shaderAttachment.pads.vert,
 
       uniforms: {},
 
@@ -365,6 +339,135 @@ export class ShapeRenderer {
       instances: () => this.shapeCollection.shaderAttachment.pads.length
     })
 
+    this.drawLines = this.regl<
+      LineUniforms,
+      LineAttributes,
+      Record<string, never>,
+      Record<string, never>,
+      REGL.DefaultContext & WorldContext
+    >({
+      frag: this.shapeCollection.shaderAttachment.lines.frag,
+
+      vert: this.shapeCollection.shaderAttachment.lines.vert,
+
+      uniforms: {},
+
+      attributes: {
+        a_Index: {
+          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
+          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+          divisor: 1
+        },
+
+        a_Start_Location: {
+          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
+          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+          divisor: 1
+        },
+
+        a_End_Location: {
+          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
+          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+          divisor: 1
+        },
+
+        a_SymNum: {
+          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
+          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+          divisor: 1
+        },
+
+        a_Polarity: {
+          buffer: () => this.shapeCollection.shaderAttachment.lines.buffer,
+          stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
+          offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+          divisor: 1
+        }
+      },
+
+      instances: () => this.shapeCollection.shaderAttachment.lines.length
+    })
+
+    this.drawBrushedLines = this.shapeCollection.shaderAttachment.brushedLines.map((attachment) => {
+      return this.regl<
+        LineUniforms,
+        BrushedLineAttributes,
+        Record<string, never>,
+        Record<string, never>,
+        REGL.DefaultContext & WorldContext
+      >({
+        frag: attachment.frag,
+
+        vert: attachment.vert,
+
+        uniforms: {},
+
+        attributes: {
+          a_Index: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+            divisor: 1
+          },
+
+          a_Start_Location: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+            divisor: 1
+          },
+
+          a_End_Location: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+            divisor: 1
+          },
+
+          a_SymNum: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+            divisor: 1
+          },
+
+          a_Polarity: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+            divisor: 1
+          },
+
+          a_ResizeFactor: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+            divisor: 1
+          },
+
+          a_Rotation: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+            divisor: 1
+          },
+
+          a_Mirror: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
+            divisor: 1
+          }
+        },
+
+        instances: () => attachment.length
+      })
+    })
+
     this.drawArcs = this.regl<
       ArcUniforms,
       ArcAttributes,
@@ -372,9 +475,9 @@ export class ShapeRenderer {
       Record<string, never>,
       REGL.DefaultContext & WorldContext
     >({
-      frag: ArcFrag,
+      frag: this.shapeCollection.shaderAttachment.arcs.frag,
 
-      vert: ArcVert,
+      vert: this.shapeCollection.shaderAttachment.arcs.vert,
 
       uniforms: {},
 
@@ -439,16 +542,16 @@ export class ShapeRenderer {
       Record<string, never>,
       REGL.DefaultContext & WorldContext
     >({
-      frag: SurfaceFrag,
+      frag: this.shapeCollection.shaderAttachment.surfaces.frag,
 
-      vert: SurfaceVert,
+      vert: this.shapeCollection.shaderAttachment.surfaces.vert,
 
       uniforms: {
         u_ContoursTexture: (_context: REGL.DefaultContext, _props, batchId: number) =>
-          this.shapeCollection.shaderAttachment.surfaces[batchId].contourTexture,
+          this.shapeCollection.shaderAttachment.surfaces.elements[batchId].contourTexture,
         u_ContoursTextureDimensions: (_context: REGL.DefaultContext, _props, batchId: number) => [
-          this.shapeCollection.shaderAttachment.surfaces[batchId].contourTexture.width,
-          this.shapeCollection.shaderAttachment.surfaces[batchId].contourTexture.height
+          this.shapeCollection.shaderAttachment.surfaces.elements[batchId].contourTexture.width,
+          this.shapeCollection.shaderAttachment.surfaces.elements[batchId].contourTexture.height
         ],
         u_EndSurfaceId: Shapes.END_SURFACE_ID,
         u_ContourId: Shapes.CONTOUR_ID,
@@ -460,21 +563,21 @@ export class ShapeRenderer {
       attributes: {
         a_Index: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.shapeCollection.shaderAttachment.surfaces[batchId].attributeBuffer,
+            this.shapeCollection.shaderAttachment.surfaces.elements[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
           divisor: 1
         },
 
         a_Polarity: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.shapeCollection.shaderAttachment.surfaces[batchId].attributeBuffer,
+            this.shapeCollection.shaderAttachment.surfaces.elements[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
           divisor: 1
         },
 
         a_Box: {
           buffer: (_context: REGL.DefaultContext, _props, batchId: number) =>
-            this.shapeCollection.shaderAttachment.surfaces[batchId].attributeBuffer,
+            this.shapeCollection.shaderAttachment.surfaces.elements[batchId].attributeBuffer,
           offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies right, bottom, left is next in vec4
           divisor: 1
         }
@@ -499,22 +602,6 @@ export class ShapeRenderer {
       })
       return this
     }
-
-
-
-    this.records.push(...props.image)
-    this.shapeCollection = new ShapesShaderCollection({
-      regl: this.regl,
-      records: this.records
-    })
-    this.macroCollection = new MacroShaderCollection({
-      regl: this.regl,
-      records: this.records
-    })
-    this.stepAndRepeatCollection = new StepAndRepeatCollection({
-      regl: this.regl,
-      records: this.records
-    })
   }
 
   public updateTransform(inputMatrix: mat3): void {
@@ -538,9 +625,13 @@ export class ShapeRenderer {
       this.drawPads()
       this.drawArcs()
       this.drawLines()
-      this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces.length)
+      this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces.elements.length)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
+      this.drawBrushedLines.map((drawBrushedLine) => drawBrushedLine())
+      // this.drawBrushedLines.forEach((drawBrushedLine) => {
+      //   drawBrushedLine()
+      // })
     })
   }
 }
