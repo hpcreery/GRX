@@ -12,7 +12,7 @@ import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 import onChange from 'on-change'
-import { Transform } from './types'
+import { Transform, TransformOrder } from './types'
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from './collections'
 
@@ -154,6 +154,7 @@ export class ShapeRenderer {
     rotation: 0,
     scale: 1,
     mirror: 0,
+    order: ['rotate', 'translate', 'scale', 'mirror'], // // Default Order
     index: 0,
     polarity: 1,
     matrix: mat3.create(),
@@ -519,10 +520,38 @@ export class ShapeRenderer {
 
   public updateTransform(inputMatrix: mat3): void {
     const { rotation, scale, datum } = this.transform
-    mat3.rotate(this.transform.matrix, inputMatrix, rotation * (Math.PI / 180))
-    mat3.translate(this.transform.matrix, this.transform.matrix, datum)
-    mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [this.transform.mirror ? -1 : 1, 1])
+    this.transform.matrix = mat3.clone(inputMatrix)
+    if (!this.transform.order) this.transform.order = ['rotate', 'translate', 'scale', 'mirror']
+    console.log('this.transform.order', this.transform.order)
+    for (const transform of this.transform.order) {
+      switch (transform) {
+        case 'scale':
+          mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
+          break
+        case 'translate':
+          mat3.translate(this.transform.matrix, this.transform.matrix, datum)
+          break
+        case 'rotate':
+          mat3.rotate(this.transform.matrix, this.transform.matrix, rotation * (Math.PI / 180))
+          break
+        case 'mirror':
+          mat3.scale(this.transform.matrix, this.transform.matrix, [1, this.transform.mirror ? -1 : 1])
+          break
+      }
+    }
+    
+    // GDSII order
+    // mat3.scale(this.transform.matrix, inputMatrix, [1, this.transform.mirror ? -1 : 1])
+    // mat3.translate(this.transform.matrix, this.transform.matrix, this.transform.mirror ? [datum[0], -datum[1]] : datum)
+    // mat3.rotate(this.transform.matrix, this.transform.matrix, (this.transform.mirror ? -1 : 1)*rotation * (Math.PI / 180))
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
+
+    // Default Order
+    // mat3.rotate(this.transform.matrix, inputMatrix, rotation * (Math.PI / 180))
+    // mat3.translate(this.transform.matrix, this.transform.matrix, datum)
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [this.transform.mirror ? -1 : 1, 1])
+
     mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
   }
 
@@ -777,6 +806,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.rotation = repeat.rotation
     this.transform.scale = repeat.scale
     this.transform.mirror = repeat.mirror
+    this.transform.order = repeat.order
     this.transform.index = 0
     this.transform.polarity = 1
   }
