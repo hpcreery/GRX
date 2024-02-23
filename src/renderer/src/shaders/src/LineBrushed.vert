@@ -31,7 +31,8 @@ attribute float a_SymNum;
 attribute float a_ResizeFactor;
 attribute float a_Polarity;
 attribute float a_Rotation;
-attribute float a_Mirror;
+attribute float a_Mirror_X;
+attribute float a_Mirror_Y;
 
 // LINE VARYINGS
 varying float v_Index;
@@ -41,7 +42,8 @@ varying float v_SymNum;
 varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
-varying float v_Mirror;
+varying float v_Mirror_X;
+varying float v_Mirror_Y;
 
 //////////////////////////////
 // Rotation and translation //
@@ -105,7 +107,8 @@ void main() {
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
   v_Rotation = a_Rotation;
-  v_Mirror = a_Mirror;
+  v_Mirror_X = a_Mirror_X;
+  v_Mirror_Y = a_Mirror_Y;
 
   float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
 

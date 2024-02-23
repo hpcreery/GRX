@@ -32,7 +32,8 @@ varying vec2 v_End_Location;
 varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
-varying float v_Mirror;
+varying float v_Mirror_X;
+varying float v_Mirror_Y;
 
 //////////////////////////////////////
 // Combine distance field functions //
@@ -68,12 +69,12 @@ vec2 translate(vec2 p, vec2 t) {
   return p - t;
 }
 
-vec2 mirror(float m) {
+vec2 mirror_x(float m) {
   return vec2(m == 1.0 ? -1.0 : 1.0, 1.0);
 }
 
-vec2 mirror(vec2 p, float m) {
-  return p * mirror(m);
+vec2 mirror_y(float m) {
+  return vec2(1.0, m == 1.0 ? -1.0 : 1.0);
 }
 
 //////////////////////////////
@@ -93,9 +94,8 @@ float boxDist(vec2 p, vec2 size) {
 
 float brushEndsDist(vec2 p) {
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-  // p = mirror(p, v_Mirror);
-  float start = drawShape(mirror(translate(p, (v_Start_Location - Center_Location)) * rotateCW(-radians(v_Rotation)), v_Mirror), int(v_SymNum));
-  float end = drawShape(mirror(translate(p, (v_End_Location - Center_Location)) * rotateCW(-radians(v_Rotation)), v_Mirror), int(v_SymNum));
+  float start = drawShape(translate(p, (v_Start_Location - Center_Location)) * rotateCW(radians(v_Rotation)) * mirror_x(v_Mirror_X) * mirror_y(v_Mirror_Y), int(v_SymNum));
+  float end = drawShape(translate(p, (v_End_Location - Center_Location)) * rotateCW(radians(v_Rotation)) * mirror_x(v_Mirror_X) * mirror_y(v_Mirror_Y), int(v_SymNum));
   return merge(start,end);
 }
 

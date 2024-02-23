@@ -83,7 +83,8 @@ interface BrushedLineAttributes {
   a_Polarity: CustomAttributeConfig
   a_ResizeFactor: CustomAttributeConfig
   a_Rotation: CustomAttributeConfig
-  a_Mirror: CustomAttributeConfig
+  a_Mirror_X: CustomAttributeConfig
+  a_Mirror_Y: CustomAttributeConfig
 }
 
 interface ArcAttributes {
@@ -456,10 +457,17 @@ export class ShapeRenderer {
             divisor: 1
           },
 
-          a_Mirror: {
+          a_Mirror_X: {
             buffer: () => attachment.buffer,
             stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+            divisor: 1
+          },
+
+          a_Mirror_Y: {
+            buffer: () => attachment.buffer,
+            stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+            offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
             divisor: 1
           }
         },

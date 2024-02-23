@@ -30,7 +30,8 @@ export const BRUSHED_LINE_RECORD_PARAMETERS = [
   'resize_factor',
   'polarity',
   'rotation',
-  'mirror'
+  'mirror_x',
+  'mirror_y'
 ] as const
 export const ARC_RECORD_PARAMETERS = [
   'index',
@@ -183,7 +184,8 @@ export class BrushedLine implements TBrushedLine_Record, IPlotRecord {
   public resize_factor = 1
   public polarity = 1
   public rotation = 0
-  public mirror = 0
+  public mirror_x = 0
+  public mirror_y = 0
 
   constructor(record: Partial<Omit<TBrushedLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)
