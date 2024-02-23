@@ -537,7 +537,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         new Shapes.Pad({
           x: prevx,
           y: prevy,
-          rotation: prevAngleDeg,
+          rotation: -prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
           index: record.index
@@ -561,7 +561,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         new Shapes.Pad({
           x: x,
           y: y,
-          rotation: prevAngleDeg,
+          rotation: -prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
           index: record.index
@@ -599,7 +599,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const pad = new Shapes.Pad({
           x: x + offsetx,
           y: y + offsety,
-          rotation: (angle * 180) / Math.PI,
+          rotation: -(angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
           index: record.index
@@ -625,7 +625,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const pad = new Shapes.Pad({
           x: x + offsetx,
           y: y + offsety,
-          rotation: (angle * 180) / Math.PI,
+          rotation: -(angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
           index: record.index
@@ -643,7 +643,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const pad2 = new Shapes.Pad({
           x: x + offsetx2,
           y: y + offsety2,
-          rotation: ((angle + Math.PI) * 180) / Math.PI,
+          rotation: -((angle + Math.PI) * 180) / Math.PI,
           symbol: tringle2,
           polarity: record.polarity,
           index: record.index
