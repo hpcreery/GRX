@@ -346,12 +346,12 @@ const brush_sym =
   new Symbols.StandardSymbol({
     id: 'brush', // id
     symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
-    width: 0.2, // width, square side, diameter
-    height: 0.2, // height
+    width: 4, // width, square side, diameter
+    height: 2, // height
     // corner_radius: 0.002, // corner radius
     // corners: 3, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-    outer_dia: 0.2, // — Outer diameter of the shape
-    inner_dia: 0.1, // — Inner diameter of the shape
+    outer_dia: 2, // — Outer diameter of the shape
+    // inner_dia: 0.01, // — Inner diameter of the shape
     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
     // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
@@ -384,6 +384,8 @@ new Array<number>(10)
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       polarity: 1,
+      rotation: 45,
+      mirror: 0,
     }))
   })
 

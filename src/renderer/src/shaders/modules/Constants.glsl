@@ -1,3 +1,3 @@
 #define PI 3.1415926535897932384626433832795
-#define DEBUG 0
+#define DEBUG 1
 #define ALPHA 1.0

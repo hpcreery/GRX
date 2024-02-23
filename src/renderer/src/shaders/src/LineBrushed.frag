@@ -68,6 +68,14 @@ vec2 translate(vec2 p, vec2 t) {
   return p - t;
 }
 
+vec2 mirror(float m) {
+  return vec2(m == 1.0 ? -1.0 : 1.0, 1.0);
+}
+
+vec2 mirror(vec2 p, float m) {
+  return p * mirror(m);
+}
+
 //////////////////////////////
 // Distance field functions //
 //////////////////////////////
@@ -85,8 +93,9 @@ float boxDist(vec2 p, vec2 size) {
 
 float brushEndsDist(vec2 p) {
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-  float start = drawShape(translate(p, (v_Start_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
-  float end = drawShape(translate(p, (v_End_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
+  // p = mirror(p, v_Mirror);
+  float start = drawShape(mirror(translate(p, (v_Start_Location - Center_Location)) * rotateCW(-radians(v_Rotation)), v_Mirror), int(v_SymNum));
+  float end = drawShape(mirror(translate(p, (v_End_Location - Center_Location)) * rotateCW(-radians(v_Rotation)), v_Mirror), int(v_SymNum));
   return merge(start,end);
 }
 
@@ -99,26 +108,40 @@ float brush(vec2 p)
 {
   vec2 dir = normalize(v_End_Location - v_Start_Location);
 
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
+  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float OD = max(t_Outer_Dia, max(t_Width, t_Height)) * 1.5 * v_ResizeFactor;
+
 	// distance traveled
 	float dt = 0.0;
   float climb = 0.0;
   float returnValue = 0.0;
+  float sd = 0.0;
+  float prev_sd = sd;
 	for (int i = 0; i < BRUSH_ITERATIONS; ++i)
 	{
     // distance to scene at current position
-		float sd = brushEndsDist(p - dir * dt);
-    if (i == 0) {
-      climb = sign(brushEndsDist(p + dir * u_PixelSize) - sd);
-    }
-    // float climb = brushEndsDist(p - dir * (dt - u_PixelSize));
+    prev_sd = sd;
+		sd = brushEndsDist(p - dir * dt);
 
-    // early out when this ray is guaranteed to be full shadow
-    if (sd <= u_PixelSize * 0.5) {
+    if (sd <= 0.0) {
       returnValue = 1.0;
       break;
     }
 
-		dt += max(u_PixelSize, abs(sd)) * -climb;
+    if (i == 0) {
+      climb = sign(brushEndsDist(p + dir * u_PixelSize) - sd);
+    } else {
+      float temp_dt = abs((sd * prev_sd) / abs(prev_sd - sd)) * -climb * 1.5;
+      float sd2 = brushEndsDist(p - dir * (dt + temp_dt));
+      if (sd2 <= 0.0) {
+        returnValue = 1.0;
+        break;
+      }
+    }
+
+    dt += max(u_PixelSize, abs(sd)) * -climb;
 	}
 	return returnValue;
 }
@@ -153,23 +176,6 @@ void main() {
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = ALPHA * max(float(u_OutlineMode), polarity);
-
-  // ? which one to go by for line width...
-  // float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  // float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  // float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
-  // float OD = max(t_Outer_Dia, max(t_Width, t_Height));
-
-  // float dX = v_Start_Location.x - v_End_Location.x;
-  // float dY = v_Start_Location.y - v_End_Location.y;
-  // float len = distance(v_Start_Location, v_End_Location);
-  // float angle = atan(dY/dX);
-  // vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-  // float start = drawShape(translate(FragCoord, (v_Start_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
-  // float end = drawShape(translate(FragCoord, (v_End_Location - Center_Location)) * rotateCW(-v_Rotation), int(v_SymNum));
-  // float con = boxDist(FragCoord * rotateCW(-angle), vec2(len, OD));
-  // float dist = merge(start,end);
-  // dist = merge(dist, con);
 
   float dist = brushEndsDist(FragCoord);
   float br = brush(FragCoord);
