@@ -36,9 +36,12 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
 }
 
+export type TransformOrder = ('scale' | 'rotate' | 'translate' | 'mirror')[]
+
 export interface Transform {
   datum: vec2
   rotation: number
   scale: number
   mirror: number
+  order?: TransformOrder
 }
