@@ -142,6 +142,9 @@ float brush(vec2 p)
     }
 
     dt += max(u_PixelSize, abs(sd)) * -climb;
+    if (dt > length(v_End_Location - v_Start_Location) + OD) {
+      break;
+    }
 	}
 	return returnValue;
 }

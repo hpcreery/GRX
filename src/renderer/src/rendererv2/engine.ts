@@ -1,6 +1,8 @@
 import REGL from 'regl'
 import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
+import { initializeRenderers } from './collections'
+
 
 interface WorldProps {}
 
@@ -149,6 +151,8 @@ export class RenderEngine {
       profile: true
     })
     console.log('WEBGL LIMITS', this.regl.limits)
+
+    initializeRenderers(this.regl)
 
     this.regl.clear({
       depth: 0,

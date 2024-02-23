@@ -1,6 +1,6 @@
 import { ISymbolRecord, FeatureTypeIdentifyer, toMap } from './types'
 import { Shape } from './shapes'
-import { malloc, ptr } from './utils'
+import { malloc } from './utils'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -59,6 +59,8 @@ export const STANDARD_SYMBOLS = [
   // "Hexagon_Thermal"
   // "Octagon_Thermal"
 ] as const
+export type STANDARD_SYMBOLS = typeof STANDARD_SYMBOLS
+
 export const SYMBOL_PARAMETERS = [
   'symbol',
   'width',
@@ -78,11 +80,13 @@ export const SYMBOL_PARAMETERS = [
   'ring_gap',
   'num_rings'
 ] as const
+export type SYMBOL_PARAMETERS = typeof SYMBOL_PARAMETERS
 
 export const STANDARD_SYMBOLS_MAP = toMap(STANDARD_SYMBOLS)
 export const SYMBOL_PARAMETERS_MAP = toMap(SYMBOL_PARAMETERS)
 
 export type TStandardSymbol = typeof SYMBOL_PARAMETERS_MAP
+
 
 export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
   public readonly type = FeatureTypeIdentifyer.SYMBOL_DEFINITION
