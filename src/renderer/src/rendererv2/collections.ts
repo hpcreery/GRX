@@ -14,6 +14,8 @@ import LineBrushedFrag from '../shaders/src/LineBrushed.frag'
 import LineBrushedVert from '../shaders/src/LineBrushed.vert'
 import ArcFrag from '../shaders/src/Arc.frag'
 import ArcVert from '../shaders/src/Arc.vert'
+import ArcBrushedFrag from '../shaders/src/ArcBrushed.frag'
+import ArcBrushedVert from '../shaders/src/ArcBrushed.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
 
@@ -26,10 +28,12 @@ import { vec2 } from 'gl-matrix'
 const {
   LINE_RECORD_PARAMETERS,
   BRUSHED_LINE_RECORD_PARAMETERS,
+  BRUSHED_ARC_RECORD_PARAMETERS,
   PAD_RECORD_PARAMETERS,
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
   BRUSHED_LINE_RECORD_PARAMETERS_MAP,
+  BRUSHED_ARC_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
   ARC_RECORD_PARAMETERS_MAP,
   SURFACE_RECORD_PARAMETERS_MAP,
@@ -85,6 +89,20 @@ interface BrushedLineAttributes {
   a_SymNum: CustomAttributeConfig
   a_Start_Location: CustomAttributeConfig
   a_End_Location: CustomAttributeConfig
+  a_Index: CustomAttributeConfig
+  a_Polarity: CustomAttributeConfig
+  a_ResizeFactor: CustomAttributeConfig
+  a_Rotation: CustomAttributeConfig
+  a_Mirror_X: CustomAttributeConfig
+  a_Mirror_Y: CustomAttributeConfig
+}
+
+interface BrushedArcAttributes {
+  a_SymNum: CustomAttributeConfig
+  a_Start_Location: CustomAttributeConfig
+  a_End_Location: CustomAttributeConfig
+  a_Center_Location: CustomAttributeConfig
+  a_Clockwise: CustomAttributeConfig
   a_Index: CustomAttributeConfig
   a_Polarity: CustomAttributeConfig
   a_ResizeFactor: CustomAttributeConfig
@@ -490,6 +508,109 @@ export function initializeRenderers(regl: REGL.Regl): void {
       },
 
       instances: regl.prop<BrushedLineAttachments, 'length'>('length')
+    })
+  })
+
+  Symbols.STANDARD_SYMBOLS.map((symbol) => {
+    const frag = ArcBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
+      if (shapes && shapes.split(',').includes(symbol)) {
+        return ''
+      }
+      return match
+    })
+    ReglRenderers.drawBrushedArcs[symbol] = regl<
+      ArcUniforms,
+      BrushedArcAttributes,
+      BrushedArcAttachments,
+      Record<string, never>,
+      REGL.DefaultContext & WorldContext
+    >({
+      frag: frag,
+
+      vert: ArcBrushedVert,
+
+      uniforms: {},
+
+      attributes: {
+        a_Index: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+          divisor: 1
+        },
+
+        a_Start_Location: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+          divisor: 1
+        },
+
+        a_End_Location: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+          divisor: 1
+        },
+
+        a_Center_Location: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
+          divisor: 1
+        },
+
+        a_Clockwise: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
+          divisor: 1
+        },
+
+        a_SymNum: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+          divisor: 1
+        },
+
+        a_Polarity: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+          divisor: 1
+        },
+
+        a_ResizeFactor: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+          divisor: 1
+        },
+
+        a_Rotation: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+          divisor: 1
+        },
+
+        a_Mirror_X: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+          divisor: 1
+        },
+
+        a_Mirror_Y: {
+          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
+          divisor: 1
+        }
+      },
+
+      instances: regl.prop<BrushedArcAttachments, 'length'>('length')
     })
   })
 }

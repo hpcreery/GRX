@@ -41,9 +41,9 @@ export const ARC_RECORD_PARAMETERS = [
   'ye',
   'xc',
   'yc',
+  'clockwise',
   'sym_num',
   'polarity',
-  'clockwise'
 ] as const
 export const BRUSHED_ARC_RECORD_PARAMETERS = [
   'index',
@@ -53,11 +53,13 @@ export const BRUSHED_ARC_RECORD_PARAMETERS = [
   'ye',
   'xc',
   'yc',
+  'clockwise',
   'sym_num',
   'resize_factor',
   'polarity',
   'rotation',
-  'mirror'
+  'mirror_x',
+  'mirror_y'
 ] as const
 export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
 export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS = [
@@ -263,7 +265,8 @@ export class BrushedArc implements TBrushedArc_Record, IPlotRecord {
   public resize_factor = 1
   public polarity = 1
   public rotation = 0
-  public mirror = 0
+  public mirror_x = 0
+  public mirror_y = 0
 
   constructor(record: Partial<Omit<TBrushedArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)

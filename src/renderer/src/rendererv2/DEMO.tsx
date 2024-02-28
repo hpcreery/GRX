@@ -390,6 +390,83 @@ new Array<number>(10)
     }))
   })
 
+const ARC_BRUSH_RECORDS_ARRAY_POS: Shapes.BrushedArc[] = []
+new Array<number>(N_ARCS)
+  .fill(0).map((_, i) => {
+    const start_angle = Math.abs(Math.random()) * 360
+    const end_angle = Math.abs(Math.random()) * 360
+    const radius = Math.abs(Math.random()) * 0.1
+    const center_x = (Math.random() - 0.5) * 1
+    const center_y = (Math.random() - 0.5) * 1
+    function degreesToRadians(degrees: number): number {
+      return degrees * (Math.PI / 180);
+    }
+    ARC_BRUSH_RECORDS_ARRAY_POS.push(new Shapes.BrushedArc({
+      // Center point.
+      xc: center_x,
+      yc: center_y,
+
+      // Start point.
+      xs: center_x + Math.cos(degreesToRadians(start_angle)) * radius,
+      ys: center_y + Math.sin(degreesToRadians(start_angle)) * radius,
+
+      // End point.
+      xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
+      ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
+
+      // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: brush_sym,
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // Polarity. 0 = negative, 1 = positive
+      polarity: 1,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      clockwise: Math.random() > 0.5 ? 1 : 0,
+      // clockwise: 0,
+      rotation: 45,
+      // resize_factor: 0.1,
+    }))
+  })
+
+// new Array<number>(1)
+//   .fill(0).map((_, i) => {
+//     const start_angle = 180
+//     const end_angle = 185
+//     const radius = 1
+//     const center_x = 0
+//     const center_y = 0
+//     function degreesToRadians(degrees: number): number {
+//       return degrees * (Math.PI / 180);
+//     }
+//     const random_x_offset = Math.random() * 1
+//     const random_y_offset = Math.random() * 1
+//     ARC_BRUSH_RECORDS_ARRAY_POS.push(new Shapes.BrushedArc({
+//       // Center point.
+//       xc: center_x,
+//       yc: center_y,
+
+//       // Start point.
+//       xs: center_x + Math.cos(degreesToRadians(start_angle)) * radius,
+//       ys: center_y + Math.sin(degreesToRadians(start_angle)) * radius,
+
+//       // End point.
+//       xe: center_x + Math.cos(degreesToRadians(end_angle)) * radius,
+//       ye: center_y + Math.sin(degreesToRadians(end_angle)) * radius,
+
+//       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+//       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+//       symbol: brush_sym,
+//       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+//       // Polarity. 0 = negative, 1 = positive
+//       polarity: 1,
+//       // polarity: Math.random() > 0.5 ? 1 : 0,
+//       clockwise: 0,
+//       // clockwise: 0,
+//       rotation: 45,
+//       resize_factor: 3,
+//     }))
+//   })
+
 const ARC_RECORDS_ARRAY: Shapes.Arc[] = []
 new Array<number>(N_ARCS)
   .fill(0).map((_, i) => {
@@ -681,6 +758,52 @@ new Array<number>(1)
 
   })
 
+
+const VALIDATION_ARC = new Shapes.Arc({
+  // Cnter point.
+  xc: 0,
+  yc: 1,
+
+  // Start point.
+  xs: -1,
+  ys: 0,
+
+  // End point.
+  xe: 1,
+  ye: 0,
+
+  // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+  // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+  symbol: round_sym,
+  // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+  // Polarity. 0 = negative, 1 = positive
+  polarity: 1,
+  // polarity: Math.random() > 0.5 ? 1 : 0,
+  clockwise: 1,
+  // clockwise: 0,
+})
+
+const VALIDATION_LINE = new Shapes.Line({
+  // Start point.
+  xs: -1,
+  ys: 0,
+
+  // End point.
+  xe: 1,
+  ye: 0,
+
+  // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+  // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
+  symbol: round_sym,
+  // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+  // Polarity. 0 = negative, 1 = positive
+  // polarity: i % 2,
+  // polarity: Math.random() > 0.5 ? 1 : 0,
+  polarity: 1,
+})
+
+
+
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
   const [engine, setEngine] = React.useState<RenderEngine>()
@@ -777,10 +900,15 @@ function REGLApp(): JSX.Element {
     //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'brush lines',
-      image: LINE_BRUSH_RECORDS_ARRAY_POS
-    })
+    // Engine.addLayer({
+    //   name: 'brush lines',
+    //   image: LINE_BRUSH_RECORDS_ARRAY_POS
+    // })
+
+    // Engine.addLayer({
+    //   name: 'brush arcs',
+    //   image: ARC_BRUSH_RECORDS_ARRAY_POS
+    // })
 
     // setTimeout(() => {
     //   // arcs.value.map(a => a.value.polarity = 0)
@@ -831,6 +959,11 @@ function REGLApp(): JSX.Element {
       image: SURFACE_RECORDS_ARRAY
     })
 
+    Engine.addLayer({
+      name: 'validation',
+      image: [VALIDATION_ARC, VALIDATION_LINE]
+    })
+
     // Engine.addLayer({
     //   name: 'polygon',
     //   image: polygons
@@ -840,7 +973,7 @@ function REGLApp(): JSX.Element {
 
     Engine.layers.map(l => {
       l.visible = false
-      if (l.name === 'brush lines') {
+      if (l.name === 'brush arcs') {
         l.visible = true
       }
     })
