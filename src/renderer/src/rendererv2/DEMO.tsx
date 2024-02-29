@@ -6,7 +6,7 @@ import { RenderEngine } from './engine'
 import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { IPlotRecord, ISymbolRecord } from './types'
 // import { vec2 } from 'gl-matrix'
-// import { PointerEvent } from './engine'
+import { PointerEvent, PointerEvents } from './engine'
 
 import { addGDSII } from '../../lib/gdsii/index'
 
@@ -1010,6 +1010,7 @@ function REGLApp(): JSX.Element {
           width: '100px'
         }}>
           <StatsWidget />
+          <MouseCoordinates engine={engine} />
           <Button
             onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
             Randomize Colors
@@ -1096,6 +1097,35 @@ function StatsWidget(): JSX.Element {
     }}>
       <div>FPS: {fps}</div>
       <div>Avg FPS: {avgFPS}</div>
+    </div>
+  )
+}
+
+function MouseCoordinates(props: { engine: RenderEngine}): JSX.Element {
+  const [mouse, setMouse] = React.useState({ x: 0, y: 0 })
+
+  const round = (n: number, d: number): number => {
+    return Math.round(n * Math.pow(10, d)) / Math.pow(10, d)
+  }
+
+  props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e: PointerEvent) => {
+    setMouse({ x: round(e.detail.x, 3), y: round(e.detail.y, 3) })
+  })
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      padding: 10,
+      background: 'rgba(0,0,0,0.5)',
+      color: 'white',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      pointerEvents: 'none',
+      zIndex: 100,
+      userSelect: 'none',
+    }}>
+      <div>Mouse: {mouse.x}, {mouse.y}</div>
     </div>
   )
 }
