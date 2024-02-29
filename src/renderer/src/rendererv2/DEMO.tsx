@@ -969,7 +969,7 @@ function REGLApp(): JSX.Element {
     //   image: polygons
     // })
 
-    // addGDSII(Engine)
+    addGDSII(Engine)
 
     Engine.layers.map(l => {
       l.visible = false

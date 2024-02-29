@@ -57,12 +57,14 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  private dirty = true
-  public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
-    // console.log('records changed', { path, value, prev, apply })
-    onChange.target(this.records).map((record, i) => (record.index = i))
-    this.dirty = true
-  })
+  public dirty = true
+  // unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
+  // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
+  //   // console.log('records changed', { path, value, prev, apply })
+  //   onChange.target(this.records).map((record, i) => (record.index = i))
+  //   this.dirty = true
+  // })
+  public readonly records: Shapes.Shape[] = []
 
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
