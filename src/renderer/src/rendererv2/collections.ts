@@ -422,197 +422,199 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: 1
   })
 
-  Symbols.STANDARD_SYMBOLS.map((symbol) => {
-    const frag = LineBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
-      if (shapes && shapes.split(',').includes(symbol)) {
-        return ''
-      }
-      return match
-    })
-    ReglRenderers.drawBrushedLines[symbol] = regl<
-      LineUniforms,
-      BrushedLineAttributes,
-      BrushedLineAttachments,
-      Record<string, never>,
-      REGL.DefaultContext & WorldContext
-    >({
-      frag: frag,
+  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+  // Symbols.STANDARD_SYMBOLS.map((symbol) => {
+  //   const frag = LineBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
+  //     if (shapes && shapes.split(',').includes(symbol)) {
+  //       return ''
+  //     }
+  //     return match
+  //   })
+  //   ReglRenderers.drawBrushedLines[symbol] = regl<
+  //     LineUniforms,
+  //     BrushedLineAttributes,
+  //     BrushedLineAttachments,
+  //     Record<string, never>,
+  //     REGL.DefaultContext & WorldContext
+  //   >({
+  //     frag: frag,
 
-      vert: LineBrushedVert,
+  //     vert: LineBrushedVert,
 
-      uniforms: {},
+  //     uniforms: {},
 
-      attributes: {
-        a_Index: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
+  //     attributes: {
+  //       a_Index: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Start_Location: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-          divisor: 1
-        },
+  //       a_Start_Location: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_End_Location: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-          divisor: 1
-        },
+  //       a_End_Location: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_SymNum: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
+  //       a_SymNum: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Polarity: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        },
+  //       a_Polarity: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_ResizeFactor: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-          divisor: 1
-        },
+  //       a_ResizeFactor: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Rotation: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-          divisor: 1
-        },
+  //       a_Rotation: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Mirror_X: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
-          divisor: 1
-        },
+  //       a_Mirror_X: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Mirror_Y: {
-          buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
-          divisor: 1
-        }
-      },
+  //       a_Mirror_Y: {
+  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
+  //         divisor: 1
+  //       }
+  //     },
 
-      instances: regl.prop<BrushedLineAttachments, 'length'>('length')
-    })
-  })
+  //     instances: regl.prop<BrushedLineAttachments, 'length'>('length')
+  //   })
+  // })
 
-  Symbols.STANDARD_SYMBOLS.map((symbol) => {
-    const frag = ArcBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
-      if (shapes && shapes.split(',').includes(symbol)) {
-        return ''
-      }
-      return match
-    })
-    ReglRenderers.drawBrushedArcs[symbol] = regl<
-      ArcUniforms,
-      BrushedArcAttributes,
-      BrushedArcAttachments,
-      Record<string, never>,
-      REGL.DefaultContext & WorldContext
-    >({
-      frag: frag,
+  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+  // Symbols.STANDARD_SYMBOLS.map((symbol) => {
+  //   const frag = ArcBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
+  //     if (shapes && shapes.split(',').includes(symbol)) {
+  //       return ''
+  //     }
+  //     return match
+  //   })
+  //   ReglRenderers.drawBrushedArcs[symbol] = regl<
+  //     ArcUniforms,
+  //     BrushedArcAttributes,
+  //     BrushedArcAttachments,
+  //     Record<string, never>,
+  //     REGL.DefaultContext & WorldContext
+  //   >({
+  //     frag: frag,
 
-      vert: ArcBrushedVert,
+  //     vert: ArcBrushedVert,
 
-      uniforms: {},
+  //     uniforms: {},
 
-      attributes: {
-        a_Index: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-          divisor: 1
-        },
+  //     attributes: {
+  //       a_Index: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Start_Location: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-          divisor: 1
-        },
+  //       a_Start_Location: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_End_Location: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-          divisor: 1
-        },
+  //       a_End_Location: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Center_Location: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
-          divisor: 1
-        },
+  //       a_Center_Location: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Clockwise: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
-          divisor: 1
-        },
+  //       a_Clockwise: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_SymNum: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-          divisor: 1
-        },
+  //       a_SymNum: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Polarity: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-          divisor: 1
-        },
+  //       a_Polarity: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_ResizeFactor: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-          divisor: 1
-        },
+  //       a_ResizeFactor: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Rotation: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-          divisor: 1
-        },
+  //       a_Rotation: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Mirror_X: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
-          divisor: 1
-        },
+  //       a_Mirror_X: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+  //         divisor: 1
+  //       },
 
-        a_Mirror_Y: {
-          buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-          stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-          offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
-          divisor: 1
-        }
-      },
+  //       a_Mirror_Y: {
+  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
+  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
+  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
+  //         divisor: 1
+  //       }
+  //     },
 
-      instances: regl.prop<BrushedArcAttachments, 'length'>('length')
-    })
-  })
+  //     instances: regl.prop<BrushedArcAttachments, 'length'>('length')
+  //   })
+  // })
 }
 
 const dynamicShapeRegex = /^#pragma dynamic_shape\(?(?<shapes>(?:\w|,)+)?\)?/gm
@@ -625,8 +627,8 @@ interface shapesList {
   pads: Shapes.Pad[]
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
-  brushedLines: Shapes.BrushedLine[]
-  brushedArcs: Shapes.BrushedArc[]
+  // brushedLines: Shapes.BrushedLine[]
+  // brushedArcs: Shapes.BrushedArc[]
   surfaces: Shapes.Surface[]
   clear: () => void
 }
@@ -652,8 +654,9 @@ export class ShapesShaderCollection {
       pads: [],
       lines: [],
       arcs: [],
-      brushedLines: [],
-      brushedArcs: [],
+      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+      // brushedLines: [],
+      // brushedArcs: [],
       surfaces: [],
       clear: function (): void {
         this.pads.length = 0
@@ -703,16 +706,18 @@ export class ShapesShaderCollection {
         this.shapes.lines.push(record)
       } else if (record instanceof Shapes.Arc && record.symbol instanceof Symbols.StandardSymbol) {
         this.shapes.arcs.push(record)
-      } else if (
-        record instanceof Shapes.BrushedLine &&
-        record.symbol instanceof Symbols.StandardSymbol
-      ) {
-        this.shapes.brushedLines.push(record)
-      } else if (
-        record instanceof Shapes.BrushedArc &&
-        record.symbol instanceof Symbols.StandardSymbol
-      ) {
-        this.shapes.brushedArcs.push(record)
+      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+        // } else if (
+      //   record instanceof Shapes.BrushedLine &&
+      //   record.symbol instanceof Symbols.StandardSymbol
+      // ) {
+      //   this.shapes.brushedLines.push(record)
+      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+      // } else if (
+      //   record instanceof Shapes.BrushedArc &&
+      //   record.symbol instanceof Symbols.StandardSymbol
+      // ) {
+      //   this.shapes.brushedArcs.push(record)
       } else if (record instanceof Shapes.PolyLine) {
         drawPolyline(record, this.shapes)
       }
@@ -736,18 +741,21 @@ export class ShapesShaderCollection {
       }
       this.symbolsCollection.add(record.symbol)
     })
-    this.shapes.brushedLines.forEach((record) => {
-      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
-        return
-      }
-      this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.brushedArcs.forEach((record) => {
-      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
-        return
-      }
-      this.symbolsCollection.add(record.symbol)
-    })
+
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // this.shapes.brushedLines.forEach((record) => {
+    //   if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+    //     return
+    //   }
+    //   this.symbolsCollection.add(record.symbol)
+    // })
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // this.shapes.brushedArcs.forEach((record) => {
+    //   if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+    //     return
+    //   }
+    //   this.symbolsCollection.add(record.symbol)
+    // })
 
     this.symbolsCollection.refresh()
 
@@ -756,8 +764,10 @@ export class ShapesShaderCollection {
     this.shapes.lines.sort((a, b) => b.index - a.index)
     this.shapes.arcs.sort((a, b) => b.index - a.index)
     this.shapes.surfaces.sort((a, b) => b.index - a.index)
-    this.shapes.brushedLines.sort((a, b) => b.index - a.index)
-    this.shapes.brushedArcs.sort((a, b) => b.index - a.index)
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // this.shapes.brushedLines.sort((a, b) => b.index - a.index)
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // this.shapes.brushedArcs.sort((a, b) => b.index - a.index)
 
     this.shaderAttachment.pads.length = this.shapes.pads.length
     this.shaderAttachment.lines.length = this.shapes.lines.length
@@ -815,41 +825,43 @@ export class ShapesShaderCollection {
       })
     })
 
-    Symbols.STANDARD_SYMBOLS.map((symbol) => {
-      const shapes = this.shapes.brushedLines.filter((record) => {
-        return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
-      })
-      this.shaderAttachment.brushedLines.push({
-        symbol: symbol,
-        length: shapes.length,
-        buffer: this.regl.buffer({
-          usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-          type: 'float',
-          length: shapes.length * glFloatSize,
-          data: shapes.map((record) => {
-            return record.array
-          })
-        })
-      })
-    })
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // Symbols.STANDARD_SYMBOLS.map((symbol) => {
+    //   const shapes = this.shapes.brushedLines.filter((record) => {
+    //     return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
+    //   })
+    //   this.shaderAttachment.brushedLines.push({
+    //     symbol: symbol,
+    //     length: shapes.length,
+    //     buffer: this.regl.buffer({
+    //       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+    //       type: 'float',
+    //       length: shapes.length * glFloatSize,
+    //       data: shapes.map((record) => {
+    //         return record.array
+    //       })
+    //     })
+    //   })
+    // })
 
-    Symbols.STANDARD_SYMBOLS.map((symbol) => {
-      const shapes = this.shapes.brushedArcs.filter((record) => {
-        return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
-      })
-      this.shaderAttachment.brushedArcs.push({
-        symbol: symbol,
-        length: shapes.length,
-        buffer: this.regl.buffer({
-          usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-          type: 'float',
-          length: shapes.length * glFloatSize,
-          data: shapes.map((record) => {
-            return record.array
-          })
-        })
-      })
-    })
+    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+    // Symbols.STANDARD_SYMBOLS.map((symbol) => {
+    //   const shapes = this.shapes.brushedArcs.filter((record) => {
+    //     return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
+    //   })
+    //   this.shaderAttachment.brushedArcs.push({
+    //     symbol: symbol,
+    //     length: shapes.length,
+    //     buffer: this.regl.buffer({
+    //       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
+    //       type: 'float',
+    //       length: shapes.length * glFloatSize,
+    //       data: shapes.map((record) => {
+    //         return record.array
+    //       })
+    //     })
+    //   })
+    // })
 
     return this
   }

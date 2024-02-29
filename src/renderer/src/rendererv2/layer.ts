@@ -58,7 +58,7 @@ interface ShapeRendererCommonContext {
 export class ShapeRenderer {
   public regl: REGL.Regl
   public dirty = true
-  // unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
+  // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
   // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
   //   // console.log('records changed', { path, value, prev, apply })
   //   onChange.target(this.records).map((record, i) => (record.index = i))
@@ -77,14 +77,14 @@ export class ShapeRenderer {
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawPads!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawLines!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawBrushedLines!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
   protected drawArcs!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawBrushedArcs!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+  // protected drawBrushedLines!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
+  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+  // protected drawBrushedArcs!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
   protected drawSurfaces!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawMacros: (context: REGL.DefaultContext & WorldContext) => this
   protected drawStepAndRepeats: (context: REGL.DefaultContext & WorldContext) => this
-
-  // protected readonly brushIndex: number = 0
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -159,14 +159,12 @@ export class ShapeRenderer {
           const ioff =
             (this.transform.index * (context.qtyFeaturesRef ?? 1)) /
               (context.prevQtyFeaturesRef ?? 1) || 0
-          // console.log(this.transform.datum.toString(), 'u_IndexOffset', ioff)
           return ioff
         },
         u_QtyFeatures: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
         ) => {
           const qtyFeatures = context.qtyFeaturesRef ?? 1
-          // console.log(this.transform.datum.toString(), 'u_QtyFeatures', qtyFeatures)
           return qtyFeatures
         },
         u_Polarity: () => this.transform.polarity,
@@ -221,7 +219,6 @@ export class ShapeRenderer {
     const { rotation, scale, datum } = this.transform
     this.transform.matrix = mat3.clone(inputMatrix)
     if (!this.transform.order) this.transform.order = ['rotate', 'translate', 'scale', 'mirror']
-    // console.log('this.transform.order', this.transform.order)
     for (const transform of this.transform.order) {
       switch (transform) {
         case 'scale':
@@ -269,14 +266,16 @@ export class ShapeRenderer {
       if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
-      this.shapeCollection.shaderAttachment.brushedLines.forEach((attachment) => {
-        if (attachment.length === 0) return
-        this.drawBrushedLines[attachment.symbol](attachment)
-      })
-      this.shapeCollection.shaderAttachment.brushedArcs.forEach((attachment) => {
-        if (attachment.length === 0) return
-        this.drawBrushedArcs[attachment.symbol](attachment)
-      })
+      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+      // this.shapeCollection.shaderAttachment.brushedLines.forEach((attachment) => {
+      //   if (attachment.length === 0) return
+      //   this.drawBrushedLines[attachment.symbol](attachment)
+      // })
+      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
+      // this.shapeCollection.shaderAttachment.brushedArcs.forEach((attachment) => {
+      //   if (attachment.length === 0) return
+      //   this.drawBrushedArcs[attachment.symbol](attachment)
+      // })
 
     })
   }

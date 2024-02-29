@@ -49,10 +49,11 @@ interface PointerCoordinates {
   y: number
 }
 
-const PointerEvents = {
+export const PointerEvents = {
   POINTER_DOWN: 'pointerdown',
   POINTER_UP: 'pointerup',
-  POINTER_MOVE: 'pointermove'
+  POINTER_MOVE: 'pointermove',
+  POINTER_HOVER: 'pointerhover'
 } as const
 
 export type PointerEvent = CustomEvent<PointerCoordinates>
@@ -346,7 +347,10 @@ export class RenderEngine {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onmousemove = (e): void => {
-      if (!this.transform.dragging) return
+      if (!this.transform.dragging) {
+        sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+        return
+      }
       this.transform.velocity = [e.movementX, e.movementY]
       vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
       this.transform.update()
