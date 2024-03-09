@@ -21,13 +21,6 @@ import {
 
 import { WorldContext } from './engine'
 
-const {
-  SURFACE_RECORD_PARAMETERS_MAP,
-  CONTOUR_RECORD_PARAMETERS_MAP,
-  CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP,
-  CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
-} = Shapes
-
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
 interface CommonAttributes {}
@@ -183,22 +176,6 @@ export class ShapeRenderer {
           (acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }),
           {}
         ),
-        ...Object.entries(SURFACE_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_SurfaceParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_ContourParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_ArcSegmentParameters.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_LineSegmentParameters.${key}`]: value }),
-          {}
-        )
       }
     })
 
@@ -237,7 +214,6 @@ export class ShapeRenderer {
       this.regl.clear({
         framebuffer: this.surfaceFrameBuffer,
         color: [0, 0, 0, 1],
-        // stencil: 0,
         depth: 0
       })
       this.surfaceFrameBuffer.use(() => {

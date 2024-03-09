@@ -15,7 +15,6 @@ import ArcVert from '../shaders/src/Arc.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
 
-
 import { WorldContext } from './engine'
 import { vec2 } from 'gl-matrix'
 
@@ -27,15 +26,11 @@ const {
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
-  ARC_RECORD_PARAMETERS_MAP,
+  ARC_RECORD_PARAMETERS_MAP
 } = Shapes
 
 type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
-  buffer: // | REGL.Buffer
-  // | undefined
-  // | null
-  // | false
-  REGL.DynamicVariable<REGL.Buffer>
+  buffer: REGL.DynamicVariable<REGL.Buffer>
 }
 
 interface PadUniforms {}
@@ -146,7 +141,9 @@ interface TReglRenderers {
   drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRendeAttachments> | undefined
+  drawFrameBuffer:
+    | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRendeAttachments>
+    | undefined
 }
 
 export const ReglRenderers: TReglRenderers = {
@@ -357,7 +354,9 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     uniforms: {
       u_Vertices: regl.prop<SurfaceAttachments, 'vertices'>('vertices'),
-      u_VerticesDimensions: regl.prop<SurfaceAttachments, 'verticiesDimensions'>('verticiesDimensions'),
+      u_VerticesDimensions: regl.prop<SurfaceAttachments, 'verticiesDimensions'>(
+        'verticiesDimensions'
+      ),
       u_QtyContours: regl.prop<SurfaceAttachments, 'qtyContours'>('qtyContours'),
       u_Index: regl.prop<SurfaceAttachments, 'index'>('index'),
       u_Polarity: regl.prop<SurfaceAttachments, 'polarity'>('polarity')
@@ -397,16 +396,16 @@ export function initializeRenderers(regl: REGL.Regl): void {
       a_Vertex_Position: [
         [0, 0],
         [1, 1],
-        [2, 2],
+        [2, 2]
       ]
     },
 
     cull: {
-      enable: false,
+      enable: false
     },
 
     instances: regl.prop<SurfaceAttachments, 'length'>('length'),
-    count: 3,
+    count: 3
     // primitive: 'line loop'
   })
 
@@ -542,8 +541,18 @@ export class ShapesShaderCollection {
       surface.offsetBuffer.destroy()
       surface.polarityBuffer.destroy()
       surface.indiciesBuffer.destroy()
+      surface.qtyVertsBuffer.destroy()
     })
     this.shaderAttachment.surfaces.length = 0
+    this.shaderAttachment.surfacesWithHoles.map((surface) => {
+      surface.vertices.destroy()
+      surface.indexBuffer.destroy()
+      surface.offsetBuffer.destroy()
+      surface.polarityBuffer.destroy()
+      surface.indiciesBuffer.destroy()
+      surface.qtyVertsBuffer.destroy()
+    })
+    this.shaderAttachment.surfacesWithHoles.length = 0
 
     this.records.forEach((record) => {
       if (record instanceof Shapes.Surface) {
@@ -617,12 +626,6 @@ export class ShapesShaderCollection {
         index++
         return verts
       })
-      // console.log('vertices', vertices)
-      // console.log('polarities', polarities)
-      // console.log('offsets', offsets)
-      // console.log('indexes', indexes)
-      // console.log('indicies', indicies)
-      // console.log('vertQty', vertQty)
       const radius = Math.ceil(Math.sqrt(vertices.length))
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
         return vertices[index] ?? 0
@@ -648,10 +651,10 @@ export class ShapesShaderCollection {
         indexBuffer: this.regl.buffer(indexes),
         indiciesBuffer: this.regl.buffer(indicies),
         qtyVertsBuffer: this.regl.buffer(vertQty),
-        length: (indicies.length / 3),
+        length: indicies.length / 3,
         qtyContours: record.contours.length,
         index: record.index,
-        polarity: record.polarity,
+        polarity: record.polarity
       })
     })
 
