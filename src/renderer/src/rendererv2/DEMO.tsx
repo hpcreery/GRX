@@ -1007,7 +1007,7 @@ function REGLApp(): JSX.Element {
     // addGDSII(Engine)
     addGerber(Engine)
 
-    Engine.layers.map(l => {
+    Engine.backend.layers.map(l => {
       l.visible = false
       if (l.name === 'surfaces') {
         l.visible = true
@@ -1048,7 +1048,7 @@ function REGLApp(): JSX.Element {
           <StatsWidget />
           <MouseCoordinates engine={engine} />
           <Button
-            onClick={(): void => { engine.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
+            onClick={(): void => { engine.backend.layers.map(l => l.color = [Math.random(), Math.random(), Math.random()]) && engine.render(true) }}>
             Randomize Colors
           </Button>
           <br />
@@ -1065,7 +1065,7 @@ function REGLApp(): JSX.Element {
             defaultChecked={engine.settings.ZOOM_TO_CURSOR}
             onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
           {
-            engine.layers.map((layer, i) => {
+            engine.backend.layers.map((layer, i) => {
               return (
                 <div key={i}>
                   {layer.name}
@@ -1142,14 +1142,10 @@ function StatsWidget(): JSX.Element {
 }
 
 function MouseCoordinates(props: { engine: RenderEngine}): JSX.Element {
-  const [mouse, setMouse] = React.useState({ x: 0, y: 0 })
-
-  const round = (n: number, d: number): number => {
-    return Math.round(n * Math.pow(10, d)) / Math.pow(10, d)
-  }
+  const [mouse, setMouse] = React.useState({ x: '0', y: '0' })
 
   props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e: PointerEvent) => {
-    setMouse({ x: round(e.detail.x, 3), y: round(e.detail.y, 3) })
+    setMouse({ x: e.detail.x.toFixed(3), y: e.detail.y.toFixed(3) })
   })
   return (
     <div style={{

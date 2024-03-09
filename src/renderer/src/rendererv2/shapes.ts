@@ -70,16 +70,8 @@ export class Pad implements TPad_Record, IPlotRecord {
     Object.assign(this, record)
   }
 
-  public get length(): number {
-    return PAD_RECORD_PARAMETERS.length
-  }
-
   public get array(): number[] {
     return PAD_RECORD_PARAMETERS.map((key) => this[key])
-  }
-
-  public get object(): TPad_Record {
-    return Object.fromEntries(PAD_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TPad_Record
   }
 }
 
@@ -106,16 +98,8 @@ export class Line implements TLine_Record, IPlotRecord {
     Object.assign(this, record)
   }
 
-  public get length(): number {
-    return LINE_RECORD_PARAMETERS.length
-  }
-
   public get array(): number[] {
     return LINE_RECORD_PARAMETERS.map((key) => this[key])
-  }
-
-  public get object(): TLine_Record {
-    return Object.fromEntries(LINE_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TLine_Record
   }
 }
 
@@ -145,17 +129,11 @@ export class Arc implements TArc_Record, IPlotRecord {
     Object.assign(this, record)
   }
 
-  public get length(): number {
-    return ARC_RECORD_PARAMETERS.length
-  }
 
   public get array(): number[] {
     return ARC_RECORD_PARAMETERS.map((key) => this[key])
   }
 
-  public get object(): TArc_Record {
-    return Object.fromEntries(ARC_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TArc_Record
-  }
 }
 
 // =================

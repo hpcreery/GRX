@@ -22,14 +22,11 @@ export type FeatureTypeIdentifyers = typeof FeatureTypeIdentifyer[keyof typeof F
 export interface IPlotRecord {
   type: FeatureTypeIdentifyers
   get array(): number[]
-  get object(): Record<string, number>
-  get length(): number
 }
 
 export interface ISymbolRecord {
   type: FeatureTypeIdentifyers
   get array(): number[]
-  get length(): number
 }
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {

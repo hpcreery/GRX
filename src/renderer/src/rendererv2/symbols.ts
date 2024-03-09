@@ -119,9 +119,6 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
     return SYMBOL_PARAMETERS.map((key) => this[key])
   }
 
-  public get length(): number {
-    return SYMBOL_PARAMETERS.length
-  }
 }
 
 
@@ -374,10 +371,6 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public get array(): number[] {
     // return this.shapes.flatMap((shape) => shape.array)
     return []
-  }
-
-  public get length(): number {
-    return this.shapes.length
   }
 }
 
