@@ -1089,6 +1089,7 @@ function REGLApp(): JSX.Element {
 function StatsWidget(): JSX.Element {
   const [fps, setFPS] = React.useState<number>(0)
   const [avgFPS, setAvgFPS] = React.useState<number>(0)
+  const [memory, setMemory] = React.useState<number>(0)
 
   let totalFPS = 0
   const frameTimes: number[] = []
@@ -1109,6 +1110,8 @@ function StatsWidget(): JSX.Element {
     frameCursor %= maxFrames
     const avgFPS = totalFPS / numFrames
     setAvgFPS(Math.round(avgFPS))
+    const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
+    setMemory(Math.round(memoryUsed))
     requestAnimationFrame(updateFPS)
   }
 
@@ -1133,6 +1136,7 @@ function StatsWidget(): JSX.Element {
     }}>
       <div>FPS: {fps}</div>
       <div>Avg FPS: {avgFPS}</div>
+      <div>Memory: {memory} MB</div>
     </div>
   )
 }
