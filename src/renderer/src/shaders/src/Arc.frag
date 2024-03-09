@@ -112,10 +112,13 @@ float circleDist(vec2 p, float radius) {
 //////////////////////////////
 
 float draw(float dist) {
-  if (dist > 0.0) {
+  if (DEBUG == 1) {
+    return dist;
+  }
+  if (dist > u_PixelSize / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -u_PixelSize) {
+  if (dist * float(u_OutlineMode) < -u_PixelSize / 2.0) {
     discard;
   }
   return dist;
@@ -135,15 +138,16 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = ALPHA * max(float(u_OutlineMode), polarity);
 
-  // ? which one to go by for line width...
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
   // ? radius can be different bewtween these two
   float radius = distance(v_Start_Location, v_Center_Location);
   float radius2 = distance(v_End_Location, v_Center_Location);
 
-  float angle_between_vectors = acos(dot(normalize(v_Start_Location - v_Center_Location), normalize(v_End_Location - v_Center_Location)));
+  // float angle_between_vectors = acos(dot(normalize(v_Start_Location - v_Center_Location), normalize(v_End_Location - v_Center_Location)));
 
   float sdX = v_Start_Location.x - v_Center_Location.x;
   float sdY = v_Start_Location.y - v_Center_Location.y;
@@ -155,7 +159,7 @@ void main() {
   float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
   float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
   float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
-  con = substract(con, abs(circleDist(FragCoord, radius)) - t_Width / 2.0);
+  con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
   float dist = merge(start, end);
   dist = merge(dist, con);
 

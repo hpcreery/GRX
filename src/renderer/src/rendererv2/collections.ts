@@ -2,7 +2,7 @@ import REGL from 'regl'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-import { FeatureTypeIdentifyer } from './types'
+import { FeatureTypeIdentifyer, Binary } from './types'
 import { MacroRenderer, StepAndRepeatRenderer } from './layer'
 import onChange from 'on-change'
 
@@ -10,45 +10,32 @@ import PadFrag from '../shaders/src/Pad.frag'
 import PadVert from '../shaders/src/Pad.vert'
 import LineFrag from '../shaders/src/Line.frag'
 import LineVert from '../shaders/src/Line.vert'
-import LineBrushedFrag from '../shaders/src/LineBrushed.frag'
-import LineBrushedVert from '../shaders/src/LineBrushed.vert'
 import ArcFrag from '../shaders/src/Arc.frag'
 import ArcVert from '../shaders/src/Arc.vert'
-import ArcBrushedFrag from '../shaders/src/ArcBrushed.frag'
-import ArcBrushedVert from '../shaders/src/ArcBrushed.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
 
-// const SurfaceFragPtr = malloc(SurfaceFrag)
-// const SurfaceVertPtr = malloc(SurfaceVert)
 
 import { WorldContext } from './engine'
 import { vec2 } from 'gl-matrix'
 
+import earcut from 'earcut'
+
 const {
   LINE_RECORD_PARAMETERS,
-  BRUSHED_LINE_RECORD_PARAMETERS,
-  BRUSHED_ARC_RECORD_PARAMETERS,
   PAD_RECORD_PARAMETERS,
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
-  BRUSHED_LINE_RECORD_PARAMETERS_MAP,
-  BRUSHED_ARC_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
   ARC_RECORD_PARAMETERS_MAP,
-  SURFACE_RECORD_PARAMETERS_MAP,
-  // CONTOUR_RECORD_PARAMETERS_MAP,
-  // CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP,
-  // CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP
 } = Shapes
 
 type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
-  buffer:
-    // | REGL.Buffer
-    // | undefined
-    // | null
-    // | false
-    | REGL.DynamicVariable<REGL.Buffer>
+  buffer: // | REGL.Buffer
+  // | undefined
+  // | null
+  // | false
+  REGL.DynamicVariable<REGL.Buffer>
 }
 
 interface PadUniforms {}
@@ -56,16 +43,6 @@ interface PadUniforms {}
 interface LineUniforms {}
 
 interface ArcUniforms {}
-
-interface SurfaceUniforms {
-  u_ContoursTexture: REGL.Texture2D
-  u_ContoursTextureDimensions: vec2
-  u_EndSurfaceId: number
-  u_ContourId: number
-  u_EndContourId: number
-  u_LineSegmentId: number
-  u_ArcSegmentId: number
-}
 
 interface PadAttributes {
   a_SymNum: CustomAttributeConfig
@@ -85,32 +62,6 @@ interface LineAttributes {
   a_Polarity: CustomAttributeConfig
 }
 
-interface BrushedLineAttributes {
-  a_SymNum: CustomAttributeConfig
-  a_Start_Location: CustomAttributeConfig
-  a_End_Location: CustomAttributeConfig
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-  a_ResizeFactor: CustomAttributeConfig
-  a_Rotation: CustomAttributeConfig
-  a_Mirror_X: CustomAttributeConfig
-  a_Mirror_Y: CustomAttributeConfig
-}
-
-interface BrushedArcAttributes {
-  a_SymNum: CustomAttributeConfig
-  a_Start_Location: CustomAttributeConfig
-  a_End_Location: CustomAttributeConfig
-  a_Center_Location: CustomAttributeConfig
-  a_Clockwise: CustomAttributeConfig
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-  a_ResizeFactor: CustomAttributeConfig
-  a_Rotation: CustomAttributeConfig
-  a_Mirror_X: CustomAttributeConfig
-  a_Mirror_Y: CustomAttributeConfig
-}
-
 interface ArcAttributes {
   a_SymNum: CustomAttributeConfig
   a_Start_Location: CustomAttributeConfig
@@ -121,42 +72,65 @@ interface ArcAttributes {
   a_Clockwise: CustomAttributeConfig
 }
 
+export interface PadAttachments {
+  buffer: REGL.Buffer
+  length: number
+}
+
+export interface ArcAttachments {
+  buffer: REGL.Buffer
+  length: number
+}
+
+export interface LineAttachments {
+  buffer: REGL.Buffer
+  length: number
+}
+
+interface SurfaceUniforms {
+  u_Vertices: REGL.Texture2D
+  u_VerticesDimensions: vec2
+  u_QtyContours: number
+  u_Index: number
+  u_Polarity: number
+}
+
 interface SurfaceAttributes {
   a_Index: CustomAttributeConfig
   a_Polarity: CustomAttributeConfig
-  a_Box: CustomAttributeConfig
+  a_Offset: CustomAttributeConfig
+  a_Indicies: CustomAttributeConfig
+  a_Vertex_Position: number[][]
+  a_QtyVerts: CustomAttributeConfig
 }
 
-interface PadAttachments {
-  buffer: REGL.Buffer
+export interface SurfaceAttachments {
+  vertices: REGL.Texture2D
+  verticiesDimensions: vec2
+  polarity: Binary
+  index: number
   length: number
+  qtyContours: number
+  qtyVertsBuffer: REGL.Buffer
+  indexBuffer: REGL.Buffer
+  offsetBuffer: REGL.Buffer
+  polarityBuffer: REGL.Buffer
+  indiciesBuffer: REGL.Buffer
 }
 
-interface ArcAttachments {
-  buffer: REGL.Buffer
-  length: number
+interface FrameBufferRenderUniforms {
+  u_QtyFeatures: number
+  u_Index: number
+  u_Polarity: number
+  u_RenderTexture: REGL.Framebuffer2D
 }
+interface FrameBufferRendeAttributes {}
 
-interface LineAttachments {
-  buffer: REGL.Buffer
-  length: number
-}
-
-interface SurfaceAttachments {
-  contourTexture: REGL.Texture2D
-  attributeBuffer: REGL.Buffer
-}
-
-interface BrushedLineAttachments {
-  symbol: keyof typeof Symbols.STANDARD_SYMBOLS_MAP
-  buffer: REGL.Buffer
-  length: number
-}
-
-interface BrushedArcAttachments {
-  symbol: keyof typeof Symbols.STANDARD_SYMBOLS_MAP
-  buffer: REGL.Buffer
-  length: number
+export interface FrameBufferRendeAttachments {
+  qtyFeatures: number
+  index: number
+  polarity: number
+  renderTexture: REGL.Framebuffer2D
 }
 
 interface TShaderAttachment {
@@ -164,17 +138,15 @@ interface TShaderAttachment {
   lines: LineAttachments
   arcs: ArcAttachments
   surfaces: SurfaceAttachments[]
-  brushedLines: BrushedLineAttachments[]
-  brushedArcs: BrushedArcAttachments[]
+  surfacesWithHoles: SurfaceAttachments[]
 }
 
 interface TReglRenderers {
-  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext> | undefined
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext> | undefined
-  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext> | undefined
-  drawBrushedLines: Record<keyof Symbols.STANDARD_SYMBOLS, REGL.DrawCommand<REGL.DefaultContext & WorldContext>>
-  drawBrushedArcs: Record<keyof Symbols.STANDARD_SYMBOLS, REGL.DrawCommand<REGL.DefaultContext & WorldContext>>
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext> | undefined
+  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
+  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRendeAttachments> | undefined
 }
 
 export const ReglRenderers: TReglRenderers = {
@@ -182,8 +154,7 @@ export const ReglRenderers: TReglRenderers = {
   drawArcs: undefined,
   drawLines: undefined,
   drawSurfaces: undefined,
-  drawBrushedLines: {} as Record<keyof Symbols.STANDARD_SYMBOLS, REGL.DrawCommand<REGL.DefaultContext & WorldContext>>,
-  drawBrushedArcs: {} as Record<keyof Symbols.STANDARD_SYMBOLS, REGL.DrawCommand<REGL.DefaultContext & WorldContext>>
+  drawFrameBuffer: undefined
 }
 
 export function initializeRenderers(regl: REGL.Regl): void {
@@ -385,241 +356,124 @@ export function initializeRenderers(regl: REGL.Regl): void {
     vert: SurfaceVert,
 
     uniforms: {
-      u_ContoursTexture: regl.prop<SurfaceAttachments, 'contourTexture'>('contourTexture'),
-      u_ContoursTextureDimensions: [
-        // @ts-ignore - regl oddity
-        regl.prop<SurfaceAttachments, 'contourTexture.width'>('contourTexture.width'),
-        // @ts-ignore - regl oddity
-        regl.prop<SurfaceAttachments, 'contourTexture.height'>('contourTexture.height')
-      ],
-      u_EndSurfaceId: Shapes.END_SURFACE_ID,
-      u_ContourId: Shapes.CONTOUR_ID,
-      u_EndContourId: Shapes.END_CONTOUR_ID,
-      u_LineSegmentId: Shapes.CONTOUR_LINE_SEGMENT_ID,
-      u_ArcSegmentId: Shapes.CONTOUR_ARC_SEGMENT_ID
+      u_Vertices: regl.prop<SurfaceAttachments, 'vertices'>('vertices'),
+      u_VerticesDimensions: regl.prop<SurfaceAttachments, 'verticiesDimensions'>('verticiesDimensions'),
+      u_QtyContours: regl.prop<SurfaceAttachments, 'qtyContours'>('qtyContours'),
+      u_Index: regl.prop<SurfaceAttachments, 'index'>('index'),
+      u_Polarity: regl.prop<SurfaceAttachments, 'polarity'>('polarity')
     },
 
     attributes: {
       a_Index: {
-        buffer: regl.prop<SurfaceAttachments, 'attributeBuffer'>('attributeBuffer'),
-        offset: SURFACE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+        buffer: regl.prop<SurfaceAttachments, 'indexBuffer'>('indexBuffer'),
+        stride: 1 * glFloatSize,
         divisor: 1
       },
 
       a_Polarity: {
-        buffer: regl.prop<SurfaceAttachments, 'attributeBuffer'>('attributeBuffer'),
-        offset: SURFACE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+        buffer: regl.prop<SurfaceAttachments, 'polarityBuffer'>('polarityBuffer'),
+        stride: 1 * glFloatSize,
         divisor: 1
       },
 
-      a_Box: {
-        buffer: regl.prop<SurfaceAttachments, 'attributeBuffer'>('attributeBuffer'),
-        offset: SURFACE_RECORD_PARAMETERS_MAP.top * glFloatSize, // implies right, bottom, left is next in vec4
+      a_Offset: {
+        buffer: regl.prop<SurfaceAttachments, 'offsetBuffer'>('offsetBuffer'),
+        stride: 1 * glFloatSize,
         divisor: 1
-      }
+      },
+
+      a_Indicies: {
+        buffer: regl.prop<SurfaceAttachments, 'indiciesBuffer'>('indiciesBuffer'),
+        stride: 3 * glFloatSize,
+        divisor: 1
+      },
+
+      a_QtyVerts: {
+        buffer: regl.prop<SurfaceAttachments, 'qtyVertsBuffer'>('qtyVertsBuffer'),
+        stride: 1 * glFloatSize,
+        divisor: 1
+      },
+
+      a_Vertex_Position: [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ]
     },
 
-    instances: 1
+    cull: {
+      enable: false,
+    },
+
+    instances: regl.prop<SurfaceAttachments, 'length'>('length'),
+    count: 3,
+    // primitive: 'line loop'
   })
 
-  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-  // Symbols.STANDARD_SYMBOLS.map((symbol) => {
-  //   const frag = LineBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
-  //     if (shapes && shapes.split(',').includes(symbol)) {
-  //       return ''
-  //     }
-  //     return match
-  //   })
-  //   ReglRenderers.drawBrushedLines[symbol] = regl<
-  //     LineUniforms,
-  //     BrushedLineAttributes,
-  //     BrushedLineAttachments,
-  //     Record<string, never>,
-  //     REGL.DefaultContext & WorldContext
-  //   >({
-  //     frag: frag,
+  ReglRenderers.drawFrameBuffer = regl<
+    FrameBufferRenderUniforms,
+    FrameBufferRendeAttributes,
+    FrameBufferRendeAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & WorldContext
+  >({
+    vert: `
+  precision highp float;
 
-  //     vert: LineBrushedVert,
+  uniform float u_Index;
+  uniform float u_QtyFeatures;
 
-  //     uniforms: {},
+  attribute vec2 a_Vertex_Position;
 
-  //     attributes: {
-  //       a_Index: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-  //         divisor: 1
-  //       },
+  varying float v_Index;
+  varying vec2 v_UV;
 
-  //       a_Start_Location: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-  //         divisor: 1
-  //       },
+  void main () {
+    float Index = u_Index / u_QtyFeatures;
+    v_UV = a_Vertex_Position;
+    v_Index =  Index;
+    gl_Position = vec4(a_Vertex_Position, Index, 1.0);
+  }
+`,
+    frag: `
+  precision highp float;
 
-  //       a_End_Location: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-  //         divisor: 1
-  //       },
+  uniform sampler2D u_RenderTexture;
+  uniform float u_Polarity;
+  uniform bool u_OutlineMode;
 
-  //       a_SymNum: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-  //         divisor: 1
-  //       },
+  varying vec2 v_UV;
+  varying float v_Index;
 
-  //       a_Polarity: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_ResizeFactor: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Rotation: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Mirror_X: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Mirror_Y: {
-  //         buffer: regl.prop<BrushedLineAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_LINE_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
-  //         divisor: 1
-  //       }
-  //     },
-
-  //     instances: regl.prop<BrushedLineAttachments, 'length'>('length')
-  //   })
-  // })
-
-  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-  // Symbols.STANDARD_SYMBOLS.map((symbol) => {
-  //   const frag = ArcBrushedFrag.replace(dynamicShapeRegex, (match, shapes) => {
-  //     if (shapes && shapes.split(',').includes(symbol)) {
-  //       return ''
-  //     }
-  //     return match
-  //   })
-  //   ReglRenderers.drawBrushedArcs[symbol] = regl<
-  //     ArcUniforms,
-  //     BrushedArcAttributes,
-  //     BrushedArcAttachments,
-  //     Record<string, never>,
-  //     REGL.DefaultContext & WorldContext
-  //   >({
-  //     frag: frag,
-
-  //     vert: ArcBrushedVert,
-
-  //     uniforms: {},
-
-  //     attributes: {
-  //       a_Index: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Start_Location: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_End_Location: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Center_Location: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Clockwise: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_SymNum: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Polarity: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_ResizeFactor: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Rotation: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Mirror_X: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
-  //         divisor: 1
-  //       },
-
-  //       a_Mirror_Y: {
-  //         buffer: regl.prop<BrushedArcAttachments, 'buffer'>('buffer'),
-  //         stride: BRUSHED_ARC_RECORD_PARAMETERS.length * glFloatSize,
-  //         offset: BRUSHED_ARC_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
-  //         divisor: 1
-  //       }
-  //     },
-
-  //     instances: regl.prop<BrushedArcAttachments, 'length'>('length')
-  //   })
-  // })
+  void main () {
+    vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+    if (color.r == 0.0 && color.g == 0.0 && color.b == 0.0) {
+      discard;
+    }
+    if (u_Polarity == 0.0 && !u_OutlineMode) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
+    }
+    gl_FragColor = color;
+    //gl_FragColor = vec4(v_Index, 0.0, 0.0, 1.0);
+  }
+`,
+    depth: {
+      enable: true,
+      mask: true,
+      func: 'greater',
+      range: [0, 1]
+    },
+    uniforms: {
+      u_QtyFeatures: regl.prop<FrameBufferRendeAttachments, 'qtyFeatures'>('qtyFeatures'),
+      u_RenderTexture: regl.prop<FrameBufferRendeAttachments, 'renderTexture'>('renderTexture'),
+      u_Index: regl.prop<FrameBufferRendeAttachments, 'index'>('index'),
+      u_Polarity: regl.prop<FrameBufferRendeAttachments, 'polarity'>('polarity')
+    }
+  })
 }
 
 const dynamicShapeRegex = /^#pragma dynamic_shape\(?(?<shapes>(?:\w|,)+)?\)?/gm
-
-const { SURFACE_RECORD_PARAMETERS } = Shapes
 
 const { SYMBOL_PARAMETERS } = Symbols
 
@@ -627,8 +481,6 @@ interface shapesList {
   pads: Shapes.Pad[]
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
-  // brushedLines: Shapes.BrushedLine[]
-  // brushedArcs: Shapes.BrushedArc[]
   surfaces: Shapes.Surface[]
   clear: () => void
 }
@@ -654,9 +506,6 @@ export class ShapesShaderCollection {
       pads: [],
       lines: [],
       arcs: [],
-      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-      // brushedLines: [],
-      // brushedArcs: [],
       surfaces: [],
       clear: function (): void {
         this.pads.length = 0
@@ -679,23 +528,22 @@ export class ShapesShaderCollection {
         length: 0
       },
       surfaces: [],
-      brushedLines: [],
-      brushedArcs: []
+      surfacesWithHoles: []
     }
   }
 
   public refresh(): this {
     this.symbolsCollection.symbols.clear()
     this.shapes.clear()
+
     this.shaderAttachment.surfaces.map((surface) => {
-      surface.contourTexture.destroy()
-      surface.attributeBuffer.destroy()
+      surface.vertices.destroy()
+      surface.indexBuffer.destroy()
+      surface.offsetBuffer.destroy()
+      surface.polarityBuffer.destroy()
+      surface.indiciesBuffer.destroy()
     })
     this.shaderAttachment.surfaces.length = 0
-    this.shaderAttachment.brushedLines.forEach((attachment) => {
-      attachment.buffer.destroy()
-    })
-    this.shaderAttachment.brushedLines.length = 0
 
     this.records.forEach((record) => {
       if (record instanceof Shapes.Surface) {
@@ -706,18 +554,6 @@ export class ShapesShaderCollection {
         this.shapes.lines.push(record)
       } else if (record instanceof Shapes.Arc && record.symbol instanceof Symbols.StandardSymbol) {
         this.shapes.arcs.push(record)
-      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-        // } else if (
-      //   record instanceof Shapes.BrushedLine &&
-      //   record.symbol instanceof Symbols.StandardSymbol
-      // ) {
-      //   this.shapes.brushedLines.push(record)
-      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-      // } else if (
-      //   record instanceof Shapes.BrushedArc &&
-      //   record.symbol instanceof Symbols.StandardSymbol
-      // ) {
-      //   this.shapes.brushedArcs.push(record)
       } else if (record instanceof Shapes.PolyLine) {
         drawPolyline(record, this.shapes)
       }
@@ -742,21 +578,6 @@ export class ShapesShaderCollection {
       this.symbolsCollection.add(record.symbol)
     })
 
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // this.shapes.brushedLines.forEach((record) => {
-    //   if (!(record.symbol instanceof Symbols.StandardSymbol)) {
-    //     return
-    //   }
-    //   this.symbolsCollection.add(record.symbol)
-    // })
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // this.shapes.brushedArcs.forEach((record) => {
-    //   if (!(record.symbol instanceof Symbols.StandardSymbol)) {
-    //     return
-    //   }
-    //   this.symbolsCollection.add(record.symbol)
-    // })
-
     this.symbolsCollection.refresh()
 
     // inverse order to render from front to back to save on overdraw
@@ -764,49 +585,54 @@ export class ShapesShaderCollection {
     this.shapes.lines.sort((a, b) => b.index - a.index)
     this.shapes.arcs.sort((a, b) => b.index - a.index)
     this.shapes.surfaces.sort((a, b) => b.index - a.index)
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // this.shapes.brushedLines.sort((a, b) => b.index - a.index)
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // this.shapes.brushedArcs.sort((a, b) => b.index - a.index)
 
     this.shaderAttachment.pads.length = this.shapes.pads.length
     this.shaderAttachment.lines.length = this.shapes.lines.length
     this.shaderAttachment.arcs.length = this.shapes.arcs.length
 
-    this.shaderAttachment.pads.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.shapes.pads.length * glFloatSize,
-      data: this.shapes.pads.map((record) => {
-        return record.array
-      })
-    })
-    this.shaderAttachment.lines.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.shapes.lines.length * glFloatSize,
-      data: this.shapes.lines.map((record) => {
-        return record.array
-      })
-    })
-    this.shaderAttachment.arcs.buffer({
-      usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-      type: 'float',
-      length: this.shapes.arcs.length * glFloatSize,
-      data: this.shapes.arcs.map((record) => {
-        return record.array
-      })
-    })
+    this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => record.array))
+    this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => record.array))
+    this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => record.array))
 
     this.shapes.surfaces.forEach((record) => {
-      const surfaceParameters = record.array
-      const surfaceCountours = record.contoursArray
-      const radius = Math.ceil(Math.sqrt(surfaceCountours.length))
-      const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
-        return surfaceCountours[index] ?? Shapes.END_SURFACE_ID
+      const polarities: number[] = []
+      const offsets: number[] = []
+      const indexes: number[] = []
+      const indicies: number[] = []
+      const vertQty: number[] = []
+      let offset = 0
+      let index = 0
+      let hasHoles = false
+      const vertices = record.contours.flatMap((contour) => {
+        if (contour.poly_type === 0) hasHoles = true
+        const verts = contour.getVertices()
+        const ears = earcut(verts)
+        indicies.push(...ears)
+        const lengthArray = new Array<number>(ears.length / 3)
+        polarities.push(...lengthArray.fill(contour.poly_type))
+        offsets.push(...lengthArray.fill(offset))
+        indexes.push(...lengthArray.fill(index))
+        vertQty.push(...lengthArray.fill(verts.length / 2))
+        offset += verts.length
+        index++
+        return verts
       })
-      this.shaderAttachment.surfaces.push({
-        contourTexture: this.regl.texture({
+      // console.log('vertices', vertices)
+      // console.log('polarities', polarities)
+      // console.log('offsets', offsets)
+      // console.log('indexes', indexes)
+      // console.log('indicies', indicies)
+      // console.log('vertQty', vertQty)
+      const radius = Math.ceil(Math.sqrt(vertices.length))
+      const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
+        return vertices[index] ?? 0
+      })
+      let targetAttachment = this.shaderAttachment.surfaces
+      if (hasHoles) {
+        targetAttachment = this.shaderAttachment.surfacesWithHoles
+      }
+      targetAttachment.push({
+        vertices: this.regl.texture({
           width: radius,
           height: radius,
           type: 'float',
@@ -816,52 +642,18 @@ export class ShapesShaderCollection {
           // min: 'linear',
           data: newData
         }),
-        attributeBuffer: this.regl.buffer({
-          usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-          type: 'float',
-          length: SURFACE_RECORD_PARAMETERS.length * glFloatSize,
-          data: surfaceParameters
-        })
+        verticiesDimensions: [radius, radius],
+        polarityBuffer: this.regl.buffer(polarities),
+        offsetBuffer: this.regl.buffer(offsets),
+        indexBuffer: this.regl.buffer(indexes),
+        indiciesBuffer: this.regl.buffer(indicies),
+        qtyVertsBuffer: this.regl.buffer(vertQty),
+        length: (indicies.length / 3),
+        qtyContours: record.contours.length,
+        index: record.index,
+        polarity: record.polarity,
       })
     })
-
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // Symbols.STANDARD_SYMBOLS.map((symbol) => {
-    //   const shapes = this.shapes.brushedLines.filter((record) => {
-    //     return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
-    //   })
-    //   this.shaderAttachment.brushedLines.push({
-    //     symbol: symbol,
-    //     length: shapes.length,
-    //     buffer: this.regl.buffer({
-    //       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-    //       type: 'float',
-    //       length: shapes.length * glFloatSize,
-    //       data: shapes.map((record) => {
-    //         return record.array
-    //       })
-    //     })
-    //   })
-    // })
-
-    // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-    // Symbols.STANDARD_SYMBOLS.map((symbol) => {
-    //   const shapes = this.shapes.brushedArcs.filter((record) => {
-    //     return record.symbol.symbol == Symbols.STANDARD_SYMBOLS_MAP[symbol]
-    //   })
-    //   this.shaderAttachment.brushedArcs.push({
-    //     symbol: symbol,
-    //     length: shapes.length,
-    //     buffer: this.regl.buffer({
-    //       usage: 'dynamic', // give the WebGL driver a hint that this buffer may change
-    //       type: 'float',
-    //       length: shapes.length * glFloatSize,
-    //       data: shapes.map((record) => {
-    //         return record.array
-    //       })
-    //     })
-    //   })
-    // })
 
     return this
   }

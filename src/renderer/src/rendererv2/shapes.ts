@@ -1,5 +1,7 @@
-import { IPlotRecord, FeatureTypeIdentifyer, toMap, Transform } from './types'
+import { IPlotRecord, FeatureTypeIdentifyer, toMap, Transform, Binary } from './types'
 import * as Symbols from './symbols'
+import earcut from 'earcut'
+
 
 export const PAD_RECORD_PARAMETERS = [
   'index',
@@ -20,19 +22,6 @@ export const LINE_RECORD_PARAMETERS = [
   'sym_num',
   'polarity'
 ] as const
-export const BRUSHED_LINE_RECORD_PARAMETERS = [
-  'index',
-  'xs',
-  'ys',
-  'xe',
-  'ye',
-  'sym_num',
-  'resize_factor',
-  'polarity',
-  'rotation',
-  'mirror_x',
-  'mirror_y'
-] as const
 export const ARC_RECORD_PARAMETERS = [
   'index',
   'xs',
@@ -45,22 +34,35 @@ export const ARC_RECORD_PARAMETERS = [
   'sym_num',
   'polarity',
 ] as const
-export const BRUSHED_ARC_RECORD_PARAMETERS = [
-  'index',
-  'xs',
-  'ys',
-  'xe',
-  'ye',
-  'xc',
-  'yc',
-  'clockwise',
-  'sym_num',
-  'resize_factor',
-  'polarity',
-  'rotation',
-  'mirror_x',
-  'mirror_y'
-] as const
+// export const BRUSHED_LINE_RECORD_PARAMETERS = [
+//   'index',
+//   'xs',
+//   'ys',
+//   'xe',
+//   'ye',
+//   'sym_num',
+//   'resize_factor',
+//   'polarity',
+//   'rotation',
+//   'mirror_x',
+//   'mirror_y'
+// ] as const
+// export const BRUSHED_ARC_RECORD_PARAMETERS = [
+//   'index',
+//   'xs',
+//   'ys',
+//   'xe',
+//   'ye',
+//   'xc',
+//   'yc',
+//   'clockwise',
+//   'sym_num',
+//   'resize_factor',
+//   'polarity',
+//   'rotation',
+//   'mirror_x',
+//   'mirror_y'
+// ] as const
 export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS = ['id', 'x', 'y'] as const
 export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS = [
   'id',
@@ -81,13 +83,23 @@ export const SURFACE_RECORD_PARAMETERS = [
   'segmentsCount'
 ] as const
 
+export const SURFACE_RECORD_PARAMETERS_V2 = [
+  'index',
+  'polarity',
+  // 'contour_index',
+  // 'contour_count',
+  // 'contour_polarity',
+  'indicies',
+  'offset'
+] as const
+
 // =================
 
 export const PAD_RECORD_PARAMETERS_MAP = toMap(PAD_RECORD_PARAMETERS)
 export const LINE_RECORD_PARAMETERS_MAP = toMap(LINE_RECORD_PARAMETERS)
-export const BRUSHED_LINE_RECORD_PARAMETERS_MAP = toMap(BRUSHED_LINE_RECORD_PARAMETERS)
 export const ARC_RECORD_PARAMETERS_MAP = toMap(ARC_RECORD_PARAMETERS)
-export const BRUSHED_ARC_RECORD_PARAMETERS_MAP = toMap(BRUSHED_ARC_RECORD_PARAMETERS)
+// export const BRUSHED_LINE_RECORD_PARAMETERS_MAP = toMap(BRUSHED_LINE_RECORD_PARAMETERS)
+// export const BRUSHED_ARC_RECORD_PARAMETERS_MAP = toMap(BRUSHED_ARC_RECORD_PARAMETERS)
 export const CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
   CONTOUR_LINE_SEGMENT_RECORD_PARAMETERS
 )
@@ -96,6 +108,7 @@ export const CONTOUR_ARC_SEGMENT_RECORD_PARAMETERS_MAP = toMap(
 )
 export const CONTOUR_RECORD_PARAMETERS_MAP = toMap(CONTOUR_RECORD_PARAMETERS)
 export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
+export const SURFACE_RECORD_PARAMETERS_V2_MAP = toMap(SURFACE_RECORD_PARAMETERS_V2)
 
 // =================
 
@@ -106,14 +119,14 @@ export class Pad implements TPad_Record, IPlotRecord {
   public index = 0
   public x = 0
   public y = 0
-  public symbol: Symbols.Symbol = new Symbols.StandardSymbol({})
+  public symbol: Symbols.Symbol = new Symbols.StandardSymbol({outer_dia: 0})
   public get sym_num(): number {
     return this.symbol.sym_num.value
   }
   public resize_factor = 1
-  public polarity = 1
   public rotation = 0
-  public mirror = 0
+  public polarity: Binary = 1
+  public mirror: Binary = 0
 
   constructor(record: Partial<Omit<TPad_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)
@@ -143,11 +156,11 @@ export class Line implements TLine_Record, IPlotRecord {
   public ys = 0
   public xe = 0
   public ye = 0
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
   public get sym_num(): number {
     return this.symbol.sym_num.value
   }
-  public polarity = 0
+  public polarity: Binary = 0
 
   constructor(
     record: Partial<Omit<TLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.StandardSymbol }>
@@ -170,41 +183,41 @@ export class Line implements TLine_Record, IPlotRecord {
 
 // =================
 
-export type TBrushedLine_Record = typeof BRUSHED_LINE_RECORD_PARAMETERS_MAP
+// export type TBrushedLine_Record = typeof BRUSHED_LINE_RECORD_PARAMETERS_MAP
 
-export class BrushedLine implements TBrushedLine_Record, IPlotRecord {
-  public readonly type = FeatureTypeIdentifyer.BRUSHED_LINE
-  public index = 0
-  public xs = 0
-  public ys = 0
-  public xe = 0
-  public ye = 0
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
-  public get sym_num(): number {
-    return this.symbol.sym_num.value
-  }
-  public resize_factor = 1
-  public polarity = 1
-  public rotation = 0
-  public mirror_x = 0
-  public mirror_y = 0
+// export class BrushedLine implements TBrushedLine_Record, IPlotRecord {
+//   public readonly type = FeatureTypeIdentifyer.BRUSHED_LINE
+//   public index = 0
+//   public xs = 0
+//   public ys = 0
+//   public xe = 0
+//   public ye = 0
+//   public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
+//   public get sym_num(): number {
+//     return this.symbol.sym_num.value
+//   }
+//   public resize_factor = 1
+//   public polarity = 1
+//   public rotation = 0
+//   public mirror_x = 0
+//   public mirror_y = 0
 
-  constructor(record: Partial<Omit<TBrushedLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
-    Object.assign(this, record)
-  }
+//   constructor(record: Partial<Omit<TBrushedLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
+//     Object.assign(this, record)
+//   }
 
-  public get length(): number {
-    return BRUSHED_LINE_RECORD_PARAMETERS.length
-  }
+//   public get length(): number {
+//     return BRUSHED_LINE_RECORD_PARAMETERS.length
+//   }
 
-  public get array(): number[] {
-    return BRUSHED_LINE_RECORD_PARAMETERS.map((key) => this[key])
-  }
+//   public get array(): number[] {
+//     return BRUSHED_LINE_RECORD_PARAMETERS.map((key) => this[key])
+//   }
 
-  public get object(): TPad_Record {
-    return Object.fromEntries(BRUSHED_LINE_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TPad_Record
-  }
-}
+//   public get object(): TPad_Record {
+//     return Object.fromEntries(BRUSHED_LINE_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TPad_Record
+//   }
+// }
 
 // =================
 
@@ -219,12 +232,12 @@ export class Arc implements TArc_Record, IPlotRecord {
   public ye = 0
   public xc = 0
   public yc = 0
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
   public get sym_num(): number {
     return this.symbol.sym_num.value
   }
-  public polarity = 0
-  public clockwise = 0
+  public polarity: Binary = 0
+  public clockwise: Binary = 0
 
   constructor(
     record: Partial<Omit<TArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.StandardSymbol }>
@@ -247,43 +260,46 @@ export class Arc implements TArc_Record, IPlotRecord {
 
 // =================
 
-export type TBrushedArc_Record = typeof BRUSHED_ARC_RECORD_PARAMETERS_MAP
+// export type TBrushedArc_Record = typeof BRUSHED_ARC_RECORD_PARAMETERS_MAP
 
-export class BrushedArc implements TBrushedArc_Record, IPlotRecord {
-  public readonly type = FeatureTypeIdentifyer.BRUSHED_ARC
-  public index = 0
-  public xs = 0
-  public ys = 0
-  public xe = 0
-  public ye = 0
-  public xc = 0
-  public yc = 0
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({})
-  public get sym_num(): number {
-    return this.symbol.sym_num.value
-  }
-  public resize_factor = 1
-  public polarity = 1
-  public rotation = 0
-  public mirror_x = 0
-  public mirror_y = 0
+// export class BrushedArc implements TBrushedArc_Record, IPlotRecord {
+//   public readonly type = FeatureTypeIdentifyer.BRUSHED_ARC
+//   public index = 0
+//   public xs = 0
+//   public ys = 0
+//   public xe = 0
+//   public ye = 0
+//   public xc = 0
+//   public yc = 0
+//   public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
+//   public get sym_num(): number {
+//     return this.symbol.sym_num.value
+//   }
+//   public clockwise = 0
+//   public resize_factor = 1
+//   public polarity = 1
+//   public rotation = 0
+//   public mirror_x = 0
+//   public mirror_y = 0
 
-  constructor(record: Partial<Omit<TBrushedArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
-    Object.assign(this, record)
-  }
+//   constructor(record: Partial<Omit<TBrushedArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
+//     Object.assign(this, record)
+//   }
 
-  public get length(): number {
-    return BRUSHED_ARC_RECORD_PARAMETERS.length
-  }
+//   public get length(): number {
+//     return BRUSHED_ARC_RECORD_PARAMETERS.length
+//   }
 
-  public get array(): number[] {
-    return BRUSHED_ARC_RECORD_PARAMETERS.map((key) => this[key])
-  }
+//   public get array(): number[] {
+//     return BRUSHED_ARC_RECORD_PARAMETERS.map((key) => this[key])
+//   }
 
-  public get object(): TBrushedArc_Record {
-    return Object.fromEntries(BRUSHED_ARC_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TBrushedArc_Record
-  }
-}
+//   public get object(): TBrushedArc_Record {
+//     return Object.fromEntries(BRUSHED_ARC_RECORD_PARAMETERS.map((key) => [key, this[key]])) as TBrushedArc_Record
+//   }
+// }
+
+// =================
 
 export type TSurface = typeof SURFACE_RECORD_PARAMETERS_MAP
 export type TContour = typeof CONTOUR_RECORD_PARAMETERS_MAP
@@ -298,7 +314,7 @@ export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   public y = 0
   public xc = 0
   public yc = 0
-  public clockwise = 0
+  public clockwise: Binary = 0
 
   constructor(segment: Partial<Omit<TContourArcSegment, 'id' | 'type'>>) {
     Object.assign(this, segment)
@@ -348,9 +364,11 @@ export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
 export const CONTOUR_ID = Math.random()
 export const END_CONTOUR_ID = Math.random()
 export class Contour implements TContour, IPlotRecord {
-  // 1 == island, 0 == hole
   public readonly type = FeatureTypeIdentifyer.CONTOUR
-  public poly_type: 1 | 0 = 1
+  /**
+   * 1 == island, 0 == hole
+   */
+  public poly_type: Binary = 1
   public id = CONTOUR_ID
   public xs = 0
   public ys = 0
@@ -444,13 +462,58 @@ export class Contour implements TContour, IPlotRecord {
     this.segments.push(segment)
     return this
   }
+
+  public getVertices(): number[] {
+    let previous: { x: number; y: number } = { x: this.xs, y: this.ys }
+    const vertices = this.segments.flatMap((segment) => {
+      if (segment.type === FeatureTypeIdentifyer.LINESEGMENT) {
+        previous = { x: segment.x, y: segment.y }
+        return [segment.x, segment.y]
+      } else {
+        const start_angle = Math.atan2(previous.y - segment.yc, previous.x - segment.xc)
+        const dot = (x1: number, y1: number, x2: number, y2: number): number => x1 * x2 + y1 * y2
+        const det = (x1: number, y1: number, x2: number, y2: number): number => x1 * y2 - y1 * x2
+        const v2 = { x: previous.x - segment.xc, y: previous.y - segment.yc }
+        const v1 = { x: segment.x - segment.xc, y: segment.y - segment.yc }
+
+        const dotComp = dot(v1.x, v1.y, v2.x, v2.y)
+        const detComp = det(v1.x, v1.y, v2.x, v2.y)
+        let angle = Math.atan2(detComp, dotComp)
+        angle = Math.abs(angle)
+        if (angle == 0) {
+          angle = Math.PI * 2
+        }
+        const radius = Math.sqrt((segment.x - segment.xc) ** 2 + (segment.y - segment.yc) ** 2)
+        const segments: number[] = []
+        const steps = 100
+        // const steps = Math.abs(Math.ceil((angle / (Math.PI * 2)) * 100 ))
+        // console.log('angle1', angle1)
+        // console.log('angle2', angle2)
+        // console.log('start_angle', start_angle)
+        // console.log('angle', angle)
+        // console.log('steps', steps)
+        if (segment.clockwise === 1) {
+          angle = -angle
+        }
+        for (let i = 1; i <= steps; i++) {
+          const a = angle * (i / steps) + start_angle
+          segments.push(segment.xc + Math.cos(a) * radius, segment.yc + Math.sin(a) * radius)
+        }
+        segments.push(segment.x, segment.y)
+        previous = { x: segment.x, y: segment.y }
+        return segments
+      }
+    })
+    vertices.unshift(this.xs, this.ys)
+    return vertices
+  }
 }
 
 export const END_SURFACE_ID = Math.random()
 export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifyer.SURFACE
   public index = 0
-  public polarity = 0
+  public polarity: Binary = 0
   public contours: Contour[] = []
 
   public get left(): number {
@@ -513,7 +576,7 @@ export class PolyLine {
   public readonly type = FeatureTypeIdentifyer.POLYLINE
   public index = 0
   public width = 0
-  public polarity: 0 | 1 = 0
+  public polarity: Binary = 0
   public pathtype: 'round' | 'square' | 'none' = 'round'
   public cornertype: 'chamfer' | 'round' | 'miter' = 'chamfer'
   public xs = 0
@@ -550,5 +613,5 @@ export class StepAndRepeat {
 }
 
 export type Primitive = Pad | Line | Arc
-export type Brushes = BrushedLine | BrushedArc
-export type Shape = Primitive | Brushes | Surface | PolyLine | StepAndRepeat
+// export type Brushes = BrushedLine | BrushedArc
+export type Shape = Primitive | Surface | PolyLine | StepAndRepeat // | Brushes

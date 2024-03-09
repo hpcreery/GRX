@@ -712,9 +712,9 @@ float drawShape(vec2 FragCoord, int SymNum) {
 #pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Moire) {
 #pragma dynamic_shape(Moire)    dist = moireDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
 #pragma dynamic_shape  } else if (t_Symbol == u_Shapes.Polygon) {
-#pragma dynamic_shape(Polygon)    dist = regularPolygonDist(FragCoord.xy, t_Outer_Dia / 2.0, int(t_Corners));
+#pragma dynamic_shape(Polygon)    dist = regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), t_Outer_Dia / 2.0, int(t_Corners));
 #pragma dynamic_shape(Polygon)    if (t_Line_Width != 0.0) {
-#pragma dynamic_shape(Polygon)      float inner = -1.0 * regularPolygonDist(FragCoord.xy, (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
+#pragma dynamic_shape(Polygon)      float inner = -1.0 * regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
 #pragma dynamic_shape(Polygon)      dist = max(dist, inner);
 #pragma dynamic_shape(Polygon)    }
 #pragma dynamic_shape(Polygon)    if (t_Inner_Dia != 0.0) {

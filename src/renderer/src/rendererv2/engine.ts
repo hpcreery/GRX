@@ -180,22 +180,22 @@ export class RenderEngine {
       },
 
       attributes: {
-        a_Vertex_Position: () => [
+        a_Vertex_Position: [
           [-1, -1],
           [+1, -1],
           [-1, +1],
           [+1, +1],
-          [-1, -1],
+          [-1, +1],
           [+1, -1]
         ]
       },
 
       cull: {
-        enable: true,
-        face: 'back'
+        enable: false,
+        face: 'front'
       },
 
-      primitive: 'triangle strip',
+      primitive: 'triangles',
       count: 6,
       offset: 0
     })

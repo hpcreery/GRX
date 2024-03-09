@@ -15,6 +15,7 @@ uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
+uniform float u_PixelSize;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -66,12 +67,13 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum));
+  float t_Width = pullSymbolParameter(u_Parameters.width, int(a_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(a_SymNum));
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));// * 1.5;
   float len = distance(a_Start_Location, a_End_Location);
   vec2 Size = vec2(OD + len, OD);
+  Size += vec2(u_PixelSize, u_PixelSize);
 
   vec2 Center_Location = (a_Start_Location + a_End_Location) / 2.0;
 

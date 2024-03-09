@@ -45,3 +45,5 @@ export interface Transform {
   mirror: number
   order?: TransformOrder
 }
+
+export type Binary = 0 | 1

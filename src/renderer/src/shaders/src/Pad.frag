@@ -63,17 +63,12 @@ float draw(float dist) {
   if (DEBUG == 1) {
     return dist;
   }
-  if (dist > 0.0) {
+  if (dist > u_PixelSize / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -u_PixelSize) {
+  if (dist * float(u_OutlineMode) < -u_PixelSize / 2.0) {
     discard;
   }
-  // if(outline) {
-  //   if(dist < -scale * u_PixelSize) {
-  //     discard;
-  //   }
-  // }
   return dist;
 }
 

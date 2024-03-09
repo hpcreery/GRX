@@ -2,9 +2,16 @@ import REGL from 'regl'
 import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
-import onChange from 'on-change'
+// import onChange from 'on-change'
 import { Transform } from './types'
-import { ReglRenderers } from './collections'
+import {
+  ArcAttachments,
+  FrameBufferRendeAttachments,
+  LineAttachments,
+  PadAttachments,
+  ReglRenderers,
+  SurfaceAttachments
+} from './collections'
 
 import {
   ShapesShaderCollection,
@@ -22,7 +29,6 @@ const {
 } = Shapes
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
-
 
 interface CommonAttributes {}
 
@@ -75,16 +81,15 @@ export class ShapeRenderer {
   }
 
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawPads!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawLines!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawArcs!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-  // protected drawBrushedLines!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
-  // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-  // protected drawBrushedArcs!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>[]
-  protected drawSurfaces!: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawMacros: (context: REGL.DefaultContext & WorldContext) => this
-  protected drawStepAndRepeats: (context: REGL.DefaultContext & WorldContext) => this
+  protected drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
+  protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
+  protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
+  protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
+  protected flattenSurfaces: REGL.DrawCommand<
+    REGL.DefaultContext & WorldContext,
+    FrameBufferRendeAttachments
+  >
+  public surfaceFrameBuffer: REGL.Framebuffer2D
 
   public transform: ShapeTransfrom = {
     datum: vec2.create(),
@@ -107,6 +112,7 @@ export class ShapeRenderer {
     }
 
     this.records.push(...props.image)
+    this.index()
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
       records: this.records
@@ -133,8 +139,9 @@ export class ShapeRenderer {
         func: 'greater',
         range: [0, 1]
       },
+      // TODO: cull face should be configurable. Shaders should not flip faces when mirroring
       cull: {
-        enable: true,
+        enable: false,
         face: 'back'
       },
       context: {
@@ -195,24 +202,57 @@ export class ShapeRenderer {
       }
     })
 
-    Object.assign(this, ReglRenderers)
+    this.drawPads = ReglRenderers.drawPads!
+    this.drawLines = ReglRenderers.drawLines!
+    this.drawArcs = ReglRenderers.drawArcs!
+    this.drawSurfaces = ReglRenderers.drawSurfaces!
+    this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
 
-    this.drawMacros = (context: REGL.DefaultContext & WorldContext): this => {
-      this.macroCollection.macros.forEach((macro) => {
-        macro.records.forEach((record) => {
-          macro.renderer.updateTransformFromPad(record)
-          macro.renderer.render(context)
+    this.surfaceFrameBuffer = this.regl.framebuffer({
+      depth: true
+    })
+  }
+
+  private drawMacros(context: REGL.DefaultContext & WorldContext): this {
+    this.macroCollection.macros.forEach((macro) => {
+      macro.records.forEach((record) => {
+        macro.renderer.updateTransformFromPad(record)
+        macro.renderer.render(context)
+      })
+    })
+    return this
+  }
+
+  private drawStepAndRepeats(context: REGL.DefaultContext & WorldContext): this {
+    this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
+      stepAndRepeat.render(context)
+    })
+    return this
+  }
+
+  private drawSurfaceWithHoles(context: REGL.DefaultContext & WorldContext): this {
+    if (this.shapeCollection.shaderAttachment.surfacesWithHoles.length === 0) return this
+    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.shapeCollection.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
+      this.regl.clear({
+        framebuffer: this.surfaceFrameBuffer,
+        color: [0, 0, 0, 1],
+        // stencil: 0,
+        depth: 0
+      })
+      this.surfaceFrameBuffer.use(() => {
+        this.drawSurfaces(attachment)
+      })
+      this.commonConfig(() => {
+        this.flattenSurfaces({
+          renderTexture: this.surfaceFrameBuffer,
+          index: attachment.index,
+          qtyFeatures: this.qtyFeatures,
+          polarity: attachment.polarity
         })
       })
-      return this
-    }
-
-    this.drawStepAndRepeats = (context: REGL.DefaultContext & WorldContext): this => {
-      this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-        stepAndRepeat.render(context)
-      })
-      return this
-    }
+    })
+    return this
   }
 
   public updateTransform(inputMatrix: mat3): void {
@@ -231,7 +271,10 @@ export class ShapeRenderer {
           mat3.rotate(this.transform.matrix, this.transform.matrix, rotation * (Math.PI / 180))
           break
         case 'mirror':
-          mat3.scale(this.transform.matrix, this.transform.matrix, [1, this.transform.mirror ? -1 : 1])
+          mat3.scale(this.transform.matrix, this.transform.matrix, [
+            1,
+            this.transform.mirror ? -1 : 1
+          ])
           break
       }
     }
@@ -251,6 +294,11 @@ export class ShapeRenderer {
     mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
   }
 
+  public index(): this {
+    this.records.map((record, i) => (record.index = i))
+    return this
+  }
+
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.transform.update(context.transform.matrix)
     if (this.dirty) {
@@ -260,23 +308,17 @@ export class ShapeRenderer {
       this.dirty = false
     }
     this.commonConfig(() => {
-      if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawPads(this.shapeCollection.shaderAttachment.pads)
-      if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
-      if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawLines(this.shapeCollection.shaderAttachment.lines)
-      if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+      if (this.shapeCollection.shaderAttachment.pads.length != 0)
+        this.drawPads(this.shapeCollection.shaderAttachment.pads)
+      if (this.shapeCollection.shaderAttachment.arcs.length != 0)
+        this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
+      if (this.shapeCollection.shaderAttachment.lines.length != 0)
+        this.drawLines(this.shapeCollection.shaderAttachment.lines)
+      if (this.shapeCollection.shaderAttachment.surfaces.length != 0)
+        this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+      this.drawSurfaceWithHoles(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
-      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-      // this.shapeCollection.shaderAttachment.brushedLines.forEach((attachment) => {
-      //   if (attachment.length === 0) return
-      //   this.drawBrushedLines[attachment.symbol](attachment)
-      // })
-      // *** Brushed Shapes - DISABLED FOR PERFORMANCE REASONS ***
-      // this.shapeCollection.shaderAttachment.brushedArcs.forEach((attachment) => {
-      //   if (attachment.length === 0) return
-      //   this.drawBrushedArcs[attachment.symbol](attachment)
-      // })
-
     })
   }
 }
@@ -333,10 +375,10 @@ export default class LayerRenderer extends ShapeRenderer {
         func: 'greater',
         range: [0, 1]
       },
-      cull: {
-        enable: true,
-        face: 'back'
-      },
+      // cull: {
+      //   enable: true,
+      //   face: 'back'
+      // },
       uniforms: {
         u_Color: () => this.color
       }
@@ -359,14 +401,6 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
-interface MacroUniforms {
-  u_QtyFeatures: number
-  u_Index: number
-  u_Polarity: number
-  u_RenderTexture: REGL.Framebuffer2D
-}
-interface MacroAttributes {}
-
 interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {
   flatten: boolean
 }
@@ -374,7 +408,10 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
-  private drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  private drawFrameBuffer: REGL.DrawCommand<
+    REGL.DefaultContext & WorldContext,
+    FrameBufferRendeAttachments
+  >
   constructor(props: MacroRendererProps) {
     super(props)
 
@@ -384,69 +421,7 @@ export class MacroRenderer extends ShapeRenderer {
       depth: true
     })
 
-    this.drawFrameBuffer = this.regl<
-      MacroUniforms,
-      MacroAttributes,
-      Record<string, never>,
-      Record<string, never>,
-      REGL.DefaultContext & WorldContext
-    >({
-      vert: `
-      precision highp float;
-
-      uniform float u_Index;
-      uniform float u_QtyFeatures;
-
-      attribute vec2 a_Vertex_Position;
-
-      varying float v_Index;
-      varying vec2 v_UV;
-
-      void main () {
-        float Index = u_Index / u_QtyFeatures;
-        v_UV = a_Vertex_Position;
-        v_Index =  Index;
-        gl_Position = vec4(a_Vertex_Position, Index, 1.0);
-      }
-    `,
-      frag: `
-      precision highp float;
-
-      uniform sampler2D u_RenderTexture;
-      uniform float u_Polarity;
-      uniform bool u_OutlineMode;
-
-      varying vec2 v_UV;
-      varying float v_Index;
-
-      void main () {
-        vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        if (color.r == 0.0 && color.g == 0.0 && color.b == 0.0) {
-          discard;
-        }
-        if (u_Polarity == 0.0 && !u_OutlineMode) {
-          gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-          return;
-        }
-        gl_FragColor = color;
-        //gl_FragColor = vec4(v_Index, 0.0, 0.0, 1.0);
-      }
-    `,
-      depth: {
-        enable: true,
-        mask: true,
-        func: 'greater',
-        range: [0, 1]
-      },
-      uniforms: {
-        u_QtyFeatures: (
-          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => context.prevQtyFeaturesRef ?? 1,
-        u_RenderTexture: () => this.framebuffer,
-        u_Index: () => this.transform.index,
-        u_Polarity: () => this.transform.polarity
-      }
-    })
+    this.drawFrameBuffer = ReglRenderers.drawFrameBuffer!
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {
@@ -458,7 +433,9 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.polarity = pad.polarity
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(
+    context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
+  ): void {
     if (this.flatten === false) {
       super.render(context)
       return
@@ -477,7 +454,12 @@ export class MacroRenderer extends ShapeRenderer {
     })
     this.transform.polarity = tempPol
     this.commonConfig(() => {
-      this.drawFrameBuffer()
+      this.drawFrameBuffer({
+        renderTexture: this.framebuffer,
+        index: this.transform.index,
+        qtyFeatures: context.prevQtyFeaturesRef ?? 1,
+        polarity: this.transform.polarity
+      })
     })
   }
 }
