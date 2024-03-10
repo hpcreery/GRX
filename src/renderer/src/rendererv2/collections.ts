@@ -626,7 +626,8 @@ export class ShapesShaderCollection {
         index++
         return verts
       })
-      const radius = Math.ceil(Math.sqrt(vertices.length))
+      let radius = Math.ceil(Math.sqrt(vertices.length))
+      radius = radius % 2 === 0 ? radius : radius + 1
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
         return vertices[index] ?? 0
       })

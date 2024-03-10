@@ -24,7 +24,7 @@ type LayerHierarchy = {
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
-  // const scale = 0.001
+  // const scale = 0.01
 
   const availableCells = new Set<string>()
   const referencedCells = new Set<string>()
@@ -36,16 +36,12 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
     availableCells.add(cellName)
     if (!cell.element) continue
     for (const element of cell.element) {
+      // console.log(`${cellName} = ${element.type}`)
       if (!element.el) continue
 
       if (element.type === 'boundary' || element.type === 'box') {
-        console.log('boundary|box', element)
+        // console.log('boundary|box', element)
         const el = element.el as TREE.boundary | TREE.box
-
-        const first_contour_line_segment = new Shapes.Contour_Line_Segment({
-          x: el.XY[0].x * scale,
-          y: el.XY[0].y * scale
-        })
 
         let contour_line_segments: Shapes.Contour_Line_Segment[] = []
         for (const xy of el.XY) {
@@ -53,20 +49,14 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             x: xy.x * scale,
             y: xy.y * scale
           })
-          // console.log('xy', xy)
-          // console.log('contour_line_segment', contour_line_segment)
           contour_line_segments.push(contour_line_segment)
-          // contour_line_segments.push(contour_line_segment)
         }
+
         let contour = new Shapes.Contour({
           poly_type: 1,
-          // Start point.
           xs: el.XY[0].x * scale,
           ys: el.XY[0].y * scale
-        })
-          .addSegment(first_contour_line_segment)
-          .addSegments(contour_line_segments)
-          .addSegment(first_contour_line_segment)
+        }).addSegments(contour_line_segments)
 
         const shape = new Shapes.Surface({
           polarity: 1
@@ -76,9 +66,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           layer: el.LAYER.layer,
           shape: shape
         })
-      }
-
-      else if (element.type === 'path') {
+      } else if (element.type === 'path') {
         {
           // console.log('path', element)
           const el = element.el as TREE.path
@@ -115,7 +103,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           })
         }
       } else if (element.type === 'sref') {
-        console.log('sref with S&R', element)
+        // console.log('sref with S&R', element)
         const el = element.el as TREE.sref
         const srefName = el.SNAME.name
         referencedCells.add(srefName)
@@ -130,8 +118,11 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             shapes: [cell.shape],
             repeats: [
               {
-                datum: el.strans?.STRANS.reflectAboutX ? vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * -scale) : vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale),
-                rotation: (el.strans?.STRANS.reflectAboutX ? -1 : 1)* (el.strans?.ANGLE?.angle || 0),
+                datum: el.strans?.STRANS.reflectAboutX
+                  ? vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * -scale)
+                  : vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale),
+                rotation:
+                  (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
                 scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
                 mirror: el.strans?.STRANS.reflectAboutX ? 1 : 0, // 0 = no mirror, 1 = mirror
                 order: ['mirror', 'translate', 'rotate', 'scale']
@@ -143,10 +134,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             shape: sr_shape
           })
         }
-        
-      }
-
-      else {
+      } else {
         console.warn('unhandled element', element)
       }
     }

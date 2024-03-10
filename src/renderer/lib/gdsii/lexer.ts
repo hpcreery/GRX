@@ -7,20 +7,15 @@ import { RecordToken } from './types'
 export function record_reader(stream: ArrayBuffer): RecordToken[] {
   let i = 0
   const tokens: RecordToken[] = []
-  // console.log('stream.byteLength', stream.byteLength)
   while (i < stream.byteLength) {
     const recordHeader = stream.slice(i, i + 4)
     if (recordHeader.byteLength < 4) {
-      // return
-      throw new Error('recordHeader.byteLength < 4')
-      // console.warn('recordHeader.byteLength < 4')
+      throw new Error(`recordHeader.byteLength < 4, recordHeader: ${recordHeader}`)
     }
     const [word1, word2] = struct('>HH').unpack(recordHeader)
     const recordLength = word1
     if (recordLength < 4) {
-      // return
-      throw new Error('GDSII recordLength < 4')
-      // console.warn('GDSII recordLength < 4')
+      throw new Error(`GDSII recordLength/word1 < 4, word1: ${word1}, word2: ${word2}`)
     }
     const recordType = Math.floor(word2 / 256)
     const dataType = word2 & 0x00ff
@@ -43,6 +38,8 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
     } else if (dataType === GDSII.DataType.ASCIIString) {
       // data = String.fromCharCode.apply(null, new Uint8Array(word3))
       data = new TextDecoder().decode(word3)
+      // remove null characters
+      data = data.replace(/\u0000/g, '')
     } else {
       console.warn('unknown dataType', dataType)
     }
@@ -50,16 +47,14 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
     //   `[RECORD] ${GDSII.RecordDefinitions[recordType].name}(${word3Length}bytes of ${dataType} at ${i} (${stream.byteLength})) =`,
     //   data
     // )
-    if (recordType === GDSII.RecordTypes.ENDLIB) {
-      //   console.log('ENDLIB')
-      break
-    }
     tokens.push({
       recordType,
       data
     })
+    if (recordType === GDSII.RecordTypes.ENDLIB) {
+      break
+    }
     i += recordLength
-    // await sleep(100)
   }
   return tokens
 }

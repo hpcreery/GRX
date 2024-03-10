@@ -3,8 +3,8 @@
 // import gdsiiFile from './testdata/example0.gds?url'
 // import gdsiiFile from './testdata/example1.gds?url'
 // import gdsiiFile from './testdata/example2.gds?url' // broken boundaries
-// import gdsiiFile from './testdata/GdsIITests_test.gds?url' // broken boundaries, paths with different ends
-import gdsiiFile from './testdata/GdsIITests_circles.gds?url' // sref, rotation and mirror not working
+import gdsiiFile from './testdata/GdsIITests_test.gds?url' // broken boundaries, paths with different ends
+// import gdsiiFile from './testdata/GdsIITests_circles.gds?url'
 
 import * as LEXER from './lexer'
 import * as PARSER from './parser'

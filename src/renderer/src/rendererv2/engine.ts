@@ -193,7 +193,7 @@ export class RenderEngine {
       const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
       const xpos = e.clientX - offsetX
       const ypos = height - (e.clientY - offsetY)
-      this.backend.sample(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
+      // this.backend.sample(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
 
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
@@ -357,8 +357,8 @@ export class RenderEngineBackend {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        // u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
-        u_Resolution: () => [this.viewBox.width, this.viewBox.height],
+        u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
+        // u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         u_Screen: () => [
           window.screen.width * window.devicePixelRatio,
           window.screen.height * window.devicePixelRatio

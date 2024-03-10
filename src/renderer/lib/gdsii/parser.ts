@@ -85,12 +85,12 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
       el.SNAME = parseRecord<TREE.SNAME>(token)
     } else if (token.recordType === GDSII.RecordTypes.COLROW) {
       if (element.type === 'aref') {
-        (el as TREE.aref).COLROW = parseRecord<TREE.COLROW>(token)
+        ;(el as TREE.aref).COLROW = parseRecord<TREE.COLROW>(token)
       }
     } else if (token.recordType === GDSII.RecordTypes.ELFLAGS) {
-      (element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
+      ;(element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
     } else if (token.recordType === GDSII.RecordTypes.PLEX) {
-      (element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
+      ;(element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
     } else if (token.recordType === GDSII.RecordTypes.PATHTYPE) {
       el.PATHTYPE = parseRecord<TREE.PATHTYPE>(token)
     } else if (token.recordType === GDSII.RecordTypes.STRANS) {
