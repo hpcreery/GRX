@@ -7,7 +7,7 @@ import { RenderEngine } from '.'
 import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { IPlotRecord, ISymbolRecord } from './types'
 // import { vec2 } from 'gl-matrix'
-import { PointerEvent, PointerEvents } from './engine'
+import { PointerEvent, PointerEvents } from '.'
 
 import { addGDSII } from '../../lib/gdsii/index'
 import { addGerber } from '../../lib/gerber'
@@ -843,9 +843,8 @@ function REGLApp(): JSX.Element {
       }
     })
 
-    Engine.settings.OUTLINE_MODE = true
+    Engine.settings.OUTLINE_MODE = false
     // Engine.settings.FPS = 30
-    // Engine.settings.FLATTEN_MACROS = true
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
 
 
@@ -1028,7 +1027,10 @@ function REGLApp(): JSX.Element {
 
     return () => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
+      console.log('IS THIS GETTING CALLED???')
       Engine.destroy()
+      // @ts-ignore asdf
+      Engine = null
     }
 
   }, [])
