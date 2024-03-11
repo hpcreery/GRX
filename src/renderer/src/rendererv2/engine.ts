@@ -2,6 +2,9 @@ import REGL from 'regl'
 import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers } from './collections'
+import * as Comlink from 'comlink'
+import * as Shapes from './shapes'
+import * as Symbols from './symbols'
 
 interface WorldProps {}
 
@@ -9,7 +12,7 @@ interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_Resolution: vec2
-  u_Screen: vec2
+  // u_Screen: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
 }
@@ -39,8 +42,10 @@ export interface RenderEngineFrontendConfig {
 
 export interface RenderEngineBackendConfig {
   // gl: WebGLRenderingContext
-  offscreenCanvas: OffscreenCanvas
+  // offscreenCanvas: OffscreenCanvas
   attributes?: WebGLContextAttributes | undefined
+  width: number
+  height: number
 }
 
 // export interface Stats {
@@ -83,201 +88,217 @@ interface RenderTransform {
   update: () => void
 }
 
-// export class RenderEngine {
+// // export class RenderEngine {
 
+// // }
+
+// export class RenderEngine {
+//   public settings: RenderSettings = new Proxy(
+//     {
+//       MSPFRAME: 1000 / 60,
+//       get FPS(): number {
+//         return 1000 / this.MSPFRAME
+//       },
+//       set FPS(value: number) {
+//         this.MSPFRAME = 1000 / value
+//       },
+//       OUTLINE_MODE: false,
+//       BACKGROUND_COLOR: [0, 0, 0, 0],
+//       MAX_ZOOM: 100,
+//       MIN_ZOOM: 0.01,
+//       ZOOM_TO_CURSOR: true
+//     },
+//     {
+//       set: (target, name, value): boolean => {
+//         this.backend.settings[name] = value
+//         this.backend.render(true)
+//         return true
+//       },
+//       get: (target, prop, reciever): any => {
+//         return this.backend.settings[prop]
+//       }
+//     }
+//   )
+//   public readonly CONTAINER: HTMLElement
+//   public pointer: EventTarget = new EventTarget()
+//   public backend: RenderEngineBackend // Promise<Comlink.Remote<RenderEngineBackend>>
+//   public canvas: HTMLCanvasElement
+//   constructor({ container, attributes }: RenderEngineFrontendConfig) {
+//     this.CONTAINER = container
+//     this.canvas = this.createCanvas()
+//     const offscreenCanvas = this.canvas.transferControlToOffscreen()
+//     this.backend = new RenderEngineBackend({ offscreenCanvas, attributes })
+//     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
+//     this.resize()
+//     this.addControls()
+//     this.render(true)
+//   }
+
+//   private createCanvas(): HTMLCanvasElement {
+//     const canvas = document.createElement('canvas')
+//     canvas.width = this.CONTAINER.clientWidth
+//     canvas.height = this.CONTAINER.clientHeight
+//     canvas.style.width = '100%'
+//     canvas.style.height = '100%'
+//     this.CONTAINER.appendChild(canvas)
+//     return canvas
+//   }
+
+//   private resize(): void {
+//     const { clientWidth: width, clientHeight: height } = this.CONTAINER
+//     this.backend.viewBox = {
+//       width,
+//       height
+//     }
+//     this.backend.resize()
+//   }
+
+//   public getWorldPositionFromMouse(e: MouseEvent): vec2 {
+//     const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+//     const mouse_element_pos = [e.clientX - offsetX, e.clientY - offsetY]
+//     const mouse_normalize_pos = [
+//       mouse_element_pos[0] / width,
+//       (height - mouse_element_pos[1]) / height
+//     ]
+//     return this.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
+//   }
+
+//   public getWorldPosition(x: number, y: number): vec2 {
+//     const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
+//     const mouse = vec2.transformMat3(
+//       vec2.create(),
+//       mouse_viewbox_pos,
+//       this.backend.transform.matrixInverse
+//     )
+//     return mouse
+//   }
+
+//   private addControls(): void {
+//     const sendPointerEvent = (
+//       mouse: MouseEvent,
+//       event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
+//     ): void => {
+//       const [x, y] = this.getWorldPositionFromMouse(mouse)
+//       this.pointer.dispatchEvent(
+//         new CustomEvent<PointerCoordinates>(event_type, {
+//           detail: { x, y }
+//         })
+//       )
+//     }
+//     this.CONTAINER.onwheel = (e): void => {
+//       const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+//       if (this.backend.settings.ZOOM_TO_CURSOR) {
+//         this.backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
+//       } else {
+//         this.backend.zoomAtPoint(width / 2, height / 2, e.deltaY)
+//       }
+//     }
+//     this.CONTAINER.onmousedown = (e): void => {
+//       this.backend.transform.dragging = true
+//       const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
+//       const xpos = e.clientX - offsetX
+//       const ypos = height - (e.clientY - offsetY)
+//       this.backend.sample(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
+
+//       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+//     }
+//     this.CONTAINER.onmouseup = (e): void => {
+//       this.backend.transform.dragging = false
+//       this.backend.toss()
+
+//       sendPointerEvent(e, PointerEvents.POINTER_UP)
+//     }
+//     this.CONTAINER.onmousemove = (e): void => {
+//       if (!this.backend.transform.dragging) {
+//         sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+//         return
+//       }
+//       this.backend.transform.velocity = [e.movementX, e.movementY]
+//       vec2.add(
+//         this.backend.transform.position,
+//         this.backend.transform.position,
+//         this.backend.transform.velocity
+//       )
+//       this.backend.transform.update()
+
+//       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+//     }
+//   }
+
+//   public addLayer({
+//     name,
+//     color,
+//     context,
+//     type,
+//     transform,
+//     image
+//   }: Omit<LayerRendererProps, 'regl'>): LayerRenderer {
+//     const layer = this.backend.addLayer({
+//       name,
+//       image,
+//       color,
+//       context,
+//       type,
+//       transform
+//     })
+//     return layer
+//   }
+
+//   public render(force = false): void {
+//     this.backend.render(force)
+//   }
+
+//   public destroy(): void {
+//     this.backend.destroy()
+//     this.CONTAINER.innerHTML = ''
+//     this.CONTAINER.onwheel = null
+//     this.CONTAINER.onmousedown = null
+//     this.CONTAINER.onmouseup = null
+//     this.CONTAINER.onmousemove = null
+//     this.CONTAINER.onresize = null
+//   }
 // }
 
-export class RenderEngine {
-  public settings: RenderSettings = new Proxy(
-    {
-      MSPFRAME: 1000 / 60,
-      get FPS(): number {
-        return 1000 / this.MSPFRAME
-      },
-      set FPS(value: number) {
-        this.MSPFRAME = 1000 / value
-      },
-      OUTLINE_MODE: false,
-      BACKGROUND_COLOR: [0, 0, 0, 0],
-      MAX_ZOOM: 100,
-      MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true
-    },
-    {
-      set: (target, name, value): boolean => {
-        this.backend.settings[name] = value
-        this.backend.render(true)
-        return true
-      },
-      get: (target, prop, reciever): any => {
-        return this.backend.settings[prop]
-      }
-    }
-  )
-  public readonly CONTAINER: HTMLElement
-  public pointer: EventTarget = new EventTarget()
-  public backend: RenderEngineBackend
-  public canvas: HTMLCanvasElement
-  constructor({ container, attributes }: RenderEngineFrontendConfig) {
-    this.CONTAINER = container
-    this.canvas = this.createCanvas()
-    const offscreenCanvas = this.canvas.transferControlToOffscreen()
-    this.backend = new RenderEngineBackend({ offscreenCanvas, attributes })
-    new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    this.resize()
-    this.addControls()
-    this.render(true)
-  }
-
-  private createCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas')
-    canvas.width = this.CONTAINER.clientWidth
-    canvas.height = this.CONTAINER.clientHeight
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    this.CONTAINER.appendChild(canvas)
-    return canvas
-  }
-
-  private resize(): void {
-    const { clientWidth: width, clientHeight: height } = this.CONTAINER
-    this.backend.viewBox = {
-      width,
-      height
-    }
-    this.backend.resize()
-  }
-
-  public getWorldPositionFromMouse(e: MouseEvent): vec2 {
-    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
-    const mouse_element_pos = [e.clientX - offsetX, e.clientY - offsetY]
-    const mouse_normalize_pos = [
-      mouse_element_pos[0] / width,
-      (height - mouse_element_pos[1]) / height
-    ]
-    return this.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
-  }
-
-  public getWorldPosition(x: number, y: number): vec2 {
-    const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
-    const mouse = vec2.transformMat3(
-      vec2.create(),
-      mouse_viewbox_pos,
-      this.backend.transform.matrixInverse
-    )
-    return mouse
-  }
-
-  private addControls(): void {
-    const sendPointerEvent = (
-      mouse: MouseEvent,
-      event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
-    ): void => {
-      const [x, y] = this.getWorldPositionFromMouse(mouse)
-      this.pointer.dispatchEvent(
-        new CustomEvent<PointerCoordinates>(event_type, {
-          detail: { x, y }
-        })
-      )
-    }
-    this.CONTAINER.onwheel = (e): void => {
-      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
-      if (this.backend.settings.ZOOM_TO_CURSOR) {
-        this.backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
-      } else {
-        this.backend.zoomAtPoint(width / 2, height / 2, e.deltaY)
-      }
-    }
-    this.CONTAINER.onmousedown = (e): void => {
-      this.backend.transform.dragging = true
-      const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-      const xpos = e.clientX - offsetX
-      const ypos = height - (e.clientY - offsetY)
-      // this.backend.sample(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
-
-      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
-    }
-    this.CONTAINER.onmouseup = (e): void => {
-      this.backend.transform.dragging = false
-      this.backend.toss()
-
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
-    }
-    this.CONTAINER.onmousemove = (e): void => {
-      if (!this.backend.transform.dragging) {
-        sendPointerEvent(e, PointerEvents.POINTER_HOVER)
-        return
-      }
-      this.backend.transform.velocity = [e.movementX, e.movementY]
-      vec2.add(
-        this.backend.transform.position,
-        this.backend.transform.position,
-        this.backend.transform.velocity
-      )
-      this.backend.transform.update()
-
-      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
-    }
-  }
-
-  public addLayer({
-    name,
-    color,
-    context,
-    type,
-    transform,
-    image
-  }: Omit<LayerRendererProps, 'regl'>): LayerRenderer {
-    const layer = this.backend.addLayer({
-      name,
-      image,
-      color,
-      context,
-      type,
-      transform
-    })
-    return layer
-  }
-
-  public render(force = false): void {
-    this.backend.render(force)
-  }
-
-  public destroy(): void {
-    this.backend.destroy()
-    this.CONTAINER.innerHTML = ''
-    this.CONTAINER.onwheel = null
-    this.CONTAINER.onmousedown = null
-    this.CONTAINER.onmouseup = null
-    this.CONTAINER.onmousemove = null
-    this.CONTAINER.onresize = null
-  }
-}
-
 export class RenderEngineBackend {
-  public settings: RenderSettings = new Proxy(
+  // public settings: RenderSettings = new Proxy(
+  //   {
+  //     MSPFRAME: 1000 / 60,
+  //     get FPS(): number {
+  //       return 1000 / this.MSPFRAME
+  //     },
+  //     set FPS(value: number) {
+  //       this.MSPFRAME = 1000 / value
+  //     },
+  //     OUTLINE_MODE: false,
+  //     BACKGROUND_COLOR: [0, 0, 0, 0],
+  //     MAX_ZOOM: 100,
+  //     MIN_ZOOM: 0.01,
+  //     ZOOM_TO_CURSOR: true
+  //   },
+  //   {
+  //     set: (target, name, value): boolean => {
+  //       target[name] = value
+  //       this.render(true)
+  //       return true
+  //     }
+  //   }
+  // )
+
+  public settings: RenderSettings =
     {
-      MSPFRAME: 1000 / 60,
-      get FPS(): number {
-        return 1000 / this.MSPFRAME
-      },
-      set FPS(value: number) {
-        this.MSPFRAME = 1000 / value
-      },
-      OUTLINE_MODE: false,
-      BACKGROUND_COLOR: [0, 0, 0, 0],
-      MAX_ZOOM: 100,
-      MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true
-    },
-    {
-      set: (target, name, value): boolean => {
-        target[name] = value
-        this.render(true)
-        return true
+        MSPFRAME: 1000 / 60,
+        get FPS(): number {
+          return 1000 / this.MSPFRAME
+        },
+        set FPS(value: number) {
+          this.MSPFRAME = 1000 / value
+        },
+        OUTLINE_MODE: false,
+        BACKGROUND_COLOR: [0, 0, 0, 0],
+        MAX_ZOOM: 100,
+        MIN_ZOOM: 0.01,
+        ZOOM_TO_CURSOR: true
       }
-    }
-  )
 
   public offscreenCanvas: OffscreenCanvas
   public viewBox: {
@@ -306,24 +327,27 @@ export class RenderEngineBackend {
   // }
 
   // make layers a proxy so that we can call render when a property is updated
-  public layers: LayerRenderer[] = new Proxy([], {
-    set: (target, name, value): boolean => {
-      target[name] = value
-      this.render(true)
-      return true
-    }
-  })
+  // public layers: LayerRenderer[] = new Proxy([], {
+  //   set: (target, name, value): boolean => {
+  //     target[name] = value
+  //     this.render(true)
+  //     return true
+  //   }
+  // })
+
+  public layers: LayerRenderer[] = []
+
 
   regl: REGL.Regl
   world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
 
-  constructor({ offscreenCanvas, attributes }: RenderEngineBackendConfig) {
+  constructor(offscreenCanvas: OffscreenCanvas, { attributes, width, height }: RenderEngineBackendConfig) {
     this.offscreenCanvas = offscreenCanvas
     this.viewBox = {
-      width: 0,
-      height: 0
+      width,
+      height
     }
 
     const gl = offscreenCanvas.getContext('webgl', attributes)!
@@ -336,7 +360,7 @@ export class RenderEngineBackend {
         'webgl_depth_texture',
         'EXT_frag_depth'
       ],
-      attributes,
+      // attributes,
       profile: true
     })
     console.log('WEBGL LIMITS', this.regl.limits)
@@ -357,13 +381,14 @@ export class RenderEngineBackend {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
-        // u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        u_Screen: () => [
-          window.screen.width * window.devicePixelRatio,
-          window.screen.height * window.devicePixelRatio
-        ],
-        u_PixelSize: () => 0.0023 / (this.transform.zoom * window.devicePixelRatio),
+        // u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
+        u_Resolution: () => [this.viewBox.width, this.viewBox.height],
+        // u_Screen: () => [
+        //   window.screen.width * window.devicePixelRatio,
+        //   window.screen.height * window.devicePixelRatio
+        // ],
+        // u_PixelSize: () => 0.0023 / (this.transform.zoom * window.devicePixelRatio),
+        u_PixelSize: () => 0.0023 / (this.transform.zoom),
         u_OutlineMode: () => this.settings.OUTLINE_MODE
       },
 
@@ -439,13 +464,54 @@ export class RenderEngineBackend {
       }
     )
 
+    this.addLayer({
+      name: 'true-origin',
+      color: [1, 1, 1],
+      transform: {
+        datum: [0, 0],
+        scale: 1,
+        rotation: 0,
+      },
+      image: [
+        new Shapes.Pad({
+          // Center point.
+          x: 0,
+          y: 0,
+          // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+          // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+          symbol: new Symbols.RoundSymbol({
+            outer_dia: 0.01, // — Outer diameter of the shape
+            inner_dia: 0
+          }),
+          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+          // resize_factor: Math.random() + 1,
+          resize_factor: 1,
+          // Polarity. 0 = negative, 1 = positive
+          polarity: 1,
+          // Shapes.Pad orientation (degrees)
+          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
+          rotation: 0,
+          // 0 = no mirror, 1 = mirror
+          mirror: 0
+        })
+      ]
+    })
+
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.render()
+    this.render(true)
   }
 
-  public resize(): void {
-    this.offscreenCanvas.width = this.viewBox.width
-    this.offscreenCanvas.height = this.viewBox.height
+  // public SUPERTEST(a: any): void {
+  //   console.log(JSON.stringify(a))
+  //   a.a.a = 4
+  //   console.log('after mutation', JSON.stringify(a))
+  // }
+
+  public resize(width: number, height: number): void {
+    this.viewBox.width = width
+    this.viewBox.height = height
+    this.offscreenCanvas.width = width
+    this.offscreenCanvas.height = height
     this.regl.poll()
     this.updateTransform()
   }
@@ -470,6 +536,38 @@ export class RenderEngineBackend {
     }
   }
 
+  public moveViewport(x: number, y: number): void {
+    if (!this.transform.dragging) return
+    this.transform.velocity = [x, y]
+    vec2.add(
+      this.transform.position,
+      this.transform.position,
+      this.transform.velocity
+    )
+    this.transform.update()
+  }
+
+  public grabViewport(): void {
+    this.transform.dragging = true
+  }
+
+  public releaseViewport(): void {
+    this.transform.dragging = false
+    this.toss()
+  }
+
+  public zoom(x: number, y: number, s: number): void {
+    if (this.settings.ZOOM_TO_CURSOR) {
+      this.zoomAtPoint(x, y, s)
+    } else {
+      this.zoomAtPoint(x, x, s)
+    }
+  }
+
+  public isDragging(): boolean {
+    return this.transform.dragging
+  }
+
   public updateTransform(): void {
     // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
     const { zoom, position } = this.transform
@@ -485,7 +583,7 @@ export class RenderEngineBackend {
 
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
-    // logMatrix(this.transform)
+    // logMatrix(this.transform.matrix)
 
     // console.log(s)
     this.render()
@@ -511,14 +609,23 @@ export class RenderEngineBackend {
     this.transform.update()
   }
 
-  public addLayer({
-    name,
-    color,
-    context,
-    type,
-    transform,
-    image
-  }: Omit<LayerRendererProps, 'regl'>): LayerRenderer {
+  public async getWorldPosition(x: number, y: number): Promise<[number, number]> {
+    const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
+    // const backend = await this.backend
+    // const transform = await backend.transform
+    // const transform = await backend.getTransorm()
+    const mouse = vec2.transformMat3(
+      vec2.create(),
+      mouse_viewbox_pos,
+      this.transform.matrixInverse
+    )
+    // console.log(mouse)
+    return [mouse[0], mouse[1]]
+  }
+
+  public addLayer(params: Omit<LayerRendererProps, 'regl'>): void {
+    const { name, color, context, type, transform, image } = params
+    console.log('adding layer', name, color, context, type, transform, image)
     const layer = new LayerRenderer({
       name,
       image,
@@ -529,7 +636,24 @@ export class RenderEngineBackend {
       regl: this.regl
     })
     this.layers.push(layer)
-    return layer
+  }
+
+  public getLayers(): Omit<LayerRendererProps, 'regl' | 'transform' | 'image'>[] {
+    return this.layers.map((layer) => {
+      return {
+        name: layer.name,
+        color: layer.color,
+        context: layer.context,
+        type: layer.type,
+      }
+    })
+  }
+
+  public setLayerProps(name: string, props: Partial<Omit<LayerRendererProps, 'regl'>>): void {
+    const layer = this.layers.find((layer) => layer.name === name)
+    if (!layer) return
+    Object.assign(layer, props)
+    this.render(true)
   }
 
   public sample(x: number, y: number): void {
@@ -586,6 +710,8 @@ export class RenderEngineBackend {
     this.regl.destroy()
   }
 }
+
+Comlink.expose(RenderEngineBackend)
 
 export function logMatrix(matrix: mat3): void {
   console.log(

@@ -115,10 +115,6 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
     Object.assign(this, symbol)
   }
 
-  public get array(): number[] {
-    return SYMBOL_PARAMETERS.map((key) => this[key])
-  }
-
 }
 
 
@@ -366,11 +362,6 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
 
   constructor(macro: Partial<TMacroSymbol & { id: string; flatten: boolean }>) {
     Object.assign(this, macro)
-  }
-
-  public get array(): number[] {
-    // return this.shapes.flatMap((shape) => shape.array)
-    return []
   }
 }
 

@@ -301,6 +301,7 @@ export class ShapeRenderer {
 
 export interface LayerRendererProps extends ShapeRendererProps {
   name: string
+  visible?: boolean
   color?: vec3
   context?: string
   type?: string
@@ -327,14 +328,17 @@ export default class LayerRenderer extends ShapeRenderer {
     super(props)
 
     this.name = props.name
-    if (props.color) {
+    if (props.color !== undefined) {
       this.color = props.color
     }
-    if (props.context) {
+    if (props.context !== undefined) {
       this.context = props.context
     }
-    if (props.type) {
+    if (props.type !== undefined) {
       this.type = props.type
+    }
+    if (props.visible !== undefined) {
+      this.visible = props.visible
     }
 
     this.framebuffer = this.regl.framebuffer()

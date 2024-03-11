@@ -2,7 +2,8 @@ import React from 'react'
 import '../App.css'
 import * as Symbols from './symbols'
 import * as Shapes from './shapes'
-import { RenderEngine } from './engine'
+// import { RenderEngine } from './engine'
+import { RenderEngine } from '.'
 import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { IPlotRecord, ISymbolRecord } from './types'
 // import { vec2 } from 'gl-matrix'
@@ -12,9 +13,9 @@ import { addGDSII } from '../../lib/gdsii/index'
 import { addGerber } from '../../lib/gerber'
 
 import earcut from 'earcut'
-import { IconFloatNone } from '@tabler/icons-react'
+import { LayerRendererProps } from './layer'
 
-const a = earcut([0, 0, 100, 0, 100, 100, 0, 100, 20, 20, 80, 20, 80, 80, 20, 80], [4])
+const a = earcut([0, 0, 100, 0, 100, 100, 0, 100, 20, 20, 80, 20, 80, 80, 20, 80], [4]);
 console.log(a)
 
 const N_PADS = 11
@@ -24,81 +25,84 @@ const N_SURFACES = 10
 const N_MACROS = 10
 
 const SURFACE_RECORDS_ARRAY: Shapes.Shape[] = []
-new Array<number>(N_SURFACES).fill(0).map((_, i) => {
-  SURFACE_RECORDS_ARRAY.push(
-    new Shapes.Surface({
-      polarity: 1
+new Array<number>(N_SURFACES)
+  .fill(0)
+  .map((_, i) => {
+    SURFACE_RECORDS_ARRAY.push(new Shapes.Surface({
+      polarity: 1,
     }).addContours([
       new Shapes.Contour({
         poly_type: 1,
         // Start point.
         xs: 0 + i * 0.1,
-        ys: 0 + i * 0.1
-      }).addSegments([
-        // new Shapes.Contour_Line_Segment({
-        //   x: 0.02 + i * 0.1,
-        //   y: -0.02 + i * 0.1,
-        // }),
-        new Shapes.Contour_Arc_Segment({
-          x: 0.02 + i * 0.1,
-          y: -0.02 + i * 0.1,
-          xc: 0.02 + i * 0.1,
-          yc: -0.0 + i * 0.1,
-          // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-          clockwise: 0
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.05 + i * 0.1,
-          y: -0.02 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.05 + i * 0.1,
-          y: 0.05 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: -0.05 + i * 0.1,
-          y: 0.05 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: -0.05 + i * 0.1,
-          y: -0.05 + i * 0.1
-        }),
-        new Shapes.Contour_Arc_Segment({
-          x: 0 + i * 0.1,
-          y: 0 + i * 0.1,
-          xc: -0.045 + i * 0.1,
-          yc: -0.005 + i * 0.1,
-          // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-          clockwise: 0
-        })
-        // new Shapes.Contour_Line_Segment({
-        //   x: 0 + i * 0.1,
-        //   y: 0 + i * 0.1,
-        // }),
-      ]),
+        ys: 0 + i * 0.1,
+      })
+        .addSegments([
+          // new Shapes.Contour_Line_Segment({
+          //   x: 0.02 + i * 0.1,
+          //   y: -0.02 + i * 0.1,
+          // }),
+          new Shapes.Contour_Arc_Segment({
+            x: 0.02 + i * 0.1,
+            y: -0.02 + i * 0.1,
+            xc: 0.02 + i * 0.1,
+            yc: -0.00 + i * 0.1,
+            // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+            clockwise: 0,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: 0.05 + i * 0.1,
+            y: -0.02 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: 0.05 + i * 0.1,
+            y: 0.05 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: -0.05 + i * 0.1,
+            y: 0.05 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: -0.05 + i * 0.1,
+            y: -0.05 + i * 0.1,
+          }),
+          new Shapes.Contour_Arc_Segment({
+            x: 0 + i * 0.1,
+            y: 0 + i * 0.1,
+            xc: -0.045 + i * 0.1,
+            yc: -0.005 + i * 0.1,
+            // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+            clockwise: 0,
+          }),
+          // new Shapes.Contour_Line_Segment({
+          //   x: 0 + i * 0.1,
+          //   y: 0 + i * 0.1,
+          // }),
+        ]),
       new Shapes.Contour({
         poly_type: 0,
         // Start point.
         xs: 0.04 + i * 0.1,
-        ys: 0.04 + i * 0.1
-      }).addSegments([
-        new Shapes.Contour_Line_Segment({
-          x: 0.04 + i * 0.1,
-          y: 0.03 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.03 + i * 0.1,
-          y: 0.03 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.03 + i * 0.1,
-          y: 0.04 + i * 0.1
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.04 + i * 0.1,
-          y: 0.04 + i * 0.1
-        })
-      ])
+        ys: 0.04 + i * 0.1,
+      })
+        .addSegments([
+          new Shapes.Contour_Line_Segment({
+            x: 0.04 + i * 0.1,
+            y: 0.03 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: 0.03 + i * 0.1,
+            y: 0.03 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: 0.03 + i * 0.1,
+            y: 0.04 + i * 0.1,
+          }),
+          new Shapes.Contour_Line_Segment({
+            x: 0.04 + i * 0.1,
+            y: 0.04 + i * 0.1,
+          }),
+        ]),
       // new Shapes.Contour({
       //   poly_type: 0,
       //   // Start point.
@@ -123,20 +127,20 @@ new Array<number>(N_SURFACES).fill(0).map((_, i) => {
       //       y: 0.04 + i * 0.1,
       //     }),
       //   ])
-    ])
-  )
-})
+    ]))
+  })
 
-SURFACE_RECORDS_ARRAY.push(
-  new Shapes.Surface({
-    polarity: 1
-  }).addContour(
-    new Shapes.Contour({
-      poly_type: 1,
-      // Start point.
-      xs: -1,
-      ys: 0
-    }).addSegments([
+
+SURFACE_RECORDS_ARRAY.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: -1,
+    ys: 0,
+  })
+    .addSegments([
       // new Shapes.Contour_Line_Segment({
       //   x: 0.02 + i * 0.1,
       //   y: -0.02 + i * 0.1,
@@ -147,30 +151,57 @@ SURFACE_RECORDS_ARRAY.push(
         xc: 0,
         yc: 0,
         // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-        clockwise: 0
+        clockwise: 0,
       }),
       new Shapes.Contour_Line_Segment({
         x: -1,
-        y: 0
-      })
-    ])
-  )
-)
+        y: 0,
+      }),
+
+    ])))
 
 const SYMBOLS: Symbols.StandardSymbol[] = []
 
-new Array<number>(Symbols.STANDARD_SYMBOLS.length).fill(0).map((_, i) => {
-  const sym = new Symbols.StandardSymbol({
-    id: 'symbol' + i, // id
-    symbol: i, // symbol
+new Array<number>(Symbols.STANDARD_SYMBOLS.length)
+  .fill(0)
+  .map((_, i) => {
+    const sym =
+      new Symbols.StandardSymbol({
+        id: 'symbol' + i, // id
+        symbol: i, // symbol
+        width: 0.01, // width, square side, diameter
+        height: 0.01, // height
+        corner_radius: 0.002, // corner radius
+        corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+        outer_dia: 0.01, // — Outer diameter of the shape
+        inner_dia: 0.0075, // — Inner diameter of the shape
+        line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+        line_length: 0.01, // — Shapes.Line length of the shape (applies to the whole shape)
+        angle: 0, // — Angle of the spoke from 0 degrees
+        gap: 0.001, // — Gap
+        num_spokes: 2, // — Number of spokes
+        round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+        cut_size: 0, // — Size of the cut ( see corner radius )
+        ring_width: 0.001, // — Ring width
+        ring_gap: 0.004, // — Ring gap
+        num_rings: 2 // — Number of rings
+      })
+
+    SYMBOLS.push(sym)
+  })
+
+const round_sym =
+  new Symbols.StandardSymbol({
+    id: 'round', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
     width: 0.01, // width, square side, diameter
     height: 0.01, // height
     corner_radius: 0.002, // corner radius
     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
     outer_dia: 0.01, // — Outer diameter of the shape
-    inner_dia: 0.0075, // — Inner diameter of the shape
+    // inner_dia: 0.008, // — Inner diameter of the shape
     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-    line_length: 0.01, // — Shapes.Line length of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
     angle: 0, // — Angle of the spoke from 0 degrees
     gap: 0.001, // — Gap
     num_spokes: 2, // — Number of spokes
@@ -181,86 +212,67 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length).fill(0).map((_, i) => {
     num_rings: 2 // — Number of rings
   })
 
-  SYMBOLS.push(sym)
-})
-
-const round_sym = new Symbols.StandardSymbol({
-  id: 'round', // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
-  width: 0.01, // width, square side, diameter
-  height: 0.01, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  // inner_dia: 0.008, // — Inner diameter of the shape
-  line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
-
 SYMBOLS.push(round_sym)
 
-const square_sym = new Symbols.StandardSymbol({
-  id: 'round', // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
-  width: 0.01, // width, square side, diameter
-  height: 0.01, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  // inner_dia: 0.0, // — Inner diameter of the shape
-  line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
+const square_sym =
+  new Symbols.StandardSymbol({
+    id: 'round', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.01, // width, square side, diameter
+    height: 0.01, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.01, // — Outer diameter of the shape
+    // inner_dia: 0.0, // — Inner diameter of the shape
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
+  })
 
 SYMBOLS.push(square_sym)
 
-const square2_sym = new Symbols.StandardSymbol({
-  id: 'round', // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
-  width: 0.04, // width, square side, diameter
-  height: 0.04, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.04, // — Outer diameter of the shape
-  // inner_dia: 0.038, // — Inner diameter of the shape
-  line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
+
+const square2_sym =
+  new Symbols.StandardSymbol({
+    id: 'round', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.04, // width, square side, diameter
+    height: 0.04, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.04, // — Outer diameter of the shape
+    // inner_dia: 0.038, // — Inner diameter of the shape
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
+  })
 
 SYMBOLS.push(square2_sym)
 
-const polygon_sym = new Symbols.PolygonSymbol({
-  id: 'round',
-  corners: 8,
-  outer_dia: 0.04,
-  inner_dia: 0,
-  line_width: 0,
-  angle: 10
-})
+
+const polygon_sym =
+  new Symbols.PolygonSymbol({
+    id: 'round',
+    corners: 8,
+    outer_dia: 0.04,
+    inner_dia: 0,
+    line_width: 0,
+    angle: 10
+  })
 
 // SYMBOLS.push(square2_sym)
 
@@ -275,14 +287,14 @@ const polygons = [
     // Polarity. 0 = negative, 1 = positive
     // polarity: i % 2,
     // polarity: Math.random() > 0.5 ? 1 : 0,
-    polarity: 1
+    polarity: 1,
   })
 ]
 
 const PAD_RECORDS_ARRAY: Shapes.Shape[] = []
-new Array<number>(N_PADS).fill(0).map((_, i) => {
-  PAD_RECORDS_ARRAY.push(
-    new Shapes.Pad({
+new Array<number>(N_PADS)
+  .fill(0).map((_, i) => {
+    PAD_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -305,14 +317,14 @@ new Array<number>(N_PADS).fill(0).map((_, i) => {
       // 0 = no mirror, 1 = mirror
       // mirror: i % 2,
       mirror: 0
-    })
-  )
-})
+    }))
+  })
 
 const LINE_RECORDS_ARRAY_NEG: Shapes.Shape[] = []
-new Array<number>(N_LINES).fill(0).map((_, i) => {
-  LINE_RECORDS_ARRAY_NEG.push(
-    new Shapes.Line({
+new Array<number>(N_LINES)
+  .fill(0).map((_, i) => {
+    LINE_RECORDS_ARRAY_NEG.push(new Shapes.Line({
+
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -328,15 +340,14 @@ new Array<number>(N_LINES).fill(0).map((_, i) => {
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
-      polarity: 0
-    })
-  )
-})
+      polarity: 0,
+    }))
+  })
 
 const LINE_RECORDS_ARRAY_POS: Shapes.Shape[] = []
-new Array<number>(N_LINES).fill(0).map((_, i) => {
-  LINE_RECORDS_ARRAY_POS.push(
-    new Shapes.Line({
+new Array<number>(N_LINES)
+  .fill(0).map((_, i) => {
+    LINE_RECORDS_ARRAY_POS.push(new Shapes.Line({
       // Start point.
       xs: (Math.random() - 0.5) * 1,
       ys: (Math.random() - 0.5) * 1,
@@ -352,31 +363,31 @@ new Array<number>(N_LINES).fill(0).map((_, i) => {
       // Polarity. 0 = negative, 1 = positive
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
-      polarity: 1
-    })
-  )
-})
+      polarity: 1,
+    }))
+  })
 
-const brush_sym = new Symbols.StandardSymbol({
-  id: 'brush', // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle, // symbol
-  width: 0.04, // width, square side, diameter
-  height: 0.02, // height
-  // corner_radius: 0.002, // corner radius
-  // corners: 3, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.02, // — Outer diameter of the shape
-  // inner_dia: 0.01, // — Inner diameter of the shape
-  line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-  // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 4 // — Number of spokes
-  // round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  // cut_size: 0, // — Size of the cut ( see corner radius )
-  // ring_width: 0.001, // — Ring width
-  // ring_gap: 0.004, // — Ring gap
-  // num_rings: 2 // — Number of rings
-})
+const brush_sym =
+  new Symbols.StandardSymbol({
+    id: 'brush', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle, // symbol
+    width: 0.04, // width, square side, diameter
+    height: 0.02, // height
+    // corner_radius: 0.002, // corner radius
+    // corners: 3, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.02, // — Outer diameter of the shape
+    // inner_dia: 0.01, // — Inner diameter of the shape
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 4, // — Number of spokes
+    // round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    // cut_size: 0, // — Size of the cut ( see corner radius )
+    // ring_width: 0.001, // — Ring width
+    // ring_gap: 0.004, // — Ring gap
+    // num_rings: 2 // — Number of rings
+  })
 
 // const LINE_BRUSH_RECORDS_ARRAY_POS: Shapes.Shape[] = []
 // new Array<number>(10)
@@ -482,17 +493,17 @@ const brush_sym = new Symbols.StandardSymbol({
 //   })
 
 const ARC_RECORDS_ARRAY: Shapes.Arc[] = []
-new Array<number>(N_ARCS).fill(0).map((_, i) => {
-  const start_angle = Math.abs(Math.random()) * 360
-  const end_angle = Math.abs(Math.random()) * 360
-  const radius = Math.abs(Math.random()) * 0.1
-  const center_x = (Math.random() - 0.5) * 1
-  const center_y = (Math.random() - 0.5) * 1
-  function degreesToRadians(degrees: number): number {
-    return degrees * (Math.PI / 180)
-  }
-  ARC_RECORDS_ARRAY.push(
-    new Shapes.Arc({
+new Array<number>(N_ARCS)
+  .fill(0).map((_, i) => {
+    const start_angle = Math.abs(Math.random()) * 360
+    const end_angle = Math.abs(Math.random()) * 360
+    const radius = Math.abs(Math.random()) * 0.1
+    const center_x = (Math.random() - 0.5) * 1
+    const center_y = (Math.random() - 0.5) * 1
+    function degreesToRadians(degrees: number): number {
+      return degrees * (Math.PI / 180);
+    }
+    ARC_RECORDS_ARRAY.push(new Shapes.Arc({
       // Center point.
       xc: center_x,
       yc: center_y,
@@ -512,16 +523,15 @@ new Array<number>(N_ARCS).fill(0).map((_, i) => {
       // Polarity. 0 = negative, 1 = positive
       polarity: 1,
       // polarity: Math.random() > 0.5 ? 1 : 0,
-      clockwise: Math.random() > 0.5 ? 1 : 0
+      clockwise: Math.random() > 0.5 ? 1 : 0,
       // clockwise: 0,
-    })
-  )
-})
+    }))
+  })
 
 const MACROS_ARRAY: Symbols.Symbol[] = []
-new Array<number>(10).fill(0).map((_, i) => {
-  MACROS_ARRAY.push(
-    new Symbols.MacroSymbol({
+new Array<number>(10)
+  .fill(0).map((_, i) => {
+    MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: [
         // PAD_RECORDS_ARRAY[i],
@@ -534,14 +544,13 @@ new Array<number>(10).fill(0).map((_, i) => {
         // ARC_RECORDS_ARRAY[i + 1],
         SURFACE_RECORDS_ARRAY[i]
       ]
-    })
-  )
-})
+    }))
+  })
 
 const MACRO_RECORDS_ARRAY: Shapes.Shape[] = []
-new Array<number>(N_MACROS).fill(0).map((_, i) => {
-  MACRO_RECORDS_ARRAY.push(
-    new Shapes.Pad({
+new Array<number>(N_MACROS)
+  .fill(0).map((_, i) => {
+    MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
       y: (Math.random() - 0.5) * 1,
@@ -559,35 +568,36 @@ new Array<number>(N_MACROS).fill(0).map((_, i) => {
       rotation: 20,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })
-  )
-})
+    }))
+  })
 
-const large_square_sym = new Symbols.StandardSymbol({
-  id: 'round', // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
-  width: 0.5, // width, square side, diameter
-  height: 0.5, // height
-  corner_radius: 0.002, // corner radius
-  corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-  outer_dia: 0.01, // — Outer diameter of the shape
-  inner_dia: 0.0, // — Inner diameter of the shape
-  line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-  line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-  angle: 0, // — Angle of the spoke from 0 degrees
-  gap: 0.001, // — Gap
-  num_spokes: 2, // — Number of spokes
-  round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-  cut_size: 0, // — Size of the cut ( see corner radius )
-  ring_width: 0.001, // — Ring width
-  ring_gap: 0.004, // — Ring gap
-  num_rings: 2 // — Number of rings
-})
+const large_square_sym =
+  new Symbols.StandardSymbol({
+    id: 'round', // id
+    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+    width: 0.5, // width, square side, diameter
+    height: 0.5, // height
+    corner_radius: 0.002, // corner radius
+    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+    outer_dia: 0.01, // — Outer diameter of the shape
+    inner_dia: 0.0, // — Inner diameter of the shape
+    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+    angle: 0, // — Angle of the spoke from 0 degrees
+    gap: 0.001, // — Gap
+    num_spokes: 2, // — Number of spokes
+    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+    cut_size: 0, // — Size of the cut ( see corner radius )
+    ring_width: 0.001, // — Ring width
+    ring_gap: 0.004, // — Ring gap
+    num_rings: 2 // — Number of rings
+  })
+
 
 const OVERLAPPING_PADS_ARRAY: Shapes.Pad[] = []
-new Array<number>(3).fill(0).map((_, i) => {
-  OVERLAPPING_PADS_ARRAY.push(
-    new Shapes.Pad({
+new Array<number>(3)
+  .fill(0).map((_, i) => {
+    OVERLAPPING_PADS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 8,
       y: i / 9,
@@ -606,44 +616,41 @@ new Array<number>(3).fill(0).map((_, i) => {
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })
-  )
-})
+    }))
+  })
 
 const OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
-new Array<number>(1).fill(0).map((_, i) => {
-  OVERLAPPING_MACROS_ARRAY.push(
-    new Symbols.MacroSymbol({
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: OVERLAPPING_PADS_ARRAY,
       // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
       // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
       // negatives will act like holes in the macro, rather than being drawn as negative shapes.
       flatten: true
-    })
-  )
-})
+    }))
+  })
 
 const SPOOF_OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
-new Array<number>(1).fill(0).map((_, i) => {
-  SPOOF_OVERLAPPING_MACROS_ARRAY.push(
-    new Symbols.MacroSymbol({
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    SPOOF_OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: [OVERLAPPING_PADS_ARRAY[0]],
       // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
       // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
       // negatives will act like holes in the macro, rather than being drawn as negative shapes.
       flatten: true
-    })
-  )
-})
+    }))
+  })
 
 const OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
-new Array<number>(10).fill(0).map((_, i) => {
-  OVERLAPPING_MACRO_RECORDS_ARRAY.push(
-    new Shapes.Pad({
+new Array<number>(10)
+  .fill(0).map((_, i) => {
+    OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 10,
       y: -i / 10,
@@ -662,14 +669,13 @@ new Array<number>(10).fill(0).map((_, i) => {
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })
-  )
-})
+    }))
+  })
 
 const SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
-new Array<number>(10).fill(0).map((_, i) => {
-  SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(
-    new Shapes.Pad({
+new Array<number>(10)
+  .fill(0).map((_, i) => {
+    SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 10 + 1,
       y: -i / 10 + 1,
@@ -688,14 +694,13 @@ new Array<number>(10).fill(0).map((_, i) => {
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       mirror: 0
-    })
-  )
-})
+    }))
+  })
 
 const POLYLINE_RECORDS_ARRAY: Shapes.PolyLine[] = []
-new Array<number>(1).fill(0).map((_, i) => {
-  POLYLINE_RECORDS_ARRAY.push(
-    new Shapes.PolyLine({
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    POLYLINE_RECORDS_ARRAY.push(new Shapes.PolyLine({
       // Start point.
       // xs: (Math.random() - 0.5) * 1,
       // ys: (Math.random() - 0.5) * 1,
@@ -709,72 +714,75 @@ new Array<number>(1).fill(0).map((_, i) => {
       // polarity: i % 2,
       // polarity: Math.random() > 0.5 ? 1 : 0,
       polarity: 1,
-      width: 0.05
+      width: 0.05,
     }).addLines([
       {
         x: (Math.random() - 0.5) * 1,
-        y: (Math.random() - 0.5) * 1
+        y: (Math.random() - 0.5) * 1,
       },
       {
         x: (Math.random() - 0.5) * 1,
-        y: (Math.random() - 0.5) * 1
+        y: (Math.random() - 0.5) * 1,
       },
       {
         x: (Math.random() - 0.5) * 1,
-        y: (Math.random() - 0.5) * 1
+        y: (Math.random() - 0.5) * 1,
       },
       {
         x: (Math.random() - 0.5) * 1,
-        y: (Math.random() - 0.5) * 1
+        y: (Math.random() - 0.5) * 1,
       },
       {
         x: 0.0,
-        y: 0.5
+        y: 0.5,
       },
       {
         x: 0.5,
-        y: 0.5
+        y: 0.5,
       },
       {
         x: 0.0,
-        y: -1.0
+        y: -1.0,
       },
       {
         x: -0.5,
-        y: -0.5
+        y: -0.5,
       }
-    ])
-  )
-})
+    ]))
+
+  })
 
 const DUPLICATE_POLYLINE_RECORDS_ARRAY: Shapes.StepAndRepeat[] = []
-new Array<number>(1).fill(0).map((_, i) => {
-  DUPLICATE_POLYLINE_RECORDS_ARRAY.push(
-    new Shapes.StepAndRepeat({
-      shapes: POLYLINE_RECORDS_ARRAY,
-      repeats: [
-        {
-          datum: [0, 0],
-          mirror: 0,
-          rotation: 0,
-          scale: 1
-        },
-        {
-          datum: [1, 0],
-          mirror: 1,
-          rotation: 0,
-          scale: 1
-        }
-        // {
-        //   datum: [0, 0],
-        //   mirror: 0,
-        //   rotation: 0,
-        //   scale: 2,
-        // }
-      ]
-    })
-  )
-})
+new Array<number>(1)
+  .fill(0).map((_, i) => {
+    DUPLICATE_POLYLINE_RECORDS_ARRAY.push(
+      new Shapes.StepAndRepeat({
+        shapes: POLYLINE_RECORDS_ARRAY,
+        repeats: [
+          {
+            datum: [0, 0],
+            mirror: 0,
+            rotation: 0,
+            scale: 1,
+          },
+          {
+            datum: [1, 0],
+            mirror: 1,
+            rotation: 0,
+            scale: 1,
+          },
+          // {
+          //   datum: [0, 0],
+          //   mirror: 0,
+          //   rotation: 0,
+          //   scale: 2,
+          // }
+        ]
+      })
+    )
+
+  })
+
 
 const VALIDATION_ARC = new Shapes.Arc({
   // Cnter point.
@@ -796,7 +804,7 @@ const VALIDATION_ARC = new Shapes.Arc({
   // Polarity. 0 = negative, 1 = positive
   polarity: 1,
   // polarity: Math.random() > 0.5 ? 1 : 0,
-  clockwise: 1
+  clockwise: 1,
   // clockwise: 0,
 })
 
@@ -816,19 +824,22 @@ const VALIDATION_LINE = new Shapes.Line({
   // Polarity. 0 = negative, 1 = positive
   // polarity: i % 2,
   // polarity: Math.random() > 0.5 ? 1 : 0,
-  polarity: 1
+  polarity: 1,
 })
+
+
 
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
   const [engine, setEngine] = React.useState<RenderEngine>()
   const [outlineMode, setOutlineMode] = React.useState<boolean>(true)
+  const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image">[]>([])
 
   React.useEffect(() => {
     const Engine = new RenderEngine({
       container: containerRef.current,
       attributes: {
-        antialias: false
+        antialias: false,
       }
     })
 
@@ -837,13 +848,15 @@ function REGLApp(): JSX.Element {
     // Engine.settings.FLATTEN_MACROS = true
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
 
+
+
     Engine.addLayer({
       name: 'origin',
       color: [1, 1, 1],
       transform: {
         datum: [0, 0],
         scale: 1,
-        rotation: 0
+        rotation: 0,
       },
       image: [
         new Shapes.Pad({
@@ -967,9 +980,12 @@ function REGLApp(): JSX.Element {
     //   Engine.render(true)
     // }, 2000)
 
+
     // console.log(Engine.symbols.records.get('round')?.value)
     // Engine.symbols.refresh()
     // Engine.render(true)
+
+
 
     // Engine.addLayer({
     //   name: 'surface-arc-combo',
@@ -978,6 +994,7 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: 'surfaces',
+      visible: true,
       image: SURFACE_RECORDS_ARRAY
     })
 
@@ -991,25 +1008,29 @@ function REGLApp(): JSX.Element {
     //   image: polygons
     // })
 
-    addGDSII(Engine)
+    // addGDSII(Engine)
     // addGerber(Engine)
 
-    Engine.backend.layers.map((l) => {
-      l.visible = false
-      if (l.name === 'surfaces') {
-        l.visible = true
-      }
-    })
+
+    setTimeout(() => {
+      console.log('setting layers visible')
+      Engine.backend.then(engine => engine.getLayers().then(layers => {
+        setLayers(layers)
+        layers.map(l => engine.setLayerProps(l.name, { visible: true }))
+      }))
+    }, 3000)
     Engine.render(true)
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 
     setEngine(Engine)
+    // Engine.SUPERTEST()
 
     return () => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }
+
   }, [])
 
   return (
@@ -1023,24 +1044,23 @@ function REGLApp(): JSX.Element {
           position: 'absolute',
           top: 0,
           left: 0,
-          zIndex: 0
+          zIndex: 0,
         }}
       />
-      {engine ? (
-        <Box
-          style={{
-            width: '100px'
-          }}
-        >
+      {engine ?
+
+        <Box style={{
+          width: '100px'
+        }}>
           <StatsWidget />
           <MouseCoordinates engine={engine} />
           <Button
-            onClick={(): void => {
-              engine.backend.layers.map(
-                (l) => (l.color = [Math.random(), Math.random(), Math.random()])
-              ) && engine.render(true)
-            }}
-          >
+            onClick={async (): Promise<void> => {
+              const backend = await engine.backend
+              layers.map(l => {
+                backend.setLayerProps(l.name, { color: [Math.random(), Math.random(), Math.random()] })
+              })
+            }}>
             Randomize Colors
           </Button>
           <br />
@@ -1050,32 +1070,30 @@ function REGLApp(): JSX.Element {
             onChange={(e): void => {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
-            }}
-          />
+            }} />
           <br />
           Zoom To Cursor
           <Switch
             defaultChecked={engine.settings.ZOOM_TO_CURSOR}
-            onChange={(e): void => {
-              engine.settings.ZOOM_TO_CURSOR = e.target.checked
-            }}
-          />
-          {engine.backend.layers.map((layer, i) => {
-            return (
-              <div key={i}>
-                {layer.name}
-                <Switch
-                  defaultChecked={layer.visible}
-                  onChange={(e): void => {
-                    layer.visible = e.target.checked
-                    engine.render(true)
-                  }}
-                />
-              </div>
-            )
-          })}
+            onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
+          {
+            layers.map((layer, i) => {
+              return (
+                <div key={i}>
+                  {layer.name}
+                  <Switch
+                    defaultChecked={layer.visible}
+                    onChange={async (e): Promise<void> => {
+                      const backend = await engine.backend
+                      backend.setLayerProps(layer.name, { visible: e.target.checked })
+                    }} />
+                </div>
+              )
+            })
+          }
         </Box>
-      ) : null}
+
+        : null}
     </>
   )
 }
@@ -1113,22 +1131,21 @@ function StatsWidget(): JSX.Element {
     requestAnimationFrame(updateFPS)
   }, [])
 
+
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        padding: 10,
-        background: 'rgba(0,0,0,0.5)',
-        color: 'white',
-        fontFamily: 'monospace',
-        fontSize: 12,
-        pointerEvents: 'none',
-        zIndex: 100,
-        userSelect: 'none'
-      }}
-    >
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      padding: 10,
+      background: 'rgba(0,0,0,0.5)',
+      color: 'white',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      pointerEvents: 'none',
+      zIndex: 100,
+      userSelect: 'none',
+    }}>
       <div>FPS: {fps}</div>
       <div>Avg FPS: {avgFPS}</div>
       <div>Memory: {memory} MB</div>
@@ -1143,26 +1160,23 @@ function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
     setMouse({ x: e.detail.x.toFixed(3), y: e.detail.y.toFixed(3) })
   })
   return (
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        padding: 10,
-        background: 'rgba(0,0,0,0.5)',
-        color: 'white',
-        fontFamily: 'monospace',
-        fontSize: 12,
-        pointerEvents: 'none',
-        zIndex: 100,
-        userSelect: 'none'
-      }}
-    >
-      <div>
-        Mouse: {mouse.x}, {mouse.y}
-      </div>
+    <div style={{
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+      padding: 10,
+      background: 'rgba(0,0,0,0.5)',
+      color: 'white',
+      fontFamily: 'monospace',
+      fontSize: 12,
+      pointerEvents: 'none',
+      zIndex: 100,
+      userSelect: 'none',
+    }}>
+      <div>Mouse: {mouse.x}, {mouse.y}</div>
     </div>
   )
 }
+
 
 export default REGLApp

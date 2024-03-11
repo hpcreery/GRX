@@ -10,7 +10,8 @@ import * as LEXER from './lexer'
 import * as PARSER from './parser'
 import * as CONVERTER from './converter'
 
-import { RenderEngine } from '../../src/rendererv2/engine'
+import type { RenderEngine } from '../../src/rendererv2'
+import { LayerRendererProps } from '../../src/rendererv2/layer'
 
 export async function addGDSII(engine: RenderEngine): Promise<void> {
   const buffer = await (await fetch(gdsiiFile)).arrayBuffer()
@@ -25,4 +26,22 @@ export async function addGDSII(engine: RenderEngine): Promise<void> {
       image: shapes.shapes
     })
   }
+}
+
+export async function plugin(engine: RenderEngine): Promise<(file: string, props: Partial<Omit<LayerRendererProps, "regl">>) => Promise<void>> {
+  const parseGDSII = async (file: string, props: Partial<Omit<LayerRendererProps, "regl">>): Promise<void> => {
+    const buffer = await (await fetch(file)).arrayBuffer()
+    const tokens = LEXER.record_reader(buffer)
+    const bnf = PARSER.parse(tokens)
+    const layerHierarchy = CONVERTER.convert(bnf)
+
+    for (const [layer, shapes] of Object.entries(layerHierarchy)) {
+      engine.addLayer({
+        name: layer,
+        image: shapes.shapes,
+        ...props
+      })
+    }
+  }
+  return parseGDSII
 }

@@ -69,10 +69,6 @@ export class Pad implements TPad_Record, IPlotRecord {
   constructor(record: Partial<Omit<TPad_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)
   }
-
-  public get array(): number[] {
-    return PAD_RECORD_PARAMETERS.map((key) => this[key])
-  }
 }
 
 // =================
@@ -96,10 +92,6 @@ export class Line implements TLine_Record, IPlotRecord {
     record: Partial<Omit<TLine_Record, 'sym_num' | 'type'> & { symbol: Symbols.StandardSymbol }>
   ) {
     Object.assign(this, record)
-  }
-
-  public get array(): number[] {
-    return LINE_RECORD_PARAMETERS.map((key) => this[key])
   }
 }
 
@@ -127,11 +119,6 @@ export class Arc implements TArc_Record, IPlotRecord {
     record: Partial<Omit<TArc_Record, 'sym_num' | 'type'> & { symbol: Symbols.StandardSymbol }>
   ) {
     Object.assign(this, record)
-  }
-
-
-  public get array(): number[] {
-    return ARC_RECORD_PARAMETERS.map((key) => this[key])
   }
 
 }
@@ -206,45 +193,6 @@ export class Contour implements TContour {
   public addSegment(segment: Contour_Arc_Segment | Contour_Line_Segment): this {
     this.segments.push(segment)
     return this
-  }
-
-  public getVertices(): number[] {
-    let previous: { x: number; y: number } = { x: this.xs, y: this.ys }
-    const vertices = this.segments.flatMap((segment) => {
-      if (segment.type === FeatureTypeIdentifyer.LINESEGMENT) {
-        previous = { x: segment.x, y: segment.y }
-        return [segment.x, segment.y]
-      } else {
-        const start_angle = Math.atan2(previous.y - segment.yc, previous.x - segment.xc)
-        const dot = (x1: number, y1: number, x2: number, y2: number): number => x1 * x2 + y1 * y2
-        const det = (x1: number, y1: number, x2: number, y2: number): number => x1 * y2 - y1 * x2
-        const v2 = { x: previous.x - segment.xc, y: previous.y - segment.yc }
-        const v1 = { x: segment.x - segment.xc, y: segment.y - segment.yc }
-
-        const dotComp = dot(v1.x, v1.y, v2.x, v2.y)
-        const detComp = det(v1.x, v1.y, v2.x, v2.y)
-        let angle = Math.atan2(detComp, dotComp)
-        angle = Math.abs(angle)
-        if (angle == 0) {
-          angle = Math.PI * 2
-        }
-        const radius = Math.sqrt((segment.x - segment.xc) ** 2 + (segment.y - segment.yc) ** 2)
-        const segments: number[] = []
-        const steps = 100
-        if (segment.clockwise === 1) {
-          angle = -angle
-        }
-        for (let i = 1; i <= steps; i++) {
-          const a = angle * (i / steps) + start_angle
-          segments.push(segment.xc + Math.cos(a) * radius, segment.yc + Math.sin(a) * radius)
-        }
-        segments.push(segment.x, segment.y)
-        previous = { x: segment.x, y: segment.y }
-        return segments
-      }
-    })
-    vertices.unshift(this.xs, this.ys)
-    return vertices
   }
 }
 

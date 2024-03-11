@@ -554,34 +554,64 @@ export class ShapesShaderCollection {
     })
     this.shaderAttachment.surfacesWithHoles.length = 0
 
+    function isGetter(obj, prop): boolean {
+      const descriptor = Object.getOwnPropertyDescriptor(obj, prop)
+      if (descriptor === undefined) {
+        return false
+      }
+      return !!Object.getOwnPropertyDescriptor(obj, prop)!['get']
+    }
+
+    function fixSymbolGetter(record: Shapes.Pad | Shapes.Line | Shapes.Arc): void {
+      if (!isGetter(record, 'sym_num')) {
+        Object.defineProperty(record, 'sym_num', {
+          get: function (): number {
+            return this.symbol.sym_num.value
+          }
+        })
+      }
+    }
+
     this.records.forEach((record) => {
-      if (record instanceof Shapes.Surface) {
+      if (record.type === FeatureTypeIdentifyer.SURFACE) {
         this.shapes.surfaces.push(record)
-      } else if (record instanceof Shapes.Pad && record.symbol instanceof Symbols.StandardSymbol) {
+      } else if (
+        record.type === FeatureTypeIdentifyer.PAD &&
+        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+      ) {
+        fixSymbolGetter(record)
         this.shapes.pads.push(record)
-      } else if (record instanceof Shapes.Line && record.symbol instanceof Symbols.StandardSymbol) {
+      } else if (
+        record.type === FeatureTypeIdentifyer.LINE &&
+        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+      ) {
+        fixSymbolGetter(record)
         this.shapes.lines.push(record)
-      } else if (record instanceof Shapes.Arc && record.symbol instanceof Symbols.StandardSymbol) {
+      } else if (
+        record.type === FeatureTypeIdentifyer.ARC &&
+        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+      ) {
+        fixSymbolGetter(record)
         this.shapes.arcs.push(record)
-      } else if (record instanceof Shapes.PolyLine) {
+      } else if (record.type === FeatureTypeIdentifyer.POLYLINE) {
         drawPolyline(record, this.shapes)
       }
     })
 
     this.shapes.pads.forEach((record) => {
-      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
     })
     this.shapes.lines.forEach((record) => {
-      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
     })
     this.shapes.arcs.forEach((record) => {
-      if (!(record.symbol instanceof Symbols.StandardSymbol)) {
+      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
@@ -599,9 +629,16 @@ export class ShapesShaderCollection {
     this.shaderAttachment.lines.length = this.shapes.lines.length
     this.shaderAttachment.arcs.length = this.shapes.arcs.length
 
-    this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => record.array))
-    this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => record.array))
-    this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => record.array))
+    this.shaderAttachment.pads.buffer(
+      this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key]))
+    )
+
+    this.shaderAttachment.lines.buffer(
+      this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key]))
+    )
+    this.shaderAttachment.arcs.buffer(
+      this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
+    )
 
     this.shapes.surfaces.forEach((record) => {
       const polarities: number[] = []
@@ -614,7 +651,7 @@ export class ShapesShaderCollection {
       let hasHoles = false
       const vertices = record.contours.flatMap((contour) => {
         if (contour.poly_type === 0) hasHoles = true
-        const verts = contour.getVertices()
+        const verts = this.getVertices(contour)
         const ears = earcut(verts)
         indicies.push(...ears)
         const lengthArray = new Array<number>(ears.length / 3)
@@ -661,6 +698,45 @@ export class ShapesShaderCollection {
 
     return this
   }
+
+  public getVertices(contour: Shapes.Contour): number[] {
+    let previous: { x: number; y: number } = { x: contour.xs, y: contour.ys }
+    const vertices = contour.segments.flatMap((segment) => {
+      if (segment.type === FeatureTypeIdentifyer.LINESEGMENT) {
+        previous = { x: segment.x, y: segment.y }
+        return [segment.x, segment.y]
+      } else {
+        const start_angle = Math.atan2(previous.y - segment.yc, previous.x - segment.xc)
+        const dot = (x1: number, y1: number, x2: number, y2: number): number => x1 * x2 + y1 * y2
+        const det = (x1: number, y1: number, x2: number, y2: number): number => x1 * y2 - y1 * x2
+        const v2 = { x: previous.x - segment.xc, y: previous.y - segment.yc }
+        const v1 = { x: segment.x - segment.xc, y: segment.y - segment.yc }
+
+        const dotComp = dot(v1.x, v1.y, v2.x, v2.y)
+        const detComp = det(v1.x, v1.y, v2.x, v2.y)
+        let angle = Math.atan2(detComp, dotComp)
+        angle = Math.abs(angle)
+        if (angle == 0) {
+          angle = Math.PI * 2
+        }
+        const radius = Math.sqrt((segment.x - segment.xc) ** 2 + (segment.y - segment.yc) ** 2)
+        const segments: number[] = []
+        const steps = 100
+        if (segment.clockwise === 1) {
+          angle = -angle
+        }
+        for (let i = 1; i <= steps; i++) {
+          const a = angle * (i / steps) + start_angle
+          segments.push(segment.xc + Math.cos(a) * radius, segment.yc + Math.sin(a) * radius)
+        }
+        segments.push(segment.x, segment.y)
+        previous = { x: segment.x, y: segment.y }
+        return segments
+      }
+    })
+    vertices.unshift(contour.xs, contour.ys)
+    return vertices
+  }
 }
 
 export class SymbolShaderCollection {
@@ -677,7 +753,10 @@ export class SymbolShaderCollection {
 
   protected makeUnique(symbol: Symbols.StandardSymbol): string {
     if (this.symbols.has(symbol.id)) {
-      if (this.symbols.get(symbol.id)!.array.toString() == symbol.array.toString()) {
+      if (
+        this.getSymbolParameters(symbol).toString() ==
+        this.getSymbolParameters(this.symbols.get(symbol.id)!).toString()
+      ) {
         // console.log(`Identical Symbol with id ${symbol.id} already exists`)
         symbol.sym_num = this.symbols.get(symbol.id)!.sym_num
         return symbol.id
@@ -692,6 +771,10 @@ export class SymbolShaderCollection {
       return this.makeUnique(symbol)
     }
     return symbol.id
+  }
+
+  protected getSymbolParameters(symbol: Symbols.StandardSymbol): number[] {
+    return SYMBOL_PARAMETERS.map((key) => symbol[key])
   }
 
   public add(symbol: Symbols.StandardSymbol): this {
@@ -719,7 +802,7 @@ export class SymbolShaderCollection {
     const symbols = Array.from(this.symbols.values()).map((symbol, i) => {
       // symbol.sym_num = i
       onChange.target(symbol).sym_num.value = i
-      return symbol.array
+      return this.getSymbolParameters(symbol)
     })
     this.texture({
       width: SYMBOL_PARAMETERS.length,
@@ -759,12 +842,13 @@ export class MacroShaderCollection {
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
     if (this.macros.has(symbol.id)) {
-      if (this.macros.get(symbol.id)!.macro.shapes.toString() == symbol.shapes.toString()) {
-        // console.log(`Identical Macro with id ${symbol.id} already exists`)
-        const sym = this.macros.get(symbol.id)
-        symbol = sym!.macro
-        return symbol.id
-      }
+      // ** Always make macros unique
+      // if (this.macros.get(symbol.id)!.macro.shapes.toString() == symbol.shapes.toString()) {
+      //   // console.log(`Identical Macro with id ${symbol.id} already exists`)
+      //   const sym = this.macros.get(symbol.id)
+      //   symbol = sym!.macro
+      //   return symbol.id
+      // }
       // console.log(`Unsimilar Macro with id ${symbol.id} already exists`)
       if (symbol.id.match(/\+\d+$/)) {
         const [base, count] = symbol.id.split('+')
@@ -928,9 +1012,8 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const angle2 = angle + Math.PI / 2
         const offsetx = Math.cos(angle2) * -(height / 2)
         const offsety = Math.sin(angle2) * -(height / 2)
-        const tringle = new Symbols.StandardSymbol({
+        const tringle = new Symbols.TriangleSymbol({
           id: 'polyline-chamfer',
-          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
           width: base,
           height: height
         })
@@ -954,9 +1037,8 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const angle2 = angle + Math.PI / 2
         const offsetx = Math.cos(angle2) * -(height / 2)
         const offsety = Math.sin(angle2) * -(height / 2)
-        const tringle = new Symbols.StandardSymbol({
+        const tringle = new Symbols.TriangleSymbol({
           id: 'polyline-chamfer',
-          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
           width: base,
           height: height
         })
@@ -972,9 +1054,8 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
         const height2 = Math.abs((base / 2) * Math.tan(deltaAngle / 2))
         const offsetx2 = Math.cos(angle2) * -(height + height2 / 2)
         const offsety2 = Math.sin(angle2) * -(height + height2 / 2)
-        const tringle2 = new Symbols.StandardSymbol({
+        const tringle2 = new Symbols.TriangleSymbol({
           id: 'polyline-chamfer',
-          symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle,
           width: base,
           height: height2
         })
