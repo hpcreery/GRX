@@ -27,14 +27,14 @@ import {
 import type {Tool} from '../tool-store'
 import type {Location} from '../location-store'
 
-import { FeatureTypeIdentifyer } from '@renderer/rendererv2/types'
+import { FeatureTypeIdentifyer } from '@src/rendererv2/types'
 
 export const CW = 'cw'
 export const CCW = 'ccw'
 
 export type ArcDirection = typeof CW | typeof CCW
 
-import * as Shapes from '@renderer/rendererv2/shapes'
+import * as Shapes from '@src/rendererv2/shapes'
 import { ApertureTransform } from '../aperture-transform-store'
 
 export interface GraphicPlotter {

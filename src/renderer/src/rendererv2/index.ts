@@ -151,6 +151,11 @@ export class RenderEngine {
     backend.addLayer(params)
   }
 
+  public async addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'>}): Promise<void> {
+    const backend = await this.backend
+    backend.addFile(params)
+  }
+
   public async render(force = false): Promise<void> {
     const backend = await this.backend
     backend.render(force)
@@ -159,9 +164,7 @@ export class RenderEngine {
   public async destroy(): Promise<void> {
     const backend = await this.backend
     backend.destroy()
-    // Worker[Comlink.releaseProxy]()
-    // @ts-ignore - force garbage collection
-    // this.worker = undefined
+    Worker[Comlink.releaseProxy]()
     this.CONTAINER.innerHTML = ''
     this.CONTAINER.onwheel = null
     this.CONTAINER.onmousedown = null

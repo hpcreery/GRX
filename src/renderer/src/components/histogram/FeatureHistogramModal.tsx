@@ -1,5 +1,5 @@
-import { THistogram } from '@renderer/renderer/types'
-import VirtualGerberApplication from '@renderer/renderer/virtual'
+import { THistogram } from '@src/renderer/types'
+import VirtualGerberApplication from '@src/renderer/virtual'
 import { Modal, Table, Loader, Center } from '@mantine/core'
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useDisclosure } from '@mantine/hooks'

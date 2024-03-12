@@ -3,8 +3,8 @@
 import type { GerberNode, SimpleShape, HoleShape, MacroBlock } from '@hpcreery/tracespace-parser'
 import { MACRO_SHAPE, TOOL_CHANGE, TOOL_DEFINITION, TOOL_MACRO } from '@hpcreery/tracespace-parser'
 
-// import * as Shapes from '@renderer/rendererv2/shapes'
-import * as Symbols from '@renderer/rendererv2/symbols'
+// import * as Shapes from '@src/rendererv2/shapes'
+import * as Symbols from '@src/rendererv2/symbols'
 
 import { createMacro } from './graphic-plotter/plot-macro'
 

@@ -3,6 +3,8 @@ import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers } from './collections'
 import * as Comlink from 'comlink'
+import plugins, { initializeParsers } from './plugins'
+import type { parser } from './plugins'
 
 interface WorldProps {}
 
@@ -84,6 +86,7 @@ export class RenderEngineBackend {
   }
 
   public offscreenCanvas: OffscreenCanvas
+
   public viewBox: {
     width: number
     height: number
@@ -120,10 +123,14 @@ export class RenderEngineBackend {
 
   public layers: LayerRenderer[] = []
 
-  regl: REGL.Regl
-  world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+  public regl: REGL.Regl
+  private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
-  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+  private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+
+  public parsers: {
+    [key: string]: parser
+  } = {}
 
   constructor(
     offscreenCanvas: OffscreenCanvas,
@@ -150,6 +157,7 @@ export class RenderEngineBackend {
     console.log('WEBGL LIMITS', this.regl.limits)
 
     initializeRenderers(this.regl)
+    initializeParsers(this)
 
     this.regl.clear({
       depth: 0
@@ -364,6 +372,15 @@ export class RenderEngineBackend {
     })
     this.layers.push(layer)
     this.render(true)
+  }
+
+  public addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'>}): void {
+    const parser = this.parsers[params.format]
+    if (parser) {
+      parser(params.file, params.props).then(() => this.render(true))
+    } else {
+      console.error('No parser found for format: ' + params.format)
+    }
   }
 
   public getLayers(): Omit<LayerRendererProps, 'regl' | 'transform' | 'image'>[] {

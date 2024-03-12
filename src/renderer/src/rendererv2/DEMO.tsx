@@ -9,8 +9,16 @@ import { Button, Switch, Badge, Box } from '@mantine/core'
 // import { vec2 } from 'gl-matrix'
 import { PointerEvent, PointerEvents } from '.'
 
-import { addGDSII } from '../../lib/gdsii/index'
-import { addGerber } from '../../lib/gerber'
+import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
+
+import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
+import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
+import gko from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?raw'
+import plc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?raw'
+import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
+import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
+import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
+import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
 
 import earcut from 'earcut'
 import { LayerRendererProps } from './layer'
@@ -879,53 +887,53 @@ function REGLApp(): JSX.Element {
       ]
     })
 
-    Engine.addLayer({
-      name: 'pads',
-      // transform: {
-      //   datum: [0.5, 0],
-      //   scale: 1,
-      //   rotation: 0,
-      //   mirror: 1,
-      // },
-      image: PAD_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'pads',
+    //   // transform: {
+    //   //   datum: [0.5, 0],
+    //   //   scale: 1,
+    //   //   rotation: 0,
+    //   //   mirror: 1,
+    //   // },
+    //   image: PAD_RECORDS_ARRAY
+    // })
 
-    Engine.addLayer({
-      name: '+/- lines',
-      transform: {
-        // datum: [0.5, 0],
-        // scale: 1,
-        // rotation: 0,
-        // mirror: true,
-      },
-      image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
-    })
+    // Engine.addLayer({
+    //   name: '+/- lines',
+    //   transform: {
+    //     // datum: [0.5, 0],
+    //     // scale: 1,
+    //     // rotation: 0,
+    //     // mirror: true,
+    //   },
+    //   image: [...LINE_RECORDS_ARRAY_POS, ...LINE_RECORDS_ARRAY_NEG]
+    // })
 
-    Engine.addLayer({
-      name: '-/+ lines',
-      transform: {
-        // datum: [0.5, 0],
-        // scale: 1,
-        // rotation: 0,
-        // mirror: true,
-      },
-      image: [...LINE_RECORDS_ARRAY_NEG, ...LINE_RECORDS_ARRAY_POS]
-    })
+    // Engine.addLayer({
+    //   name: '-/+ lines',
+    //   transform: {
+    //     // datum: [0.5, 0],
+    //     // scale: 1,
+    //     // rotation: 0,
+    //     // mirror: true,
+    //   },
+    //   image: [...LINE_RECORDS_ARRAY_NEG, ...LINE_RECORDS_ARRAY_POS]
+    // })
 
     // const layer2 = Engine.addLayer({
     //   name: 'layer2',
     //   image: ARC_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'layer3',
-      image: MACRO_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'layer3',
+    //   image: MACRO_RECORDS_ARRAY
+    // })
 
-    const macroLayer = Engine.addLayer({
-      name: 'overlapping-macro',
-      image: OVERLAPPING_MACRO_RECORDS_ARRAY
-    })
+    // const macroLayer = Engine.addLayer({
+    //   name: 'overlapping-macro',
+    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // })
 
     // const polylineLayer = Engine.addLayer({
     //   name: 'polyline',
@@ -991,16 +999,16 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: 'surfaces',
-      visible: true,
-      image: SURFACE_RECORDS_ARRAY
-    })
+    // Engine.addLayer({
+    //   name: 'surfaces',
+    //   visible: true,
+    //   image: SURFACE_RECORDS_ARRAY
+    // })
 
-    Engine.addLayer({
-      name: 'validation',
-      image: [VALIDATION_ARC, VALIDATION_LINE]
-    })
+    // Engine.addLayer({
+    //   name: 'validation',
+    //   image: [VALIDATION_ARC, VALIDATION_LINE]
+    // })
 
     // Engine.addLayer({
     //   name: 'polygon',
@@ -1009,15 +1017,73 @@ function REGLApp(): JSX.Element {
 
     // addGDSII(Engine)
     // addGerber(Engine)
+    Engine.addFile({
+      file: cmp,
+      format: 'rs274x',
+      props: {
+        name: 'cmp',
+      }
+    })
+    Engine.addFile({
+      file: drd,
+      format: 'rs274x',
+      props: {
+        name: 'drd',
+      }
+    })
+    Engine.addFile({
+      file: gko,
+      format: 'rs274x',
+      props: {
+        name: 'gko',
+      }
+    })
+    Engine.addFile({
+      file: plc,
+      format: 'rs274x',
+      props: {
+        name: 'plc',
+        visible: true,
+      }
+    })
+    Engine.addFile({
+      file: pls,
+      format: 'rs274x',
+      props: {
+        name: 'pls',
+      }
+    })
+    Engine.addFile({
+      file: stc,
+      format: 'rs274x',
+      props: {
+        name: 'stc',
+      }
+    })
+    Engine.addFile({
+      file: sts,
+      format: 'rs274x',
+      props: {
+        name: 'sts',
+      }
+    })
+    Engine.addFile({
+      file: sol,
+      format: 'rs274x',
+      props: {
+        name: 'sol',
+      }
+    })
+
+    Engine.addFile({
+      file: gdsiiFile,
+      format: 'gdsii',
+      props: {
+        name: 'gdsii',
+      }
+    })
 
 
-    setTimeout(() => {
-      console.log('setting layers visible')
-      Engine.backend.then(engine => engine.getLayers().then(layers => {
-        setLayers(layers)
-        layers.map(l => engine.setLayerProps(l.name, { visible: true }))
-      }))
-    }, 3000)
     Engine.render(true)
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
@@ -1027,10 +1093,7 @@ function REGLApp(): JSX.Element {
 
     return () => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
-      console.log('IS THIS GETTING CALLED???')
       Engine.destroy()
-      // @ts-ignore asdf
-      Engine = null
     }
 
   }, [])
@@ -1072,6 +1135,10 @@ function REGLApp(): JSX.Element {
             onChange={(e): void => {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
+              engine.backend.then(engine => engine.getLayers().then(layers => {
+                setLayers(layers)
+                layers.map(l => engine.setLayerProps(l.name, { visible: true }))
+              }))
             }} />
           <br />
           Zoom To Cursor

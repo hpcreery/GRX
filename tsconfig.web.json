@@ -11,9 +11,12 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": [
+      "@src/*": [
         "src/renderer/src/*"
-      ]
+      ],
+      "@lib/*": [
+        "src/renderer/lib/*"
+      ],
     },
     "types": [
       "vite-plugin-glsl/ext"

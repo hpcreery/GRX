@@ -20,8 +20,8 @@ import * as Tree from '../tree'
 import type { MacroTool } from '../tool-store'
 
 
-import * as Symbols from '@renderer/rendererv2/symbols'
-import * as Shapes from '@renderer/rendererv2/shapes'
+import * as Symbols from '@src/rendererv2/symbols'
+import * as Shapes from '@src/rendererv2/shapes'
 
 type VariableValues = Record<string, number>
 

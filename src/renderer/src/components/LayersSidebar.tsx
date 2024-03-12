@@ -13,7 +13,7 @@ import {
 import { Dropzone } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
-import { TRendererLayer } from '@renderer/renderer/types'
+import { TRendererLayer } from '@src/renderer/types'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
