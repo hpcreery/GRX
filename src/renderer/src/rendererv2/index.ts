@@ -57,14 +57,12 @@ export class RenderEngine {
   )
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
-  // private worker: Comlink.Remote<typeof RenderEngineBackend>
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvas: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
     this.canvas = this.createCanvas()
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
-    // this.worker = Comlink.wrap<typeof RenderEngineBackend>(new EngineWorker())
     this.backend = new Worker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
@@ -88,14 +86,25 @@ export class RenderEngine {
     })
   }
 
-  public async getWorldPositionFromMouse(e: MouseEvent): Promise<[number, number]> {
+  public getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+    // Get the mouse position relative to the canvas
+    const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
+    return [e.clientX - offsetX, height - (e.clientY - offsetY)]
+  }
+
+  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
     const backend = await this.backend
-    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
-    const mouse_element_pos = [e.clientX - offsetX, e.clientY - offsetY]
+    const { width, height } = this.CONTAINER.getBoundingClientRect()
+    const mouse_element_pos = this.getMouseCanvasCoordinates(e)
+
+    // Normalize the mouse position to the canvas
     const mouse_normalize_pos = [
       mouse_element_pos[0] / width,
-      (height - mouse_element_pos[1]) / height
+      mouse_element_pos[1] / height
     ]
+    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
     return await backend.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
   }
 
@@ -105,7 +114,7 @@ export class RenderEngine {
       mouse: MouseEvent,
       event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
     ): Promise<void> => {
-      const [x, y] = await this.getWorldPositionFromMouse(mouse)
+      const [x, y] = await this.getMouseWorldCoordinates(mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
           detail: { x, y }
@@ -123,10 +132,8 @@ export class RenderEngine {
     }
     this.CONTAINER.onmousedown = async (e): Promise<void> => {
       await backend.grabViewport()
-      const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-      const xpos = e.clientX - offsetX
-      const ypos = height - (e.clientY - offsetY)
-      backend.sample(xpos * window.devicePixelRatio, ypos * window.devicePixelRatio)
+      const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
+      backend.sample(xpos, ypos)
 
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
