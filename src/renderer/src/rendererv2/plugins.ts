@@ -1,22 +1,20 @@
-import { plugin as gdsiiPlugin } from '@lib/gdsii'
-import { plugin as gerberPlugin } from '@lib/gerber'
-import { RenderEngineBackend } from './engine'
+import gdsiiPluginWorker from '@lib/gdsii?worker'
+import gerberPluginWorker from '@lib/gerber?worker'
 import { LayerRendererProps } from './layer'
+import * as Comlink from 'comlink'
 
-export type parser = (file: string, props: Partial<Omit<LayerRendererProps, "regl" | "image">>) => Promise<void>
-export type plugin = (engine: RenderEngineBackend) => parser
+export type parser = (file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void) => Promise<void>
+
 
 const plugins: {
-  [key: string]: plugin
+  [key: string]: new () => Worker
 } = {
-  gdsii: gdsiiPlugin,
-  rs274x: gerberPlugin
+  gdsii: gdsiiPluginWorker,
+  rs274x: gerberPluginWorker
 }
 
-export function initializeParsers(engine: RenderEngineBackend): void {
-  for (const [key, plugin] of Object.entries(plugins)) {
-    engine.parsers[key] = plugin(engine)
-  }
+export function registerFunction(plugin: parser): void {
+  Comlink.expose(plugin)
 }
 
 export default plugins

@@ -3,7 +3,7 @@ import { mat3, vec2 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers } from './collections'
 import * as Comlink from 'comlink'
-import plugins, { initializeParsers } from './plugins'
+import plugins from './plugins'
 import type { parser } from './plugins'
 
 interface WorldProps {}
@@ -157,7 +157,7 @@ export class RenderEngineBackend {
     console.log('WEBGL LIMITS', this.regl.limits)
 
     initializeRenderers(this.regl)
-    initializeParsers(this)
+    // initializeParsers(this)
 
     this.regl.clear({
       depth: 0
@@ -366,6 +366,7 @@ export class RenderEngineBackend {
   }
 
   public addLayer(params: Omit<LayerRendererProps, 'regl'>): void {
+    console.log(this)
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl
@@ -375,9 +376,15 @@ export class RenderEngineBackend {
   }
 
   public addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'>}): void {
-    const parser = this.parsers[params.format]
-    if (parser) {
-      parser(params.file, params.props).then(() => this.render(true))
+    const pluginWorker = plugins[params.format]
+    if (pluginWorker) {
+      const callback = (params: Omit<LayerRendererProps, "regl">): void => this.addLayer(params)
+      const instance = new pluginWorker()
+      const parser = Comlink.wrap<parser>(instance)
+      parser(params.file, params.props, Comlink.proxy(callback)).then(() => {
+        parser[Comlink.releaseProxy]()
+        instance.terminate()
+      })
     } else {
       console.error('No parser found for format: ' + params.format)
     }

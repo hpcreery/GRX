@@ -10,42 +10,23 @@ import * as LEXER from './lexer'
 import * as PARSER from './parser'
 import * as CONVERTER from './converter'
 
-// import type { RenderEngine } from '@src/rendererv2'
-import { RenderEngineBackend } from '@src/rendererv2/engine'
-import { LayerRendererProps } from '@src/rendererv2/layer'
+import type { LayerRendererProps } from '@src/rendererv2/layer'
+import { registerFunction } from '@src/rendererv2/plugins'
 
-import type { parser } from '@src/rendererv2/plugins'
+export async function plugin(file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+  const buffer = await (await fetch(file)).arrayBuffer()
+  const tokens = LEXER.record_reader(buffer)
+  const bnf = PARSER.parse(tokens)
+  const layerHierarchy = CONVERTER.convert(bnf)
 
-// export async function addGDSII(engine: RenderEngine): Promise<void> {
-//   const buffer = await (await fetch(gdsiiFile)).arrayBuffer()
-//   // console.log(utils.buf2hex(buffer))
-//   const tokens = LEXER.record_reader(buffer)
-//   const bnf = PARSER.parse(tokens)
-//   const layerHierarchy = CONVERTER.convert(bnf)
-
-//   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-//     engine.addLayer({
-//       name: layer,
-//       image: shapes.shapes
-//     })
-//   }
-// }
-
-export function plugin(engine: RenderEngineBackend): parser {
-  const parseGDSII = async (file: string, props: Partial<Omit<LayerRendererProps, "regl">>): Promise<void> => {
-    const buffer = await (await fetch(file)).arrayBuffer()
-    const tokens = LEXER.record_reader(buffer)
-    const bnf = PARSER.parse(tokens)
-    const layerHierarchy = CONVERTER.convert(bnf)
-
-    for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-      delete props.name
-      engine.addLayer({
-        name: layer,
-        image: shapes.shapes,
-        ...props
-      })
-    }
+  for (const [layer, shapes] of Object.entries(layerHierarchy)) {
+    delete props.name
+    addLayer({
+      name: layer,
+      image: shapes.shapes,
+      ...props
+    })
   }
-  return parseGDSII
 }
+
+registerFunction(plugin)

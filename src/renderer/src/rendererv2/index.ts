@@ -3,7 +3,8 @@ import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { RenderEngineBackend, RenderSettings } from './engine'
 
-export const Worker = Comlink.wrap<typeof RenderEngineBackend>(new EngineWorker())
+const Worker = new EngineWorker()
+export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
 export interface RenderEngineFrontendConfig {
   container: HTMLElement
@@ -63,7 +64,7 @@ export class RenderEngine {
     this.CONTAINER = container
     this.canvas = this.createCanvas()
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
-    this.backend = new Worker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
     this.render(true)
@@ -171,7 +172,9 @@ export class RenderEngine {
   public async destroy(): Promise<void> {
     const backend = await this.backend
     backend.destroy()
-    Worker[Comlink.releaseProxy]()
+    ComWorker[Comlink.releaseProxy]()
+    Worker.terminate()
+
     this.CONTAINER.innerHTML = ''
     this.CONTAINER.onwheel = null
     this.CONTAINER.onmousedown = null

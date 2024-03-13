@@ -26,11 +26,11 @@ import { LayerRendererProps } from './layer'
 const a = earcut([0, 0, 100, 0, 100, 100, 0, 100, 20, 20, 80, 20, 80, 80, 20, 80], [4]);
 console.log(a)
 
-const N_PADS = 11
-const N_LINES = 50
-const N_ARCS = 50
-const N_SURFACES = 10
-const N_MACROS = 10
+const N_PADS = 0
+const N_LINES = 0
+const N_ARCS = 0
+const N_SURFACES = 0
+const N_MACROS = 0
 
 const SURFACE_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_SURFACES)
@@ -1075,13 +1075,14 @@ function REGLApp(): JSX.Element {
       }
     })
 
-    Engine.addFile({
-      file: gdsiiFile,
-      format: 'gdsii',
-      props: {
-        name: 'gdsii',
-      }
-    })
+
+    // Engine.addFile({
+    //   file: gdsiiFile,
+    //   format: 'gdsii',
+    //   props: {
+    //     name: 'gdsii',
+    //   }
+    // })
 
 
     Engine.render(true)
