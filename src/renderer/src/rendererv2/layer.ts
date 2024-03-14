@@ -23,7 +23,7 @@ import { WorldContext } from './engine'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
-interface CommonAttributes {}
+interface CommonAttributes { }
 
 interface CommonUniforms {
   u_Transform: mat3
@@ -158,7 +158,7 @@ export class ShapeRenderer {
         ) => {
           const ioff =
             (this.transform.index * (context.qtyFeaturesRef ?? 1)) /
-              (context.prevQtyFeaturesRef ?? 1) || 0
+            (context.prevQtyFeaturesRef ?? 1) || 0
           return ioff
         },
         u_QtyFeatures: (
@@ -193,8 +193,12 @@ export class ShapeRenderer {
   private drawMacros(context: REGL.DefaultContext & WorldContext): this {
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
+        const oldTransform = context.transform.matrix
         macro.renderer.updateTransformFromPad(record)
+        macro.renderer.transform.update(context.transform.matrix)
+        context.transform.matrix = macro.renderer.transform.matrix
         macro.renderer.render(context)
+        context.transform.matrix = oldTransform
       })
     })
     return this
@@ -219,13 +223,11 @@ export class ShapeRenderer {
       this.surfaceFrameBuffer.use(() => {
         this.drawSurfaces(attachment)
       })
-      this.commonConfig(() => {
-        this.flattenSurfaces({
-          renderTexture: this.surfaceFrameBuffer,
-          index: attachment.index,
-          qtyFeatures: this.qtyFeatures,
-          polarity: attachment.polarity
-        })
+      this.flattenSurfaces({
+        renderTexture: this.surfaceFrameBuffer,
+        index: attachment.index,
+        qtyFeatures: this.qtyFeatures,
+        polarity: attachment.polarity
       })
     })
     return this
@@ -311,7 +313,7 @@ interface LayerUniforms {
   u_Color: vec3
 }
 
-interface LayerAttributes {}
+interface LayerAttributes { }
 
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
@@ -464,8 +466,12 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
 
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.repeats.forEach((repeat) => {
+      const origTransform = context.transform.matrix
       this.updateTransformFromRepeat(repeat)
+      this.transform.update(context.transform.matrix)
+      context.transform.matrix = this.transform.matrix
       super.render(context)
+      context.transform.matrix = origTransform
     })
   }
 }
