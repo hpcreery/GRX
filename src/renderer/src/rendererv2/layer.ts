@@ -3,7 +3,7 @@ import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 // import onChange from 'on-change'
-import { Transform } from './types'
+import { Binary, Transform } from './types'
 import {
   ArcAttachments,
   FrameBufferRendeAttachments,
@@ -47,7 +47,8 @@ class ShapeTransfrom implements Transform {
   public datum: vec2 = vec2.create()
   public rotation = 0
   public scale = 1
-  public mirror = 0
+  public mirror_x: Binary = 0
+  public mirror_y: Binary = 0
   public order: ("scale" | "mirror" | "rotate" | "translate")[] | undefined = ['rotate', 'translate', 'scale', 'mirror']
   public index = 0
   public polarity = 1
@@ -69,7 +70,7 @@ class ShapeTransfrom implements Transform {
           mat3.rotate(this.matrix, this.matrix, rotation * (Math.PI / 180))
           break
         case 'mirror':
-          mat3.scale(this.matrix, this.matrix, [1, this.mirror ? -1 : 1])
+          mat3.scale(this.matrix, this.matrix, [this.mirror_x ? -1 : 1, this.mirror_y ? -1 : 1])
           break
       }
     }
@@ -128,9 +129,9 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    // this.records.push(...props.image)
     this.records = props.image
     this.indexRecords()
+
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
       records: this.records
@@ -404,7 +405,8 @@ export class MacroRenderer extends ShapeRenderer {
     transform.datum = vec2.fromValues(pad.x, pad.y)
     transform.rotation = pad.rotation
     transform.scale = pad.resize_factor
-    transform.mirror = pad.mirror
+    transform.mirror_x = pad.mirror_x
+    transform.mirror_y = pad.mirror_y
     return transform
   }
 

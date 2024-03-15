@@ -30,7 +30,8 @@ varying vec2 v_Location;
 varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
-varying float v_Mirror;
+varying float v_Mirror_X;
+varying float v_Mirror_Y;
 
 //////////////////////////////
 // Rotation and translation //
@@ -78,8 +79,11 @@ void main() {
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
   vec2 OffsetPosition = TransformedPosition.xy - v_Location;
-  if (v_Mirror == 1.0) {
+  if (v_Mirror_X == 1.0) {
     OffsetPosition.x = -OffsetPosition.x;
+  }
+  if (v_Mirror_Y == 1.0) {
+    OffsetPosition.y = -OffsetPosition.y;
   }
   vec2 FragCoord = OffsetPosition * rotateCW(radians(v_Rotation)) / v_ResizeFactor;
 

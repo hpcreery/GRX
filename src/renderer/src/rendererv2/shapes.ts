@@ -10,7 +10,8 @@ export const PAD_RECORD_PARAMETERS = [
   'resize_factor',
   'polarity',
   'rotation',
-  'mirror'
+  'mirror_x',
+  'mirror_y',
 ] as const
 export const LINE_RECORD_PARAMETERS = [
   'index',
@@ -64,7 +65,8 @@ export class Pad implements TPad_Record, IPlotRecord {
   public resize_factor = 1
   public rotation = 0
   public polarity: Binary = 1
-  public mirror: Binary = 0
+  public mirror_x: Binary = 0
+  public mirror_y: Binary = 0
 
   constructor(record: Partial<Omit<TPad_Record, 'sym_num' | 'type'> & { symbol: Symbols.Symbol }>) {
     Object.assign(this, record)

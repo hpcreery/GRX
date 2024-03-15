@@ -46,7 +46,8 @@ interface PadAttributes {
   a_Index: CustomAttributeConfig
   a_Polarity: CustomAttributeConfig
   a_Rotation: CustomAttributeConfig
-  a_Mirror: CustomAttributeConfig
+  a_Mirror_X: CustomAttributeConfig
+  a_Mirror_Y: CustomAttributeConfig
 }
 
 interface LineAttributes {
@@ -210,10 +211,17 @@ export function initializeRenderers(regl: REGL.Regl): void {
         divisor: 1
       },
 
-      a_Mirror: {
+      a_Mirror_X: {
         buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.mirror * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+        divisor: 1
+      },
+
+      a_Mirror_Y: {
+        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
         divisor: 1
       }
     },

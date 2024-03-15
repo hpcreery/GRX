@@ -32,7 +32,8 @@ attribute float a_SymNum;
 attribute float a_ResizeFactor;
 attribute float a_Polarity;
 attribute float a_Rotation;
-attribute float a_Mirror;
+attribute float a_Mirror_X;
+attribute float a_Mirror_Y;
 
 // PAD VARYINGS
 varying float v_Index;
@@ -41,7 +42,8 @@ varying float v_SymNum;
 varying float v_ResizeFactor;
 varying float v_Polarity;
 varying float v_Rotation;
-varying float v_Mirror;
+varying float v_Mirror_X;
+varying float v_Mirror_Y;
 
 //////////////////////////////
 // Rotation and translation //
@@ -90,8 +92,11 @@ void main() {
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCCW(radians(a_Rotation));
-  if (a_Mirror == 1.0) {
+  if (a_Mirror_X == 1.0) {
     RotatedPostion.x = -RotatedPostion.x;
+  }
+  if (a_Mirror_Y == 1.0) {
+    RotatedPostion.y = -RotatedPostion.y;
   }
   vec2 OffsetPosition = RotatedPostion + a_Location;
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
@@ -101,7 +106,8 @@ void main() {
   v_SymNum = a_SymNum;
   v_Location = a_Location;
   v_Rotation = a_Rotation;
-  v_Mirror = a_Mirror;
+  v_Mirror_X = a_Mirror_X;
+  v_Mirror_Y = a_Mirror_Y;
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
 

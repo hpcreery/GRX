@@ -124,7 +124,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
                 rotation:
                   (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
                 scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
-                mirror: el.strans?.STRANS.reflectAboutX ? 1 : 0, // 0 = no mirror, 1 = mirror
+                mirror_x: el.strans?.STRANS.reflectAboutX ? 1 : 0, // 0 = no mirror, 1 = mirror
                 order: ['mirror', 'translate', 'rotate', 'scale']
               }
             ]

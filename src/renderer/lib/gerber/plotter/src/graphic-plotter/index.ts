@@ -101,7 +101,8 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         x: location.endPoint.x,
         y: location.endPoint.y,
         rotation: transform.rotation,
-        mirror: transform.mirror == 'x' ? 1 : 0,
+        mirror_x: transform.mirror == 'x' || transform.mirror == 'xy' ? 1 : 0,
+        mirror_y: transform.mirror == 'y' || transform.mirror == 'xy' ? 1 : 0,
         resize_factor: transform.scale,
         polarity: transform.polarity === DARK ? 1 : 0,
       }))

@@ -37,7 +37,8 @@ export interface Transform {
   datum: vec2
   rotation: number
   scale: number
-  mirror: number
+  mirror_x: Binary
+  mirror_y: Binary
   order?: TransformOrder
 }
 

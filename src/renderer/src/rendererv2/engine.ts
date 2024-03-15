@@ -5,14 +5,15 @@ import { initializeRenderers } from './collections'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { parser } from './plugins'
+import GridFrag from '../shaders/src/Grid.frag'
+import GridVert from '../shaders/src/Grid.vert'
 
-interface WorldProps {}
+interface WorldProps { }
 
 interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_Resolution: vec2
-  // u_Screen: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
 }
@@ -68,6 +69,21 @@ export interface RenderTransform {
   update: () => void
 }
 
+interface GridRenderProps {
+  enabled: boolean
+  spacing_x: number
+  spacing_y: number
+  offset_x: number
+  offset_y: number
+  type: 'dots' | 'lines'
+}
+
+interface GridRenderUniforms {
+  u_Spacing: vec2
+  u_Offset: vec2
+  u_Type: number
+}
+
 export class RenderEngineBackend {
 
   public settings: RenderSettings = {
@@ -104,6 +120,15 @@ export class RenderEngineBackend {
     }
   }
 
+  public grid: GridRenderProps = {
+      enabled: true,
+      spacing_x: 0.5,
+      spacing_y: 0.5,
+      offset_x: 0,
+      offset_y: 0,
+      type: 'dots'
+    }
+
   private dirty = true
 
   // public stats: Stats = {
@@ -127,6 +152,7 @@ export class RenderEngineBackend {
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+  private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
   public parsers: {
     [key: string]: parser
@@ -157,7 +183,6 @@ export class RenderEngineBackend {
     console.log('WEBGL LIMITS', this.regl.limits)
 
     initializeRenderers(this.regl)
-    // initializeParsers(this)
 
     this.regl.clear({
       depth: 0
@@ -173,14 +198,8 @@ export class RenderEngineBackend {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        // u_Resolution: (context) => [context.viewportWidth, context.viewportHeight],
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        // u_Screen: () => [
-        //   window.screen.width * window.devicePixelRatio,
-        //   window.screen.height * window.devicePixelRatio
-        // ],
-        // u_PixelSize: () => 0.0023 / (this.transform.zoom * window.devicePixelRatio),
-        u_PixelSize: () => 0.0023 / this.transform.zoom,
+        u_PixelSize: () => 0.003 / this.transform.zoom,
         u_OutlineMode: () => this.settings.OUTLINE_MODE
       },
 
@@ -204,6 +223,33 @@ export class RenderEngineBackend {
       count: 6,
       offset: 0
     })
+
+    this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
+      {
+        vert: GridVert,
+        frag: GridFrag,
+        uniforms: {
+          u_Spacing: (_context: REGL.DefaultContext, props: GridRenderProps) => [
+            props.spacing_x,
+            props.spacing_y
+          ],
+          u_Offset: (_context: REGL.DefaultContext, props: GridRenderProps) => [
+            props.offset_x,
+            props.offset_y
+          ],
+          u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => {
+            switch (props.type) {
+              case 'dots':
+                return 0
+              case 'lines':
+                return 1
+              default:
+                return 0
+          }
+        },
+        }
+      },
+    )
 
     this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
       {
@@ -375,7 +421,7 @@ export class RenderEngineBackend {
     this.render(true)
   }
 
-  public addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'>}): void {
+  public addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'> }): void {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
       const callback = (params: Omit<LayerRendererProps, "regl">): void => this.addLayer(params)
@@ -428,10 +474,11 @@ export class RenderEngineBackend {
     this.dirty = false
     this.regl.clear({
       color: this.settings.BACKGROUND_COLOR,
-      depth: 0
+      depth: 1
     })
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
+      if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.render(context)
@@ -467,14 +514,11 @@ Comlink.expose(RenderEngineBackend)
 
 export function logMatrix(matrix: mat3): void {
   console.log(
-    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${
-      Math.round(matrix[2] * 100) / 100
+    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${Math.round(matrix[2] * 100) / 100
     },\n` +
-      `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${
-        Math.round(matrix[5] * 100) / 100
-      },\n` +
-      `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${
-        Math.round(matrix[8] * 100) / 100
-      }`
+    `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${Math.round(matrix[5] * 100) / 100
+    },\n` +
+    `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
+    }`
   )
 }
