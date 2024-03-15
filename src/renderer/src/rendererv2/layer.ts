@@ -35,12 +35,47 @@ interface CommonUniforms {
   u_SymbolsTextureDimensions: vec2
 }
 
-interface ShapeTransfrom extends Transform {
-  index: number
-  polarity: number
-  matrix: mat3
-  inverseMatrix: mat3
-  update: (inputMatrix: mat3) => void
+// interface ShapeTransfrom extends Transform {
+//   index: number
+//   polarity: number
+//   matrix: mat3
+//   inverseMatrix: mat3
+//   update: (inputMatrix: mat3) => void
+// }
+
+class ShapeTransfrom implements Transform {
+  public datum: vec2 = vec2.create()
+  public rotation = 0
+  public scale = 1
+  public mirror = 0
+  public order: ("scale" | "mirror" | "rotate" | "translate")[] | undefined = ['rotate', 'translate', 'scale', 'mirror']
+  public index = 0
+  public polarity = 1
+  public matrix = mat3.create()
+  public inverseMatrix = mat3.create()
+  public update(inputMatrix: mat3): void {
+    const { rotation, scale, datum } = this
+    this.matrix = mat3.clone(inputMatrix)
+    if (!this.order) this.order = ['rotate', 'translate', 'scale', 'mirror']
+    for (const transform of this.order) {
+      switch (transform) {
+        case 'scale':
+          mat3.scale(this.matrix, this.matrix, [scale, scale])
+          break
+        case 'translate':
+          mat3.translate(this.matrix, this.matrix, datum)
+          break
+        case 'rotate':
+          mat3.rotate(this.matrix, this.matrix, rotation * (Math.PI / 180))
+          break
+        case 'mirror':
+          mat3.scale(this.matrix, this.matrix, [1, this.mirror ? -1 : 1])
+          break
+      }
+    }
+    mat3.invert(this.inverseMatrix, this.matrix)
+  }
+
 }
 
 export interface ShapeRendererProps {
@@ -84,18 +119,7 @@ export class ShapeRenderer {
   >
   public surfaceFrameBuffer: REGL.Framebuffer2D
 
-  public transform: ShapeTransfrom = {
-    datum: vec2.create(),
-    rotation: 0,
-    scale: 1,
-    mirror: 0,
-    order: ['rotate', 'translate', 'scale', 'mirror'], // // Default Order
-    index: 0,
-    polarity: 1,
-    matrix: mat3.create(),
-    inverseMatrix: mat3.create(),
-    update: (inputMatrix: mat3) => this.updateTransform(inputMatrix)
-  }
+  public transform: ShapeTransfrom = new ShapeTransfrom()
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
@@ -104,8 +128,9 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    this.records.push(...props.image)
-    this.index()
+    // this.records.push(...props.image)
+    this.records = props.image
+    this.indexRecords()
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
       records: this.records
@@ -193,12 +218,14 @@ export class ShapeRenderer {
   private drawMacros(context: REGL.DefaultContext & WorldContext): this {
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
-        const oldTransform = context.transform.matrix
-        macro.renderer.updateTransformFromPad(record)
-        macro.renderer.transform.update(context.transform.matrix)
-        context.transform.matrix = macro.renderer.transform.matrix
+        const origTransformMatrix = context.transform.matrix
+        const newTransfrom = macro.renderer.createTransfromMatrixFromPad(record)
+        newTransfrom.update(context.transform.matrix)
+        context.transform.matrix = newTransfrom.matrix
+        macro.renderer.transform.index = record.index
+        macro.renderer.transform.polarity = record.polarity
         macro.renderer.render(context)
-        context.transform.matrix = oldTransform
+        context.transform.matrix = origTransformMatrix
       })
     })
     return this
@@ -233,46 +260,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public updateTransform(inputMatrix: mat3): void {
-    const { rotation, scale, datum } = this.transform
-    this.transform.matrix = mat3.clone(inputMatrix)
-    if (!this.transform.order) this.transform.order = ['rotate', 'translate', 'scale', 'mirror']
-    for (const transform of this.transform.order) {
-      switch (transform) {
-        case 'scale':
-          mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
-          break
-        case 'translate':
-          mat3.translate(this.transform.matrix, this.transform.matrix, datum)
-          break
-        case 'rotate':
-          mat3.rotate(this.transform.matrix, this.transform.matrix, rotation * (Math.PI / 180))
-          break
-        case 'mirror':
-          mat3.scale(this.transform.matrix, this.transform.matrix, [
-            1,
-            this.transform.mirror ? -1 : 1
-          ])
-          break
-      }
-    }
-
-    // GDSII order
-    // mat3.scale(this.transform.matrix, inputMatrix, [1, this.transform.mirror ? -1 : 1])
-    // mat3.translate(this.transform.matrix, this.transform.matrix, this.transform.mirror ? [datum[0], -datum[1]] : datum)
-    // mat3.rotate(this.transform.matrix, this.transform.matrix, (this.transform.mirror ? -1 : 1)*rotation * (Math.PI / 180))
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
-
-    // Default Order
-    // mat3.rotate(this.transform.matrix, inputMatrix, rotation * (Math.PI / 180))
-    // mat3.translate(this.transform.matrix, this.transform.matrix, datum)
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [scale, scale])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [this.transform.mirror ? -1 : 1, 1])
-
-    mat3.invert(this.transform.inverseMatrix, this.transform.matrix)
-  }
-
-  public index(): this {
+  public indexRecords(): this {
     this.records.map((record, i) => (record.index = i))
     return this
   }
@@ -407,12 +395,17 @@ export class MacroRenderer extends ShapeRenderer {
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {
-    this.transform.datum = vec2.fromValues(pad.x, pad.y)
-    this.transform.rotation = pad.rotation
-    this.transform.scale = pad.resize_factor
-    this.transform.mirror = pad.mirror
     this.transform.index = pad.index
     this.transform.polarity = pad.polarity
+  }
+
+  public createTransfromMatrixFromPad(pad: Shapes.Pad): ShapeTransfrom {
+    const transform = new ShapeTransfrom()
+    transform.datum = vec2.fromValues(pad.x, pad.y)
+    transform.rotation = pad.rotation
+    transform.scale = pad.resize_factor
+    transform.mirror = pad.mirror
+    return transform
   }
 
   public render(
@@ -448,30 +441,21 @@ export class MacroRenderer extends ShapeRenderer {
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
   public repeats: Transform[]
+  // TODO: index should be assigned to this.transform
 
   constructor(props: ShapeRendererProps & { repeats: Transform[] }) {
     super(props)
     this.repeats = props.repeats
   }
 
-  public updateTransformFromRepeat(repeat: Transform): void {
-    this.transform.datum = repeat.datum
-    this.transform.rotation = repeat.rotation
-    this.transform.scale = repeat.scale
-    this.transform.mirror = repeat.mirror
-    this.transform.order = repeat.order
-    this.transform.index = 0
-    this.transform.polarity = 1
-  }
-
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.repeats.forEach((repeat) => {
-      const origTransform = context.transform.matrix
-      this.updateTransformFromRepeat(repeat)
-      this.transform.update(context.transform.matrix)
-      context.transform.matrix = this.transform.matrix
+      const origTransformMatrix = context.transform.matrix
+      const newTransfrom = Object.assign(new ShapeTransfrom(), repeat)
+      newTransfrom.update(context.transform.matrix)
+      context.transform.matrix = newTransfrom.matrix
       super.render(context)
-      context.transform.matrix = origTransform
+      context.transform.matrix = origTransformMatrix
     })
   }
 }
