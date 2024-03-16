@@ -3,10 +3,10 @@ uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
-varying vec2 v_UV;
 uniform vec2 u_Spacing;
 uniform vec2 u_Offset;
 uniform int u_Type;
+uniform vec4 u_Color;
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
   float pixel_size = u_PixelSize / scale;
@@ -20,11 +20,11 @@ void main() {
   float modx = mod(FragCoord.x - u_Offset.x, u_Spacing.x);
   if (u_Type == 0) {
     if ((modx < pixel_size || modx > u_Spacing.x - pixel_size) && (mody < pixel_size|| mody > u_Spacing.y - pixel_size)) {
-      gl_FragColor = vec4(1, 1, 1, 0.1);
+      gl_FragColor = vec4(u_Color);
     }
   } else if (u_Type == 1) {
     if ((modx < pixel_size * 0.5 || modx > u_Spacing.x - pixel_size * 0.5) || (mody < pixel_size * 0.5 || mody > u_Spacing.y - pixel_size * 0.5)) {
-      gl_FragColor = vec4(1, 1, 1, 0.1);
+      gl_FragColor = vec4(u_Color);
     }
   } else {
     discard;
