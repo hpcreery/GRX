@@ -145,6 +145,14 @@ export type PLEX = {
   plex: number
 }
 
+export type BGNEXTN = {
+  bgnextn: number
+}
+
+export type ENDEXTN = {
+  endextn: number
+}
+
 export type TAPENUM = {
   tapenum: number
 }
@@ -218,6 +226,8 @@ export type path = {
   DATATYPE: DATATYPE
   PATHTYPE?: PATHTYPE
   WIDTH?: WIDTH
+  BGNEXTN?: BGNEXTN
+  ENDEXTN?: ENDEXTN
   XY: XY
 }
 

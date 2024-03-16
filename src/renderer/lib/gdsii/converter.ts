@@ -1,7 +1,6 @@
-import { vec2, Vec2 } from 'gl-matrix'
+import { vec2 } from 'gl-matrix'
 
 import * as TREE from './gdsii_tree'
-import * as Symbols from '../../src/rendererv2/symbols'
 import * as Shapes from '../../src/rendererv2/shapes'
 
 // CELL structure and DATATYPE information is lost in the conversion.
@@ -23,8 +22,8 @@ type LayerHierarchy = {
 }
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
-  const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
-  // const scale = 0.01
+  // const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
+  const scale = 0.01
 
   const availableCells = new Set<string>()
   const referencedCells = new Set<string>()
@@ -40,7 +39,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
       if (!element.el) continue
 
       if (element.type === 'boundary' || element.type === 'box') {
-        // console.log('boundary|box', element)
+        // console.log('boundary|box', cellName, element)
         const el = element.el as TREE.boundary | TREE.box
 
         let contour_line_segments: Shapes.Contour_Line_Segment[] = []
@@ -68,7 +67,10 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
         })
       } else if (element.type === 'path') {
         {
-          // console.log('path', element)
+          // console.log('path', cellName, element)
+          if (cellName === "path4_no_bgn" || cellName === "path4_no_end") {
+            console.log('path4_no_bgn', element, JSON.stringify(element, null, 2))
+          }
           const el = element.el as TREE.path
           const width = (el.WIDTH ? el.WIDTH.width : 0.001) * scale
 
@@ -86,6 +88,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             xs: el.XY[0].x * scale,
             ys: el.XY[0].y * scale,
             // GDSII spec. 0=Flush, 1=Half Round Extension, 2=Half Width Extension, 4=Custom Extension
+            // See Records 0x30 and 0x31
             cornertype: ['miter', 'round', 'miter', undefined][
               el.PATHTYPE ? el.PATHTYPE.pathtype : 0
             ] as 'miter' | 'round' | undefined,
@@ -103,9 +106,10 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           })
         }
       } else if (element.type === 'sref') {
-        // console.log('sref with S&R', element)
+        // console.log('sref with S&R', cellName, element)
         const el = element.el as TREE.sref
         const srefName = el.SNAME.name
+
         referencedCells.add(srefName)
         // check if gdsiiHierarchy[srefName] exists
         if (!gdsiiHierarchy[srefName]) {
@@ -113,8 +117,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           continue
         }
         for (const [idx, cell] of gdsiiHierarchy[srefName].entries()) {
-          // create StepAndRepeat
-          const sr_shape = new Shapes.StepAndRepeat({
+          const srShape = new Shapes.StepAndRepeat({
             shapes: [cell.shape],
             repeats: [
               {
@@ -125,17 +128,64 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
                   (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
                 scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
                 mirror_x: el.strans?.STRANS.reflectAboutX ? 1 : 0, // 0 = no mirror, 1 = mirror
+                mirror_y: 0,
                 order: ['mirror', 'translate', 'rotate', 'scale']
               }
             ]
           })
           gdsiiHierarchy[cellName].push({
             layer: cell.layer,
-            shape: sr_shape
+            shape: srShape
+          })
+        }
+      } else if (element.type === 'aref') {
+        console.log('aref', cellName, element, JSON.stringify(element))
+        const el = element.el as TREE.aref
+        const arefName = el.SNAME.name
+        referencedCells.add(arefName)
+        // check if gdsiiHierarchy[srefName] exists
+        if (!gdsiiHierarchy[arefName]) {
+          console.warn(`AREF ${arefName} not found in hierarchy.`)
+          continue
+        }
+        if (cellName === 'aref1_2_3') {
+          console.log('aref1_2_3', element, JSON.stringify(element, null, 2))
+        }
+        const origin = vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale)
+        const cols = el.COLROW.cols || 1
+        const rows = el.COLROW.rows || 1
+        const xDisplace = vec2.fromValues(el.XY[1].x * scale, el.XY[1].y * scale)
+        const yDisplace = vec2.fromValues(el.XY[2].x * scale, el.XY[2].y * scale)
+        const xSpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), xDisplace, origin), [cols, cols])
+        const ySpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), yDisplace, origin), [rows, rows])
+
+        for (const [idx, cell] of gdsiiHierarchy[arefName].entries()) {
+          const repeats: Shapes.StepAndRepeat['repeats'] = []
+          for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+              repeats.push({
+                datum: vec2.add(vec2.create(), origin, vec2.add(vec2.create(), vec2.scale(vec2.create(), xSpacing, i), vec2.scale(vec2.create(), ySpacing, j))),
+                rotation:
+                  (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
+                  scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
+                mirror_x: 0,
+                mirror_y: 0,
+                order: ['mirror', 'translate', 'rotate', 'scale']
+              })
+            }
+          }
+
+          const srShape = new Shapes.StepAndRepeat({
+            shapes: [cell.shape],
+            repeats: repeats
+          })
+          gdsiiHierarchy[cellName].push({
+            layer: cell.layer,
+            shape: srShape
           })
         }
       } else {
-        console.warn('unhandled element', element)
+        console.warn('unhandled element', element, JSON.stringify(element))
       }
     }
   }
@@ -143,7 +193,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   const topLevelCells = Array.from(availableCells).filter(function (obj) {
     return Array.from(referencedCells).indexOf(obj) == -1
   })
-  // console.log('topLevelCells', topLevelCells)
+  console.log('topLevelCells', topLevelCells)
 
   // convert GDSIIHierarchy to LayerHierarchy
   const layerHierarchy: LayerHierarchy = {}

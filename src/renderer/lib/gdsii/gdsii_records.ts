@@ -340,6 +340,28 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     dataType: DataType.FourByteSignedInteger,
     description: 'PLEX'
   },
+  0x30: {
+    name: 'BGNEXTN',
+    dataType: DataType.FourByteSignedInteger,
+    description: '(This record type only occurs in CustomPlus.) Applies to Pathtype 4. Contains four bytes which specify in database units the extension of a path outline beyond the first point of the path. Value can be negative. ',
+    parse: (data: number[]): TREE.BGNEXTN => {
+      console.log('BGNEXTN', data)
+      return {
+        bgnextn: data[0]
+      }
+    }
+  },
+  0x31: {
+    name: 'ENDEXTN',
+    dataType: DataType.FourByteSignedInteger,
+    description: 'Applies to Pathtype 4. Contains four bytes which specify in database units the extension of a path outline beyond the last point of the path. Value can be negative.',
+    parse: (data: number[]): TREE.ENDEXTN => {
+      console.log('ENDEXTN', data)
+      return {
+        endextn: data[0]
+      }
+    }
+  },
   0x32: {
     name: 'TAPENUM',
     dataType: DataType.TwoByteSignedInteger,
@@ -414,6 +436,8 @@ export enum RecordTypes {
   BOX = 0x2d,
   BOXTYPE = 0x2e,
   PLEX = 0x2f,
+  BGNEXTN = 0x30,
+  ENDEXTN = 0x31,
   TAPENUM = 0x32,
   TAPECODE = 0x33,
   STRCLASS = 0x34,

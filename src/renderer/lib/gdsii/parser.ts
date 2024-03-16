@@ -87,10 +87,18 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
       if (element.type === 'aref') {
         ;(el as TREE.aref).COLROW = parseRecord<TREE.COLROW>(token)
       }
+    // } else if (token.recordType === GDSII.RecordTypes.ELFLAGS) {
+    //   ;(element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
+    // } else if (token.recordType === GDSII.RecordTypes.PLEX) {
+    //   ;(element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
     } else if (token.recordType === GDSII.RecordTypes.ELFLAGS) {
-      ;(element as TREE.boundary).ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
+      el.ELFLAGS = parseRecord<TREE.ELFLAGS>(token)
     } else if (token.recordType === GDSII.RecordTypes.PLEX) {
-      ;(element as TREE.boundary).PLEX = parseRecord<TREE.PLEX>(token)
+      el.PLEX = parseRecord<TREE.PLEX>(token)
+    } else if (token.recordType === GDSII.RecordTypes.BGNEXTN) {
+      el.BGNEXTN = parseRecord<TREE.BGNEXTN>(token)
+    } else if (token.recordType === GDSII.RecordTypes.ENDEXTN) {
+      el.ENDEXTN = parseRecord<TREE.ENDEXTN>(token)
     } else if (token.recordType === GDSII.RecordTypes.PATHTYPE) {
       el.PATHTYPE = parseRecord<TREE.PATHTYPE>(token)
     } else if (token.recordType === GDSII.RecordTypes.STRANS) {
@@ -120,7 +128,8 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
     }
   }
 
-  console.log('bnf', bnf)
+  console.log('gdsii bnf', bnf)
+  // console.log('gdsii bnf', bnf, JSON.stringify(bnf, null, 2))
 
   function parseRecord<T>(token: RecordToken): T {
     // check to see if it has parse function

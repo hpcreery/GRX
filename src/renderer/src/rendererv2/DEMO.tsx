@@ -1076,13 +1076,13 @@ function REGLApp(): JSX.Element {
     })
 
 
-    // Engine.addFile({
-    //   file: gdsiiFile,
-    //   format: 'gdsii',
-    //   props: {
-    //     name: 'gdsii',
-    //   }
-    // })
+    Engine.addFile({
+      file: gdsiiFile,
+      format: 'gdsii',
+      props: {
+        name: 'gdsii',
+      }
+    })
 
 
     Engine.render(true)
