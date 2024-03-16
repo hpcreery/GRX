@@ -71,6 +71,7 @@ export interface RenderTransform {
 
 interface GridRenderProps {
   enabled: boolean
+  color: [number, number, number, number]
   spacing_x: number
   spacing_y: number
   offset_x: number
@@ -83,6 +84,7 @@ interface GridRenderUniforms {
   u_Spacing: vec2
   u_Offset: vec2
   u_Type: number
+  u_Color: [number, number, number, number]
 }
 
 export class RenderEngineBackend {
@@ -123,6 +125,7 @@ export class RenderEngineBackend {
 
   public grid: GridRenderProps = {
     enabled: true,
+    color: [0.5, 0.5, 0.5, 0.5],
     spacing_x: 0.5,
     spacing_y: 0.5,
     offset_x: 0,
@@ -250,6 +253,7 @@ export class RenderEngineBackend {
         vert: GridVert,
         frag: GridFrag,
         uniforms: {
+          u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
           u_Spacing: (_context: REGL.DefaultContext, props: GridRenderProps) => [
             props.spacing_x,
             props.spacing_y
