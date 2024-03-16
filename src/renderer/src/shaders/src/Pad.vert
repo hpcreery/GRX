@@ -72,6 +72,8 @@ mat2 rotateCW(float angle) {
 
 
 void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
@@ -88,7 +90,7 @@ void main() {
     Size.y = OD;
   }
 
-  Size += vec2(u_PixelSize, u_PixelSize);
+  Size += vec2(pixel_size, pixel_size);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCCW(radians(a_Rotation));

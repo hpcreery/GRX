@@ -60,15 +60,16 @@ float sdfSegment(vec2 p, vec2 a, vec2 b) {
 }
 
 
-float draw(float dist) {
-  if (dist * float(u_OutlineMode) > u_PixelSize) {
+float draw(float dist, float pixel_size) {
+  if (dist * float(u_OutlineMode) > pixel_size) {
     discard;
   }
   return dist;
 }
 
 void main() {
-
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
   vec2 OffsetPosition = TransformedPosition.xy - vec2(0.0, 0.0);
@@ -114,16 +115,16 @@ void main() {
 
   // ** DEBUG **
   // vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
-  // col *= 1.0 - exp(-3.0*abs(dist * 0.01 / u_PixelSize));
-  // col *= 0.8 + 0.25*cos(dist / u_PixelSize);
-  // // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,u_PixelSize,abs(dist)) );
-  // if (dist > 0.0 && dist < u_PixelSize) {
+  // col *= 1.0 - exp(-3.0*abs(dist * 0.01 / pixel_size));
+  // col *= 0.8 + 0.25*cos(dist / pixel_size);
+  // // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,pixel_size,abs(dist)) );
+  // if (dist > 0.0 && dist < pixel_size) {
   //   col = vec3(1.0, 1.0, 1.0);
   // }
   // gl_FragColor = vec4(col, 1.0);
   // return;
 
 
-  dist = draw(dist);
+  dist = draw(dist, pixel_size);
   gl_FragColor = vec4(color, alpha);
 }

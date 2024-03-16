@@ -69,6 +69,8 @@ mat2 rotateCW(float angle) {
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
@@ -110,7 +112,7 @@ void main() {
   }
 
   Size = vec2(Width, Sagitta) + ShapeSize;
-  Size += vec2(u_PixelSize, u_PixelSize);
+  Size += vec2(pixel_size, pixel_size);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) + vec2(0.0, (a_Clockwise == 0.0 ? 1.0 : -1.0) * (radius - (Sagitta / 2.0)));
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);

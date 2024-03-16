@@ -64,6 +64,8 @@ mat2 rotateCW(float angle) {
 
 
 void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
@@ -73,7 +75,7 @@ void main() {
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));// * 1.5;
   float len = distance(a_Start_Location, a_End_Location);
   vec2 Size = vec2(OD + len, OD);
-  Size += vec2(u_PixelSize, u_PixelSize);
+  Size += vec2(pixel_size, pixel_size);
 
   vec2 Center_Location = (a_Start_Location + a_End_Location) / 2.0;
 

@@ -32,6 +32,7 @@ varying vec2 v_End_Location;
 varying vec2 v_Center_Location;
 varying float v_Polarity;
 varying float v_Clockwise;
+varying float v_ResizeFactor;
 
 //////////////////////////////////////
 // Combine distance field functions //
@@ -110,20 +111,22 @@ float circleDist(vec2 p, float radius) {
 //     Draw functions       //
 //////////////////////////////
 
-float draw(float dist) {
+float draw(float dist, float pixel_size) {
   if (DEBUG == 1) {
     return dist;
   }
-  if (dist > u_PixelSize / 2.0) {
+  if (dist > pixel_size / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -u_PixelSize / 2.0) {
+  if (dist * float(u_OutlineMode) < -pixel_size / 2.0) {
     discard;
   }
   return dist;
 }
 
 void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
 
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
 
@@ -163,7 +166,7 @@ void main() {
   dist = merge(dist, con);
 
   #pragma glslify: import('../modules/Debug.glsl')
-  dist = draw(dist);
+  dist = draw(dist, pixel_size);
 
   gl_FragColor = vec4(color, alpha);
 }

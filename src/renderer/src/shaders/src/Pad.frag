@@ -59,14 +59,14 @@ mat2 rotateCW(float angle) {
 //     Draw functions       //
 //////////////////////////////
 
-float draw(float dist) {
+float draw(float dist, float pixel_size) {
   if (DEBUG == 1) {
     return dist;
   }
-  if (dist > u_PixelSize / 2.0) {
+  if (dist > pixel_size / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -u_PixelSize / 2.0) {
+  if (dist * float(u_OutlineMode) < -pixel_size / 2.0) {
     discard;
   }
   return dist;
@@ -75,6 +75,8 @@ float draw(float dist) {
 #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float pixel_size = u_PixelSize / scale;
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
@@ -96,7 +98,7 @@ void main() {
 
   #pragma glslify: import('../modules/Debug.glsl')
 
-  dist = draw(dist);
+  dist = draw(dist, pixel_size);
 
   gl_FragColor = vec4(color, alpha);
 }

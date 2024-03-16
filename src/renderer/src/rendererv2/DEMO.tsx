@@ -29,8 +29,100 @@ console.log(a)
 const N_PADS = 0
 const N_LINES = 0
 const N_ARCS = 0
-const N_SURFACES = 0
+const N_SURFACES = 10
 const N_MACROS = 0
+
+const SQUARE_GRID: Shapes.Shape[] = []
+new Array<number>(100)
+  .fill(0).map((_, i) => {
+    SQUARE_GRID.push(new Shapes.Pad({
+      // Start point.
+      x: (i % 10) * 0.02,
+      y: Math.floor(i / 10) * 0.02,
+      // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+      symbol: new Symbols.SquareSymbol({
+        width: 0.01,
+        height: 0.01,
+        inner_dia: 0
+      }),
+      // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+      // Polarity. 0 = negative, 1 = positive
+      // polarity: i % 2,
+      // polarity: Math.random() > 0.5 ? 1 : 0,
+      polarity: 1,
+    }))
+  })
+
+const STEP_AND_REPEAT: Shapes.Shape[] = []
+// new Array<number>(1)
+//   .fill(0).map((_, i) => {
+    STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
+      shapes: [new Shapes.Pad({
+        // Start point.
+        // x: (i % 10) * 0.02,
+        // y: Math.floor(i / 10) * 0.02,
+        x: 0,
+        y: 0,
+        // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+        symbol: new Symbols.SquareSymbol({
+          width: 0.01,
+          height: 0.01,
+          inner_dia: 0
+        }),
+        // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+        // Polarity. 0 = negative, 1 = positive
+        // polarity: i % 2,
+        // polarity: Math.random() > 0.5 ? 1 : 0,
+        polarity: 1,
+      })],
+      // repeats: [{
+      //   datum: [0, 0],
+      //   rotation: 0,
+      //   scale: 1,
+      //   mirror: 0
+      // },
+      // {
+      //   datum: [0.02, 0.02],
+      //   rotation: 0,
+      //   scale: 1,
+      //   mirror: 0
+      // }]
+      repeats: new Array(100).fill(0).map((_, i) => {
+        return {
+          datum: [i % 10 * 0.02, Math.floor(i / 10) * 0.02],
+          rotation: 0,
+          scale: 1,
+          mirror_x: 0,
+          mirror_y: 0
+        }
+      })
+    })
+      )
+  // })
+
+const MAMA_STEP_AND_REPEAT: Shapes.Shape[] = []
+new Array<number>(1)
+.fill(0).map((_, i) => {
+  MAMA_STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
+    shapes: STEP_AND_REPEAT,
+      repeats: [{
+        datum: [0.2, 0],
+        rotation: 0,
+        scale: 1,
+        mirror_x: 0,
+        mirror_y: 0
+      },
+      {
+        datum: [0, 0.2],
+        rotation: 20,
+        scale: 1,
+        mirror_x: 0,
+        mirror_y: 0
+      }]
+  }))
+    }
+  )
+
 
 const SURFACE_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_SURFACES)
@@ -198,27 +290,32 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length)
     SYMBOLS.push(sym)
   })
 
-const round_sym =
-  new Symbols.StandardSymbol({
-    id: 'round', // id
-    symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
-    width: 0.01, // width, square side, diameter
-    height: 0.01, // height
-    corner_radius: 0.002, // corner radius
-    corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-    outer_dia: 0.01, // — Outer diameter of the shape
-    // inner_dia: 0.008, // — Inner diameter of the shape
-    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-    line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-    angle: 0, // — Angle of the spoke from 0 degrees
-    gap: 0.001, // — Gap
-    num_spokes: 2, // — Number of spokes
-    round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-    cut_size: 0, // — Size of the cut ( see corner radius )
-    ring_width: 0.001, // — Ring width
-    ring_gap: 0.004, // — Ring gap
-    num_rings: 2 // — Number of rings
-  })
+// const round_sym =
+//   new Symbols.StandardSymbol({
+//     id: 'round', // id
+//     symbol: Symbols.STANDARD_SYMBOLS_MAP.Round, // symbol
+//     width: 0.01, // width, square side, diameter
+//     height: 0.01, // height
+//     corner_radius: 0.002, // corner radius
+//     corners: 15, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
+//     outer_dia: 0.01, // — Outer diameter of the shape
+//     // inner_dia: 0.008, // — Inner diameter of the shape
+//     line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
+//     line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
+//     angle: 0, // — Angle of the spoke from 0 degrees
+//     gap: 0.001, // — Gap
+//     num_spokes: 2, // — Number of spokes
+//     round: 0, // —r|s == 1|0 — Support for rounded or straight corners
+//     cut_size: 0, // — Size of the cut ( see corner radius )
+//     ring_width: 0.001, // — Ring width
+//     ring_gap: 0.004, // — Ring gap
+//     num_rings: 2 // — Number of rings
+//   })
+
+const round_sym = new Symbols.RoundSymbol({
+  outer_dia: 1,
+  inner_dia: 0.9
+})
 
 SYMBOLS.push(round_sym)
 
@@ -324,7 +421,8 @@ new Array<number>(N_PADS)
       rotation: 0,
       // 0 = no mirror, 1 = mirror
       // mirror: i % 2,
-      mirror: 0
+      mirror_x: 0,
+      mirror_y: 0
     }))
   })
 
@@ -575,7 +673,8 @@ new Array<number>(N_MACROS)
       // rotation: Math.random() * 360,
       rotation: 20,
       // 0 = no mirror, 1 = mirror
-      mirror: 0
+      mirror_x: 0,
+      mirror_y: 0
     }))
   })
 
@@ -623,15 +722,16 @@ new Array<number>(3)
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
-      mirror: 0
+      mirror_x: 0,
+      mirror_y: 0
     }))
   })
 
-const OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
+const FLATTEN_MACROS_ARRAY: Symbols.Symbol[] = []
 
 new Array<number>(1)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACROS_ARRAY.push(new Symbols.MacroSymbol({
+    FLATTEN_MACROS_ARRAY.push(new Symbols.MacroSymbol({
       id: 'macro' + i, // id
       shapes: OVERLAPPING_PADS_ARRAY,
       // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
@@ -640,6 +740,20 @@ new Array<number>(1)
       flatten: true
     }))
   })
+
+  const UNFLATTEN_MACROS_ARRAY: Symbols.Symbol[] = []
+
+  new Array<number>(1)
+    .fill(0).map((_, i) => {
+      UNFLATTEN_MACROS_ARRAY.push(new Symbols.MacroSymbol({
+        id: 'macro' + i, // id
+        shapes: OVERLAPPING_PADS_ARRAY,
+        // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
+        // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
+        // negatives will act like holes in the macro, rather than being drawn as negative shapes.
+        flatten: false
+      }))
+    })
 
 const SPOOF_OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
@@ -655,16 +769,16 @@ new Array<number>(1)
     }))
   })
 
-const OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
+const OVERLAPPING_FLATTEN_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
 new Array<number>(10)
   .fill(0).map((_, i) => {
-    OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
+    OVERLAPPING_FLATTEN_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: i / 10,
       y: -i / 10,
       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-      symbol: OVERLAPPING_MACROS_ARRAY[0],
+      symbol: FLATTEN_MACROS_ARRAY[0],
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
@@ -676,20 +790,22 @@ new Array<number>(10)
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
-      mirror: 0
+      mirror_x: 0,
+      mirror_y: 0
     }))
   })
 
-const SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
+
+const OVERLAPPING_UNFLATTEN_MACRO_RECORDS_ARRAY: Shapes.Pad[] = []
 new Array<number>(10)
   .fill(0).map((_, i) => {
-    SPOOF_OVERLAPPING_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
+    OVERLAPPING_UNFLATTEN_MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
-      x: i / 10 + 1,
-      y: -i / 10 + 1,
+      x: i / 10,
+      y: -i / 10,
       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-      symbol: SPOOF_OVERLAPPING_MACROS_ARRAY[0],
+      symbol: UNFLATTEN_MACROS_ARRAY[0],
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // resize_factor: Math.random() + 1,
       resize_factor: 1,
@@ -701,7 +817,54 @@ new Array<number>(10)
       // rotation: Math.random() * 360,
       rotation: 0,
       // 0 = no mirror, 1 = mirror
-      mirror: 0
+      mirror_x: 0,
+      mirror_y: 0
+    }))
+  })
+
+const MACRO_IN_MACRO_RECORDS: Shapes.Shape[] = []
+new Array<number>(4)
+  .fill(0).map((_, i) => {
+    MACRO_IN_MACRO_RECORDS.push(new Shapes.Pad({
+      x: i,
+      y: i,
+      symbol: new Symbols.MacroSymbol({
+        // id: 'macro' + i, // id
+        shapes: new Array(5).fill(0).map((_, j) => {
+          return new Shapes.Pad({
+            // Center point.
+            x: j / 10,
+            y: -j / 10,
+            // symbol: round_sym,
+            symbol: new Symbols.MacroSymbol({
+              // id: 'macro' + i, // id
+              shapes: new Array(6).fill(0).map((_, k) => {
+                return new Shapes.Pad({
+                  // Center point.
+                  x: k / 100,
+                  y: k / 100,
+                  symbol: round_sym,
+                  resize_factor: 1,
+                  polarity: 1,
+                  rotation: 0,
+                  mirror_x: 0,
+                  mirror_y: 0
+                })}),
+              flatten: true
+            }),
+            resize_factor: 1,
+            polarity: 1,
+            rotation: 0,
+            mirror_x: 0,
+            mirror_y: 0
+          })}),
+        flatten: true
+      }),
+      resize_factor: 1,
+      polarity: 1,
+      rotation: 0,
+      mirror_x: 0,
+      mirror_y: 0
     }))
   })
 
@@ -769,13 +932,15 @@ new Array<number>(1)
         repeats: [
           {
             datum: [0, 0],
-            mirror: 0,
+            mirror_x: 0,
+            mirror_y: 0,
             rotation: 0,
             scale: 1,
           },
           {
             datum: [1, 0],
-            mirror: 1,
+            mirror_x: 1,
+            mirror_y: 0,
             rotation: 0,
             scale: 1,
           },
@@ -882,7 +1047,8 @@ function REGLApp(): JSX.Element {
           // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
           rotation: 0,
           // 0 = no mirror, 1 = mirror
-          mirror: 0
+          mirror_x: 0,
+          mirror_y: 0
         })
       ]
     })
@@ -930,11 +1096,20 @@ function REGLApp(): JSX.Element {
     //   image: MACRO_RECORDS_ARRAY
     // })
 
-    // const macroLayer = Engine.addLayer({
-    //   name: 'overlapping-macro',
-    //   image: OVERLAPPING_MACRO_RECORDS_ARRAY
+    // Engine.addLayer({
+    //   name: 'overlapping flatten macro',
+    //   image: OVERLAPPING_FLATTEN_MACRO_RECORDS_ARRAY
     // })
 
+    // Engine.addLayer({
+    //   name: 'overlapping unflatten macro',
+    //   image: OVERLAPPING_UNFLATTEN_MACRO_RECORDS_ARRAY
+    // })
+
+    // Engine.addLayer({
+    //   name: 'macro in macro',
+    //   image: MACRO_IN_MACRO_RECORDS
+    // })
     // const polylineLayer = Engine.addLayer({
     //   name: 'polyline',
     //   image: POLYLINE_RECORDS_ARRAY
@@ -1015,65 +1190,66 @@ function REGLApp(): JSX.Element {
     //   image: polygons
     // })
 
-    // addGDSII(Engine)
-    // addGerber(Engine)
-    Engine.addFile({
-      file: cmp,
-      format: 'rs274x',
-      props: {
-        name: 'cmp',
-      }
-    })
-    Engine.addFile({
-      file: drd,
-      format: 'rs274x',
-      props: {
-        name: 'drd',
-      }
-    })
-    Engine.addFile({
-      file: gko,
-      format: 'rs274x',
-      props: {
-        name: 'gko',
-      }
-    })
-    Engine.addFile({
-      file: plc,
-      format: 'rs274x',
-      props: {
-        name: 'plc',
-        visible: true,
-      }
-    })
+    // Engine.addFile({
+    //   file: cmp,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'cmp',
+    //   }
+    // })
+    // Engine.addFile({
+    //   file: drd,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'drd',
+    //   }
+    // })
+    // Engine.addFile({
+    //   file: gko,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'gko',
+    //   }
+    // })
+    // Engine.addFile({
+    //   file: plc,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'plc',
+    //     visible: true,
+    //   }
+    // })
     Engine.addFile({
       file: pls,
       format: 'rs274x',
       props: {
         name: 'pls',
+        // transform: {
+        //   mirror_x: 1,
+        // }
       }
     })
-    Engine.addFile({
-      file: stc,
-      format: 'rs274x',
-      props: {
-        name: 'stc',
-      }
-    })
-    Engine.addFile({
-      file: sts,
-      format: 'rs274x',
-      props: {
-        name: 'sts',
-      }
-    })
-    Engine.addFile({
-      file: sol,
-      format: 'rs274x',
-      props: {
-        name: 'sol',
-      }
-    })
+    // Engine.addFile({
+    //   file: stc,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'stc',
+    //   }
+    // })
+    // Engine.addFile({
+    //   file: sts,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'sts',
+    //   }
+    // })
+    // Engine.addFile({
+    //   file: sol,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'sol',
+    //   }
+    // })
 
 
     Engine.addFile({
@@ -1083,6 +1259,18 @@ function REGLApp(): JSX.Element {
         name: 'gdsii',
       }
     })
+
+    // Engine.addLayer({
+    //   name:'Step and Repeat',
+    //   image: STEP_AND_REPEAT,
+    //   visible: false
+    // })
+
+    // Engine.addLayer({
+    //   name: 'Step and Repeat 2',
+    //   image: MAMA_STEP_AND_REPEAT,
+    //   visible: false
+    // })
 
 
     Engine.render(true)
@@ -1123,8 +1311,9 @@ function REGLApp(): JSX.Element {
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
-              layers.map(l => {
-                backend.setLayerProps(l.name, { color: [Math.random(), Math.random(), Math.random()] })
+              backend.getLayers().then(layers => {
+                setLayers(layers)
+                layers.map(l => backend.setLayerProps(l.name, { color: [Math.random(), Math.random(), Math.random()] }))
               })
             }}>
             Randomize Colors
@@ -1136,10 +1325,21 @@ function REGLApp(): JSX.Element {
             onChange={(e): void => {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
-              engine.backend.then(engine => engine.getLayers().then(layers => {
+              engine.backend.then(backend => backend.getLayers().then(layers => {
                 setLayers(layers)
-                layers.map(l => engine.setLayerProps(l.name, { visible: true }))
               }))
+            }} />
+          Grid Toggle
+          <Switch
+            defaultChecked={engine.settings.OUTLINE_MODE}
+            onChange={(e): void => {
+              engine.backend.then(backend => backend.setGridProps({ enabled: e.target.checked }))
+            }} />
+          Grid Type
+          <Switch
+            defaultChecked={engine.settings.OUTLINE_MODE}
+            onChange={(e): void => {
+              engine.backend.then(backend => backend.setGridProps({ type: e.target.checked ? 'dots' : 'lines' }))
             }} />
           <br />
           Zoom To Cursor
@@ -1226,8 +1426,9 @@ function StatsWidget(): JSX.Element {
 function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   const [mouse, setMouse] = React.useState({ x: '0', y: '0' })
 
-  props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e: PointerEvent) => {
-    setMouse({ x: e.detail.x.toFixed(3), y: e.detail.y.toFixed(3) })
+  props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
+
+    setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
   })
   return (
     <div style={{

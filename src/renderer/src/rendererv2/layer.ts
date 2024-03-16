@@ -194,6 +194,7 @@ export class ShapeRenderer {
           return qtyFeatures
         },
         u_Polarity: () => this.transform.polarity,
+        // u_PixelSize: (context: REGL.DefaultContext & WorldContext) => (0.003)/ (Math.sqrt(Math.pow(context.transform.matrix[0], 2) + Math.pow(context.transform.matrix[1], 2)) || this.transform.zoom),
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}

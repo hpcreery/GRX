@@ -75,6 +75,7 @@ interface GridRenderProps {
   spacing_y: number
   offset_x: number
   offset_y: number
+  _type: number
   type: 'dots' | 'lines'
 }
 
@@ -121,13 +122,33 @@ export class RenderEngineBackend {
   }
 
   public grid: GridRenderProps = {
-      enabled: true,
-      spacing_x: 0.5,
-      spacing_y: 0.5,
-      offset_x: 0,
-      offset_y: 0,
-      type: 'dots'
+    enabled: true,
+    spacing_x: 0.5,
+    spacing_y: 0.5,
+    offset_x: 0,
+    offset_y: 0,
+    _type: 1,
+    get type(): 'dots' | 'lines' {
+      return this._type === 0 ? 'dots' : 'lines'
+    },
+    set type(value: 'dots' | 'lines') {
+      switch (value) {
+        case 'dots':
+          this._type = 0
+          break
+        case 'lines':
+          this._type = 1
+          break
+        default:
+          this._type = 0
+      }
     }
+  }
+
+  public setGridProps(props: Partial<GridRenderProps>): void {
+    Object.assign(this.grid, props)
+    this.render(true)
+  }
 
   private dirty = true
 
@@ -199,7 +220,7 @@ export class RenderEngineBackend {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        u_PixelSize: () => 0.003 / this.transform.zoom,
+        u_PixelSize: 0.00265,
         u_OutlineMode: () => this.settings.OUTLINE_MODE
       },
 
@@ -237,16 +258,7 @@ export class RenderEngineBackend {
             props.offset_x,
             props.offset_y
           ],
-          u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => {
-            switch (props.type) {
-              case 'dots':
-                return 0
-              case 'lines':
-                return 1
-              default:
-                return 0
-          }
-        },
+          u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => props._type,
         }
       },
     )
