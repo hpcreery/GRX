@@ -15,14 +15,12 @@ export * from './tree'
 export * from './tool-store'
 export * from './graphic-plotter'
 export * from './graphic-plotter/plot-macro'
-export * as BoundingBox from './bounding-box'
 export { TWO_PI, positionsEqual } from './coordinate-math'
 
 export function plot(tree: GerberTree): ImageTree {
   const plotOptions: PlotOptions = getPlotOptions(tree)
   const toolStore: ToolStore = createToolStore()
   const children = plotShapes(tree.children, plotOptions, toolStore)
-  console.log('toolStore', toolStore)
 
   return {
     type: IMAGE,

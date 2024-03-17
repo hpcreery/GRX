@@ -17,6 +17,9 @@ import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol
 import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
 import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
 import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
+import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
+import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
+
 
 import { LayerRendererProps } from './layer'
 
@@ -1017,36 +1020,36 @@ function REGLApp(): JSX.Element {
 
 
 
-    Engine.addLayer({
-      name: 'origin',
-      color: [1, 1, 1],
-      transform: {
-        datum: [0, 0],
-        scale: 1,
-        rotation: 0,
-      },
-      image: [
-        new Shapes.Pad({
-          // Center point.
-          x: 0,
-          y: 0,
-          // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
-          // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-          symbol: round_sym,
-          // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-          // resize_factor: Math.random() + 1,
-          resize_factor: 1,
-          // Polarity. 0 = negative, 1 = positive
-          polarity: 1,
-          // Shapes.Pad orientation (degrees)
-          // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
-          rotation: 0,
-          // 0 = no mirror, 1 = mirror
-          mirror_x: 0,
-          mirror_y: 0
-        })
-      ]
-    })
+    // Engine.addLayer({
+    //   name: 'origin',
+    //   color: [1, 1, 1],
+    //   transform: {
+    //     datum: [0, 0],
+    //     scale: 1,
+    //     rotation: 0,
+    //   },
+    //   image: [
+    //     new Shapes.Pad({
+    //       // Center point.
+    //       x: 0,
+    //       y: 0,
+    //       // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+    //       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+    //       symbol: round_sym,
+    //       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+    //       // resize_factor: Math.random() + 1,
+    //       resize_factor: 1,
+    //       // Polarity. 0 = negative, 1 = positive
+    //       polarity: 1,
+    //       // Shapes.Pad orientation (degrees)
+    //       // Rotation is any number of degrees, although 90º multiples is the usual angle; positive rotation is always clockwise as viewed from the board TOP (primary side).
+    //       rotation: 0,
+    //       // 0 = no mirror, 1 = mirror
+    //       mirror_x: 0,
+    //       mirror_y: 0
+    //     })
+    //   ]
+    // })
 
     // Engine.addLayer({
     //   name: 'pads',
@@ -1228,29 +1231,29 @@ function REGLApp(): JSX.Element {
     //     name: 'stc',
     //   }
     // })
-    Engine.addFile({
-      file: sts,
-      format: 'rs274x',
-      props: {
-        name: 'sts',
-      }
-    })
-    Engine.addFile({
-      file: sol,
-      format: 'rs274x',
-      props: {
-        name: 'sol',
-      }
-    })
-
-
     // Engine.addFile({
-    //   file: gdsiiFile,
-    //   format: 'gdsii',
+    //   file: sts,
+    //   format: 'rs274x',
     //   props: {
-    //     name: 'gdsii',
+    //     name: 'sts',
     //   }
     // })
+    // Engine.addFile({
+    //   file: sol,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'sol',
+    //   }
+    // })
+
+
+    Engine.addFile({
+      file: gdsiiFile,
+      format: 'gdsii',
+      props: {
+        name: 'gdsii',
+      }
+    })
 
     // Engine.addLayer({
     //   name:'Step and Repeat',
@@ -1264,13 +1267,13 @@ function REGLApp(): JSX.Element {
     //   visible: false
     // })
 
-    Engine.addFile({
-      file: nested_aperture_macro,
-      format: 'rs274x',
-      props: {
-        name: 'nested_aperture_macro',
-      }
-    })
+    // Engine.addFile({
+    //   file: multi_polarity_over_self,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'multi_polarity_over_self',
+    //   }
+    // })
 
 
     Engine.render(true)

@@ -923,7 +923,10 @@ export class StepAndRepeatCollection {
         new StepAndRepeatRenderer({
           regl: this.regl,
           image: record.shapes,
-          repeats: record.repeats
+          repeats: record.repeats,
+          transform: {
+            index: record.index
+          }
         })
       )
     })

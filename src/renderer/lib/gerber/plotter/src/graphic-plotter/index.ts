@@ -22,6 +22,8 @@ import {
   INTERPOLATE_MODE,
   QUADRANT_MODE,
   REGION_MODE,
+  STEP_REPEAT_OPEN,
+  STEP_REPEAT_CLOSE,
 } from '@hpcreery/tracespace-parser'
 
 import type {Tool} from '../tool-store'
@@ -61,6 +63,7 @@ interface GraphicPlotterImpl extends GraphicPlotter {
   _ambiguousArcCenter: boolean
   _regionMode: boolean
   _defaultGraphic: GraphicType | undefined
+  _stepRepeats: Shapes.StepAndRepeat[]
 
   _setGraphicState: (node: GerberNode) => void
 
@@ -73,6 +76,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
   _ambiguousArcCenter: false,
   _regionMode: false,
   _defaultGraphic: undefined,
+  _stepRepeats: [],
 
   plot(
     node: GerberNode,
@@ -173,6 +177,35 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
             clockwise: this._arcDirection === CW ? 1 : 0,
           }))
         }
+      }
+    }
+
+    if (node.type === STEP_REPEAT_OPEN) {
+      this._stepRepeats.unshift(new Shapes.StepAndRepeat({
+        shapes: [],
+        repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
+          return {
+            datum: [location.stepRepeat.i * (i % location.stepRepeat.x), location.stepRepeat.j * Math.floor(i / location.stepRepeat.x)],
+            rotation: 0,
+            mirror_x: 0,
+            mirror_y: 0,
+            scale: 1,
+          }
+        }),
+      }))
+    }
+    if (this._stepRepeats.length > 0 && node.type === GRAPHIC) {
+      this._stepRepeats[0].shapes.push(...graphics)
+      graphics.length = 0
+    }
+    if (node.type === DONE) {
+      if (this._stepRepeats.length > 0) {
+        graphics.push(this._stepRepeats.shift()!)
+      }
+    }
+    if (node.type === STEP_REPEAT_CLOSE) {
+      if (this._stepRepeats.length > 0) {
+        graphics.push(this._stepRepeats.shift()!)
       }
     }
 

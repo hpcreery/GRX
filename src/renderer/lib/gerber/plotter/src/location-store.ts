@@ -1,6 +1,6 @@
 // Track the location of the plotter and parse coordinate strings
 import type {GerberNode} from '@hpcreery/tracespace-parser'
-import {GRAPHIC, TRAILING} from '@hpcreery/tracespace-parser'
+import {GRAPHIC, STEP_REPEAT_OPEN, TRAILING} from '@hpcreery/tracespace-parser'
 
 import type {PlotOptions} from './options'
 
@@ -15,10 +15,19 @@ export interface ArcOffsets {
   a: number
 }
 
+export interface StepRepeatOffsets {
+  x: number
+  y: number
+  i: number
+  j: number
+
+}
+
 export interface Location {
   startPoint: Point
   endPoint: Point
   arcOffsets: ArcOffsets
+  stepRepeat: StepRepeatOffsets
 }
 
 export interface LocationStore {
@@ -31,17 +40,20 @@ export function createLocationStore(): LocationStore {
 
 interface LocationStoreState {
   _DEFAULT_ARC_OFFSETS: ArcOffsets
+  _DEFAULT_STEP_REPEATS: StepRepeatOffsets
   _previousPoint: Point
 }
 
 const LocationStorePrototype: LocationStore & LocationStoreState = {
   _DEFAULT_ARC_OFFSETS: {i: 0, j: 0, a: 0},
+  _DEFAULT_STEP_REPEATS: {x: 0, y: 0, i: 1, j: 1},
   _previousPoint: {x: 0, y: 0},
 
   use(node: GerberNode, options: PlotOptions): Location {
     let arcOffsets = this._DEFAULT_ARC_OFFSETS
     let startPoint = this._previousPoint
     let endPoint = startPoint
+    let stepRepeats = this._DEFAULT_STEP_REPEATS
 
     if (node.type === GRAPHIC) {
       const {coordinates} = node
@@ -66,8 +78,18 @@ const LocationStorePrototype: LocationStore & LocationStoreState = {
       }
     }
 
+    if (node.type === STEP_REPEAT_OPEN) {
+      const {stepRepeat} = node
+      const x = Number(stepRepeat.x)
+      const y = Number(stepRepeat.y)
+      const i = parseCoordinate(stepRepeat.i, 1, options)
+      const j = parseCoordinate(stepRepeat.j, 1, options)
+
+      stepRepeats = {x, y, i, j}
+    }
+
     this._previousPoint = endPoint
-    return {startPoint, endPoint, arcOffsets}
+    return {startPoint, endPoint, arcOffsets, stepRepeat: stepRepeats}
   },
 }
 

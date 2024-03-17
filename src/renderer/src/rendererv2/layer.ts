@@ -444,19 +444,24 @@ export class MacroRenderer extends ShapeRenderer {
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
   public repeats: Transform[]
-  // TODO: index should be assigned to this.transform
+
+  public get qtyFeatures(): number {
+    return this.records.length * this.repeats.length
+  }
 
   constructor(props: ShapeRendererProps & { repeats: Transform[] }) {
     super(props)
     this.repeats = props.repeats
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
-    this.repeats.forEach((repeat) => {
+  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+    this.repeats.forEach((repeat, i) => {
       const origTransformMatrix = context.transform.matrix
       const newTransfrom = Object.assign(new ShapeTransfrom(), repeat)
       newTransfrom.update(context.transform.matrix)
       context.transform.matrix = newTransfrom.matrix
+      context.qtyFeaturesRef = this.qtyFeatures
+      this.transform.index = i
       super.render(context)
       context.transform.matrix = origTransformMatrix
     })
