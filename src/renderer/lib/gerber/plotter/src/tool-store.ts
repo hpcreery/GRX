@@ -1,7 +1,7 @@
 // Tool store
 // Keeps track of the defined tools, defined macros, and the current tool
 import type { GerberNode, SimpleShape, HoleShape, MacroBlock } from '@hpcreery/tracespace-parser'
-import { MACRO_SHAPE, TOOL_CHANGE, TOOL_DEFINITION, TOOL_MACRO } from '@hpcreery/tracespace-parser'
+import { MACRO_SHAPE, TOOL_CHANGE, TOOL_DEFINITION, TOOL_MACRO, BLOCK_APERTURE_OPEN, BLOCK_APERTURE_CLOSE } from '@hpcreery/tracespace-parser'
 
 // import * as Shapes from '@src/rendererv2/shapes'
 import * as Symbols from '@src/rendererv2/symbols'
@@ -13,6 +13,11 @@ export const SIMPLE_TOOL = 'simpleTool'
 export const MACRO_TOOL = 'macroTool'
 
 import * as Constants from '@hpcreery/tracespace-parser'
+import { ApertureTransform } from './aperture-transform-store'
+import { Location } from './location-store'
+// import {createGraphicPlotter, GraphicPlotter} from './graphic-plotter'
+import { plotShapes } from '.'
+import { PlotOptions } from './options'
 
 export interface SimpleTool {
   type: typeof SIMPLE_TOOL
@@ -32,9 +37,8 @@ export interface MacroTool {
 export type Tool = Symbols.StandardSymbol | Symbols.MacroSymbol
 
 export interface ToolStore {
-  _toolsByCode: Partial<Record<string, Tool>>
-  _macrosByName: Partial<Record<string, MacroBlock[]>>
-  use: (node: GerberNode) => Tool | undefined
+  block: string | undefined,
+  use: (node: GerberNode, plotOptions: PlotOptions) => Tool | undefined
 }
 
 export function createToolStore(): ToolStore {
@@ -45,14 +49,17 @@ interface ToolStoreState {
   _currentToolCode: string | undefined
   _toolsByCode: Partial<Record<string, Tool>>
   _macrosByName: Partial<Record<string, MacroBlock[]>>
+  _currentBlockAperture: {code: string, nodes: Constants.ChildNode[]}[]
 }
 
 const ToolStorePrototype: ToolStore & ToolStoreState = {
   _currentToolCode: undefined,
   _toolsByCode: {},
   _macrosByName: {},
+  _currentBlockAperture: [],
+  block: undefined,
 
-  use(node: GerberNode): Tool | undefined {
+  use(node: GerberNode, plotOptions: PlotOptions): Tool | undefined {
     if (node.type === TOOL_MACRO) {
       this._macrosByName[node.name] = node.children
     }
@@ -109,6 +116,31 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
 
     if (node.type === TOOL_DEFINITION || node.type === TOOL_CHANGE) {
       this._currentToolCode = node.code
+    }
+
+    if (node.type == BLOCK_APERTURE_OPEN) {
+      this._currentBlockAperture.unshift({nodes: [], code: node.code})
+      this.block = node.code
+      return
+    }
+    if (node.type == BLOCK_APERTURE_CLOSE) {
+      const current = this._currentBlockAperture.shift()
+      if (current) {
+        this.block = current.code
+        this._toolsByCode[current.code] = new Symbols.MacroSymbol({
+          id: `274x_D${current.code}`,
+          shapes: plotShapes(current.nodes, plotOptions, this, current.code),
+          flatten: false
+        })
+      }
+      this.block = undefined
+      if (this._currentBlockAperture.length > 0) {
+        this.block = this._currentBlockAperture[0].code
+      }
+      return
+    }
+    if (this._currentBlockAperture?.length > 0) {
+      this._currentBlockAperture[0].nodes.push(node)
     }
 
     return typeof this._currentToolCode === 'string'

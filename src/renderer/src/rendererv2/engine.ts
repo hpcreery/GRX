@@ -100,7 +100,7 @@ export class RenderEngineBackend {
     OUTLINE_MODE: false,
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 100,
-    MIN_ZOOM: 0.01,
+    MIN_ZOOM: 0.001,
     ZOOM_TO_CURSOR: true
   }
 
@@ -428,7 +428,6 @@ export class RenderEngineBackend {
   }
 
   public addLayer(params: Omit<LayerRendererProps, 'regl'>): void {
-    console.log(this)
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl

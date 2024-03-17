@@ -2,11 +2,8 @@ import React from 'react'
 import '../App.css'
 import * as Symbols from './symbols'
 import * as Shapes from './shapes'
-// import { RenderEngine } from './engine'
 import { RenderEngine } from '.'
 import { Button, Switch, Badge, Box } from '@mantine/core'
-// import { IPlotRecord, ISymbolRecord } from './types'
-// import { vec2 } from 'gl-matrix'
 import { PointerEvent, PointerEvents } from '.'
 
 import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
@@ -19,12 +16,10 @@ import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls
 import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
 import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
 import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 
-import earcut from 'earcut'
 import { LayerRendererProps } from './layer'
 
-const a = earcut([0, 0, 100, 0, 100, 100, 0, 100, 20, 20, 80, 20, 80, 80, 20, 80], [4]);
-console.log(a)
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1219,16 +1214,13 @@ function REGLApp(): JSX.Element {
     //     visible: true,
     //   }
     // })
-    Engine.addFile({
-      file: pls,
-      format: 'rs274x',
-      props: {
-        name: 'pls',
-        // transform: {
-        //   mirror_x: 1,
-        // }
-      }
-    })
+    // Engine.addFile({
+    //   file: pls,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'pls',
+    //   }
+    // })
     // Engine.addFile({
     //   file: stc,
     //   format: 'rs274x',
@@ -1236,29 +1228,29 @@ function REGLApp(): JSX.Element {
     //     name: 'stc',
     //   }
     // })
-    // Engine.addFile({
-    //   file: sts,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'sts',
-    //   }
-    // })
-    // Engine.addFile({
-    //   file: sol,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'sol',
-    //   }
-    // })
-
-
     Engine.addFile({
-      file: gdsiiFile,
-      format: 'gdsii',
+      file: sts,
+      format: 'rs274x',
       props: {
-        name: 'gdsii',
+        name: 'sts',
       }
     })
+    Engine.addFile({
+      file: sol,
+      format: 'rs274x',
+      props: {
+        name: 'sol',
+      }
+    })
+
+
+    // Engine.addFile({
+    //   file: gdsiiFile,
+    //   format: 'gdsii',
+    //   props: {
+    //     name: 'gdsii',
+    //   }
+    // })
 
     // Engine.addLayer({
     //   name:'Step and Repeat',
@@ -1271,6 +1263,14 @@ function REGLApp(): JSX.Element {
     //   image: MAMA_STEP_AND_REPEAT,
     //   visible: false
     // })
+
+    Engine.addFile({
+      file: nested_aperture_macro,
+      format: 'rs274x',
+      props: {
+        name: 'nested_aperture_macro',
+      }
+    })
 
 
     Engine.render(true)

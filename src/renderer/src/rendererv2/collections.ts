@@ -876,7 +876,7 @@ export class MacroShaderCollection {
         return
       }
       if (record.symbol.type == FeatureTypeIdentifyer.MACRO_DEFINITION) {
-        this.makeUnique(record.symbol)
+        // this.makeUnique(record.symbol)
         if (!this.macros.has(record.symbol.id)) {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({

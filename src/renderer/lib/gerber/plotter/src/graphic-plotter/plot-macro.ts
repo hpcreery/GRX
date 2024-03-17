@@ -46,7 +46,8 @@ export function createMacro(tool: MacroTool): Symbols.MacroSymbol {
   }
 
   return new Symbols.MacroSymbol({
-    shapes
+    shapes,
+    flatten: true
   })
 }
 

@@ -46,12 +46,13 @@ export interface GraphicPlotter {
   ) => Shapes.Shape[]
 }
 
-export function createGraphicPlotter(filetype: Filetype): GraphicPlotter {
+export function createGraphicPlotter(): GraphicPlotter {
   const plotter = Object.create(GraphicPlotterPrototype)
 
-  return filetype === DRILL
-    ? Object.assign(plotter, DrillGraphicPlotterTrait)
-    : plotter
+  // return filetype === DRILL
+  //   ? Object.assign(plotter, DrillGraphicPlotterTrait)
+  //   : plotter
+  return plotter
 }
 
 interface GraphicPlotterImpl extends GraphicPlotter {
@@ -214,31 +215,31 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
 }
 
-const DrillGraphicPlotterTrait: Partial<GraphicPlotterImpl> = {
-  _defaultGraphic: SHAPE,
-  _ambiguousArcCenter: true,
+// const DrillGraphicPlotterTrait: Partial<GraphicPlotterImpl> = {
+//   _defaultGraphic: SHAPE,
+//   _ambiguousArcCenter: true,
 
-  _setGraphicState(node: GerberNode): GraphicType | undefined {
-    if (node.type === INTERPOLATE_MODE) {
-      const {mode} = node
-      this._arcDirection = arcDirectionFromMode(mode)
+//   _setGraphicState(node: GerberNode): GraphicType | undefined {
+//     if (node.type === INTERPOLATE_MODE) {
+//       const {mode} = node
+//       this._arcDirection = arcDirectionFromMode(mode)
 
-      if (mode === CW_ARC || mode === CCW_ARC || mode === LINE) {
-        this._defaultGraphic = SEGMENT
-      } else if (mode === MOVE) {
-        this._defaultGraphic = MOVE
-      } else {
-        this._defaultGraphic = SHAPE
-      }
-    }
+//       if (mode === CW_ARC || mode === CCW_ARC || mode === LINE) {
+//         this._defaultGraphic = SEGMENT
+//       } else if (mode === MOVE) {
+//         this._defaultGraphic = MOVE
+//       } else {
+//         this._defaultGraphic = SHAPE
+//       }
+//     }
 
-    if (node.type !== GRAPHIC) {
-      return undefined
-    }
+//     if (node.type !== GRAPHIC) {
+//       return undefined
+//     }
 
-    return node.graphic ?? this._defaultGraphic
-  },
-}
+//     return node.graphic ?? this._defaultGraphic
+//   },
+// }
 
 function arcDirectionFromMode(
   mode: InterpolateModeType | undefined

@@ -9,8 +9,6 @@
 // import stc from './testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
 // import sts from './testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
 
-// import type { RenderEngine } from '@src/rendererv2'
-// import { RenderEngineBackend } from '@src/rendererv2/engine'
 import { plot } from './plotter/src'
 import { parse } from '@hpcreery/tracespace-parser'
 import type { LayerRendererProps } from '@src/rendererv2/layer'
