@@ -185,7 +185,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         shapes: [],
         repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
           return {
-            datum: [location.stepRepeat.i * (i % location.stepRepeat.x), location.stepRepeat.j * Math.floor(i / location.stepRepeat.x)],
+            datum: [location.stepRepeat.i * Math.floor(i / location.stepRepeat.x), location.stepRepeat.j * (i % location.stepRepeat.x)],
             rotation: 0,
             mirror_x: 0,
             mirror_y: 0,

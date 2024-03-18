@@ -22,6 +22,7 @@ export async function plugin(file: string, props: Partial<Omit<LayerRendererProp
   addLayer({
     name: props.name || 'Gerber',
     image: image.children,
+    units: image.units == 'in' ? 'inch' : 'mm',
     ...props
   })
 }

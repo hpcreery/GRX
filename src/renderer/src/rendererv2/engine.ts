@@ -26,6 +26,7 @@ export interface WorldContext {
   settings: RenderSettings
   transform: RenderTransform
   resolution: vec2
+  transformMatrix: mat3
 }
 
 interface ScreenRenderProps {
@@ -130,7 +131,7 @@ export class RenderEngineBackend {
     spacing_y: 0.5,
     offset_x: 0,
     offset_y: 0,
-    _type: 1,
+    _type: 0,
     get type(): 'dots' | 'lines' {
       return this._type === 0 ? 'dots' : 'lines'
     },
@@ -215,6 +216,7 @@ export class RenderEngineBackend {
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
       context: {
         settings: this.settings,
+        transformMatrix: () => this.transform.matrix,
         transform: this.transform,
         resolution: () => [this.viewBox.width, this.viewBox.height]
       },
@@ -428,6 +430,7 @@ export class RenderEngineBackend {
   }
 
   public addLayer(params: Omit<LayerRendererProps, 'regl'>): void {
+    console.log('Adding Layer', params.name, params.image)
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl
@@ -436,7 +439,7 @@ export class RenderEngineBackend {
     this.render(true)
   }
 
-  public addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'> }): void {
+  public addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): void {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
       const callback = (params: Omit<LayerRendererProps, "regl">): void => this.addLayer(params)
@@ -457,7 +460,8 @@ export class RenderEngineBackend {
         name: layer.name,
         color: layer.color,
         context: layer.context,
-        type: layer.type
+        type: layer.type,
+        units: layer.units,
       }
     })
   }

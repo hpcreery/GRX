@@ -29,8 +29,13 @@ export function rotateAndShift(
   const rotation = degreesToRadians(degrees)
   const [sin, cos] = [Math.sin(rotation), Math.cos(rotation)]
   const [x, y] = point
+  // this is counter-clockwise rotation
   const nextX = x * cos - y * sin + shift[0]
   const nextY = x * sin + y * cos + shift[1]
+  // this is clockwise rotation
+  // const nextX = x * cos + y * sin + shift[0]
+  // const nextY = -x * sin + y * cos + shift[1]
+
 
   return [nextX, nextY]
 }

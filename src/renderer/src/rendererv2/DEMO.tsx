@@ -19,7 +19,8 @@ import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts
 import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
-
+import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
+import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
 
 import { LayerRendererProps } from './layer'
 
@@ -1247,13 +1248,13 @@ function REGLApp(): JSX.Element {
     // })
 
 
-    Engine.addFile({
-      file: gdsiiFile,
-      format: 'gdsii',
-      props: {
-        name: 'gdsii',
-      }
-    })
+    // Engine.addFile({
+    //   file: gdsiiFile,
+    //   format: 'gdsii',
+    //   props: {
+    //     name: 'gdsii',
+    //   }
+    // })
 
     // Engine.addLayer({
     //   name:'Step and Repeat',
@@ -1268,12 +1269,38 @@ function REGLApp(): JSX.Element {
     // })
 
     // Engine.addFile({
+    //   file: nested_aperture_macro,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'nested_aperture_macro',
+    //     units: 'inch'
+    //   }
+    // })
+
+    // Engine.addFile({
     //   file: multi_polarity_over_self,
     //   format: 'rs274x',
     //   props: {
     //     name: 'multi_polarity_over_self',
+    //     units: 'inch'
     //   }
     // })
+
+    Engine.addFile({
+      file: gtl_in,
+      format: 'rs274x',
+      props: {
+        name: 'gtl_in',
+      }
+    })
+
+    Engine.addFile({
+      file: gtl_mm,
+      format: 'rs274x',
+      props: {
+        name: 'gtl_mm',
+      }
+    })
 
 
     Engine.render(true)

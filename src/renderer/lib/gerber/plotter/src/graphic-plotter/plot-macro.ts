@@ -46,6 +46,7 @@ export function createMacro(tool: MacroTool): Symbols.MacroSymbol {
   }
 
   return new Symbols.MacroSymbol({
+    id: `${tool.name}-D${tool.dcode}`,
     shapes,
     flatten: true
   })
@@ -159,9 +160,9 @@ function plotCenterLine(parameters: number[]): Shapes.Primitive {
     rotation: degrees,
     x: x,
     y: y,
-    symbol: new Symbols.SquareSymbol({
-      width: width,
-      height: height,
+    symbol: new Symbols.RectangleSymbol({
+      width: height,
+      height: width,
       inner_dia: 0
     })
   })
@@ -176,7 +177,7 @@ function plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
     rotation: degrees,
     x: xs,
     y: ys,
-    symbol: new Symbols.SquareSymbol({
+    symbol: new Symbols.RectangleSymbol({
       width: width,
       height: height,
       inner_dia: 0

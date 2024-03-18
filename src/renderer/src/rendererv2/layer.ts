@@ -88,6 +88,7 @@ export interface ShapeRendererProps {
 interface ShapeRendererCommonContext {
   qtyFeaturesRef: number
   prevQtyFeaturesRef: number
+  transformMatrix: mat3
 }
 
 export class ShapeRenderer {
@@ -164,6 +165,7 @@ export class ShapeRenderer {
         face: 'back'
       },
       context: {
+        transformMatrix: () => this.transform.matrix,
         prevQtyFeaturesRef: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
         ) => context.qtyFeaturesRef ?? 1,
@@ -217,30 +219,24 @@ export class ShapeRenderer {
     })
   }
 
-  private drawMacros(context: REGL.DefaultContext & WorldContext): this {
+  private drawMacros(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
-        const origTransformMatrix = context.transform.matrix
-        const newTransfrom = macro.renderer.createTransfromMatrixFromPad(record)
-        newTransfrom.update(context.transform.matrix)
-        context.transform.matrix = newTransfrom.matrix
-        macro.renderer.transform.index = record.index
-        macro.renderer.transform.polarity = record.polarity
+        macro.renderer.updateTransformFromPad(record)
         macro.renderer.render(context)
-        context.transform.matrix = origTransformMatrix
       })
     })
     return this
   }
 
-  private drawStepAndRepeats(context: REGL.DefaultContext & WorldContext): this {
+  private drawStepAndRepeats(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
       stepAndRepeat.render(context)
     })
     return this
   }
 
-  private drawSurfaceWithHoles(context: REGL.DefaultContext & WorldContext): this {
+  private drawSurfaceWithHoles(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     if (this.shapeCollection.shaderAttachment.surfacesWithHoles.length === 0) return this
     this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     this.shapeCollection.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
@@ -268,7 +264,8 @@ export class ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    this.transform.update(context.transform.matrix)
+    // this.transform.update(context.transform.matrix)
+    this.transform.update(context.transformMatrix)
     if (this.dirty) {
       this.shapeCollection.refresh()
       this.macroCollection.refresh()
@@ -293,6 +290,7 @@ export class ShapeRenderer {
 
 export interface LayerRendererProps extends ShapeRendererProps {
   name: string
+  units: 'mm' | 'inch'
   visible?: boolean
   color?: vec3
   context?: string
@@ -311,6 +309,19 @@ export default class LayerRenderer extends ShapeRenderer {
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public context = 'misc'
   public type = 'document'
+  public units: 'mm' | 'inch' = 'mm'
+
+  get unitsScaleFactor(): number {
+    // return this.units === 'inch' ? 1/25.4 : 1
+    switch (this.units) {
+      case 'inch':
+        return 25.4
+      case 'mm':
+        return 1
+      default:
+        return 1
+    }
+  }
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
@@ -318,6 +329,8 @@ export default class LayerRenderer extends ShapeRenderer {
 
   constructor(props: LayerRendererProps) {
     super(props)
+
+    this.units = props.units
 
     this.name = props.name
     if (props.color !== undefined) {
@@ -367,7 +380,9 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
+        this.transform.scale = this.transform.scale * this.unitsScaleFactor
         super.render(context)
+        this.transform.scale = this.transform.scale * 1/this.unitsScaleFactor
       })
     })
   }
@@ -381,7 +396,7 @@ export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
   private drawFrameBuffer: REGL.DrawCommand<
-    REGL.DefaultContext & WorldContext,
+    REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
     FrameBufferRendeAttachments
   >
   constructor(props: MacroRendererProps) {
@@ -399,16 +414,11 @@ export class MacroRenderer extends ShapeRenderer {
   public updateTransformFromPad(pad: Shapes.Pad): void {
     this.transform.index = pad.index
     this.transform.polarity = pad.polarity
-  }
-
-  public createTransfromMatrixFromPad(pad: Shapes.Pad): ShapeTransfrom {
-    const transform = new ShapeTransfrom()
-    transform.datum = vec2.fromValues(pad.x, pad.y)
-    transform.rotation = pad.rotation
-    transform.scale = pad.resize_factor
-    transform.mirror_x = pad.mirror_x
-    transform.mirror_y = pad.mirror_y
-    return transform
+    this.transform.datum = vec2.fromValues(pad.x, pad.y)
+    this.transform.rotation = pad.rotation
+    this.transform.scale = pad.resize_factor
+    this.transform.mirror_x = pad.mirror_x
+    this.transform.mirror_y = pad.mirror_y
   }
 
   public render(
@@ -445,10 +455,6 @@ export class MacroRenderer extends ShapeRenderer {
 export class StepAndRepeatRenderer extends ShapeRenderer {
   public repeats: Transform[]
 
-  public get qtyFeatures(): number {
-    return this.records.length * this.repeats.length
-  }
-
   constructor(props: ShapeRendererProps & { repeats: Transform[] }) {
     super(props)
     this.repeats = props.repeats
@@ -456,14 +462,10 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
 
   public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     this.repeats.forEach((repeat, i) => {
-      const origTransformMatrix = context.transform.matrix
-      const newTransfrom = Object.assign(new ShapeTransfrom(), repeat)
-      newTransfrom.update(context.transform.matrix)
-      context.transform.matrix = newTransfrom.matrix
+      Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.qtyFeatures
       this.transform.index = i
       super.render(context)
-      context.transform.matrix = origTransformMatrix
     })
   }
 }

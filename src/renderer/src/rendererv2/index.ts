@@ -159,7 +159,7 @@ export class RenderEngine {
     backend.addLayer(params)
   }
 
-  public async addFile(params: { file: string, format: string, props: Omit<LayerRendererProps, 'regl' | 'image'>}): Promise<void> {
+  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>}): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
   }
