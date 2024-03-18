@@ -225,7 +225,7 @@ export class RenderEngineBackend {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        u_PixelSize: 0.00265,
+        u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE
       },
 

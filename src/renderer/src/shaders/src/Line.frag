@@ -100,7 +100,7 @@ float draw(float dist, float pixel_size) {
 }
 
 void main() {
-  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   float pixel_size = u_PixelSize / scale;
 
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;

@@ -8,7 +8,7 @@ uniform vec2 u_Offset;
 uniform int u_Type;
 uniform vec4 u_Color;
 void main() {
-  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0));
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   float pixel_size = u_PixelSize / scale;
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * 2.0) - 1.0;
