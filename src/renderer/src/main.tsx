@@ -7,7 +7,7 @@ import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 import '@mantine/core/styles.css';
 
-import REGLApp from './rendererv2/DEMO'
+import REGLApp from './renderer/DEMO'
 
 const blur = 30
 

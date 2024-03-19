@@ -1,5 +1,5 @@
 import React from 'react'
-import VirtualGerberApplication from '../renderer/virtual'
+import VirtualGerberApplication from '../old-renderer/virtual'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import {
   IconArrowsMove,

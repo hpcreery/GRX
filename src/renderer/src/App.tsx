@@ -1,6 +1,6 @@
 import './App.css'
 import { useRef, useEffect, useState } from 'react'
-import VirtualGerberApplication from './renderer/virtual'
+import VirtualGerberApplication from './old-renderer/virtual'
 import chroma from 'chroma-js'
 import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'

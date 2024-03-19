@@ -10,8 +10,8 @@ import * as LEXER from './lexer'
 import * as PARSER from './parser'
 import * as CONVERTER from './converter'
 
-import type { LayerRendererProps } from '@src/rendererv2/layer'
-import { registerFunction } from '@src/rendererv2/plugins'
+import type { LayerRendererProps } from '@src/renderer/layer'
+import { registerFunction } from '@src/renderer/plugins'
 
 export async function plugin(file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
   const buffer = await (await fetch(file)).arrayBuffer()

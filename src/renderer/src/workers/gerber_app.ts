@@ -1,5 +1,5 @@
 import * as Comlink from 'comlink'
-import { PixiGerberApplication } from '../renderer'
+import { PixiGerberApplication } from '../old-renderer'
 import type * as PIXI from '@pixi/webworker'
 
 export class PixiGerberApplicationWorker extends PixiGerberApplication {

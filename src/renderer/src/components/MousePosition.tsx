@@ -1,5 +1,5 @@
 import React from 'react'
-import VirtualGerberApplication, { PointerEvent } from '../renderer/virtual'
+import VirtualGerberApplication, { PointerEvent } from '../old-renderer/virtual'
 import { Card, Group, Text, Tooltip } from '@mantine/core'
 
 interface MousePositionProps {

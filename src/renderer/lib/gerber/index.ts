@@ -11,8 +11,8 @@
 
 import { plot } from './plotter/src'
 import { parse } from '@hpcreery/tracespace-parser'
-import type { LayerRendererProps } from '@src/rendererv2/layer'
-import { registerFunction } from '@src/rendererv2/plugins'
+import type { LayerRendererProps } from '@src/renderer/layer'
+import { registerFunction } from '@src/renderer/plugins'
 
 
 // export function plugin(engine: RenderEngineBackend): parser {

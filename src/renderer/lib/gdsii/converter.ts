@@ -1,7 +1,7 @@
 import { vec2 } from 'gl-matrix'
 
 import * as TREE from './gdsii_tree'
-import * as Shapes from '../../src/rendererv2/shapes'
+import * as Shapes from '../../src/renderer/shapes'
 
 // CELL structure and DATATYPE information is lost in the conversion.
 // Each cell maps to a Shape

@@ -1,392 +1,185 @@
-import { GerberGraphics, Graphics } from './graphics'
-
-import type { ImageTree } from '@hpcreery/tracespace-plotter'
-import type { Tool } from '@hpcreery/tracespace-plotter/src/tool-store'
-
-import * as PIXI from '@pixi/webworker'
-
-import { Cull } from '@pixi-essentials/cull'
-import { THistogram, TIntersectItem, TRendererLayer } from './types'
-
+import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
-import gerberParserWorker from '../workers/gerber_parser?worker'
-import type { WorkerMethods as GerberParserMethods } from '../workers/gerber_parser'
-// import geometry from './geometry_math'
+import EngineWorker from './engine?worker'
+import type { RenderEngineBackend, RenderSettings } from './engine'
 
-PIXI.BatchRenderer.canUploadSameBuffer = true
-// PIXI.Graphics.curves.adaptive = false
-// PIXI.Graphics.curves.maxLength = 1
-// PIXI.Graphics.curves.minSegments = 200
-// PIXI.Graphics.curves.maxSegments = 2048
-// PIXI.Graphics.curves.epsilon = 0.0001
+const Worker = new EngineWorker()
+export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
-export class PixiGerberApplication extends PIXI.Application<PIXI.ICanvas> {
-  viewport: GerberViewport
-  cull: Cull
-  origin: PIXI.ObservablePoint
-  cachedGerberGraphics = true
-  cullDirty = true
+export interface RenderEngineFrontendConfig {
+  container: HTMLElement
+  attributes?: WebGLContextAttributes | undefined
+}
 
-  constructor(options?: Partial<PIXI.IApplicationOptions>) {
-    super(options)
+interface PointerCoordinates {
+  x: number
+  y: number
+}
 
-    if (this.renderer.type == PIXI.RENDERER_TYPE.WEBGL) {
-      console.log('Gerber Renderer is using WebGL Canvas')
-    } else {
-      console.log('Gerber Renderer is using HTML Canvas')
-    }
+export const PointerEvents = {
+  POINTER_DOWN: 'pointerdown',
+  POINTER_UP: 'pointerup',
+  POINTER_MOVE: 'pointermove',
+  POINTER_HOVER: 'pointerhover'
+} as const
 
-    this.viewport = new GerberViewport()
-    this.stage.addChild(this.viewport)
+export type PointerEvent = CustomEvent<PointerCoordinates>
 
-    // Culling
-    this.cull = new Cull({
-      recursive: true,
-      toggle: 'renderable'
-    })
-
-    // origin
-    this.origin = new PIXI.ObservablePoint(
-      () => {},
-      this.viewport,
-      0,
-      this.renderer.height / this.renderer.resolution
-    )
-  }
-
-  public changeBackgroundColor(color: number): void {
-    this.renderer.background.color = color
-  }
-
-  public getOrigin(): { x: number; y: number } {
-    return { x: this.origin.x, y: this.origin.y }
-  }
-
-  public featuresAtPosition(clientX: number, clientY: number): TIntersectItem[] {
-    let intersected: TIntersectItem[] = []
-    this.viewport.children.forEach((child) => {
-      if (child instanceof LayerContainer) {
-        if (child.visible == false) return
-        child.children.forEach((child) => {
-          if (child instanceof GerberGraphics) {
-            intersected = intersected.concat(child.featuresAtPosition(clientX, clientY))
-          }
+export class RenderEngine {
+  public settings: RenderSettings = new Proxy(
+    {
+      MSPFRAME: 1000 / 60,
+      get FPS(): number {
+        return 1000 / this.MSPFRAME
+      },
+      set FPS(value: number) {
+        this.MSPFRAME = 1000 / value
+      },
+      OUTLINE_MODE: false,
+      BACKGROUND_COLOR: [0, 0, 0, 0],
+      MAX_ZOOM: 100,
+      MIN_ZOOM: 0.01,
+      ZOOM_TO_CURSOR: true
+    },
+    {
+      set: (target, name, value): boolean => {
+        this.backend.then(engine => {
+          engine.settings[name] = value
+          engine.render(true)
+        })
+        return true
+      },
+      get: (target, prop, reciever): any => {
+        this.backend.then(engine => {
+          return engine.settings[prop]
         })
       }
-    })
-    this.cullViewport(true)
-    // console.log(intersected)
-    return intersected
+    }
+  )
+  public readonly CONTAINER: HTMLElement
+  public pointer: EventTarget = new EventTarget()
+  public backend: Promise<Comlink.Remote<RenderEngineBackend>>
+  public canvas: HTMLCanvasElement
+  constructor({ container, attributes }: RenderEngineFrontendConfig) {
+    this.CONTAINER = container
+    this.canvas = this.createCanvas()
+    const offscreenCanvas = this.canvas.transferControlToOffscreen()
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
+    new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
+    this.addControls()
+    this.render(true)
   }
 
-  // Culling methods
-  // ---------------
-
-  public cullViewport(force = false): void {
-    if (this.viewport.transform.scale.x < 1) {
-      if (!this.cachedGerberGraphics) {
-        this.cullDirty = true
-        this.cacheViewport()
-      }
-    } else {
-      if (this.cachedGerberGraphics) {
-        this.cullDirty = true
-        this.uncacheViewport()
-      }
-    }
-    if (this.cachedGerberGraphics !== true) {
-      if (this.cullDirty === true || force === true) {
-        this.cullDirty = false
-        this.cull.cull(this.renderer.screen as PIXI.Rectangle)
-        setTimeout(() => {
-          this.cullDirty = true
-        }, 40)
-      }
-    }
+  private createCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas')
+    canvas.width = this.CONTAINER.clientWidth
+    canvas.height = this.CONTAINER.clientHeight
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    this.CONTAINER.appendChild(canvas)
+    return canvas
   }
 
-  private cacheViewport(): void {
-    this.cull.uncull()
-    this.cachedGerberGraphics = true
-    this.viewport.children.forEach(async (child) => {
-      child.cacheAsBitmap = true
+  private resize(): void {
+    const { clientWidth: width, clientHeight: height } = this.CONTAINER
+    this.backend.then(engine => {
+      engine.resize(width, height)
     })
   }
 
-  private uncacheViewport(): void {
-    this.cachedGerberGraphics = false
-    this.viewport.children.forEach(async (child) => {
-      child.cacheAsBitmap = false
-    })
+  public getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+    // Get the mouse position relative to the canvas
+    const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
+    return [e.clientX - offsetX, height - (e.clientY - offsetY)]
   }
 
-  public uncull(): void {
-    this.cull.uncull()
+  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
+    const backend = await this.backend
+    const { width, height } = this.CONTAINER.getBoundingClientRect()
+    const mouse_element_pos = this.getMouseCanvasCoordinates(e)
+
+    // Normalize the mouse position to the canvas
+    const mouse_normalize_pos = [
+      mouse_element_pos[0] / width,
+      mouse_element_pos[1] / height
+    ]
+    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+    return await backend.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
   }
 
-  // Viewport methods
-  // ----------------
-
-  public moveViewport(x: number, y: number, scale: number): void {
-    this.viewport.position.set(x, y)
-    this.viewport.scale.set(scale)
-    this.cullViewport()
-  }
-
-  public resizeViewport(width: number, height: number): void {
-    this.renderer.resize(width, height)
-    this.cullViewport()
-  }
-
-  public getViewportBounds(): PIXI.Rectangle {
-    return this.viewport.getLocalBounds()
-  }
-
-  public getRendererBounds(): PIXI.Rectangle {
-    return this.renderer.screen
-  }
-
-  // Layer methods
-  // -------------
-
-  public tintLayer(uid: string, color: PIXI.ColorSource): void {
-    this.uncacheViewport()
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer) {
-      layer.tint = color
-    }
-    this.cullViewport()
-  }
-
-  public getLayerTintColor(uid: string): PIXI.ColorSource {
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer) {
-      return layer.tint
-    }
-    return 0xffffff
-  }
-
-  public showLayer(uid: string): void {
-    this.uncacheViewport()
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer) {
-      layer.visible = true
-    }
-    this.cullViewport()
-  }
-
-  public hideLayer(uid: string): void {
-    this.uncacheViewport()
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer) {
-      layer.visible = false
-    }
-    this.cullViewport()
-  }
-
-  public get layers(): TRendererLayer[] {
-    const gerberLayers: TRendererLayer[] = []
-    this.viewport.children.forEach((child) => {
-      if (child instanceof LayerContainer) {
-        gerberLayers.push({
-          uid: child.uid,
-          name: child.name,
-          color: child.tint,
-          visible: child.visible,
-          zIndex: child.zIndex,
-          tools: child.tools
+  private async addControls(): Promise<void> {
+    const backend = await this.backend
+    const sendPointerEvent = async (
+      mouse: MouseEvent,
+      event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
+    ): Promise<void> => {
+      const [x, y] = await this.getMouseWorldCoordinates(mouse)
+      this.pointer.dispatchEvent(
+        new CustomEvent<PointerCoordinates>(event_type, {
+          detail: { x, y }
         })
-      }
-    })
-    return gerberLayers
-  }
-
-  public addLayer(name: string, image: ImageTree, uid?: string): void {
-    const layerContainer = new LayerContainer({
-      name,
-      uid,
-      tools: image.tools,
-      extract: this.renderer.extract
-    })
-    layerContainer.filters = [new PIXI.AlphaFilter(0.5)]
-    layerContainer.scale = { x: 1, y: -1 }
-    layerContainer.position = this.origin
-    layerContainer.interactiveChildren = false
-    layerContainer.addChild(new GerberGraphics(image))
-    layerContainer.cacheAsBitmapResolution = 1
-    layerContainer.cacheAsBitmap = this.cachedGerberGraphics
-    this.viewport.addChild(layerContainer)
-    this.cull.addAll(layerContainer.children)
-  }
-
-  public async removeLayer(uid: string): Promise<void> {
-    const layerContainer = this.viewport.getChildByUID(uid)
-    if (layerContainer) {
-      this.viewport.removeChild(layerContainer)
-      this.cull.removeAll(layerContainer.children)
-      layerContainer.destroy({ children: true })
+      )
     }
-  }
-
-  // Gerber methods
-  // --------------
-
-  public async addGerber(name: string, gerber: string, uid?: string): Promise<void> {
-    const worker = new gerberParserWorker()
-    const thread = Comlink.wrap<GerberParserMethods>(worker)
-    const image = await thread.parseGerber(gerber)
-    thread[Comlink.releaseProxy]()
-    worker.terminate()
-    this.addLayer(name, image, uid)
-  }
-
-  // Event methods
-  // -------------
-
-  addViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
-    function runCallback(): void {
-      listener()
-    }
-    this.viewport.on(event, runCallback)
-  }
-
-  // removeViewportListener(event: keyof PIXI.DisplayObjectEvents, listener: () => void): void {
-  //   function runCallback() {
-  //     listener()
-  //   }
-  //   this.viewport.off(event, runCallback)
-  // }
-
-  public async getLayerFeaturePng(uid: string, index: number): Promise<string> {
-    // this.cull.uncull()
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer === undefined) {
-      throw new Error('Layer not found')
-    }
-    const element = layer.getElementByIndex(index)
-    if (element === undefined) {
-      throw new Error('Element not found')
-    }
-    const cached = element.cacheAsBitmap
-    const visible = element.visible
-    element.visible = true
-    element.cacheAsBitmap = false
-    const image = await this.renderer.extract.base64(element, 'image/webp', 1) // 'image/png'
-    element.visible = visible
-    element.cacheAsBitmap = cached
-    return image
-  }
-
-  public async computeLayerFeaturesHistogram(uid: string): Promise<THistogram> {
-    const prehistogram: THistogram = []
-    const layer = this.viewport.getChildByUID(uid)
-    if (layer === undefined) {
-      throw new Error('Layer not found')
-    }
-    const tools = layer.tools
-    layer.graphic.children.forEach((element) => {
-      if (element instanceof Graphics) {
-        prehistogram.push({
-          dcode: element.properties.shape?.dcode,
-          tool: element.properties.shape?.dcode
-            ? tools[element.properties.shape?.dcode]
-            : undefined,
-          indexes: [element.properties.index],
-          polarity: element.properties.shape?.polarity
-        })
-      }
-    })
-    const histogram: THistogram = prehistogram.reduce((acc, cur) => {
-      const index = acc.findIndex((el) => el.dcode === cur.dcode && el.polarity === cur.polarity)
-      if (index === -1) {
-        acc.push(cur)
+    this.CONTAINER.onwheel = async (e): Promise<void> => {
+      const settings = await backend.settings
+      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+      if (settings.ZOOM_TO_CURSOR) {
+        backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
       } else {
-        acc[index].indexes.push(...cur.indexes)
+        backend.zoomAtPoint(width / 2, height / 2, e.deltaY)
       }
-      return acc
-    }, [] as THistogram)
-    return histogram
-  }
-
-  public destroy(
-    removeView?: boolean | undefined,
-    stageOptions?: boolean | PIXI.IDestroyOptions | undefined
-  ): void {
-    this.viewport.removeAllListeners()
-    super.destroy(removeView, stageOptions)
-  }
-}
-
-class LayerContainer extends PIXI.Container {
-  public name: string
-  public uid: string
-  public tools: Partial<Record<string, Tool>>
-  public extract: PIXI.IExtract
-  constructor(props: {
-    name: string
-    uid?: string
-    tools: Partial<Record<string, Tool>>
-    extract: PIXI.IExtract
-  }) {
-    super()
-    this.name = props.name
-    this.uid = props.uid ?? this.generateUid()
-    this.tools = props.tools
-    this.extract = props.extract
-  }
-  private generateUid(): string {
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-  }
-
-  get tint(): PIXI.ColorSource {
-    const child = this.children[0] as GerberGraphics
-    return child.tint
-  }
-
-  set tint(color: PIXI.ColorSource) {
-    const child = this.children[0] as GerberGraphics
-    child.tint = color
-  }
-
-  get graphic(): GerberGraphics {
-    const child = this.children[0] as GerberGraphics
-    return child
-  }
-
-  getElementByIndex(index: number): Graphics | undefined {
-    const child = this.children[0] as GerberGraphics
-    return child.getElementByIndex(index)
-  }
-
-  public async getLayerFeaturePng(index: number): Promise<string> {
-    const element = this.getElementByIndex(index)
-    if (element === undefined) {
-      throw new Error('Fearure not found')
     }
-    const cached = element.cacheAsBitmap
-    const visible = element.visible
-    element.visible = true
-    element.cacheAsBitmap = false
-    const image = await this.extract.base64(element, 'image/webp', 1) // 'image/png'
-    element.visible = visible
-    element.cacheAsBitmap = cached
-    return image
-  }
-}
+    this.CONTAINER.onmousedown = async (e): Promise<void> => {
+      await backend.grabViewport()
+      const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
+      backend.sample(xpos, ypos)
 
-class GerberViewport extends PIXI.Container {
-  constructor() {
-    super()
-  }
-  public getChildByUID(uid: string): LayerContainer | undefined {
-    let found: LayerContainer | undefined
-    this.children.forEach((child) => {
-      if (child instanceof LayerContainer) {
-        if (child.uid === uid) {
-          found = child
-        }
+      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+    }
+    this.CONTAINER.onmouseup = async (e): Promise<void> => {
+      await backend.releaseViewport()
+
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    }
+    this.CONTAINER.onmousemove = async (e): Promise<void> => {
+      if (!await backend.isDragging()) {
+        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+        return
       }
-    })
-    return found
+      await backend.moveViewport(e.movementX, e.movementY)
+
+      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+    }
+  }
+
+  public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
+    const backend = await this.backend
+    backend.addLayer(params)
+  }
+
+  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>}): Promise<void> {
+    const backend = await this.backend
+    backend.addFile(params)
+  }
+
+  public async render(force = false): Promise<void> {
+    const backend = await this.backend
+    backend.render(force)
+  }
+
+  public async destroy(): Promise<void> {
+    const backend = await this.backend
+    backend.destroy()
+    ComWorker[Comlink.releaseProxy]()
+    Worker.terminate()
+
+    this.CONTAINER.innerHTML = ''
+    this.CONTAINER.onwheel = null
+    this.CONTAINER.onmousedown = null
+    this.CONTAINER.onmouseup = null
+    this.CONTAINER.onmousemove = null
+    this.CONTAINER.onresize = null
   }
 }
