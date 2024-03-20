@@ -350,6 +350,11 @@ export class PolygonSymbol extends StandardSymbol {
 
 
 export type TMacroSymbol = {
+  id: string
+  /**
+   * flatten symbol. if true, the symbol polarities will be flattened, ie negatives will become truly transparent
+   */
+  flatten: boolean
   shapes: Shape[]
 }
 
@@ -360,7 +365,7 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
   public flatten = false
   public shapes: Shape[] = []
 
-  constructor(macro: Partial<TMacroSymbol & { id: string; flatten: boolean }>) {
+  constructor(macro: Partial<TMacroSymbol>) {
     Object.assign(this, macro)
   }
 }
@@ -368,6 +373,7 @@ export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
 export class FlatMacroSymbol extends MacroSymbol {
   constructor(macro: Partial<TMacroSymbol & { id: string }>) {
     super(macro)
+    this.flatten = true
   }
 }
 

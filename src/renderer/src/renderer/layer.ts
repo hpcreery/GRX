@@ -161,7 +161,7 @@ export class ShapeRenderer {
       },
       // TODO: cull face should be configurable. Shaders should not flip faces when mirroring
       cull: {
-        enable: false,
+        enable: true,
         face: 'back'
       },
       context: {
@@ -290,7 +290,10 @@ export class ShapeRenderer {
 
 export interface LayerRendererProps extends ShapeRendererProps {
   name: string
-  units: 'mm' | 'inch'
+  /**
+   * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
+   */
+  units: 'mm' | 'inch' | 'cm' | 'mil' | number
   visible?: boolean
   color?: vec3
   context?: string
@@ -309,17 +312,23 @@ export default class LayerRenderer extends ShapeRenderer {
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public context = 'misc'
   public type = 'document'
-  public units: 'mm' | 'inch' = 'mm'
+  /**
+   * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
+   */
+  public units: 'mm' | 'inch' | 'mil' | 'cm' | number = 'mm'
 
   get unitsScaleFactor(): number {
-    // return this.units === 'inch' ? 1/25.4 : 1
     switch (this.units) {
       case 'inch':
-        return 25.4
+        return 1 / 25.4
       case 'mm':
         return 1
+      case 'cm':
+        return 10
+      case 'mil':
+        return 0.0254
       default:
-        return 1
+        return this.units
     }
   }
 
@@ -380,9 +389,9 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        this.transform.scale = this.transform.scale * this.unitsScaleFactor
+        this.transform.scale = this.transform.scale * 1 / this.unitsScaleFactor
         super.render(context)
-        this.transform.scale = this.transform.scale * 1/this.unitsScaleFactor
+        this.transform.scale = this.transform.scale * this.unitsScaleFactor
       })
     })
   }

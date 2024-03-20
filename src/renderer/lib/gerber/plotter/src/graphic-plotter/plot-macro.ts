@@ -45,10 +45,16 @@ export function createMacro(tool: MacroTool): Symbols.MacroSymbol {
     }
   }
 
+  // micro optimization
+  let flatten = true
+  if (shapes.every((s) => 'polarity' in s && s.polarity == 1)) {
+    flatten = false
+  }
+
   return new Symbols.MacroSymbol({
     id: `${tool.name}-D${tool.dcode}`,
     shapes,
-    flatten: true
+    flatten
   })
 }
 
@@ -122,7 +128,7 @@ function plotCircle(parameters: number[]): Shapes.Primitive {
   const [cx, cy] = rotate([cx0, cy0], degrees)
 
   return new Shapes.Pad({
-    polarity: exposure,
+    polarity: exposure === 1 ? 1 : 0,
     x: cx,
     y: cy,
     symbol: new Symbols.RoundSymbol({
@@ -138,7 +144,7 @@ function plotVectorLine(parameters: number[]): Shapes.Primitive {
   const [xe, ye] = rotate([ex, ey], degrees)
 
   return new Shapes.Line({
-    polarity: exposure,
+    polarity: exposure === 1 ? 1 : 0,
     xs: xs,
     ys: ys,
     xe: xe,
@@ -156,7 +162,7 @@ function plotCenterLine(parameters: number[]): Shapes.Primitive {
   const [x, y] = rotate([cx, cy], degrees)
 
   return new Shapes.Pad({
-    polarity: exposure,
+    polarity: exposure === 1 ? 1 : 0,
     rotation: degrees,
     x: x,
     y: y,
@@ -173,7 +179,7 @@ function plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
   const [xs, ys] = rotate([x, y], degrees)
 
   return new Shapes.Pad({
-    polarity: exposure,
+    polarity: exposure === 1 ? 1 : 0,
     rotation: degrees,
     x: xs,
     y: ys,
@@ -203,12 +209,14 @@ function plotOutline(parameters: number[]): Shapes.Surface {
     })
     .filter((s): s is Shapes.Contour_Line_Segment => s !== undefined)
   return new Shapes.Surface({
-    polarity: exposure
+    polarity: exposure === 1 ? 1 : 0
   }).addContour(
     new Shapes.Contour({
+      poly_type: 1,
       xs: xs,
-      ys: ys
-    }).addSegments(segments)
+      ys: ys,
+      segments: segments
+    })
   )
 }
 
@@ -218,7 +226,7 @@ function plotPolygon(parameters: number[]): Shapes.Primitive {
   const [x, y] = rotate([cx, cy], degrees)
 
   return new Shapes.Pad({
-    polarity: exposure,
+    polarity: exposure === 1 ? 1 : 0,
     x: x,
     y: y,
     rotation: degrees,

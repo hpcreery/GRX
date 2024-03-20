@@ -300,7 +300,7 @@ export class Contour implements TContour {
    */
   public segments: (Contour_Arc_Segment | Contour_Line_Segment)[] = []
 
-  constructor(contour: IntersectingTypes<Contour, TContour>) {
+  constructor(contour: Partial<IntersectingTypes<Contour, TContour>>) {
     Object.assign(this, contour)
   }
 

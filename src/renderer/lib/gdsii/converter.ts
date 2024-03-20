@@ -42,7 +42,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
         // console.log('boundary|box', cellName, element)
         const el = element.el as TREE.boundary | TREE.box
 
-        let contour_line_segments: Shapes.Contour_Line_Segment[] = []
+        const contour_line_segments: Shapes.Contour_Line_Segment[] = []
         for (const xy of el.XY) {
           const contour_line_segment = new Shapes.Contour_Line_Segment({
             x: xy.x * scale,
@@ -51,7 +51,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           contour_line_segments.push(contour_line_segment)
         }
 
-        let contour = new Shapes.Contour({
+        const contour = new Shapes.Contour({
           poly_type: 1,
           xs: el.XY[0].x * scale,
           ys: el.XY[0].y * scale
@@ -83,7 +83,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             }
             lines.push(line)
           }
-          let polyline = new Shapes.PolyLine({
+          const polyline = new Shapes.PolyLine({
             // Start point.
             xs: el.XY[0].x * scale,
             ys: el.XY[0].y * scale,
