@@ -126,7 +126,7 @@ export class RenderEngineBackend {
 
   public grid: GridRenderProps = {
     enabled: true,
-    color: [0.5, 0.5, 0.5, 0.5],
+    color: [0.2, 0.2, 0.2, 0.5],
     spacing_x: 0.5,
     spacing_y: 0.5,
     offset_x: 0,

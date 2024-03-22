@@ -33,7 +33,7 @@ export default defineConfig({
     ],
     worker: {
       format: 'es',
-      plugins: [
+      plugins: () => [
         comlink(),
         glslify({
           compress: false,
