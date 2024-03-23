@@ -181,8 +181,8 @@ function plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
   return new Shapes.Pad({
     polarity: exposure === 1 ? 1 : 0,
     rotation: degrees,
-    x: xs,
-    y: ys,
+    x: xs + width / 2,
+    y: ys + height / 2,
     symbol: new Symbols.RectangleSymbol({
       width: width,
       height: height,
