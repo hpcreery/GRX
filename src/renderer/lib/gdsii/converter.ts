@@ -23,7 +23,7 @@ type LayerHierarchy = {
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   // const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
-  const scale = 0.01
+  const scale = 0.0001
 
   const availableCells = new Set<string>()
   const referencedCells = new Set<string>()
@@ -68,9 +68,6 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
       } else if (element.type === 'path') {
         {
           // console.log('path', cellName, element)
-          if (cellName === "path4_no_bgn" || cellName === "path4_no_end") {
-            console.log('path4_no_bgn', element, JSON.stringify(element, null, 2))
-          }
           const el = element.el as TREE.path
           const width = (el.WIDTH ? el.WIDTH.width : 0.001) * scale
 
@@ -139,7 +136,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           })
         }
       } else if (element.type === 'aref') {
-        console.log('aref', cellName, element, JSON.stringify(element))
+        // console.log('aref', cellName, element, JSON.stringify(element))
         const el = element.el as TREE.aref
         const arefName = el.SNAME.name
         referencedCells.add(arefName)
@@ -147,9 +144,6 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
         if (!gdsiiHierarchy[arefName]) {
           console.warn(`AREF ${arefName} not found in hierarchy.`)
           continue
-        }
-        if (cellName === 'aref1_2_3') {
-          console.log('aref1_2_3', element, JSON.stringify(element, null, 2))
         }
         const origin = vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale)
         const cols = el.COLROW.cols || 1
@@ -193,7 +187,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
   const topLevelCells = Array.from(availableCells).filter(function (obj) {
     return Array.from(referencedCells).indexOf(obj) == -1
   })
-  console.log('topLevelCells', topLevelCells)
+  // console.log('topLevelCells', topLevelCells)
 
   // convert GDSIIHierarchy to LayerHierarchy
   const layerHierarchy: LayerHierarchy = {}

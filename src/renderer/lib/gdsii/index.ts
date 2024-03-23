@@ -23,6 +23,7 @@ export async function plugin(file: string, props: Partial<Omit<LayerRendererProp
     delete props.name
     addLayer({
       name: layer,
+      units: "mm",
       image: shapes.shapes,
       ...props
     })
