@@ -14,7 +14,8 @@ void main() {
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * 2.0) - 1.0;
   vec3 FragCoord = u_InverseTransform * vec3(NormalFragCoord, 1.0);
   if (pixel_size > 0.1 * u_Spacing.x || pixel_size > 0.1 * u_Spacing.y) {
-    discard;
+     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+     return;
   }
   float mody = mod(FragCoord.y - u_Offset.y, u_Spacing.y);
   float modx = mod(FragCoord.x - u_Offset.x, u_Spacing.x);
@@ -27,6 +28,7 @@ void main() {
       gl_FragColor = vec4(u_Color);
     }
   } else {
-    discard;
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    return;
   }
 }

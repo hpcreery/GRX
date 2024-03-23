@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { Button, Popover, ColorPicker, useMantineTheme, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import chroma from 'chroma-js'
-import { ColorSource } from 'pixi.js'
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 import { TRendererLayer } from '../../old-renderer/types'
-import VirtualGerberApplication from '../../old-renderer/virtual'
-import * as Comlink from 'comlink'
+import { RenderEngine } from '@src/renderer'
 import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from '../LayersSidebar'
 import {
@@ -20,10 +18,12 @@ import {
   IconColorPicker
 } from '@tabler/icons-react'
 import { useContextMenu } from 'mantine-contextmenu'
+import type { LayerInfo } from '@src/renderer/engine'
+import { vec3 } from 'gl-matrix'
 
 interface LayerListItemProps {
   file: UploadFile
-  gerberApp: VirtualGerberApplication
+  renderEngine: RenderEngine
   actions: {
     download: () => void
     preview: () => void
@@ -32,15 +32,15 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
-  const showContextMenu = useContextMenu()
+  const {showContextMenu} = useContextMenu()
   const theme = useMantineTheme()
-  const { gerberApp, file, actions } = props
+  const { renderEngine, file, actions } = props
   const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
     name: file.name,
     uid: file.uid
   }
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
-  const [color, setColor] = useState<ColorSource>(0x000000)
+  const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
   const [visible, setVisible] = useState<boolean>(false)
   // const [zIndex, setzIndex] = useState<number>(layer.zIndex)
   // const [progress, setProgress] = useState<number>(0)
@@ -48,7 +48,8 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
   const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
-  function registerLayers(rendererLayers: TRendererLayer[]): void {
+  function registerLayers(rendererLayers: LayerInfo[]): void {
+    console.log('registering layers', rendererLayers, layer)
     const thisLayer = rendererLayers.find((l) => l.uid === layer.uid)
     if (thisLayer) {
       setColor(thisLayer.color)
@@ -59,16 +60,9 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   }
 
   useEffect(() => {
-    gerberApp.renderer.then(async (renderer) => {
-      const layers = await renderer.layers
+    renderEngine.backend.then(async (renderer) => {
+      const layers = await renderer.getLayers()
       registerLayers(layers)
-      renderer.addViewportListener(
-        'childAdded',
-        Comlink.proxy(async () => {
-          registerLayers(await renderer.layers)
-          gerberApp.zoomHome()
-        })
-      )
       if (layers.find((l) => l.uid === layer.uid)) {
         console.log('layer already exists')
         setLoading(false)
@@ -100,7 +94,17 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       }
       reader.onload = async (e): Promise<void> => {
         if (e.target?.result !== null && e.target?.result !== undefined) {
-          await renderer.addGerber(file.name, e.target?.result as string, file.uid)
+          // await renderer.addGerber(file.name, e.target?.result as string, file.uid)
+          await renderer.addFile({
+            format: 'rs274x',
+            file: e.target?.result as string,
+
+            props: {
+            name: file.name,
+            uid: file.uid
+            }
+          })
+          registerLayers(await renderer.getLayers())
           notifications.show({
             title: 'File read',
             message: `${file.name} file read.`,
@@ -121,22 +125,25 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     actions.remove(file)
   }
 
-  async function changeColor(color: ColorSource): Promise<void> {
-    const renderer = await gerberApp.renderer
+  async function changeColor(color: vec3): Promise<void> {
+    const renderer = await renderEngine.backend
     if (!renderer) return
-    await renderer.tintLayer(layer.uid, color)
+    // await renderer.tintLayer(layer.uid, color)
+    await renderer.setLayerProps(layer.uid, { color })
     setColor(color)
   }
 
   async function toggleVisible(): Promise<void> {
     // setLoading(!loading)
-    const renderer = await gerberApp.renderer
+    const renderer = await renderEngine.backend
     if (!renderer) return
     if (visible) {
-      renderer.hideLayer(layer.uid)
+      // renderer.hideLayer(layer.uid)
+      renderer.setLayerProps(layer.uid, { visible: false })
       setVisible(false)
     } else {
-      renderer.showLayer(layer.uid)
+      // renderer.showLayer(layer.uid)
+      renderer.setLayerProps(layer.uid, { visible: true })
       setVisible(true)
     }
   }
@@ -187,15 +194,15 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       icon: visible ? <IconEyeOff stroke={1.5} size={18} /> : <IconEye stroke={1.5} size={18} />,
       onClick: toggleVisible
     },
-    {
-      title: 'Features Histogram',
-      key: '4',
-      icon: <IconChartHistogram stroke={1.5} size={18} />,
-      onClick: (): void => {
-        featureHistogramModalRef.current?.open()
-      },
-      disabled: true
-    },
+    // {
+    //   title: 'Features Histogram',
+    //   key: '4',
+    //   icon: <IconChartHistogram stroke={1.5} size={18} />,
+    //   onClick: (): void => {
+    //     featureHistogramModalRef.current?.open()
+    //   },
+    //   disabled: true
+    // },
     {
       key: 'divider'
     },
@@ -209,8 +216,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
 
   return (
     <Popover
-      width="target"
-      position="bottom"
+      position="right"
       withArrow
       trapFocus
       shadow="md"
@@ -219,7 +225,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     >
       <Popover.Target>
         <div
-          onContextMenu={showContextMenu(items, { className: 'transparency' })}
+          onContextMenu={showContextMenu(items)}
           style={{
             display: 'flex'
           }}
@@ -236,27 +242,21 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                   textAlign: 'left',
                   width: '100%',
                   overflow: 'hidden',
-                  padding: 0
+                  padding: 0,
+                  '--button-justify': 'flex-start',
+                  paddingLeft: 10
                 }}
                 variant="subtle"
                 color="gray"
-                // styles={(theme) => ({
-                //   root: {
-                //     color: theme.colorScheme == 'dark' ? theme.colors.gray[4] : theme.colors.gray[9]
-                //   },
-                //   inner: {
-                //     justifyContent: 'flex-start',
-                //     paddingLeft: 10
-                //   }
-                // })}
-                leftIcon={
+
+                leftSection={
                   visible ? (
                     <IconCircleFilled
                       size={18}
                       style={{
-                        color: chroma(color as any).hex()
+                        color: chroma.gl(color[0], color[1], color[2]).hex()
                       }}
-                      onClick={(e) => {
+                      onClick={(e): void => {
                         e.stopPropagation()
                         setShowColorPicker(!showColorPicker)
                       }}
@@ -265,9 +265,9 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                     <IconCircleDotted
                       size={18}
                       style={{
-                        color: chroma(color as any).hex()
+                        color: chroma.gl(color[0], color[1], color[2]).hex()
                       }}
-                      onClick={(e) => {
+                      onClick={(e): void => {
                         e.stopPropagation()
                         setShowColorPicker(!showColorPicker)
                       }}
@@ -286,7 +286,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           <animated.div {...bind()} style={{ width }}>
             <Button
               style={{ padding: 0, width: `100%`, overflow: 'hidden' }}
-              leftIcon={
+              leftSection={
                 <IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />
               }
               onClick={deleteLayer}
@@ -304,11 +304,11 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
               // })}
             />
           </animated.div>
-          <FeatureHistogramModal
+          {/* <FeatureHistogramModal
             ref={featureHistogramModalRef}
             uid={layer.uid}
-            gerberApp={gerberApp}
-          />
+            renderEngine={renderEngine}
+          /> */}
         </div>
       </Popover.Target>
       <Popover.Dropdown
@@ -318,9 +318,10 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       >
         <ColorPicker
           style={{ width: '100%' }}
-          value={chroma(color as any).hex()}
-          onChangeEnd={(color) => {
-            changeColor(color)
+          value={chroma.gl(color[0], color[1], color[2]).hex()}
+          onChangeEnd={(color): void => {
+            const colors = chroma(color).gl()
+            changeColor(vec3.fromValues(colors[0], colors[1], colors[2]))
             setShowColorPicker(false)
           }}
           swatchesPerRow={7}

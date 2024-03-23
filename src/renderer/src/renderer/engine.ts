@@ -1,6 +1,6 @@
 import REGL from 'regl'
-import { mat3, vec2 } from 'gl-matrix'
-import LayerRenderer, { LayerRendererProps } from './layer'
+import { mat3, vec2, vec3 } from 'gl-matrix'
+import LayerRenderer, { LayerRendererProps, Units } from './layer'
 import { initializeRenderers } from './collections'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
@@ -86,6 +86,26 @@ interface GridRenderUniforms {
   u_Offset: vec2
   u_Type: number
   u_Color: [number, number, number, number]
+}
+
+export interface LayerInfo {
+  name: string,
+  uid: string
+  color: vec3,
+  context: string,
+  type: string,
+  units: Units,
+  visible: boolean
+}
+
+// export const RenderEngineEvents = {
+//   RENDER: 'render',
+//   LAYER_ADDED: 'layer-added',
+// } as const
+
+export interface RenderEngineEvents {
+  RENDER: 'RENDER',
+  LAYER_ADDED: 'LAYER_ADDED'
 }
 
 export class RenderEngineBackend {
@@ -182,6 +202,8 @@ export class RenderEngineBackend {
   public parsers: {
     [key: string]: parser
   } = {}
+
+  public eventTarget = new EventTarget()
 
   constructor(
     offscreenCanvas: OffscreenCanvas,
@@ -429,7 +451,7 @@ export class RenderEngineBackend {
     return [mouse[0], mouse[1]]
   }
 
-  public addLayer(params: Omit<LayerRendererProps, 'regl'>): void {
+  public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
     console.log('Adding Layer', params.name, params.image)
     const layer = new LayerRenderer({
       ...params,
@@ -439,38 +461,54 @@ export class RenderEngineBackend {
     this.render(true)
   }
 
-  public addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): void {
+  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
-      const callback = (params: Omit<LayerRendererProps, "regl">): void => this.addLayer(params)
+      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer(params)
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
-      parser(params.file, params.props, Comlink.proxy(callback)).then(() => {
-        parser[Comlink.releaseProxy]()
-        instance.terminate()
-      })
+      await parser(params.file, params.props, Comlink.proxy(callback))
+      parser[Comlink.releaseProxy]()
+      instance.terminate()
     } else {
       console.error('No parser found for format: ' + params.format)
     }
   }
 
-  public getLayers(): Omit<LayerRendererProps, 'regl' | 'transform' | 'image'>[] {
+  public getLayers(): LayerInfo[] {
     return this.layers.map((layer) => {
       return {
         name: layer.name,
+        uid: layer.uid,
         color: layer.color,
         context: layer.context,
         type: layer.type,
         units: layer.units,
+        visible: layer.visible
       }
     })
   }
 
-  public setLayerProps(name: string, props: Partial<Omit<LayerRendererProps, 'regl'>>): void {
-    const layer = this.layers.find((layer) => layer.name === name)
+  public removeLayer(uid: string): void {
+    const index = this.layers.findIndex((layer) => layer.uid === uid)
+    if (index === -1) return
+    // this.layers[index].destroy()
+    this.layers.splice(index, 1)
+    this.render(true)
+  }
+
+  public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, 'regl'>>): void {
+    const layer = this.layers.find((layer) => layer.uid === uid)
     if (!layer) return
     Object.assign(layer, props)
     this.render(true)
+  }
+
+  public addEventCallback(event: keyof RenderEngineEvents, listener: () => void): void {
+    function runCallback(): void {
+      listener()
+    }
+    this.eventTarget.addEventListener(event, runCallback)
   }
 
   public sample(x: number, y: number): void {

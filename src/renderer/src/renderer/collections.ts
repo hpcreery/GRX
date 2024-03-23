@@ -537,6 +537,7 @@ export class ShapesShaderCollection {
       surfaces: [],
       surfacesWithHoles: []
     }
+    this.refresh()
   }
 
   public refresh(): this {
@@ -757,6 +758,7 @@ export class SymbolShaderCollection {
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
     this.texture = regl.texture()
+    this.refresh()
   }
 
   protected makeUnique(symbol: Symbols.StandardSymbol): string {
@@ -846,6 +848,7 @@ export class MacroShaderCollection {
     const { records, regl } = props
     this.regl = regl
     this.records = records
+    this.refresh()
   }
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
@@ -911,6 +914,7 @@ export class StepAndRepeatCollection {
     const { records, regl } = props
     this.regl = regl
     this.records = records
+    this.refresh()
   }
 
   public refresh(): this {

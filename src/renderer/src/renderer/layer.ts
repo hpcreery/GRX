@@ -93,7 +93,7 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  public dirty = true
+  public dirty = false
   // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
   // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
   //   // console.log('records changed', { path, value, prev, apply })
@@ -288,12 +288,15 @@ export class ShapeRenderer {
   }
 }
 
+export type Units = 'mm' | 'inch' | 'cm' | 'mil' | number
+
 export interface LayerRendererProps extends ShapeRendererProps {
   name: string
+  uid?: string
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
-  units: 'mm' | 'inch' | 'cm' | 'mil' | number
+  units: Units
   visible?: boolean
   color?: vec3
   context?: string
@@ -306,8 +309,12 @@ interface LayerUniforms {
 
 interface LayerAttributes { }
 
+const UID = (): string =>
+  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
+  public uid: string = UID()
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public context = 'misc'
@@ -341,6 +348,7 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.units = props.units
 
+
     this.name = props.name
     if (props.color !== undefined) {
       this.color = props.color
@@ -353,6 +361,9 @@ export default class LayerRenderer extends ShapeRenderer {
     }
     if (props.visible !== undefined) {
       this.visible = props.visible
+    }
+    if (props.uid !== undefined) {
+      this.uid = props.uid
     }
 
     this.framebuffer = this.regl.framebuffer()

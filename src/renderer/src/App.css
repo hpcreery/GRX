@@ -13,5 +13,18 @@ body {
 #root {
   height: 100vh;
   width: 100vw;
-  overflow: auto;
+  /* overflow: auto; */
+}
+
+
+.scroll-area-sidebar > div > div {
+  table-layout:fixed;
+  width:100%;
+}
+
+[data-transparency] [data-transparent] {
+  backdrop-filter: blur(30px);
+  /* background-color: rgba(var(--mantine-color-default), 0.999); */
+  background-color: color-mix(in srgb, var(--mantine-color-default) 80%, transparent);
+
 }

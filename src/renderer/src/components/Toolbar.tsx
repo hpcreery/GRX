@@ -1,5 +1,5 @@
 import React from 'react'
-import VirtualGerberApplication from '../old-renderer/virtual'
+import { RenderEngine } from '@src/renderer'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import {
   IconArrowsMove,
@@ -7,23 +7,30 @@ import {
   IconZoomIn,
   IconZoomOut,
   IconHome,
-  IconAdjustments
+  IconAdjustments,
+  IconCube3dSphere,
+  IconCube3dSphereOff
 } from '@tabler/icons-react'
-import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex } from '@mantine/core'
+import chroma from 'chroma-js'
+import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 
 interface ToolbarProps {
-  gerberApp: VirtualGerberApplication
+  renderEngine: RenderEngine
 }
 
-export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null {
+export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
-  const { themeMode, setThemeMode, transparency, setTransparency } =
-    React.useContext(ConfigEditorProvider)
+  const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
+  const { transparency, setTransparency, primaryColor, setPrimaryColor } = React.useContext(ConfigEditorProvider)
+  const theme = useMantineTheme()
+  const colors = useMantineColorScheme()
+
 
   return (
     <>
       <Card
+         mod={['transparent']}
         withBorder
         style={{
           width: 'unset',
@@ -34,43 +41,25 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
           pointerEvents: 'all'
         }}
         padding={3}
-        className={'transparency'}
       >
-        <Group spacing={1}>
-          <ActionIcon size="lg" onClick={(): void => {}}>
-            <IconArrowsMove size={18} />
+        <Group gap='xs'>
+          <Tooltip label="Coming Soon!">
+            <ActionIcon size='lg' disabled variant="default" onClick={(): void => { }}>
+              <IconArrowsMove size={18} />
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip label="Coming Soon!">
+            <ActionIcon size='lg' disabled variant="default" onClick={(): void => { }}>
+              <IconRulerMeasure size={18} />
+            </ActionIcon>
+          </Tooltip>
+          <ActionIcon size='lg' variant="default" onClick={async (): Promise<void> => {
+            renderEngine.settings.OUTLINE_MODE = !outlineMode
+            setOutlineMode(!outlineMode)
+          }}>
+            {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube3dSphereOff size={18} />}
           </ActionIcon>
-          <ActionIcon size="lg" onClick={(): void => {}}>
-            <IconRulerMeasure size={18} />
-          </ActionIcon>
-          <Divider my="xs" orientation="vertical" />
-          <ActionIcon
-            size="lg"
-            onClick={(): void => {
-              gerberApp.zoom(-550 / gerberApp.virtualViewport.scale.x)
-            }}
-          >
-            <IconZoomIn size={18} />
-          </ActionIcon>
-          <ActionIcon
-            size="lg"
-            onClick={async (): Promise<void> => {
-              gerberApp.zoom(1000 / gerberApp.virtualViewport.scale.x)
-            }}
-          >
-            <IconZoomOut size={18} />
-          </ActionIcon>
-          <ActionIcon
-            size="lg"
-            onClick={(): void => {
-              gerberApp.zoomHome()
-              gerberApp.virtualViewport.decelerate()
-            }}
-          >
-            <IconHome size={18} />
-          </ActionIcon>
-          <Divider my="xs" orientation="vertical" />
-          <ActionIcon size="lg" onClick={open}>
+          <ActionIcon size='lg' variant="default" onClick={open}>
             <IconAdjustments size={18} />
           </ActionIcon>
         </Group>
@@ -80,15 +69,30 @@ export default function Toolbar({ gerberApp }: ToolbarProps): JSX.Element | null
         <Flex align="center" style={{ width: '100%' }} justify="space-between">
           <Text>Dark Mode</Text>
           <Switch
-            defaultChecked={themeMode === 'dark'}
+            defaultChecked={colors.colorScheme === 'dark'}
             onChange={(event): void => {
               if (event.currentTarget.checked) {
-                setThemeMode('dark')
+                colors.setColorScheme('dark')
+                renderEngine.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
               } else {
-                setThemeMode('light')
+                colors.setColorScheme('light')
+                renderEngine.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
               }
             }}
           />
+        </Flex>
+        <Divider my="sm" />
+        <Flex align="center" style={{ width: '100%' }} justify="space-between">
+          <Text>Color</Text>
+          <ColorPicker
+            withPicker={false}
+            onChange={(color): void => {
+              const colorName = Object.keys(theme.colors).find(key => theme.colors[key][9] === color)
+              theme.primaryColor = colorName || 'teal'
+              setPrimaryColor(colorName || 'teal')
+            }
+            }
+            swatches={[...Object.values(theme.colors).map(x => x[9])]} />
         </Flex>
         <Divider my="sm" />
         <Flex align="center" style={{ width: '100%' }} justify="space-between">

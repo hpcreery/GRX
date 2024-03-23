@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import VirtualGerberApplication from '../old-renderer/virtual'
+// import VirtualGerberApplication from '../old-renderer/virtual'
+import { RenderEngine } from '@src/renderer'
 import {
   Card,
   Group,
@@ -13,24 +14,25 @@ import {
 import { Dropzone } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
-import { TRendererLayer } from '@src/old-renderer/types'
+// import { TRendererLayer } from '@src/old-renderer/types'
+import type { LayerInfo } from '@src/renderer/engine'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {
-  gerberApp: VirtualGerberApplication
+  renderEngine: RenderEngine
 }
 
 export interface UploadFile extends File {
   uid: string
 }
 
-export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element | null {
+export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Element | null {
   const theme = useMantineTheme()
   const [layers, setLayers] = useState<UploadFile[]>([])
 
-  function registerLayers(rendererLayers: TRendererLayer[]): void {
+  function registerLayers(rendererLayers: LayerInfo[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
@@ -52,19 +54,19 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
   }
 
   useEffect(() => {
-    gerberApp.renderer.then(async (r) => {
-      registerLayers(await r.layers)
+    renderEngine.backend.then(async backend => {
+      registerLayers(await backend.getLayers())
+
     })
-    return () => {}
   }, [])
 
   const actions = {
-    download: (): void => {},
-    preview: (): void => {},
+    download: (): void => { },
+    preview: (): void => { },
     remove: async (file: UploadFile): Promise<void> => {
-      const renderer = await gerberApp.renderer
-      if (!renderer) return
-      await renderer.removeLayer(file.uid)
+      const backend = await renderEngine.backend
+      if (!backend) return
+      await backend.removeLayer(file.uid)
       setLayers(layers.filter((l) => l.uid !== file.uid))
       return
     }
@@ -82,8 +84,8 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
     >
       <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
         <Group
-          position="center"
-          spacing="xl"
+          // position="center"
+          // spacing="xl"
           mih={220}
           // sx={{ pointerEvents: 'none' }}
           style={{ zIndex: 40 }}
@@ -92,14 +94,14 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
             <IconFileVector
               size="3.2rem"
               stroke={1.5}
-              color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]}
+            // color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Accept>
           <Dropzone.Reject>
             <IconFileX
               size="3.2rem"
               stroke={1.5}
-              color={theme.colors.red[theme.colorScheme === 'dark' ? 4 : 6]}
+            // color={theme.colors.red[theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Reject>
           <Dropzone.Idle>
@@ -127,41 +129,31 @@ export default function LayerSidebar({ gerberApp }: SidebarProps): JSX.Element |
           overflowY: 'auto',
           overflowX: 'hidden'
         }}
-        className={'transparency'}
+        mod={['transparent']}
         padding={5}
       >
         <ScrollArea
-          // offsetScrollbars
+
+          className='scroll-area-sidebar'
           type="scroll"
+          scrollbars="y"
           h={'100%'}
-          viewportProps={{
-            style: {
-              overflowX: 'hidden'
-              // overflowY: 'auto',
-              // width: '100%'
-              // display: 'block'
-            }
-          }}
-          // styles={{
-          //   viewport: {
-          //     '&& > div': {
-          //       display: 'block !important'
-          //     }
-          //   }
-          // }}
+          w={'100%'}
         >
-          <Group position="center" grow pb={5}>
+          <Group grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
                 <Button variant="default" {...props}>
-                  Upload Gerbers
+                  Upload Artwork
                 </Button>
               )}
             </FileButton>
           </Group>
-          <Stack justify="flex-start" spacing="0px">
+          <Stack justify="flex-start" style={{
+            '--stack-gap': '2px'
+          }}>
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid} file={layer} gerberApp={gerberApp} actions={actions} />
+              <LayerListItem key={layer.uid} file={layer} renderEngine={renderEngine} actions={actions} />
             ))}
           </Stack>
         </ScrollArea>

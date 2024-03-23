@@ -1490,7 +1490,6 @@ function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   const [mouse, setMouse] = React.useState({ x: '0', y: '0' })
 
   props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
-
     setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
   })
   return (

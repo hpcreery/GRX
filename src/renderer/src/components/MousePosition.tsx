@@ -1,33 +1,34 @@
 import React from 'react'
-import VirtualGerberApplication, { PointerEvent } from '../old-renderer/virtual'
+import { PointerEvent } from '@src/renderer'
+import { PointerEvents, RenderEngine } from '@src/renderer'
 import { Card, Group, Text, Tooltip } from '@mantine/core'
 
 interface MousePositionProps {
-  gerberApp: VirtualGerberApplication
+  renderEngine: RenderEngine
 }
 
 export default function MousePosition(props: MousePositionProps): JSX.Element | null {
-  const { gerberApp } = props
+  const { renderEngine } = props
 
   const [x, setX] = React.useState<number>(0)
   const [y, setY] = React.useState<number>(0)
 
   React.useEffect(() => {
     const handleMouseMove = (e: PointerEvent): void => {
+      // DEFAULT UNITS ARE MM
       setX(e.detail.x)
       setY(e.detail.y)
     }
-    gerberApp.pointer.addEventListener('pointermove', handleMouseMove as EventListener)
-    gerberApp.pointer.addEventListener('pointerdown', handleMouseMove as EventListener)
+    renderEngine.pointer.addEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
     return () => {
-      gerberApp.pointer.removeEventListener('pointermove', handleMouseMove as EventListener)
-      gerberApp.pointer.removeEventListener('pointerdown', handleMouseMove as EventListener)
+      renderEngine.pointer.removeEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
     }
   }, [])
 
   return (
-    <Tooltip label="Units: Mils" position="left" withArrow>
+    <Tooltip label="Units: MM" position="left" withArrow>
       <Card
+        mod={['transparent']}
         withBorder
         style={{
           position: 'absolute',
@@ -37,17 +38,16 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
           width: 275,
           height: 40
         }}
-        className={'transparency'}
         padding={6.5}
       >
-        <Group position="center" grow ml="xs" mr="xs">
+        <Group grow ml="xs" mr="xs">
           <Group>
             <Text c="dimmed">X: </Text>
-            {x.toFixed(2)}
+            {x.toFixed(3)}mm
           </Group>
           <Group>
             <Text c="dimmed">Y: </Text>
-            {y.toFixed(2)}
+            {y.toFixed(3)}mm
           </Group>
         </Group>
       </Card>
