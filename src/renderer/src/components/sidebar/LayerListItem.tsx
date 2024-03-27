@@ -32,7 +32,7 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
-  const {showContextMenu} = useContextMenu()
+  const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
   const { renderEngine, file, actions } = props
   const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
@@ -95,15 +95,32 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       reader.onload = async (e): Promise<void> => {
         if (e.target?.result !== null && e.target?.result !== undefined) {
           // await renderer.addGerber(file.name, e.target?.result as string, file.uid)
-          await renderer.addFile({
-            format: 'rs274x',
-            file: e.target?.result as string,
+          const fileExtension = file.name.split('.').pop()
+          if (['gds', 'gdsii', 'gds2'].includes(fileExtension)) {
+            await renderer.addFile({
+              format: 'gdsii',
+              file: e.target?.result as string,
+              props: {
+                name: file.name,
+                uid: file.uid
+              }
+            })
+          } else {
+            // Decode the base64 string
+            const result = e.target?.result as string
+            const commaIndex = result.indexOf(",");
+            const dataOffset = commaIndex > -1 ? commaIndex + 1 : result.length;
+            const asString = atob(result.substring(dataOffset))
+            await renderer.addFile({
+              format: 'rs274x',
+              file: asString,
 
-            props: {
-            name: file.name,
-            uid: file.uid
-            }
-          })
+              props: {
+                name: file.name,
+                uid: file.uid
+              }
+            })
+          }
           registerLayers(await renderer.getLayers())
           notifications.show({
             title: 'File read',
@@ -115,10 +132,10 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           // messageApi.error(`${file.name} file upload failed.`)
         }
       }
-      reader.readAsText(file)
+      reader.readAsDataURL(file)
     })
 
-    return (): void => {}
+    return (): void => { }
   }, [])
 
   function deleteLayer(): void {
@@ -292,16 +309,16 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
               onClick={deleteLayer}
               variant="subtle"
               color="gray"
-              // styles={() => ({
-              //   icon: {
-              //     margin: 0,
-              //     marginRight: 0
-              //   },
-              //   leftIcon: {
-              //     margin: 0,
-              //     marginRight: 0
-              //   }
-              // })}
+            // styles={() => ({
+            //   icon: {
+            //     margin: 0,
+            //     marginRight: 0
+            //   },
+            //   leftIcon: {
+            //     margin: 0,
+            //     marginRight: 0
+            //   }
+            // })}
             />
           </animated.div>
           {/* <FeatureHistogramModal
