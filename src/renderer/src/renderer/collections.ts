@@ -413,7 +413,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
 
     instances: regl.prop<SurfaceAttachments, 'length'>('length'),
-    count: 3
+    count: 3,
     // primitive: 'line loop'
   })
 
@@ -673,23 +673,40 @@ export class ShapesShaderCollection {
         return verts
       })
       let radius = Math.ceil(Math.sqrt(vertices.length))
-      radius = radius % 2 === 0 ? radius : radius + 1
+      // unsure the reason to add for and make the radius even. it seems to falsify vertex positions without this line
+      radius = radius % 2 === 0 ? radius + 4 : radius + 5
+      // radius = radius + Math.round(radius / 10)
       const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
         return vertices[index] ?? 0
       })
+      // const numComponents = 1
+      // const numElements = vertices.length / numComponents;
+      // const expandedData = new Float32Array(numElements * 2);
+      // for (let i = 0; i < numElements; ++i) {
+      //   const srcOff = i * numComponents;
+      //   const dstOff = i * 4;
+      //   for (let j = 0; j < numComponents; ++j) {
+      //     expandedData[dstOff + j] = vertices[srcOff + j];
+      //   }
+      // }
       let targetAttachment = this.shaderAttachment.surfaces
       if (hasHoles) {
         targetAttachment = this.shaderAttachment.surfacesWithHoles
       }
       targetAttachment.push({
         vertices: this.regl.texture({
-          width: radius,
-          height: radius,
+          // width: radius,
+          // height: radius,
+          radius: radius,
           type: 'float',
-          format: 'luminance',
+          // format: 'luminance',
+          // format: 'luminance alpha',
+          channels: 1,
           wrap: 'clamp',
+          mag: 'nearest',
+          // wrap: 'repeat',
           // mag: 'linear',
-          // min: 'linear',
+          min: 'nearest',
           data: newData
         }),
         verticiesDimensions: [radius, radius],
@@ -723,19 +740,15 @@ export class ShapesShaderCollection {
 
         const dotComp = dot(v1.x, v1.y, v2.x, v2.y)
         const detComp = det(v1.x, v1.y, v2.x, v2.y)
-        let angle = Math.atan2(detComp, dotComp)
-        angle = Math.abs(angle)
+        let angle = Math.atan2(-detComp, -dotComp) + (segment.clockwise ? Math.PI : -Math.PI)
         if (angle == 0) {
           angle = Math.PI * 2
         }
         const radius = Math.sqrt((segment.x - segment.xc) ** 2 + (segment.y - segment.yc) ** 2)
         const segments: number[] = []
-        const steps = 100
-        if (segment.clockwise === 1) {
-          angle = -angle
-        }
+        const steps = Math.ceil(50 * (Math.abs(angle) / (Math.PI * 2)))
         for (let i = 1; i <= steps; i++) {
-          const a = angle * (i / steps) + start_angle
+          const a = -angle * (i / steps) + start_angle
           segments.push(segment.xc + Math.cos(a) * radius, segment.yc + Math.sin(a) * radius)
         }
         segments.push(segment.x, segment.y)
