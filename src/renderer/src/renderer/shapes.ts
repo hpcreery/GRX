@@ -260,7 +260,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
    */
   public clockwise: Binary = 0
 
-  constructor(segment: Partial<Omit<TContourArcSegment, 'id' | 'type'>>) {
+  constructor(segment: Omit<TContourArcSegment, 'id' | 'type'>) {
     Object.assign(this, segment)
   }
 }
@@ -276,7 +276,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
    */
   public y = 0
 
-  constructor(segment: Partial<Omit<TContourLineSegment, 'id' | 'type'>>) {
+  constructor(segment: Omit<TContourLineSegment, 'id' | 'type'>) {
     Object.assign(this, segment)
   }
 }

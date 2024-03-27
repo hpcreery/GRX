@@ -3,7 +3,7 @@ import '../App.css'
 import * as Symbols from './symbols'
 import * as Shapes from './shapes'
 import { RenderEngine } from '.'
-import { Button, Switch, Badge, Box, Skeleton } from '@mantine/core'
+import { Button, Switch, Badge, Box } from '@mantine/core'
 import { PointerEvent, PointerEvents } from '.'
 
 import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
@@ -55,55 +55,55 @@ new Array<number>(100)
 const STEP_AND_REPEAT: Shapes.Shape[] = []
 // new Array<number>(1)
 //   .fill(0).map((_, i) => {
-STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
-  shapes: [new Shapes.Pad({
-    // Start point.
-    // x: (i % 10) * 0.02,
-    // y: Math.floor(i / 10) * 0.02,
-    x: 0,
-    y: 0,
-    // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-    symbol: new Symbols.SquareSymbol({
-      width: 0.01,
-      height: 0.01,
-      inner_dia: 0
-    }),
-    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-    // Polarity. 0 = negative, 1 = positive
-    // polarity: i % 2,
-    // polarity: Math.random() > 0.5 ? 1 : 0,
-    polarity: 1,
-  })],
-  // repeats: [{
-  //   datum: [0, 0],
-  //   rotation: 0,
-  //   scale: 1,
-  //   mirror: 0
-  // },
-  // {
-  //   datum: [0.02, 0.02],
-  //   rotation: 0,
-  //   scale: 1,
-  //   mirror: 0
-  // }]
-  repeats: new Array(100).fill(0).map((_, i) => {
-    return {
-      datum: [i % 10 * 0.02, Math.floor(i / 10) * 0.02],
-      rotation: 0,
-      scale: 1,
-      mirror_x: 0,
-      mirror_y: 0
-    }
-  })
-})
-)
-// })
+    STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
+      shapes: [new Shapes.Pad({
+        // Start point.
+        // x: (i % 10) * 0.02,
+        // y: Math.floor(i / 10) * 0.02,
+        x: 0,
+        y: 0,
+        // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+        symbol: new Symbols.SquareSymbol({
+          width: 0.01,
+          height: 0.01,
+          inner_dia: 0
+        }),
+        // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+        // Polarity. 0 = negative, 1 = positive
+        // polarity: i % 2,
+        // polarity: Math.random() > 0.5 ? 1 : 0,
+        polarity: 1,
+      })],
+      // repeats: [{
+      //   datum: [0, 0],
+      //   rotation: 0,
+      //   scale: 1,
+      //   mirror: 0
+      // },
+      // {
+      //   datum: [0.02, 0.02],
+      //   rotation: 0,
+      //   scale: 1,
+      //   mirror: 0
+      // }]
+      repeats: new Array(100).fill(0).map((_, i) => {
+        return {
+          datum: [i % 10 * 0.02, Math.floor(i / 10) * 0.02],
+          rotation: 0,
+          scale: 1,
+          mirror_x: 0,
+          mirror_y: 0
+        }
+      })
+    })
+      )
+  // })
 
 const MAMA_STEP_AND_REPEAT: Shapes.Shape[] = []
 new Array<number>(1)
-  .fill(0).map((_, i) => {
-    MAMA_STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
-      shapes: STEP_AND_REPEAT,
+.fill(0).map((_, i) => {
+  MAMA_STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
+    shapes: STEP_AND_REPEAT,
       repeats: [{
         datum: [0.2, 0],
         rotation: 0,
@@ -118,8 +118,8 @@ new Array<number>(1)
         mirror_x: 0,
         mirror_y: 0
       }]
-    }))
-  }
+  }))
+    }
   )
 
 
@@ -258,6 +258,167 @@ SURFACE_RECORDS_ARRAY.push(new Shapes.Surface({
       }),
 
     ])))
+
+const SURFACE_ARC_TEST: Shapes.Surface[] = []
+
+
+let i = 0
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: -1 + i,
+    ys: 0,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 0 + i,
+        y: -1,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 1,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: -1 + i,
+        y: 0,
+      }),
+    ]
+  })
+))
+
+i += 1
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: -1 + i,
+    ys: 0,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 0 + i,
+        y: -1,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 0,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: -1 + i,
+        y: 0,
+      }),
+    ]
+  })
+))
+
+i += 1
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: 0 + i,
+    ys: -1,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 1 + i,
+        y: 0,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 1,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: 0 + i,
+        y: -1,
+      }),
+    ]
+  })
+))
+
+i += 1
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: 0 + i,
+    ys: -1,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 1 + i,
+        y: 0,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 0,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: 0 + i,
+        y: -1,
+      }),
+    ]
+  })
+))
+
+i += 1
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: 1 + i,
+    ys: 0,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 0 + i,
+        y: 1,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 1,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: 1 + i,
+        y: 0,
+      }),
+    ]
+  })
+))
+
+i += 1
+SURFACE_ARC_TEST.push(new Shapes.Surface({
+  polarity: 1,
+}).addContour(
+  new Shapes.Contour({
+    poly_type: 1,
+    // Start point.
+    xs: 1 + i,
+    ys: 0,
+    segments: [
+      new Shapes.Contour_Arc_Segment({
+        x: 0 + i,
+        y: 1,
+        xc: 0 + i,
+        yc: 0,
+        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+        clockwise: 0,
+      }),
+      new Shapes.Contour_Line_Segment({
+        x: 1 + i,
+        y: 0,
+      }),
+    ]
+  })
+))
+
+
 
 const SYMBOLS: Symbols.StandardSymbol[] = []
 
@@ -740,19 +901,19 @@ new Array<number>(1)
     }))
   })
 
-const UNFLATTEN_MACROS_ARRAY: Symbols.Symbol[] = []
+  const UNFLATTEN_MACROS_ARRAY: Symbols.Symbol[] = []
 
-new Array<number>(1)
-  .fill(0).map((_, i) => {
-    UNFLATTEN_MACROS_ARRAY.push(new Symbols.MacroSymbol({
-      id: 'macro' + i, // id
-      shapes: OVERLAPPING_PADS_ARRAY,
-      // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
-      // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
-      // negatives will act like holes in the macro, rather than being drawn as negative shapes.
-      flatten: false
-    }))
-  })
+  new Array<number>(1)
+    .fill(0).map((_, i) => {
+      UNFLATTEN_MACROS_ARRAY.push(new Symbols.MacroSymbol({
+        id: 'macro' + i, // id
+        shapes: OVERLAPPING_PADS_ARRAY,
+        // flattenening a macro will cause the macro to be drawn as a single shape, rather than as a collection of shapes.
+        // negative shapes within the macro will be subtracted from the positive shapes and not have an effect on the rest of the image.
+        // negatives will act like holes in the macro, rather than being drawn as negative shapes.
+        flatten: false
+      }))
+    })
 
 const SPOOF_OVERLAPPING_MACROS_ARRAY: Symbols.Symbol[] = []
 
@@ -848,8 +1009,7 @@ new Array<number>(4)
                   rotation: 0,
                   mirror_x: 0,
                   mirror_y: 0
-                })
-              }),
+                })}),
               flatten: true
             }),
             resize_factor: 1,
@@ -857,8 +1017,7 @@ new Array<number>(4)
             rotation: 0,
             mirror_x: 0,
             mirror_y: 0
-          })
-        }),
+          })}),
         flatten: true
       }),
       resize_factor: 1,
@@ -1288,20 +1447,26 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addFile({
-      file: gtl_in,
-      format: 'rs274x',
-      props: {
-        name: 'gtl_in',
-      }
-    })
+    // Engine.addFile({
+    //   file: gtl_in,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'gtl_in',
+    //   }
+    // })
 
-    Engine.addFile({
-      file: gtl_mm,
-      format: 'rs274x',
-      props: {
-        name: 'gtl_mm',
-      }
+    // Engine.addFile({
+    //   file: gtl_mm,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'gtl_mm',
+    //   }
+    // })
+
+    Engine.addLayer({
+      name: 'surface test',
+      image: SURFACE_ARC_TEST,
+      units: 'mm'
     })
 
 
@@ -1321,22 +1486,26 @@ function REGLApp(): JSX.Element {
 
   return (
     <>
-
-      {engine ?
-
-        <Box style={{
+      <div
+        ref={containerRef}
+        id="container-element"
+        style={{
           width: '100%',
           height: '100%',
           position: 'absolute',
-          zIndex: 100,
-          pointerEvents: 'none',
+          top: 0,
+          left: 0,
+          zIndex: 0,
+        }}
+      />
+      {engine ?
+
+        <Box style={{
+          width: '100px'
         }}>
           <StatsWidget />
           <MouseCoordinates engine={engine} />
           <Button
-            style={{
-              pointerEvents: 'all',
-            }}
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
               backend.getLayers().then(layers => {
@@ -1349,9 +1518,6 @@ function REGLApp(): JSX.Element {
           <br />
           Outline Mode
           <Switch
-            style={{
-              pointerEvents: 'all',
-            }}
             defaultChecked={engine.settings.OUTLINE_MODE}
             onChange={(e): void => {
               engine.settings.OUTLINE_MODE = e.target.checked
@@ -1362,18 +1528,12 @@ function REGLApp(): JSX.Element {
             }} />
           Grid Toggle
           <Switch
-            style={{
-              pointerEvents: 'all',
-            }}
             defaultChecked={engine.settings.OUTLINE_MODE}
             onChange={(e): void => {
               engine.backend.then(backend => backend.setGridProps({ enabled: e.target.checked }))
             }} />
           Grid Type
           <Switch
-            style={{
-              pointerEvents: 'all',
-            }}
             defaultChecked={engine.settings.OUTLINE_MODE}
             onChange={(e): void => {
               engine.backend.then(backend => backend.setGridProps({ type: e.target.checked ? 'dots' : 'lines' }))
@@ -1381,9 +1541,6 @@ function REGLApp(): JSX.Element {
           <br />
           Zoom To Cursor
           <Switch
-            style={{
-              pointerEvents: 'all',
-            }}
             defaultChecked={engine.settings.ZOOM_TO_CURSOR}
             onChange={(e): void => { engine.settings.ZOOM_TO_CURSOR = e.target.checked }} />
           {
@@ -1392,9 +1549,6 @@ function REGLApp(): JSX.Element {
                 <div key={i}>
                   {layer.name}
                   <Switch
-                    style={{
-                      pointerEvents: 'all',
-                    }}
                     defaultChecked={layer.visible}
                     onChange={async (e): Promise<void> => {
                       const backend = await engine.backend
@@ -1407,26 +1561,6 @@ function REGLApp(): JSX.Element {
         </Box>
 
         : null}
-      <Skeleton visible={false} style={{
-        width: '100%',
-        height: '100%',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-      }}>
-        <div
-          ref={containerRef}
-          id="container-element"
-          style={{
-            width: '100%',
-            height: '100%',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            zIndex: 0,
-          }}
-        />
-      </Skeleton>
     </>
   )
 }
@@ -1490,6 +1624,7 @@ function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   const [mouse, setMouse] = React.useState({ x: '0', y: '0' })
 
   props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
+
     setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
   })
   return (

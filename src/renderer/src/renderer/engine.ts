@@ -452,7 +452,7 @@ export class RenderEngineBackend {
   }
 
   public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
-    console.log('Adding Layer', params.name, params.image)
+    // console.log('Adding Layer', params.name, params.image)
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl

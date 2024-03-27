@@ -9,7 +9,8 @@ import {
   IconHome,
   IconAdjustments,
   IconCube3dSphere,
-  IconCube3dSphereOff
+  IconCube3dSphereOff,
+  IconCube
 } from '@tabler/icons-react'
 import chroma from 'chroma-js'
 import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip } from '@mantine/core'
@@ -30,7 +31,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   return (
     <>
       <Card
-         mod={['transparent']}
+        mod={['transparent']}
         withBorder
         style={{
           width: 'unset',
@@ -43,25 +44,29 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         padding={3}
       >
         <Group gap='xs'>
-          <Tooltip label="Coming Soon!">
+          <Tooltip openDelay={500} withArrow label="Coming Soon!">
             <ActionIcon size='lg' disabled variant="default" onClick={(): void => { }}>
               <IconArrowsMove size={18} />
             </ActionIcon>
           </Tooltip>
-          <Tooltip label="Coming Soon!">
+          <Tooltip openDelay={500} withArrow label="Coming Soon!">
             <ActionIcon size='lg' disabled variant="default" onClick={(): void => { }}>
               <IconRulerMeasure size={18} />
             </ActionIcon>
           </Tooltip>
-          <ActionIcon size='lg' variant="default" onClick={async (): Promise<void> => {
-            renderEngine.settings.OUTLINE_MODE = !outlineMode
-            setOutlineMode(!outlineMode)
-          }}>
-            {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube3dSphereOff size={18} />}
-          </ActionIcon>
+          <Tooltip openDelay={500} withArrow label="Outline Mode">
+            <ActionIcon size='lg' variant="default" onClick={async (): Promise<void> => {
+              renderEngine.settings.OUTLINE_MODE = !outlineMode
+              setOutlineMode(!outlineMode)
+            }}>
+              {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube size={18} />}
+            </ActionIcon>
+          </Tooltip>
+          <Tooltip openDelay={500} withArrow label="Settings">
           <ActionIcon size='lg' variant="default" onClick={open}>
             <IconAdjustments size={18} />
           </ActionIcon>
+          </Tooltip>
         </Group>
       </Card>
       <Modal title="Settings" opened={settingsModalOpen} onClose={close}>

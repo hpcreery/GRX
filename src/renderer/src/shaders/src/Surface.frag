@@ -127,4 +127,6 @@ void main() {
 
   dist = draw(dist, pixel_size);
   gl_FragColor = vec4(color, alpha);
+
+  // gl_FragColor = vec4(1.0,1.0,1.0,1.0);
 }

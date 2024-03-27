@@ -40,12 +40,12 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
         }}
         padding={6.5}
       >
-        <Group grow ml="xs" mr="xs">
-          <Group>
+        <Group grow ml="xs" mr="xs" wrap='nowrap'>
+          <Group wrap='nowrap'>
             <Text c="dimmed">X: </Text>
             {x.toFixed(3)}mm
           </Group>
-          <Group>
+          <Group wrap='nowrap'>
             <Text c="dimmed">Y: </Text>
             {y.toFixed(3)}mm
           </Group>

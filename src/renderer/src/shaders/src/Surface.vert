@@ -24,14 +24,12 @@ attribute float a_Offset;
 attribute vec3 a_Indicies;
 attribute float a_QtyVerts;
 
-
 // SURFACE VARYINGS
 varying float v_Index;
 varying float v_Polarity;
 varying float v_Offset;
 varying vec3 v_Indicies;
 varying float v_QtyVerts;
-
 
 vec4 texelFetch(sampler2D tex, vec2 texSize, vec2 pixelCoord) {
   vec2 uv = (pixelCoord + 0.5) / texSize;
@@ -41,16 +39,17 @@ vec4 texelFetch(sampler2D tex, vec2 texSize, vec2 pixelCoord) {
 vec2 getVertexPosition(float index) {
   float xcol = mod(index, u_VerticesDimensions.x);
   float xrow = floor(index / u_VerticesDimensions.x);
-  float x = float(texelFetch(u_Vertices, u_VerticesDimensions, vec2(xcol, xrow)));
+  float x = texelFetch(u_Vertices, u_VerticesDimensions, vec2(xcol, xrow)).z;
   float ycol = mod(index + 1.0, u_VerticesDimensions.x);
   float yrow = floor((index + 1.0) / u_VerticesDimensions.x);
-  float y = float(texelFetch(u_Vertices, u_VerticesDimensions, vec2(ycol, yrow)));
+  float y = texelFetch(u_Vertices, u_VerticesDimensions, vec2(ycol, yrow)).z;
+  // if (x < y+0.1 && x > y-0.1) {
+  //   x = mod(index, u_VerticesDimensions.x);
+  //   y = mod(index, u_VerticesDimensions.x);
+  // }
   return vec2(x, y);
 }
 
-vec2 getVertexPosition(int index) {
-  return getVertexPosition(float(index));
-}
 
 void main() {
 
@@ -66,8 +65,6 @@ void main() {
   else if (a_Vertex_Position.x == 2.0)
     OffsetPosition = point3;
 
-
-
   // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_Offset);
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
@@ -76,7 +73,6 @@ void main() {
   v_Offset = a_Offset;
   v_Indicies = a_Indicies;
   v_QtyVerts = a_QtyVerts;
-
 
   float Index = u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures);
 

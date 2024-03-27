@@ -7,6 +7,7 @@ import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 import '@mantine/core/styles.css';
 import 'mantine-contextmenu/styles.css';
+import REGLApp from './renderer/DEMO'
 
 // import REGLApp from './renderer/DEMO'
 
