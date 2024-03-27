@@ -26,8 +26,8 @@ import {
   STEP_REPEAT_CLOSE,
 } from '@hpcreery/tracespace-parser'
 
-import type {Tool} from '../tool-store'
-import type {Location} from '../location-store'
+import type { Tool } from '../tool-store'
+import type { Location } from '../location-store'
 
 import { FeatureTypeIdentifyer } from '@src/renderer/types'
 
@@ -38,6 +38,7 @@ export type ArcDirection = typeof CW | typeof CCW
 
 import * as Shapes from '@src/renderer/shapes'
 import { ApertureTransform } from '../aperture-transform-store'
+import { vec2 } from 'gl-matrix'
 
 export interface GraphicPlotter {
   plot: (
@@ -123,7 +124,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         this._currentSurface.addContour(new Shapes.Contour({
           xs: location.startPoint.x,
           ys: location.startPoint.y,
-          }))
+        }))
       }
       if (this._arcDirection === undefined) {
         this._currentSurface.contours[0].addSegment(new Shapes.Contour_Line_Segment({
@@ -134,6 +135,8 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         this._currentSurface.contours[0].addSegment(new Shapes.Contour_Arc_Segment({
           x: location.endPoint.x,
           y: location.endPoint.y,
+          xc: location.startPoint.x + location.arcOffsets.i,
+          yc: location.startPoint.y + location.arcOffsets.j,
           clockwise: this._arcDirection === CW ? 1 : 0,
         }))
       }
@@ -144,8 +147,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
       (nextGraphicType === MOVE && this._currentSurface !== undefined) ||
       nextGraphicType === SHAPE ||
       node.type === LOAD_POLARITY
-    )
-    {
+    ) {
       if (this._currentSurface !== undefined) {
         graphics.push(this._currentSurface)
         this._currentSurface = undefined
@@ -185,7 +187,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         shapes: [],
         repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
           return {
-            datum: [location.stepRepeat.i * Math.floor(i / location.stepRepeat.x), location.stepRepeat.j * (i % location.stepRepeat.x)],
+            datum: vec2.fromValues(location.stepRepeat.i * Math.floor(i / location.stepRepeat.x), location.stepRepeat.j * (i % location.stepRepeat.x)),
             rotation: 0,
             mirror_x: 0,
             mirror_y: 0,
@@ -214,7 +216,10 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
   _setGraphicState(node: GerberNode) {
     if (node.type === INTERPOLATE_MODE) {
-      this._arcDirection = arcDirectionFromMode(node.mode)
+      const { mode } = node
+      if (mode === CCW_ARC) this._arcDirection = CCW
+      if (mode === CW_ARC) this._arcDirection = CW
+      if (mode === LINE) this._arcDirection = undefined
     }
 
     if (node.type === QUADRANT_MODE) {
@@ -274,10 +279,3 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 //   },
 // }
 
-function arcDirectionFromMode(
-  mode: InterpolateModeType | undefined
-): ArcDirection | undefined {
-  if (mode === CCW_ARC) return CCW
-  if (mode === CW_ARC) return CW
-  return undefined
-}
