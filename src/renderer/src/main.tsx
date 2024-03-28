@@ -5,9 +5,12 @@ import { MantineProvider, createTheme } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
+import REGLApp from './renderer/DEMO'
+
+// STYLES
 import '@mantine/core/styles.css';
 import 'mantine-contextmenu/styles.css';
-import REGLApp from './renderer/DEMO'
+import '@mantine/dropzone/styles.css';
 
 // import REGLApp from './renderer/DEMO'
 

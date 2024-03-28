@@ -79,13 +79,7 @@ void main() {
   float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
-  vec2 ShapeSize = vec2(t_Outer_Dia, t_Outer_Dia);
-  if (ShapeSize.x == 0.0) {
-    ShapeSize.x = OD;
-  }
-  if (ShapeSize.y == 0.0) {
-    ShapeSize.y = OD;
-  }
+  vec2 ShapeSize = vec2(OD, OD) + vec2(pixel_size, pixel_size);
   // vec2 ShapeSize = vec2(pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)), pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum)));
 
   float radius = distance(a_Start_Location, a_Center_Location);
@@ -111,8 +105,8 @@ void main() {
     Width = radius * 2.0;
   }
 
-  Size = vec2(Width, Sagitta) + ShapeSize;
-  Size += vec2(pixel_size, pixel_size);
+  Size = vec2(Width, Sagitta) + (ShapeSize * 2.0);
+  // Size += vec2(pixel_size * 4.0, pixel_size * 4.0);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) + vec2(0.0, (a_Clockwise == 0.0 ? 1.0 : -1.0) * (radius - (Sagitta / 2.0)));
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);

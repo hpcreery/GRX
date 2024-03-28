@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-// import VirtualGerberApplication from '../old-renderer/virtual'
 import { RenderEngine } from '@src/renderer'
 import {
   Card,
@@ -9,13 +8,17 @@ import {
   Button,
   FileButton,
   Stack,
-  ScrollArea
+  ScrollArea,
+  Modal,
+  Select
 } from '@mantine/core'
-import { Dropzone } from '@mantine/dropzone'
+import { Dropzone, FileWithPath as FileWithFormat } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
-// import { TRendererLayer } from '@src/old-renderer/types'
 import type { LayerInfo } from '@src/renderer/engine'
+import * as Comlink from 'comlink'
+
+import { pluginList } from '@src/renderer/plugins'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -24,40 +27,41 @@ interface SidebarProps {
   renderEngine: RenderEngine
 }
 
-export interface UploadFile extends File {
+export interface UploadFile extends FileWithFormat {
+  format: string
   uid: string
 }
 
 export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Element | null {
-  const theme = useMantineTheme()
   const [layers, setLayers] = useState<UploadFile[]>([])
+  const [files, setFiles] = useState<UploadFile[]>([])
 
   function registerLayers(rendererLayers: LayerInfo[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { uid: layer.uid })
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: layer.format })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
   }
 
-  async function uploadFiles(files: File[]): Promise<void> {
-    console.log('uploadFiles')
-    const newLayers = [...layers]
-    files.forEach(async (file) => {
-      const uid = UID()
-      const newfile: UploadFile = Object.assign(file, { uid })
-      newLayers.push(newfile)
-    })
-    setLayers(newLayers)
+  async function uploadFiles(files: FileWithFormat[]): Promise<void> {
+    setFiles(files.map((file) => Object.assign(file, { format: 'rs274x', uid: UID() })))
+  }
+
+  async function confirmFiles(files: UploadFile[]): Promise<void> {
+    setLayers([...layers, ...files])
+    setFiles([])
   }
 
   useEffect(() => {
     renderEngine.backend.then(async backend => {
-      registerLayers(await backend.getLayers())
-
+      const reg = async (): Promise<void> => registerLayers(await backend.getLayers())
+      reg()
+      backend.addEventCallback('LAYER_ADDED', Comlink.proxy(reg))
     })
+
   }, [])
 
   const actions = {
@@ -82,26 +86,46 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         zIndex: 10
       }}
     >
+      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Intentification">
+        <Stack>
+          {
+            files.map((file) => (
+              <Select
+                key={file.uid}
+                label={file.name}
+                placeholder="Pick value"
+                data={pluginList}
+                defaultValue={file.format}
+                comboboxProps={{ shadow: 'md' }}
+                onChange={(value): void => {
+                  if (!value) return
+                  files.find((f) => f.uid === file.uid)!.format = value
+                }}
+              />
+            ))
+          }
+          {
+            files.length > 0 && (
+              <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
+            )
+          }
+        </Stack>
+      </Modal>
       <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
         <Group
-          // position="center"
-          // spacing="xl"
           mih={220}
-          // sx={{ pointerEvents: 'none' }}
           style={{ zIndex: 40 }}
         >
           <Dropzone.Accept>
             <IconFileVector
               size="3.2rem"
               stroke={1.5}
-            // color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Accept>
           <Dropzone.Reject>
             <IconFileX
               size="3.2rem"
               stroke={1.5}
-            // color={theme.colors.red[theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Reject>
           <Dropzone.Idle>

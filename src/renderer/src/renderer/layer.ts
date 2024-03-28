@@ -301,6 +301,7 @@ export interface LayerRendererProps extends ShapeRendererProps {
   color?: vec3
   context?: string
   type?: string
+  format?: string
 }
 
 interface LayerUniforms {
@@ -319,6 +320,7 @@ export default class LayerRenderer extends ShapeRenderer {
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public context = 'misc'
   public type = 'document'
+  public format = 'raw'
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
@@ -364,6 +366,9 @@ export default class LayerRenderer extends ShapeRenderer {
     }
     if (props.uid !== undefined) {
       this.uid = props.uid
+    }
+    if (props.format !== undefined) {
+      this.format = props.format
     }
 
     this.framebuffer = this.regl.framebuffer()

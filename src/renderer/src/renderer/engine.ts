@@ -95,7 +95,8 @@ export interface LayerInfo {
   context: string,
   type: string,
   units: Units,
-  visible: boolean
+  visible: boolean,
+  format: string
 }
 
 // export const RenderEngineEvents = {
@@ -459,12 +460,13 @@ export class RenderEngineBackend {
     })
     this.layers.push(layer)
     this.render(true)
+    this.eventTarget.dispatchEvent(new Event('LAYER_ADDED'))
   }
 
   public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
-      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer(params)
+      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({...params, format: params.format})
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
       await parser(params.file, params.props, Comlink.proxy(callback))
@@ -484,7 +486,8 @@ export class RenderEngineBackend {
         context: layer.context,
         type: layer.type,
         units: layer.units,
-        visible: layer.visible
+        visible: layer.visible,
+        format: layer.format
       }
     })
   }

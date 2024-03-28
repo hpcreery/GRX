@@ -13,6 +13,8 @@ const plugins: {
   rs274x: gerberPluginWorker
 }
 
+export const pluginList = Object.keys(plugins)
+
 export function registerFunction(plugin: parser): void {
   Comlink.expose(plugin)
 }

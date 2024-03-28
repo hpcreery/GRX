@@ -94,33 +94,14 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       }
       reader.onload = async (e): Promise<void> => {
         if (e.target?.result !== null && e.target?.result !== undefined) {
-          // await renderer.addGerber(file.name, e.target?.result as string, file.uid)
-          const fileExtension = file.name.split('.').pop()
-          if (['gds', 'gdsii', 'gds2'].includes(fileExtension)) {
-            await renderer.addFile({
-              format: 'gdsii',
-              file: e.target?.result as string,
-              props: {
-                name: file.name,
-                uid: file.uid
-              }
-            })
-          } else {
-            // Decode the base64 string
-            const result = e.target?.result as string
-            const commaIndex = result.indexOf(",");
-            const dataOffset = commaIndex > -1 ? commaIndex + 1 : result.length;
-            const asString = atob(result.substring(dataOffset))
-            await renderer.addFile({
-              format: 'rs274x',
-              file: asString,
-
-              props: {
-                name: file.name,
-                uid: file.uid
-              }
-            })
-          }
+          await renderer.addFile({
+            format: file.format,
+            file: e.target?.result as string,
+            props: {
+              name: file.name,
+              // uid: file.uid
+            }
+          })
           registerLayers(await renderer.getLayers())
           notifications.show({
             title: 'File read',
@@ -132,7 +113,16 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           // messageApi.error(`${file.name} file upload failed.`)
         }
       }
-      reader.readAsDataURL(file)
+      switch (file.format) {
+        case 'gdsii':
+          reader.readAsDataURL(file)
+          break
+        case 'rs274x':
+          reader.readAsText(file)
+          break
+        default:
+          reader.readAsText(file)
+      }
     })
 
     return (): void => { }
