@@ -47,3 +47,6 @@ export type Binary = 0 | 1
 export type IntersectingTypes<T, U> = { [K in Extract<keyof T, keyof U>]: T[K] }
 export type NonIntersectingTypes<T, U> = { [K in Exclude<keyof T, keyof U>]: T[K] }
 
+export type Units = 'mm' | 'inch' | 'cm' | 'mil' | number
+
+

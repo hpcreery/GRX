@@ -2,6 +2,8 @@ import React from 'react'
 import { PointerEvent } from '@src/renderer'
 import { PointerEvents, RenderEngine } from '@src/renderer'
 import { Card, Group, Text, Tooltip } from '@mantine/core'
+import { ConfigEditorProvider } from '@src/contexts/ConfigEditor'
+import { getUnitsConversion } from '@src/renderer/utils'
 
 interface MousePositionProps {
   renderEngine: RenderEngine
@@ -9,6 +11,7 @@ interface MousePositionProps {
 
 export default function MousePosition(props: MousePositionProps): JSX.Element | null {
   const { renderEngine } = props
+  const { units } = React.useContext(ConfigEditorProvider)
 
   const [x, setX] = React.useState<number>(0)
   const [y, setY] = React.useState<number>(0)
@@ -26,7 +29,7 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
   }, [])
 
   return (
-    <Tooltip label="Units: MM" position="left" withArrow>
+    <Tooltip label={`Units: ${units}`} position="left" withArrow>
       <Card
         mod={['transparent']}
         withBorder
@@ -43,11 +46,11 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
         <Group grow ml="xs" mr="xs" wrap='nowrap'>
           <Group wrap='nowrap'>
             <Text c="dimmed">X: </Text>
-            {x.toFixed(3)}mm
+            {(x * getUnitsConversion(units)).toFixed(3)}{units}
           </Group>
           <Group wrap='nowrap'>
             <Text c="dimmed">Y: </Text>
-            {y.toFixed(3)}mm
+            {(y * getUnitsConversion(units)).toFixed(3)}{units}
           </Group>
         </Group>
       </Card>

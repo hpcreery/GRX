@@ -3,7 +3,7 @@ import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 // import onChange from 'on-change'
-import { Binary, Transform } from './types'
+import { Binary, Transform, Units } from './types'
 import {
   ArcAttachments,
   FrameBufferRendeAttachments,
@@ -20,6 +20,7 @@ import {
 } from './collections'
 
 import { WorldContext } from './engine'
+import { getUnitsConversion } from './utils'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -288,7 +289,6 @@ export class ShapeRenderer {
   }
 }
 
-export type Units = 'mm' | 'inch' | 'cm' | 'mil' | number
 
 export interface LayerRendererProps extends ShapeRendererProps {
   name: string
@@ -326,20 +326,20 @@ export default class LayerRenderer extends ShapeRenderer {
    */
   public units: 'mm' | 'inch' | 'mil' | 'cm' | number = 'mm'
 
-  get unitsScaleFactor(): number {
-    switch (this.units) {
-      case 'inch':
-        return 1 / 25.4
-      case 'mm':
-        return 1
-      case 'cm':
-        return 10
-      case 'mil':
-        return 0.0254
-      default:
-        return this.units
-    }
-  }
+  // get unitsScaleFactor(): number {
+  //   switch (this.units) {
+  //     case 'inch':
+  //       return 1 / 25.4
+  //     case 'mm':
+  //       return 1
+  //     case 'cm':
+  //       return 10
+  //     case 'mil':
+  //       return 0.0254
+  //     default:
+  //       return this.units
+  //   }
+  // }
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
@@ -405,9 +405,11 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        this.transform.scale = this.transform.scale * 1 / this.unitsScaleFactor
+        // this.transform.scale = this.transform.scale * 1 / this.unitsScaleFactor
+        this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
         super.render(context)
-        this.transform.scale = this.transform.scale * this.unitsScaleFactor
+        // this.transform.scale = this.transform.scale * this.unitsScaleFactor
+        this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
       })
     })
   }

@@ -1409,13 +1409,13 @@ function REGLApp(): JSX.Element {
     // })
 
 
-    Engine.addFile({
-      file: gdsiiFile,
-      format: 'gdsii',
-      props: {
-        name: 'gdsii',
-      }
-    })
+    // Engine.addFile({
+    //   file: gdsiiFile,
+    //   format: 'gdsii',
+    //   props: {
+    //     name: 'gdsii',
+    //   }
+    // })
 
     // Engine.addLayer({
     //   name:'Step and Repeat',
@@ -1447,21 +1447,21 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    // Engine.addFile({
-    //   file: gtl_in,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'gtl_in',
-    //   }
-    // })
+    Engine.addFile({
+      file: gtl_in,
+      format: 'rs274x',
+      props: {
+        name: 'gtl_in',
+      }
+    })
 
-    // Engine.addFile({
-    //   file: gtl_mm,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'gtl_mm',
-    //   }
-    // })
+    Engine.addFile({
+      file: gtl_mm,
+      format: 'rs274x',
+      props: {
+        name: 'gtl_mm',
+      }
+    })
 
     Engine.addLayer({
       name: 'surface test',
@@ -1510,7 +1510,7 @@ function REGLApp(): JSX.Element {
               const backend = await engine.backend
               backend.getLayers().then(layers => {
                 setLayers(layers)
-                layers.map(l => backend.setLayerProps(l.name, { color: [Math.random(), Math.random(), Math.random()] }))
+                layers.map(l => backend.setLayerProps(l.uid, { color: [Math.random(), Math.random(), Math.random()] }))
               })
             }}>
             Randomize Colors
@@ -1552,7 +1552,7 @@ function REGLApp(): JSX.Element {
                     defaultChecked={layer.visible}
                     onChange={async (e): Promise<void> => {
                       const backend = await engine.backend
-                      backend.setLayerProps(layer.name, { visible: e.target.checked })
+                      backend.setLayerProps(layer.uid || layer.name, { visible: e.target.checked })
                     }} />
                 </div>
               )

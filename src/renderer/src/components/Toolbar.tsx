@@ -13,7 +13,7 @@ import {
   IconCube
 } from '@tabler/icons-react'
 import chroma from 'chroma-js'
-import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip } from '@mantine/core'
+import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip, Radio } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 
 interface ToolbarProps {
@@ -23,7 +23,7 @@ interface ToolbarProps {
 export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
-  const { transparency, setTransparency, primaryColor, setPrimaryColor } = React.useContext(ConfigEditorProvider)
+  const { transparency, setTransparency, primaryColor, setPrimaryColor, units, setUnits } = React.useContext(ConfigEditorProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
 
@@ -70,6 +70,16 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         </Group>
       </Card>
       <Modal title="Settings" opened={settingsModalOpen} onClose={close}>
+      <Divider my="sm" />
+        <Flex align="center" style={{ width: '100%' }} justify="space-between">
+          <Text>Units</Text>
+            <Group mt="xs">
+              <Radio value="mm" label="mm" checked={units == 'mm'} onChange={(): void => setUnits('mm')}/>
+              <Radio value="in" label="inch" checked={units == 'inch'} onChange={(): void => setUnits('inch')}/>
+              <Radio value="cm" label="cm" checked={units == 'cm'} onChange={(): void => setUnits('cm')}/>
+              <Radio value="mil" label="mil" checked={units == 'mil'} onChange={(): void => setUnits('mil')}/>
+            </Group>
+        </Flex>
         <Divider my="sm" />
         <Flex align="center" style={{ width: '100%' }} justify="space-between">
           <Text>Dark Mode</Text>

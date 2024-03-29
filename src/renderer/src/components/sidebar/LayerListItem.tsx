@@ -42,8 +42,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
   const [visible, setVisible] = useState<boolean>(false)
-  // const [zIndex, setzIndex] = useState<number>(layer.zIndex)
-  // const [progress, setProgress] = useState<number>(0)
   const [loading, setLoading] = useState<boolean>(true)
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
   const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
@@ -135,21 +133,17 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   async function changeColor(color: vec3): Promise<void> {
     const renderer = await renderEngine.backend
     if (!renderer) return
-    // await renderer.tintLayer(layer.uid, color)
     await renderer.setLayerProps(layer.uid, { color })
     setColor(color)
   }
 
   async function toggleVisible(): Promise<void> {
-    // setLoading(!loading)
     const renderer = await renderEngine.backend
     if (!renderer) return
     if (visible) {
-      // renderer.hideLayer(layer.uid)
       renderer.setLayerProps(layer.uid, { visible: false })
       setVisible(false)
     } else {
-      // renderer.showLayer(layer.uid)
       renderer.setLayerProps(layer.uid, { visible: true })
       setVisible(true)
     }
@@ -237,7 +231,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
             display: 'flex'
           }}
         >
-          <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden' }}>
+          <animated.div {...bind()} style={{ width: '100%', overflow: 'hidden', touchAction: 'none', overscrollBehaviorX: 'none' }}>
             <Tooltip
               label={file.name}
               withArrow
@@ -249,6 +243,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                   textAlign: 'left',
                   width: '100%',
                   overflow: 'hidden',
+                  overscrollBehaviorX: 'none',
                   padding: 0,
                   '--button-justify': 'flex-start',
                   paddingLeft: 10
@@ -299,16 +294,11 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
               onClick={deleteLayer}
               variant="subtle"
               color="gray"
-            // styles={() => ({
-            //   icon: {
-            //     margin: 0,
-            //     marginRight: 0
-            //   },
-            //   leftIcon: {
-            //     margin: 0,
-            //     marginRight: 0
-            //   }
-            // })}
+              styles={{
+                section: {
+                  margin: 0,
+                }
+              }}
             />
           </animated.div>
           {/* <FeatureHistogramModal

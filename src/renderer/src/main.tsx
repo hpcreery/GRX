@@ -6,11 +6,13 @@ import { Notifications } from '@mantine/notifications'
 import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 import REGLApp from './renderer/DEMO'
+import { Units } from './renderer/types'
 
 // STYLES
 import '@mantine/core/styles.css';
 import 'mantine-contextmenu/styles.css';
 import '@mantine/dropzone/styles.css';
+import '@mantine/notifications/styles.css';
 
 // import REGLApp from './renderer/DEMO'
 
@@ -25,6 +27,11 @@ function Main(): JSX.Element | null {
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>({
     key: 'primaryColor',
     defaultValue: 'teal'
+  })
+
+  const [units, setUnits] = useLocalStorage<Units>({
+    key: 'units',
+    defaultValue: 'mm'
   })
 
   const theme = createTheme({
@@ -48,15 +55,15 @@ function Main(): JSX.Element | null {
   })
 
 
-
-
   return (
     <ConfigEditorProvider.Provider
       value={{
         transparency,
         setTransparency,
         primaryColor: primaryColor,
-        setPrimaryColor: setPrimaryColor
+        setPrimaryColor: setPrimaryColor,
+        units: units,
+        setUnits: setUnits
       }}
     >
       <MantineProvider
