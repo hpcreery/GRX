@@ -1,7 +1,7 @@
 import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
-import type { RenderEngineBackend, RenderSettings } from './engine'
+import type { GridRenderProps, RenderEngineBackend, RenderSettings } from './engine'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -47,15 +47,30 @@ export class RenderEngine {
           engine.settings[name] = value
           engine.render(true)
         })
+        target[name] = value
         return true
-      },
-      get: (target, prop, reciever): any => {
-        this.backend.then(engine => {
-          return engine.settings[prop]
-        })
       }
     }
   )
+  public grid: GridRenderProps = new Proxy({
+    enabled: true,
+    color: [0.2, 0.2, 0.2, 0.5],
+    spacing_x: 1,
+    spacing_y: 1,
+    offset_x: 0,
+    offset_y: 0,
+    _type: 0,
+    type: 'dots'
+  }, {
+    set: (target, name, value): boolean => {
+      this.backend.then(engine => {
+        engine.grid[name] = value
+        engine.render(true)
+      })
+      target[name] = value
+      return true
+    },
+  })
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
@@ -159,7 +174,7 @@ export class RenderEngine {
     backend.addLayer(params)
   }
 
-  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>}): Promise<void> {
+  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
   }

@@ -250,6 +250,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                 }}
                 variant="subtle"
                 color="gray"
+                radius='sm'
 
                 leftSection={
                   visible ? (
@@ -287,6 +288,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           </animated.div>
           <animated.div {...bind()} style={{ width }}>
             <Button
+              radius='sm'
               style={{ padding: 0, width: `100%`, overflow: 'hidden' }}
               leftSection={
                 <IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />

@@ -1,10 +1,11 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
-import LayerRenderer, { LayerRendererProps, Units } from './layer'
+import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers } from './collections'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { parser } from './plugins'
+import type { Units } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import GridVert from '../shaders/src/Grid.vert'
 
@@ -70,7 +71,7 @@ export interface RenderTransform {
   update: () => void
 }
 
-interface GridRenderProps {
+export interface GridRenderProps {
   enabled: boolean
   color: [number, number, number, number]
   spacing_x: number
@@ -148,8 +149,8 @@ export class RenderEngineBackend {
   public grid: GridRenderProps = {
     enabled: true,
     color: [0.2, 0.2, 0.2, 0.5],
-    spacing_x: 0.5,
-    spacing_y: 0.5,
+    spacing_x: 1,
+    spacing_y: 1,
     offset_x: 0,
     offset_y: 0,
     _type: 0,
@@ -170,10 +171,10 @@ export class RenderEngineBackend {
     }
   }
 
-  public setGridProps(props: Partial<GridRenderProps>): void {
-    Object.assign(this.grid, props)
-    this.render(true)
-  }
+  // public setGridProps(props: Partial<GridRenderProps>): void {
+  //   Object.assign(this.grid, props)
+  //   this.render(true)
+  // }
 
   private dirty = true
 

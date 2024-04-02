@@ -143,7 +143,8 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         </Group>
       </Dropzone.FullScreen>
       <Card
-        radius="12px"
+        // radius="12px"
+        radius='md'
         withBorder
         style={{
           width: 220,
@@ -167,7 +168,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
           <Group grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
-                <Button variant="default" {...props}>
+                <Button variant="default" {...props} radius='sm'>
                   Upload Artwork
                 </Button>
               )}
