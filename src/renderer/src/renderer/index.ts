@@ -150,12 +150,10 @@ export class RenderEngine {
       await backend.grabViewport()
       const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
       backend.sample(xpos, ypos)
-
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
     this.CONTAINER.onmouseup = async (e): Promise<void> => {
       await backend.releaseViewport()
-
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onmousemove = async (e): Promise<void> => {
@@ -164,7 +162,32 @@ export class RenderEngine {
         return
       }
       await backend.moveViewport(e.movementX, e.movementY)
-
+      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+    }
+    this.CONTAINER.onpointerdown = async (e): Promise<void> => {
+      await backend.grabViewport()
+      const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
+      backend.sample(xpos, ypos)
+      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+    }
+    this.CONTAINER.onpointerup = async (e): Promise<void> => {
+      await backend.releaseViewport()
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    }
+    this.CONTAINER.onpointercancel = async (e): Promise<void> => {
+      await backend.releaseViewport()
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    }
+    this.CONTAINER.onpointerleave = async (e): Promise<void> => {
+      await backend.releaseViewport()
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    }
+    this.CONTAINER.onpointermove = async (e): Promise<void> => {
+      if (!await backend.isDragging()) {
+        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+        return
+      }
+      await backend.moveViewport(e.movementX, e.movementY)
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
     }
   }
