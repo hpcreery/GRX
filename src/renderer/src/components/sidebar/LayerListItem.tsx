@@ -4,7 +4,8 @@ import { notifications } from '@mantine/notifications'
 import chroma from 'chroma-js'
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
-import { TRendererLayer } from '../../old-renderer/types'
+// import { TRendererLayer } from '../../old-renderer/types'
+import type Layer  from '@src/renderer/layer'
 import { RenderEngine } from '@src/renderer'
 import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from '../LayersSidebar'
@@ -35,7 +36,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
   const { renderEngine, file, actions } = props
-  const layer: Pick<TRendererLayer, 'name' | 'uid'> = {
+  const layer: Pick<Layer, 'name' | 'uid'> = {
     name: file.name,
     uid: file.uid
   }

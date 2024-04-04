@@ -70,7 +70,7 @@ function Main(): JSX.Element | null {
         defaultColorScheme="dark"
         theme={theme}
       >
-        <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md" mod={['transparent']}>
+        <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Notifications />
           <App />
           {/* <REGLApp /> */}
