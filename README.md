@@ -24,13 +24,28 @@ GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX u
 - 👍 Easy to use
 - 🤏 Touchscreen Friendly
 - 🖥 Cross Platform and Available Everywhere
-- 📄 Supports Gerber X2 (X3 coming soon!)
-- 📈 Supports Excellon
+
+## Supported Artwork Formats
+
+- [x] Gerber RS-274X
+  - [x] X1
+  - [ ] X2 ( coming soon! )
+  - [ ] X3
+- [ ] NC
+  - [ ] XNC
+  - [ ] IPC-NC-349
+  - [ ] Excellon
+  - [ ] Sieb & Meyer
+- [x] GDSII
+- [ ] ODB++
+- [ ] IPC-2581
+- [ ] DXF
+- [ ] OASIS
 
 ## Tools
 
 - [Electron](https://electronjs.org/)
 - [React](https://reactjs.org/)
-- [PixiJS](https://www.pixijs.com/)
+- [regl](http://regl.party/)
 - [Typescript](https://www.typescriptlang.org/)
 - [Tracespace (forked)](https://github.com/hpcreery/tracespace)

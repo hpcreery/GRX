@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RenderEngine } from '@src/renderer'
 import {
   Card,
   Group,
@@ -7,64 +8,69 @@ import {
   Button,
   FileButton,
   Stack,
-  ScrollArea
+  ScrollArea,
+  Modal,
+  Select
 } from '@mantine/core'
-import { Dropzone } from '@mantine/dropzone'
+import { Dropzone, FileWithPath as FileWithFormat } from '@mantine/dropzone'
 import { IconFileX, IconFileVector } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
-import { TRendererLayer } from '@renderer/renderer/types'
-import { useGerberAppContext } from '../contexts/GerberApp'
+import type { LayerInfo } from '@src/renderer/engine'
+import * as Comlink from 'comlink'
+
+import { pluginList } from '@src/renderer/plugins'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-// interface SidebarProps {
-// }
+interface SidebarProps {
+  renderEngine: RenderEngine
+}
 
-export interface UploadFile extends File {
+export interface UploadFile extends FileWithFormat {
+  format: string
   uid: string
 }
 
-export default function LayerSidebar(): JSX.Element | null {
-  const gerberApp = useGerberAppContext()
-  const theme = useMantineTheme()
+export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Element | null {
   const [layers, setLayers] = useState<UploadFile[]>([])
+  const [files, setFiles] = useState<UploadFile[]>([])
 
-  function registerLayers(rendererLayers: TRendererLayer[]): void {
+  function registerLayers(rendererLayers: LayerInfo[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { uid: layer.uid })
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: layer.format })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
   }
 
-  async function uploadFiles(files: File[]): Promise<void> {
-    console.log('uploadFiles')
-    const newLayers = [...layers]
-    files.forEach(async (file) => {
-      const uid = UID()
-      const newfile: UploadFile = Object.assign(file, { uid })
-      newLayers.push(newfile)
-    })
-    setLayers(newLayers)
+  async function uploadFiles(files: FileWithFormat[]): Promise<void> {
+    setFiles(files.map((file) => Object.assign(file, { format: 'rs274x', uid: UID() })))
+  }
+
+  async function confirmFiles(files: UploadFile[]): Promise<void> {
+    setLayers([...layers, ...files])
+    setFiles([])
   }
 
   useEffect(() => {
-    gerberApp.renderer.then(async (r) => {
-      registerLayers(await r.layers)
+    renderEngine.backend.then(async backend => {
+      const reg = async (): Promise<void> => registerLayers(await backend.getLayers())
+      reg()
+      backend.addEventCallback('LAYER_ADDED', Comlink.proxy(reg))
     })
-    return () => {}
+
   }, [])
 
   const actions = {
-    download: (): void => {},
-    preview: (): void => {},
+    download: (): void => { },
+    preview: (): void => { },
     remove: async (file: UploadFile): Promise<void> => {
-      const renderer = await gerberApp.renderer
-      if (!renderer) return
-      await renderer.removeLayer(file.uid)
+      const backend = await renderEngine.backend
+      if (!backend) return
+      await backend.removeLayer(file.uid)
       setLayers(layers.filter((l) => l.uid !== file.uid))
       return
     }
@@ -80,26 +86,46 @@ export default function LayerSidebar(): JSX.Element | null {
         zIndex: 10
       }}
     >
+      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Intentification">
+        <Stack>
+          {
+            files.map((file) => (
+              <Select
+                key={file.uid}
+                label={file.name}
+                placeholder="Pick value"
+                data={pluginList}
+                defaultValue={file.format}
+                comboboxProps={{ shadow: 'md' }}
+                onChange={(value): void => {
+                  if (!value) return
+                  files.find((f) => f.uid === file.uid)!.format = value
+                }}
+              />
+            ))
+          }
+          {
+            files.length > 0 && (
+              <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
+            )
+          }
+        </Stack>
+      </Modal>
       <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
         <Group
-          position="center"
-          spacing="xl"
           mih={220}
-          sx={{ pointerEvents: 'none' }}
           style={{ zIndex: 40 }}
         >
           <Dropzone.Accept>
             <IconFileVector
               size="3.2rem"
               stroke={1.5}
-              color={theme.colors[theme.primaryColor][theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Accept>
           <Dropzone.Reject>
             <IconFileX
               size="3.2rem"
               stroke={1.5}
-              color={theme.colors.red[theme.colorScheme === 'dark' ? 4 : 6]}
             />
           </Dropzone.Reject>
           <Dropzone.Idle>
@@ -117,7 +143,8 @@ export default function LayerSidebar(): JSX.Element | null {
         </Group>
       </Dropzone.FullScreen>
       <Card
-        radius="12px"
+        // radius="12px"
+        radius='md'
         withBorder
         style={{
           width: 220,
@@ -127,41 +154,31 @@ export default function LayerSidebar(): JSX.Element | null {
           overflowY: 'auto',
           overflowX: 'hidden'
         }}
-        className={'transparency'}
+        mod={['transparent']}
         padding={5}
       >
         <ScrollArea
-          // offsetScrollbars
+
+          className='scroll-area-sidebar'
           type="scroll"
+          scrollbars="y"
           h={'100%'}
-          viewportProps={{
-            style: {
-              overflowX: 'hidden'
-              // overflowY: 'auto',
-              // width: '100%'
-              // display: 'block'
-            }
-          }}
-          styles={{
-            viewport: {
-              '&& > div': {
-                display: 'block !important'
-              }
-            }
-          }}
+          w={'100%'}
         >
-          <Group position="center" grow pb={5}>
+          <Group grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
-                <Button variant="default" {...props}>
-                  Upload Gerbers
+                <Button variant="default" {...props} radius='sm'>
+                  Upload Artwork
                 </Button>
               )}
             </FileButton>
           </Group>
-          <Stack justify="flex-start" spacing="0px">
+          <Stack justify="flex-start" style={{
+            '--stack-gap': '2px'
+          }}>
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid} file={layer} actions={actions} />
+              <LayerListItem key={layer.uid} file={layer} renderEngine={renderEngine} actions={actions} />
             ))}
           </Stack>
         </ScrollArea>

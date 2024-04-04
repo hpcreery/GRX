@@ -1,16 +1,21 @@
-import { ColorScheme } from '@mantine/core'
+// import { ColorScheme } from '@mantine/core'
 import React from 'react'
+import { Units } from '@src/renderer/types'
 
 export interface ThemeContext {
-  themeMode: ColorScheme
-  setThemeMode: React.Dispatch<React.SetStateAction<ColorScheme>>
   transparency: boolean
   setTransparency: React.Dispatch<React.SetStateAction<boolean>>
+  primaryColor: string
+  setPrimaryColor: React.Dispatch<React.SetStateAction<string>>
+  units: Units
+  setUnits: React.Dispatch<React.SetStateAction<Units>>
 }
 
 export const ConfigEditorProvider = React.createContext<ThemeContext>({
-  themeMode: 'dark',
-  setThemeMode: () => {},
   transparency: true,
-  setTransparency: () => {}
+  setTransparency: () => {},
+  primaryColor: 'teal',
+  setPrimaryColor: () => {},
+  units: 'mm',
+  setUnits: () => {}
 })

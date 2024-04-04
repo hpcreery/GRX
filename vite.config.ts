@@ -2,7 +2,8 @@ import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { comlink } from 'vite-plugin-comlink'
-import glsl from 'vite-plugin-glsl'
+// import glsl from 'vite-plugin-glsl'
+import glslify from 'rollup-plugin-glslify'
 
 export default defineConfig({
   base: './',
@@ -12,16 +13,31 @@ export default defineConfig({
   root: resolve('src/renderer'),
   resolve: {
     alias: {
-      '@renderer': resolve('src/renderer/src'),
-      '/src': resolve('src/renderer/src')
+      '@src': resolve('src/renderer/src'),
+      '@lib': resolve('src/renderer/lib'),
     }
   },
   build: {
     outDir: resolve('out/web')
   },
-  plugins: [react(), comlink(), glsl()],
+  plugins: [
+    react(),
+    comlink(),
+    glslify({
+      compress: false,
+      // @ts-ignore - glslify options are not typed
+      transform: ['glslify-import']
+    })
+  ],
   worker: {
     format: 'es',
-    plugins: [comlink(), glsl()]
+    plugins: () => [
+      comlink(),
+      glslify({
+        compress: false,
+        // @ts-ignore - glslify options are not typed
+        transform: ['glslify-import']
+      })
+    ]
   }
 })

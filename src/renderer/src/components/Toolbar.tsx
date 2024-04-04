@@ -1,4 +1,5 @@
 import React from 'react'
+import { RenderEngine } from '@src/renderer'
 import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import {
   IconArrowsMove,
@@ -7,38 +8,36 @@ import {
   IconZoomOut,
   IconHome,
   IconAdjustments,
-  IconDiamond,
-  IconDiamondFilled
+  IconCube3dSphere,
+  IconCube3dSphereOff,
+  IconCube,
+  IconGridDots,
+  IconGrid4x4
 } from '@tabler/icons-react'
-import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex } from '@mantine/core'
+import chroma from 'chroma-js'
+import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip, Radio } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { useGerberAppContext } from '../contexts/GerberApp'
+import GeneralSettings from './toolbar/GeneralSettings'
+import GridSettings from './toolbar/GridSettings'
 
-// interface ToolbarProps {
-// }
+interface ToolbarProps {
+  renderEngine: RenderEngine
+}
 
-export default function Toolbar(): JSX.Element | null {
-  const gerberApp = useGerberAppContext()
-  const [isOutlineMode, setIsOutlineMode] = React.useState(false)
-  const [outlineModeLoading, setOutlineModeLoading] = React.useState(false)
+export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
-  const { themeMode, setThemeMode, transparency, setTransparency } =
-    React.useContext(ConfigEditorProvider)
+  const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
+  const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
+  const [gridMode, setGridMode] = React.useState<'dots' | 'grid'>(renderEngine.grid.type)
+  // const { transparency, setTransparency, primaryColor, setPrimaryColor, units, setUnits } = React.useContext(ConfigEditorProvider)
+  const theme = useMantineTheme()
+  const colors = useMantineColorScheme()
 
-
-  const setOutlineMode = (mode: boolean): void => {
-    setOutlineModeLoading(true)
-    gerberApp.renderer.then(async (renderer) => {
-      await renderer.setAllOutlineMode(mode)
-      console.log('setOutlineMode', mode)
-      setIsOutlineMode(mode)
-      setOutlineModeLoading(false)
-    })
-  }
 
   return (
     <>
       <Card
+        mod={['transparent']}
         withBorder
         style={{
           width: 'unset',
@@ -49,78 +48,48 @@ export default function Toolbar(): JSX.Element | null {
           pointerEvents: 'all'
         }}
         padding={3}
-        className={'transparency'}
       >
-        <Group spacing={1}>
-          {/* <ActionIcon loading={outlineModeLoading} size="lg" onClick={(): void => setOutlineMode(!isOutlineMode)}>
-            {isOutlineMode ? <IconDiamond size={18} /> : <IconDiamondFilled size={18} />}
-          </ActionIcon> */}
-
-          {/* <Divider my="xs" orientation="vertical" /> */}
-
-          <ActionIcon size="lg" onClick={(): void => { }}>
-            <IconArrowsMove size={18} />
-          </ActionIcon>
-          <ActionIcon size="lg" onClick={(): void => { }}>
-            <IconRulerMeasure size={18} />
-          </ActionIcon>
-          <Divider my="xs" orientation="vertical" />
-          <ActionIcon
-            size="lg"
-            onClick={(): void => {
-              gerberApp.zoom(-550 / gerberApp.virtualViewport.scale.x)
-            }}
-          >
-            <IconZoomIn size={18} />
-          </ActionIcon>
-          <ActionIcon
-            size="lg"
-            onClick={async (): Promise<void> => {
-              gerberApp.zoom(1000 / gerberApp.virtualViewport.scale.x)
-            }}
-          >
-            <IconZoomOut size={18} />
-          </ActionIcon>
-          <ActionIcon
-            size="lg"
-            onClick={(): void => {
-              gerberApp.zoomHome()
-              gerberApp.virtualViewport.decelerate()
-            }}
-          >
-            <IconHome size={18} />
-          </ActionIcon>
-          <Divider my="xs" orientation="vertical" />
-          <ActionIcon size="lg" onClick={open}>
-            <IconAdjustments size={18} />
-          </ActionIcon>
+        <Group gap='xs'>
+          <ActionIcon.Group>
+            <Tooltip openDelay={500} withArrow label="Coming Soon!">
+              <ActionIcon size='lg' radius="sm" disabled variant="default" onClick={(): void => { }}>
+                <IconArrowsMove size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Coming Soon!">
+              <ActionIcon size='lg' radius="sm" disabled variant="default" onClick={(): void => { }}>
+                <IconRulerMeasure size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </ActionIcon.Group>
+          <ActionIcon.Group>
+            <Tooltip openDelay={500} withArrow label="Outline Mode">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
+                renderEngine.settings.OUTLINE_MODE = !outlineMode
+                setOutlineMode(!outlineMode)
+              }}>
+                {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube size={18} />}
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Grid Settings">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={gridSettingsModalHandlers.open}>
+                {/* {outlineMode ? <IconGridDots size={18} /> : <IconGrid4x4 size={18} />} */}
+                <IconGrid4x4 size={18} />
+              </ActionIcon>
+            </Tooltip>
+          </ActionIcon.Group>
+          <Tooltip openDelay={500} withArrow label="Settings">
+            <ActionIcon size='lg' radius="sm" variant="default" onClick={open}>
+              <IconAdjustments size={18} />
+            </ActionIcon>
+          </Tooltip>
         </Group>
       </Card>
       <Modal title="Settings" opened={settingsModalOpen} onClose={close}>
-        <Divider my="sm" />
-        <Flex align="center" style={{ width: '100%' }} justify="space-between">
-          <Text>Dark Mode</Text>
-          <Switch
-            defaultChecked={themeMode === 'dark'}
-            onChange={(event): void => {
-              if (event.currentTarget.checked) {
-                setThemeMode('dark')
-              } else {
-                setThemeMode('light')
-              }
-            }}
-          />
-        </Flex>
-        <Divider my="sm" />
-        <Flex align="center" style={{ width: '100%' }} justify="space-between">
-          <Text>Transparency</Text>
-          <Switch
-            defaultChecked={transparency}
-            onChange={(event): void => {
-              setTransparency(event.currentTarget.checked)
-            }}
-          />
-        </Flex>
+        <GeneralSettings renderEngine={renderEngine} />
+      </Modal>
+      <Modal title="Grid Settings" opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
+        <GridSettings renderEngine={renderEngine} />
       </Modal>
     </>
   )

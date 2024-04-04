@@ -19,12 +19,15 @@ export default function InfoModal(): JSX.Element | null {
           right: 10,
           pointerEvents: 'all'
         }}
-        className={'transparency'}
+        mod={['transparent']}
       >
         <IconUserQuestion size={18} />
       </ActionIcon>
       <Modal title="Information" opened={helpModalOpen} onClose={close}>
         <Title order={2}>Version: {__APP_VERSION__}</Title>
+        <br />
+        NEW VERSION IS FINALLY HERE! TONS OF NEW FEATURES AND IMPROVEMENTS!
+        <br />
         <br />
         <Accordion variant="contained" defaultValue="customization">
           <Accordion.Item value="Contributors" key="4">
@@ -57,8 +60,8 @@ export default function InfoModal(): JSX.Element | null {
                 Maintine UI
               </Anchor>
               , and{' '}
-              <Anchor href="https://pixijs.com/" target="_blank">
-                PixiJS
+              <Anchor href="http://regl.party/" target="_blank">
+                REGL
               </Anchor>
               .
             </Accordion.Panel>

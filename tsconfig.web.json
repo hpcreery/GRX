@@ -2,8 +2,8 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
     "src/renderer/src/env.d.ts",
-    "src/renderer/src/**/*",
-    "src/renderer/src/**/*.tsx",
+    "src/renderer/**/*",
+    "src/renderer/**/*.tsx",
     "src/preload/*.d.ts"
   ],
   "compilerOptions": {
@@ -11,12 +11,15 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@renderer/*": [
+      "@src/*": [
         "src/renderer/src/*"
-      ]
+      ],
+      "@lib/*": [
+        "src/renderer/lib/*"
+      ],
     },
     "types": [
       "vite-plugin-glsl/ext"
     ]
-  },
+  }
 }

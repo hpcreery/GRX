@@ -1,66 +1,55 @@
 import './App.css'
-import { useRef, useEffect, useState } from 'react'
-import VirtualGerberApplication from './renderer/virtual'
+import { useRef, useEffect, useState, useContext } from 'react'
+import { RenderEngine } from './renderer'
 import chroma from 'chroma-js'
 import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
-import { Center, Loader, useMantineTheme } from '@mantine/core'
-import { GerberAppContextProvider } from './contexts/GerberApp'
+import { Box, Center, Loader, Skeleton, Switch, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { ConfigEditorProvider } from './contexts/ConfigEditor'
 
 export default function App(): JSX.Element | null {
-
+  const { transparency, setTransparency, primaryColor, setPrimaryColor } = useContext(ConfigEditorProvider)
   const theme = useMantineTheme()
+  const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
-  const [gerberApp, setGerberApp] = useState<VirtualGerberApplication>()
+  const [renderEngine, setRenderEngine] = useState<RenderEngine>()
 
   // Load in the gerber application
   useEffect(() => {
-    setGerberApp(
-      new VirtualGerberApplication({
-        element: elementRef.current,
-        antialias: false,
-        backgroundColor: chroma(
-          theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[2]
-        ).num()
-      })
-    )
+    const Engine = new RenderEngine({ container: elementRef.current })
+    setRenderEngine(Engine)
     return () => {
-      gerberApp && gerberApp.destroy()
+      Engine.destroy()
     }
   }, [])
 
   // Update the background color of the gerber application
   useEffect(() => {
-    if (gerberApp) {
-      gerberApp.renderer.then(async (renderer) => {
-        renderer.changeBackgroundColor(
-          chroma(theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[2]).num()
-        )
-      })
+    if (renderEngine) {
+      renderEngine.settings.BACKGROUND_COLOR = chroma(colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]).alpha(0).rgba()
     }
-  }, [theme.colorScheme])
+  }, [colors.colorScheme])
 
   return (
     <>
-      {gerberApp != undefined ? (
-        <div
+      {renderEngine != undefined ? (
+        <Box
+          mod={{ transparency }}
           style={{
-            width: '100vw',
-            height: '100vh',
+            width: '100%',
+            height: '100%',
             position: 'fixed',
             pointerEvents: 'none',
             zIndex: 10
           }}
         >
-          <GerberAppContextProvider value={gerberApp}>
-            <LayerSidebar />
-            <Toolbar />
-            <InfoModal />
-            <MousePosition />
-          </GerberAppContextProvider>
-        </div>
+          <LayerSidebar renderEngine={renderEngine} />
+          <Toolbar renderEngine={renderEngine} />
+          <InfoModal />
+          <MousePosition renderEngine={renderEngine} />
+        </Box>
       ) : (
         <>
           <Center w={'100%'} h={'100%'} mx="auto">
@@ -68,20 +57,29 @@ export default function App(): JSX.Element | null {
           </Center>
         </>
       )}
-      <div
-        id="GRX"
-        style={{
-          width: '100%',
-          height: '100%',
-          cursor: 'crosshair',
-          WebkitUserSelect: 'none',
-          MozUserSelect: 'none',
-          userSelect: 'none',
-          touchAction: 'none',
-          backgroundColor: theme.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
-        }}
-        ref={elementRef}
-      />
+      <Skeleton visible={renderEngine == undefined} style={{
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+      }}>
+
+        <div
+          id="GRX"
+          style={{
+            width: '100vw',
+            height: '100vh',
+            cursor: 'crosshair',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            userSelect: 'none',
+            touchAction: 'none',
+            // backgroundColor: colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
+          }}
+          ref={elementRef}
+        />
+      </Skeleton>
     </>
   )
 }
