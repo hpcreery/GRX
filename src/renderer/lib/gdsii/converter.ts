@@ -118,15 +118,12 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             shapes: [cell.shape],
             repeats: [
               {
-                datum: el.strans?.STRANS.reflectAboutX
-                  ? vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * -scale)
-                  : vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale),
-                rotation:
-                  (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
-                scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
-                mirror_x: el.strans?.STRANS.reflectAboutX ? 1 : 0, // 0 = no mirror, 1 = mirror
-                mirror_y: 0,
-                order: ['mirror', 'translate', 'rotate', 'scale']
+              datum: vec2.fromValues(el.XY[0].x * scale, el.XY[0].y * scale),
+              rotation: (el.strans?.ANGLE?.angle || 0),
+              scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
+              mirror_x: 0, // 0 = no mirror, 1 = mirror
+              mirror_y: el.strans?.STRANS.reflectAboutX ? 1 : 0,
+              order: ['translate', 'rotate', 'mirror', 'scale']
               }
             ]
           })
@@ -159,9 +156,8 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
             for (let j = 0; j < rows; j++) {
               repeats.push({
                 datum: vec2.add(vec2.create(), origin, vec2.add(vec2.create(), vec2.scale(vec2.create(), xSpacing, i), vec2.scale(vec2.create(), ySpacing, j))),
-                rotation:
-                  (el.strans?.STRANS.reflectAboutX ? -1 : 1) * (el.strans?.ANGLE?.angle || 0),
-                  scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
+                rotation: (el.strans?.ANGLE?.angle || 0),
+                scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
                 mirror_x: 0,
                 mirror_y: 0,
                 order: ['mirror', 'translate', 'rotate', 'scale']

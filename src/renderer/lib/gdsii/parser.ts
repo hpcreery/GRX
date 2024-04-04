@@ -13,7 +13,7 @@ export interface ParserState {
 }
 
 export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
-  let parserState: ParserState = {
+  const parserState: ParserState = {
     bnf: {},
     cell: {},
     element: {},

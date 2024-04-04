@@ -405,10 +405,8 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        // this.transform.scale = this.transform.scale * 1 / this.unitsScaleFactor
         this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
         super.render(context)
-        // this.transform.scale = this.transform.scale * this.unitsScaleFactor
         this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
       })
     })

@@ -22,7 +22,10 @@ html, body {
 
 [data-transparency] [data-transparent] {
   backdrop-filter: blur(30px);
-  /* background-color: rgba(var(--mantine-color-default), 0.999); */
   background-color: color-mix(in srgb, var(--mantine-color-default) 80%, transparent);
+}
 
+.mantine-contextmenu {
+  backdrop-filter: blur(30px) !important;
+  background-color: color-mix(in srgb, var(--mantine-color-default) 80%, transparent) !important;
 }
