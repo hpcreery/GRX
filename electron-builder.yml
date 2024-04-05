@@ -31,16 +31,17 @@ dmg:
 linux:
   target:
     - AppImage
-    - snap
     - deb
+    # - snap
   maintainer: electronjs.org
   category: Utility
 appImage:
   artifactName: ${name}.${ext}
-snap:
-  artifactName: ${name}.${ext}
 deb:
   artifactName: ${name}.${ext}
+# snap:
+#   artifactName: ${name}.${ext}
+#   publish: []
 npmRebuild: false
 publish:
   provider: generic
