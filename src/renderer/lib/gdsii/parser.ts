@@ -23,7 +23,7 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
   }
 
   console.log('gdsii tokens', tokens)
-  for (const [index, token] of tokens.entries()) {
+  for (const [_index, token] of tokens.entries()) {
     const recordDefinition = GDSII.RecordDefinitions[token.recordType]
     if (!recordDefinition || !recordDefinition.parse && typeof recordDefinition.parse !== 'function') {
       console.warn(

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Button, Popover, ColorPicker, useMantineTheme, Tooltip } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import chroma from 'chroma-js'
@@ -7,13 +7,13 @@ import { animated, useSpring } from '@react-spring/web'
 // import { TRendererLayer } from '../../old-renderer/types'
 import type Layer  from '@src/renderer/layer'
 import { RenderEngine } from '@src/renderer'
-import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
+// import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from '../LayersSidebar'
 import {
   IconCircleFilled,
   IconCircleDotted,
   IconTrashX,
-  IconChartHistogram,
+  // IconChartHistogram,
   IconEye,
   IconEyeOff,
   IconColorPicker
@@ -45,7 +45,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [visible, setVisible] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
-  const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
+  // const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
   function registerLayers(rendererLayers: LayerInfo[]): void {
     console.log('registering layers', rendererLayers, layer)

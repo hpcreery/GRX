@@ -22,6 +22,7 @@ export type RecordDefinition = {
   name: string
   dataType: DataType
   description: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parse?: (state: ParserState, data: any) => void
 }
 
@@ -79,7 +80,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDLIB',
     dataType: DataType.NoData,
     description: 'Library end',
-    parse: (state, data) => { }
+    parse: (_state, _data) => { }
   },
   0x05: {
     name: 'BGNSTR',
@@ -113,7 +114,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDSTR',
     dataType: DataType.NoData,
     description: 'Structure end',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.bnf.structure
         ? state.bnf.structure.push(state.cell as TREE.structure)
         : (state.bnf.structure = [state.cell as TREE.structure])
@@ -124,7 +125,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'BOUNDARY',
     dataType: DataType.NoData,
     description: 'Boundary element',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'boundary' }
     }
   },
@@ -132,7 +133,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'PATH',
     dataType: DataType.NoData,
     description: 'Path element',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'path' }
     }
   },
@@ -140,7 +141,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'SREF',
     dataType: DataType.NoData,
     description: 'Structure reference element',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'sref' }
     }
   },
@@ -148,7 +149,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'AREF',
     dataType: DataType.NoData,
     description: 'Array reference element',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'aref' }
     }
   },
@@ -156,7 +157,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'TEXT',
     dataType: DataType.NoData,
     description: 'Text element',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'text' }
     }
   },
@@ -213,7 +214,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'ENDEL',
     dataType: DataType.NoData,
     description: 'Element end',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       type ElsWithStrans = Extract<Required<TREE.element["el"]>, { strans: TREE.strans }>
       if (!utils.isEmpty(state.strans) && state.el) {
         (state.el as ElsWithStrans).strans = state.strans as TREE.strans
@@ -407,7 +408,7 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     name: 'BOX',
     dataType: DataType.NoData,
     description: 'BOX',
-    parse: (state, data) => {
+    parse: (state, _data) => {
       state.element = { type: 'box' }
     }
   },
@@ -530,5 +531,5 @@ export enum RecordTypes {
   STRCLASS = 0x34,
   FORMAT = 0x36,
   MASK = 0x37,
-  ENDMASKS = 0x30
+  ENDMASKS = 0x38
 }

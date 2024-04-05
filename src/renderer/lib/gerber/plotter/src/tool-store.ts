@@ -3,7 +3,6 @@
 import type { GerberNode, SimpleShape, HoleShape, MacroBlock } from '@hpcreery/tracespace-parser'
 import { MACRO_SHAPE, TOOL_CHANGE, TOOL_DEFINITION, TOOL_MACRO, BLOCK_APERTURE_OPEN, BLOCK_APERTURE_CLOSE } from '@hpcreery/tracespace-parser'
 
-// import * as Shapes from '@src/rendererv2/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
 import { createMacro } from './graphic-plotter/plot-macro'
@@ -13,9 +12,6 @@ export const SIMPLE_TOOL = 'simpleTool'
 export const MACRO_TOOL = 'macroTool'
 
 import * as Constants from '@hpcreery/tracespace-parser'
-import { ApertureTransform } from './aperture-transform-store'
-import { Location } from './location-store'
-// import {createGraphicPlotter, GraphicPlotter} from './graphic-plotter'
 import { plotShapes } from '.'
 import { PlotOptions } from './options'
 

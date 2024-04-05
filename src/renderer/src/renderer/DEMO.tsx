@@ -3,22 +3,22 @@ import '../App.css'
 import * as Symbols from './symbols'
 import * as Shapes from './shapes'
 import { RenderEngine } from '.'
-import { Button, Switch, Badge, Box } from '@mantine/core'
+import { Button, Switch, Box } from '@mantine/core'
 import { PointerEvent, PointerEvents } from '.'
 
-import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
+// import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 
-import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
-import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
-import gko from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?raw'
-import plc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?raw'
-import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
-import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
-import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
-import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
-import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
-import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
-import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
+// import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
+// import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
+// import gko from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?raw'
+// import plc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?raw'
+// import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
+// import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
+// import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
+// import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+// import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
+// import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
+// import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
 import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
 
@@ -101,7 +101,7 @@ const STEP_AND_REPEAT: Shapes.Shape[] = []
 
 const MAMA_STEP_AND_REPEAT: Shapes.Shape[] = []
 new Array<number>(1)
-.fill(0).map((_, i) => {
+.fill(0).map(() => {
   MAMA_STEP_AND_REPEAT.push(new Shapes.StepAndRepeat({
     shapes: STEP_AND_REPEAT,
       repeats: [{
@@ -529,32 +529,32 @@ const square2_sym =
 SYMBOLS.push(square2_sym)
 
 
-const polygon_sym =
-  new Symbols.PolygonSymbol({
-    id: 'round',
-    corners: 8,
-    outer_dia: 0.04,
-    inner_dia: 0,
-    line_width: 0,
-    angle: 10
-  })
+// const polygon_sym =
+//   new Symbols.PolygonSymbol({
+//     id: 'round',
+//     corners: 8,
+//     outer_dia: 0.04,
+//     inner_dia: 0,
+//     line_width: 0,
+//     angle: 10
+//   })
 
 // SYMBOLS.push(square2_sym)
 
-const polygons = [
-  new Shapes.Pad({
-    // Start point.
-    x: 0,
-    y: 0,
-    // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-    symbol: polygon_sym,
-    // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-    // Polarity. 0 = negative, 1 = positive
-    // polarity: i % 2,
-    // polarity: Math.random() > 0.5 ? 1 : 0,
-    polarity: 1,
-  })
-]
+// const polygons = [
+//   new Shapes.Pad({
+//     // Start point.
+//     x: 0,
+//     y: 0,
+//     // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+//     symbol: polygon_sym,
+//     // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+//     // Polarity. 0 = negative, 1 = positive
+//     // polarity: i % 2,
+//     // polarity: Math.random() > 0.5 ? 1 : 0,
+//     polarity: 1,
+//   })
+// ]
 
 const PAD_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_PADS)
@@ -633,27 +633,6 @@ new Array<number>(N_LINES)
     }))
   })
 
-const brush_sym =
-  new Symbols.StandardSymbol({
-    id: 'brush', // id
-    symbol: Symbols.STANDARD_SYMBOLS_MAP.Triangle, // symbol
-    width: 0.04, // width, square side, diameter
-    height: 0.02, // height
-    // corner_radius: 0.002, // corner radius
-    // corners: 3, // — Indicates which corners are rounded. x<corners> is omitted if all corners are rounded.
-    outer_dia: 0.02, // — Outer diameter of the shape
-    // inner_dia: 0.01, // — Inner diameter of the shape
-    line_width: 0.001, // — Shapes.Line width of the shape (applies to the whole shape)
-    // line_length: 0.02, // — Shapes.Line length of the shape (applies to the whole shape)
-    angle: 0, // — Angle of the spoke from 0 degrees
-    gap: 0.001, // — Gap
-    num_spokes: 4, // — Number of spokes
-    // round: 0, // —r|s == 1|0 — Support for rounded or straight corners
-    // cut_size: 0, // — Size of the cut ( see corner radius )
-    // ring_width: 0.001, // — Ring width
-    // ring_gap: 0.004, // — Ring gap
-    // num_rings: 2 // — Number of rings
-  })
 
 // const LINE_BRUSH_RECORDS_ARRAY_POS: Shapes.Shape[] = []
 // new Array<number>(10)
@@ -760,7 +739,7 @@ const brush_sym =
 
 const ARC_RECORDS_ARRAY: Shapes.Arc[] = []
 new Array<number>(N_ARCS)
-  .fill(0).map((_, i) => {
+  .fill(0).map(() => {
     const start_angle = Math.abs(Math.random()) * 360
     const end_angle = Math.abs(Math.random()) * 360
     const radius = Math.abs(Math.random()) * 0.1
@@ -815,7 +794,7 @@ new Array<number>(10)
 
 const MACRO_RECORDS_ARRAY: Shapes.Shape[] = []
 new Array<number>(N_MACROS)
-  .fill(0).map((_, i) => {
+  .fill(0).map(() => {
     MACRO_RECORDS_ARRAY.push(new Shapes.Pad({
       // Center point.
       x: (Math.random() - 0.5) * 1,
@@ -1030,7 +1009,7 @@ new Array<number>(4)
 
 const POLYLINE_RECORDS_ARRAY: Shapes.PolyLine[] = []
 new Array<number>(1)
-  .fill(0).map((_, i) => {
+  .fill(0).map((_, _i) => {
     POLYLINE_RECORDS_ARRAY.push(new Shapes.PolyLine({
       // Start point.
       // xs: (Math.random() - 0.5) * 1,
@@ -1085,7 +1064,7 @@ new Array<number>(1)
 
 const DUPLICATE_POLYLINE_RECORDS_ARRAY: Shapes.StepAndRepeat[] = []
 new Array<number>(1)
-  .fill(0).map((_, i) => {
+  .fill(0).map((_, _i) => {
     DUPLICATE_POLYLINE_RECORDS_ARRAY.push(
       new Shapes.StepAndRepeat({
         shapes: POLYLINE_RECORDS_ARRAY,
@@ -1117,55 +1096,55 @@ new Array<number>(1)
   })
 
 
-const VALIDATION_ARC = new Shapes.Arc({
-  // Cnter point.
-  xc: 0,
-  yc: 1,
+// const VALIDATION_ARC = new Shapes.Arc({
+//   // Cnter point.
+//   xc: 0,
+//   yc: 1,
 
-  // Start point.
-  xs: -1,
-  ys: 0,
+//   // Start point.
+//   xs: -1,
+//   ys: 0,
 
-  // End point.
-  xe: 1,
-  ye: 0,
+//   // End point.
+//   xe: 1,
+//   ye: 0,
 
-  // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
-  // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-  symbol: round_sym,
-  // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-  // Polarity. 0 = negative, 1 = positive
-  polarity: 1,
-  // polarity: Math.random() > 0.5 ? 1 : 0,
-  clockwise: 1,
-  // clockwise: 0,
-})
+//   // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+//   // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
+//   symbol: round_sym,
+//   // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+//   // Polarity. 0 = negative, 1 = positive
+//   polarity: 1,
+//   // polarity: Math.random() > 0.5 ? 1 : 0,
+//   clockwise: 1,
+//   // clockwise: 0,
+// })
 
-const VALIDATION_LINE = new Shapes.Line({
-  // Start point.
-  xs: -1,
-  ys: 0,
+// const VALIDATION_LINE = new Shapes.Line({
+//   // Start point.
+//   xs: -1,
+//   ys: 0,
 
-  // End point.
-  xe: 1,
-  ye: 0,
+//   // End point.
+//   xe: 1,
+//   ye: 0,
 
-  // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
-  // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
-  symbol: round_sym,
-  // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
-  // Polarity. 0 = negative, 1 = positive
-  // polarity: i % 2,
-  // polarity: Math.random() > 0.5 ? 1 : 0,
-  polarity: 1,
-})
+//   // The index, in the feature symbol names section, of the symbol to be used to draw the Shapes.Pad.
+//   // sym_num: i % 2 == 0 ? Symbols.STANDARD_SYMBOLS_MAP.Square : Symbols.STANDARD_SYMBOLS_MAP.Round,
+//   symbol: round_sym,
+//   // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
+//   // Polarity. 0 = negative, 1 = positive
+//   // polarity: i % 2,
+//   // polarity: Math.random() > 0.5 ? 1 : 0,
+//   polarity: 1,
+// })
 
 
 
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
   const [engine, setEngine] = React.useState<RenderEngine>()
-  const [outlineMode, setOutlineMode] = React.useState<boolean>(true)
+  const [_outlineMode, setOutlineMode] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image">[]>([])
 
   React.useEffect(() => {
@@ -1526,7 +1505,7 @@ function REGLApp(): JSX.Element {
                 setLayers(layers)
               }))
             }} />
-          Grid Toggle
+          {/* Grid Toggle
           <Switch
             defaultChecked={engine.settings.OUTLINE_MODE}
             onChange={(e): void => {
@@ -1537,7 +1516,7 @@ function REGLApp(): JSX.Element {
             defaultChecked={engine.settings.OUTLINE_MODE}
             onChange={(e): void => {
               engine.backend.then(backend => backend.setGridProps({ type: e.target.checked ? 'dots' : 'lines' }))
-            }} />
+            }} /> */}
           <br />
           Zoom To Cursor
           <Switch
@@ -1589,6 +1568,7 @@ function StatsWidget(): JSX.Element {
     frameCursor %= maxFrames
     const avgFPS = totalFPS / numFrames
     setAvgFPS(Math.round(avgFPS))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
     setMemory(Math.round(memoryUsed))
     requestAnimationFrame(updateFPS)

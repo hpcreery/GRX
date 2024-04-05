@@ -12,7 +12,7 @@
 import { plot } from './plotter/src'
 import { parse } from '@hpcreery/tracespace-parser'
 import type { LayerRendererProps } from '@src/renderer/layer'
-import { registerFunction } from '@src/renderer/plugins'
+import * as Comlink from 'comlink'
 
 
 // export function plugin(engine: RenderEngineBackend): parser {
@@ -27,4 +27,4 @@ export async function plugin(file: string, props: Partial<Omit<LayerRendererProp
   })
 }
 
-registerFunction(plugin)
+Comlink.expose(plugin)

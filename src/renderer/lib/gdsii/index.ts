@@ -11,7 +11,7 @@ import * as PARSER from './parser'
 import * as CONVERTER from './converter'
 
 import type { LayerRendererProps } from '@src/renderer/layer'
-import { registerFunction } from '@src/renderer/plugins'
+import * as Comlink from 'comlink'
 
 export async function plugin(file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
   const buffer = await (await fetch(file)).arrayBuffer()
@@ -30,4 +30,4 @@ export async function plugin(file: string, props: Partial<Omit<LayerRendererProp
   }
 }
 
-registerFunction(plugin)
+Comlink.expose(plugin)

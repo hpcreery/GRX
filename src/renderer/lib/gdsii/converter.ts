@@ -113,7 +113,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
           console.warn(`SREF ${srefName} not found in hierarchy.`)
           continue
         }
-        for (const [idx, cell] of gdsiiHierarchy[srefName].entries()) {
+        for (const [_idx, cell] of gdsiiHierarchy[srefName].entries()) {
           const srShape = new Shapes.StepAndRepeat({
             shapes: [cell.shape],
             repeats: [
@@ -150,7 +150,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
         const xSpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), xDisplace, origin), [cols, cols])
         const ySpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), yDisplace, origin), [rows, rows])
 
-        for (const [idx, cell] of gdsiiHierarchy[arefName].entries()) {
+        for (const [_idx, cell] of gdsiiHierarchy[arefName].entries()) {
           const repeats: Shapes.StepAndRepeat['repeats'] = []
           for (let i = 0; i < cols; i++) {
             for (let j = 0; j < rows; j++) {

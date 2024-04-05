@@ -1,21 +1,26 @@
 import React from 'react'
 import { RenderEngine } from '@src/renderer'
-import { ConfigEditorProvider } from '../contexts/ConfigEditor'
 import {
   IconArrowsMove,
   IconRulerMeasure,
-  IconZoomIn,
-  IconZoomOut,
-  IconHome,
+  // IconZoomIn,
+  // IconZoomOut,
+  // IconHome,
   IconAdjustments,
   IconCube3dSphere,
-  IconCube3dSphereOff,
+  // IconCube3dSphereOff,
   IconCube,
-  IconGridDots,
+  // IconGridDots,
   IconGrid4x4
 } from '@tabler/icons-react'
-import chroma from 'chroma-js'
-import { Modal, ActionIcon, Text, Switch, Divider, Card, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Tooltip, Radio } from '@mantine/core'
+// import chroma from 'chroma-js'
+import {
+  Modal,
+  ActionIcon,
+  Card,
+  Group,
+  Tooltip,
+} from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
 import GridSettings from './toolbar/GridSettings'
@@ -28,10 +33,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
-  const [gridMode, setGridMode] = React.useState<'dots' | 'grid'>(renderEngine.grid.type)
-  // const { transparency, setTransparency, primaryColor, setPrimaryColor, units, setUnits } = React.useContext(ConfigEditorProvider)
-  const theme = useMantineTheme()
-  const colors = useMantineColorScheme()
+  // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
 
 
   return (
@@ -73,7 +75,6 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Grid Settings">
               <ActionIcon size='lg' radius="sm" variant="default" onClick={gridSettingsModalHandlers.open}>
-                {/* {outlineMode ? <IconGridDots size={18} /> : <IconGrid4x4 size={18} />} */}
                 <IconGrid4x4 size={18} />
               </ActionIcon>
             </Tooltip>

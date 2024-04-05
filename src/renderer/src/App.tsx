@@ -6,11 +6,11 @@ import InfoModal from './components/InfoModal'
 import Toolbar from './components/Toolbar'
 import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
-import { Box, Center, Loader, Skeleton, Switch, useMantineColorScheme, useMantineTheme } from '@mantine/core'
+import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
 
 export default function App(): JSX.Element | null {
-  const { transparency, setTransparency, primaryColor, setPrimaryColor } = useContext(ConfigEditorProvider)
+  const { transparency } = useContext(ConfigEditorProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
