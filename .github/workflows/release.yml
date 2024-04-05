@@ -7,7 +7,8 @@ on:
 
 jobs:
   executables:
-    runs-on: macos-latest
+    # runs-on: macos-latest
+    runs-on: macos-11
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -31,7 +32,8 @@ jobs:
             dist/*.snap
             dist/*.deb
   web-page:
-    runs-on: macos-latest
+    # runs-on: macos-latest
+    runs-on: macos-11
     permissions:
       contents: read
       pages: write
