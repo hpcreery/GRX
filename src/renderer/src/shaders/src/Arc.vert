@@ -91,7 +91,7 @@ void main() {
   float Rotation = atan(dY, dX);
 
   float angle_dot = acos(dot(normalize(a_Start_Location - a_Center_Location), normalize(a_End_Location - a_Center_Location)));
-  if (angle_dot == 0.0) {
+  if (a_Start_Location == a_End_Location) {
     angle_dot = 2.0 * PI;
   }
   vec3 cross_prod = cross(vec3(a_Start_Location - a_Center_Location, 0), vec3(a_End_Location - a_Center_Location, 0));
@@ -99,7 +99,7 @@ void main() {
 
   float Sagitta = radius * (1.0 - cos((angle_dot / 2.0)));
   float Width = length(a_Start_Location - a_End_Location);
-  if (Width == 0.0) {
+  if (a_Start_Location == a_End_Location) {
     Width = radius * 2.0;
   }
   if (cw == -1.0 && a_Clockwise == 0.0 ) {
