@@ -173,6 +173,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
             yc: location.startPoint.y + location.arcOffsets.j,
             clockwise: this._arcDirection === CW ? 1 : 0,
           }))
+          console.log('ARC', JSON.stringify(location))
         }
       }
     }
