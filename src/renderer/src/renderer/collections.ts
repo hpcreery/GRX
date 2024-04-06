@@ -662,54 +662,39 @@ export class ShapesShaderCollection {
         if (contour.poly_type === 0) hasHoles = true
         const verts = this.getVertices(contour)
         const ears = earcut(verts)
-        indicies.push(...ears)
+        ears.forEach((ear) => indicies.push(ear))
         const lengthArray = new Array<number>(ears.length / 3)
-        polarities.push(...lengthArray.fill(contour.poly_type))
-        offsets.push(...lengthArray.fill(offset))
-        indexes.push(...lengthArray.fill(index))
-        vertQty.push(...lengthArray.fill(verts.length / 2))
+        lengthArray.fill(contour.poly_type).forEach((polarity) => polarities.push(polarity))
+        lengthArray.fill(offset).forEach((offset) => offsets.push(offset))
+        lengthArray.fill(index).forEach((index) => indexes.push(index))
+        lengthArray.fill(verts.length / 2).forEach((qty) => vertQty.push(qty))
         offset += verts.length
         index++
         return verts
       })
-      let radius = Math.ceil(Math.sqrt(vertices.length))
-      // unsure the reason to add for and make the radius even. it seems to falsify vertex positions without this line
-      radius = radius % 2 === 0 ? radius + 4 : radius + 5
-      // radius = radius + Math.round(radius / 10)
-      const newData = new Array(Math.round(Math.pow(radius, 2))).fill(0).map((_, index) => {
+      const width = vertices.length < this.regl.limits.maxTextureSize ? vertices.length % this.regl.limits.maxTextureSize : this.regl.limits.maxTextureSize
+      const height = Math.ceil(vertices.length / this.regl.limits.maxTextureSize)
+
+      const newData = new Array(width * height).fill(0).map((_, index) => {
         return vertices[index] ?? 0
       })
-      // const numComponents = 1
-      // const numElements = vertices.length / numComponents;
-      // const expandedData = new Float32Array(numElements * 2);
-      // for (let i = 0; i < numElements; ++i) {
-      //   const srcOff = i * numComponents;
-      //   const dstOff = i * 4;
-      //   for (let j = 0; j < numComponents; ++j) {
-      //     expandedData[dstOff + j] = vertices[srcOff + j];
-      //   }
-      // }
+
       let targetAttachment = this.shaderAttachment.surfaces
       if (hasHoles) {
         targetAttachment = this.shaderAttachment.surfacesWithHoles
       }
       targetAttachment.push({
         vertices: this.regl.texture({
-          // width: radius,
-          // height: radius,
-          radius: radius,
+          width,
+          height,
           type: 'float',
-          // format: 'luminance',
-          // format: 'luminance alpha',
           channels: 1,
           wrap: 'clamp',
           mag: 'nearest',
-          // wrap: 'repeat',
-          // mag: 'linear',
           min: 'nearest',
           data: newData
         }),
-        verticiesDimensions: [radius, radius],
+        verticiesDimensions: [width, height],
         polarityBuffer: this.regl.buffer(polarities),
         offsetBuffer: this.regl.buffer(offsets),
         indexBuffer: this.regl.buffer(indexes),
