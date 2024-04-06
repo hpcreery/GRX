@@ -20,7 +20,7 @@ import {
 } from './collections'
 
 import { WorldContext } from './engine'
-import { getUnitsConversion } from './utils'
+import { getUnitsConversion, UID } from './utils'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -310,8 +310,6 @@ interface LayerUniforms {
 
 interface LayerAttributes { }
 
-const UID = (): string =>
-  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true

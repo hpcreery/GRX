@@ -27,3 +27,6 @@ export function getUnitsConversion(units: Units): number {
       return units;
   }
 }
+
+export const UID = (): string =>
+  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)

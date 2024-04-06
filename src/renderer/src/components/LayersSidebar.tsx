@@ -35,11 +35,16 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   const [layers, setLayers] = useState<UploadFile[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
 
-  function registerLayers(rendererLayers: LayerInfo[]): void {
+  function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string, uid: string}[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
       const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: layer.format })
+      newLayers.push(newfile)
+    })
+    loadingLayers.forEach(async (layer) => {
+      const file = new File([], layer.name)
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: '' })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -56,11 +61,10 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
 
   useEffect(() => {
     renderEngine.backend.then(async backend => {
-      const reg = async (): Promise<void> => registerLayers(await backend.getLayers())
+      const reg = async (): Promise<void> => registerLayers(await backend.getLayers(), await backend.layersQueue)
       reg()
       backend.addEventCallback('LAYER_ADDED', Comlink.proxy(reg))
     })
-
   }, [])
 
   const actions = {

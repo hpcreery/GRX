@@ -48,7 +48,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   // const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
   function registerLayers(rendererLayers: LayerInfo[]): void {
-    console.log('registering layers', rendererLayers, layer)
     const thisLayer = rendererLayers.find((l) => l.uid === layer.uid)
     if (thisLayer) {
       setColor(thisLayer.color)
@@ -63,7 +62,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       const layers = await renderer.getLayers()
       registerLayers(layers)
       if (layers.find((l) => l.uid === layer.uid)) {
-        console.log('layer already exists')
         setLoading(false)
         return
       }
@@ -120,7 +118,8 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           reader.readAsText(file)
           break
         default:
-          reader.readAsText(file)
+          // reader.readAsText(file)
+          break
       }
     })
 

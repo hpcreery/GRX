@@ -8,6 +8,7 @@ import type { parser } from './plugins'
 import type { Units } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import GridVert from '../shaders/src/Grid.vert'
+import { UID } from './utils'
 
 interface WorldProps { }
 
@@ -194,6 +195,7 @@ export class RenderEngineBackend {
   // })
 
   public layers: LayerRenderer[] = []
+  public layersQueue: { name: string, uid: string}[] = []
 
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
@@ -467,12 +469,17 @@ export class RenderEngineBackend {
   public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
+      const tempUID = UID()
+      this.layersQueue.push({ name: params.file, uid: tempUID })
       const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({...params, format: params.format})
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
       await parser(params.file, params.props, Comlink.proxy(callback))
       parser[Comlink.releaseProxy]()
       instance.terminate()
+      const index = this.layersQueue.findIndex((file) => file.uid === tempUID)
+      if (index === -1) return
+      this.layersQueue.splice(index, 1)
     } else {
       console.error('No parser found for format: ' + params.format)
     }

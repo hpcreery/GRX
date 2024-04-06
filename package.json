@@ -73,6 +73,7 @@
     "@testing-library/user-event": "^14.5.2",
     "@tracespace/fixtures": "5.0.0-alpha.0",
     "@types/chroma-js": "^2.4.4",
+    "@types/earcut": "^2.1.4",
     "@types/ndarray": "^1.0.14",
     "@types/node": "^20.11.30",
     "@types/react": "^18.2.67",
