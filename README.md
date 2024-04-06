@@ -3,7 +3,7 @@
     <img src="./resources/icon.png" width="120" height="120">
   </a>
   <h1>GRX</h1>
-  <p>Fastest Web Based Gerber Viewer</p>
+  <p>Fastest Web Based EDA Manufacturing Artwork Viewer</p>
   <a title="GRX" href="https://grx.creery.org">
     <img src="https://img.shields.io/website?label=grx.creery.org&url=https%3A%2F%2Fgrx.creery.org%2F">
   </a>
@@ -16,7 +16,7 @@
 
 ## About
 
-GRX is designed to be an easy to use online gerber viewer. Under the hood, GRX uses WebGL for rendering at the best performance and WebWorkers for parsing on multiple cores, even isolating the Main DOM thread from the WebGL renderer thread.
+GRX is designed to be an easy to use online manufacturing artwork data exchange viewer. Under the hood, GRX uses WebGL for rendering at the best performance and WebWorkers for parsing on multiple cores, even isolating the Main DOM thread from the WebGL renderer thread.
 
 ## Features
 
