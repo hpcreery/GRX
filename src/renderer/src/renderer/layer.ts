@@ -162,7 +162,7 @@ export class ShapeRenderer {
       },
       // TODO: cull face should be configurable. Shaders should not flip faces when mirroring
       cull: {
-        enable: true,
+        enable: false,
         face: 'back'
       },
       context: {
@@ -197,7 +197,6 @@ export class ShapeRenderer {
           return qtyFeatures
         },
         u_Polarity: () => this.transform.polarity,
-        // u_PixelSize: (context: REGL.DefaultContext & WorldContext) => (0.003)/ (Math.sqrt(Math.pow(context.transform.matrix[0], 2) + Math.pow(context.transform.matrix[1], 2)) || this.transform.zoom),
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
           (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
           {}
@@ -265,7 +264,6 @@ export class ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    // this.transform.update(context.transform.matrix)
     this.transform.update(context.transformMatrix)
     if (this.dirty) {
       this.shapeCollection.refresh()
@@ -323,21 +321,6 @@ export default class LayerRenderer extends ShapeRenderer {
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
   public units: 'mm' | 'inch' | 'mil' | 'cm' | number = 'mm'
-
-  // get unitsScaleFactor(): number {
-  //   switch (this.units) {
-  //     case 'inch':
-  //       return 1 / 25.4
-  //     case 'mm':
-  //       return 1
-  //     case 'cm':
-  //       return 10
-  //     case 'mil':
-  //       return 0.0254
-  //     default:
-  //       return this.units
-  //   }
-  // }
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 

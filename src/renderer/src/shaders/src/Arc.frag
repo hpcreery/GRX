@@ -20,6 +20,8 @@ uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
 uniform float u_Polarity;
+uniform vec2 u_PointerPosition;
+uniform bool u_PointerDown;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -124,22 +126,7 @@ float draw(float dist, float pixel_size) {
   return dist;
 }
 
-void main() {
-  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-  float pixel_size = u_PixelSize / scale;
-
-  vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-
-  vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  vec2 OffsetPosition = TransformedPosition.xy - v_Center_Location;
-  // vec2 SizedPosition = OffsetPosition * vec2(v_Width, v_Height);
-  vec2 FragCoord = OffsetPosition;
-
-  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
-
+float arcDistance(vec2 FragCoord) {
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
   float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
@@ -148,8 +135,6 @@ void main() {
   // ? radius can be different bewtween these two
   float radius = distance(v_Start_Location, v_Center_Location);
   float radius2 = distance(v_End_Location, v_Center_Location);
-
-  // float angle_between_vectors = acos(dot(normalize(v_Start_Location - v_Center_Location), normalize(v_End_Location - v_Center_Location)));
 
   float sdX = v_Start_Location.x - v_Center_Location.x;
   float sdY = v_Start_Location.y - v_Center_Location.y;
@@ -164,6 +149,37 @@ void main() {
   con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
   float dist = merge(start, end);
   dist = merge(dist, con);
+  return dist;
+}
+
+vec2 transfromLocation(vec2 pixel_location) {
+  vec2 normal_coord = ((pixel_location.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
+  vec3 transformed_position = u_InverseTransform * vec3(normal_coord, 1.0);
+  vec2 offset_postition = transformed_position.xy - v_Center_Location;
+  vec2 true_coord = offset_postition;
+  return true_coord;
+}
+
+void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+  float pixel_size = u_PixelSize / scale;
+
+  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
+  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
+  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
+
+  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
+  float dist = arcDistance(FragCoord);
+
+  if (u_PointerDown) {
+    vec2 PointerPosition = transfromLocation(u_PointerPosition);
+    float PointerDist = arcDistance(PointerPosition);
+    if (PointerDist < 0.0) {
+      color = color * 0.5 + vec3(0.5, 0.5, 0.5);
+      alpha = ALPHA;
+    }
+
+  }
 
   #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);

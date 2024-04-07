@@ -10,6 +10,8 @@ uniform float u_QtyContours;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
+uniform vec2 u_PointerPosition;
+uniform bool u_PointerDown;
 
 
 // SURFACE UNIFORMS
@@ -59,6 +61,9 @@ float sdfSegment(vec2 p, vec2 a, vec2 b) {
   // return abs(dist);
 }
 
+//////////////////////////////
+//     Draw functions       //
+//////////////////////////////
 
 float draw(float dist, float pixel_size) {
   if (dist * float(u_OutlineMode) > pixel_size) {
@@ -67,31 +72,16 @@ float draw(float dist, float pixel_size) {
   return dist;
 }
 
-void main() {
-  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-  float pixel_size = u_PixelSize / scale;
-  vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 TransformedPosition = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  vec2 OffsetPosition = TransformedPosition.xy - vec2(0.0, 0.0);
-  vec2 FragCoord = OffsetPosition;
+vec2 transfromLocation(vec2 pixel_coord) {
+  vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
+  vec3 transformed_position = u_InverseTransform * vec3(normal_frag_coord, 1.0);
+  vec2 offset_position = transformed_position.xy - vec2(0.0, 0.0);
+  vec2 true_coord = offset_position;
+  return true_coord;
+}
 
-  // v_Polarity = Island (1) or Hole (0)
-  // u_Polarity = Positive (1) or Negative (0)
-  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  // float polarity = bool(1) ^^ bool(1) ? 0.0 : 1.0;
-  // first | second | result
-  // -----------------------
-  // 0     | 0      | 1
-  // 0     | 1      | 0
-  // 1     | 0      | 0
-  // 1     | 1      | 1
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
-
-
+float surfaceDistMain(vec2 FragCoord) {
   float dist = 100.0;
-
-
   for (float i = -5.0; i <= 4.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
@@ -109,6 +99,40 @@ void main() {
     vec2 point3_n = getVertexPosition(indz1 * 2.0 + v_Offset);
     dist = min(dist, sdfSegment(FragCoord, point3_n, point3_p));
   }
+  return dist;
+}
+
+void main() {
+  float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+  float pixel_size = u_PixelSize / scale;
+
+
+  // v_Polarity = Island (1) or Hole (0)
+  // u_Polarity = Positive (1) or Negative (0)
+  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
+  // float polarity = bool(1) ^^ bool(1) ? 0.0 : 1.0;
+  // first | second | result
+  // -----------------------
+  // 0     | 0      | 1
+  // 0     | 1      | 0
+  // 1     | 0      | 0
+  // 1     | 1      | 1
+  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
+  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
+
+
+  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
+  float dist = surfaceDistMain(FragCoord);
+
+  // if (u_PointerDown) {
+  //   vec2 PointerPosition = transfromLocation(u_PointerPosition);
+  //   float PointerDist = surfaceDistMain(PointerPosition);
+
+  //   if (PointerDist > 0.0) {
+  //     color = color * 0.5 + vec3(0.5, 0.5, 0.5);
+  //     alpha = ALPHA;
+  //   }
+  // }
 
 
 

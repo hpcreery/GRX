@@ -18,6 +18,8 @@ interface WorldUniforms {
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
+  u_PointerPosition: vec2
+  u_PointerDown: boolean
 }
 
 interface WorldAttributes {
@@ -111,6 +113,12 @@ export interface RenderEngineEvents {
   LAYER_ADDED: 'LAYER_ADDED'
 }
 
+export interface Pointer {
+  x: number
+  y: number
+  down: boolean
+}
+
 export class RenderEngineBackend {
 
   public settings: RenderSettings = {
@@ -133,6 +141,12 @@ export class RenderEngineBackend {
   public viewBox: {
     width: number
     height: number
+  }
+
+  public pointer: Pointer = {
+    x: 0,
+    y: 0,
+    down: false
   }
 
   public transform: RenderTransform = {
@@ -195,7 +209,7 @@ export class RenderEngineBackend {
   // })
 
   public layers: LayerRenderer[] = []
-  public layersQueue: { name: string, uid: string}[] = []
+  public layersQueue: { name: string, uid: string }[] = []
 
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
@@ -252,7 +266,9 @@ export class RenderEngineBackend {
         u_InverseTransform: () => this.transform.matrixInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         u_PixelSize: 2,
-        u_OutlineMode: () => this.settings.OUTLINE_MODE
+        u_OutlineMode: () => this.settings.OUTLINE_MODE,
+        u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
+        u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down
       },
 
       attributes: {
@@ -471,7 +487,7 @@ export class RenderEngineBackend {
     if (pluginWorker) {
       const tempUID = UID()
       this.layersQueue.push({ name: params.file, uid: tempUID })
-      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({...params, format: params.format})
+      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
       await parser(params.file, params.props, Comlink.proxy(callback))
@@ -503,7 +519,6 @@ export class RenderEngineBackend {
   public removeLayer(uid: string): void {
     const index = this.layers.findIndex((layer) => layer.uid === uid)
     if (index === -1) return
-    // this.layers[index].destroy()
     this.layers.splice(index, 1)
     this.render(true)
   }
@@ -534,6 +549,13 @@ export class RenderEngineBackend {
       })
       if (data.reduce((acc, val) => acc + val, 0) < 1) continue
       console.log(layer.name)
+    }
+  }
+
+  public setPointer(mouse: Partial<Pointer>): void {
+    Object.assign(this.pointer, mouse)
+    if (this.pointer.down) {
+      this.render(true)
     }
   }
 

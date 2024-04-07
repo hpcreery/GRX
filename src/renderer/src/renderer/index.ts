@@ -108,8 +108,7 @@ export class RenderEngine {
     return [e.clientX - offsetX, height - (e.clientY - offsetY)]
   }
 
-  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
-    const backend = await this.backend
+  public async getMouseNormalizedWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
     const { width, height } = this.CONTAINER.getBoundingClientRect()
     const mouse_element_pos = this.getMouseCanvasCoordinates(e)
 
@@ -117,11 +116,29 @@ export class RenderEngine {
     const mouse_normalize_pos = [
       mouse_element_pos[0] / width,
       mouse_element_pos[1] / height
-    ]
+    ] as [number, number]
     // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
-    return await backend.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
+    // return await backend.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
+    return mouse_normalize_pos
+  }
+
+  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
+    const backend = await this.backend
+    // const { width, height } = this.CONTAINER.getBoundingClientRect()
+    // const mouse_element_pos = this.getMouseCanvasCoordinates(e)
+
+    // // Normalize the mouse position to the canvas
+    // const mouse_normalize_pos = [
+    //   mouse_element_pos[0] / width,
+    //   mouse_element_pos[1] / height
+    // ]
+    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+    // return await backend.getWorldPosition(mouse_normalize_pos[0], mouse_normalize_pos[1])
+    return backend.getWorldPosition(...(await this.getMouseNormalizedWorldCoordinates(e)))
   }
 
   private async addControls(): Promise<void> {
@@ -168,18 +185,23 @@ export class RenderEngine {
       await backend.grabViewport()
       const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
       backend.sample(xpos, ypos)
+      const [x,y] = this.getMouseCanvasCoordinates(e)
+      backend.setPointer({ x, y, down: true})
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       await backend.releaseViewport()
+      backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       await backend.releaseViewport()
+      backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       await backend.releaseViewport()
+      backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
@@ -189,6 +211,7 @@ export class RenderEngine {
       }
       await backend.moveViewport(e.movementX, e.movementY)
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+      backend.setPointer({ down: false})
     }
   }
 

@@ -672,6 +672,10 @@ export class ShapesShaderCollection {
         index++
         return verts
       })
+      if (vertices.length > Math.pow(this.regl.limits.maxTextureSize, 2)) {
+        console.warn('Surface has too many vertices, skipping')
+        return
+      }
       const width = vertices.length < this.regl.limits.maxTextureSize ? vertices.length % this.regl.limits.maxTextureSize : this.regl.limits.maxTextureSize
       const height = Math.ceil(vertices.length / this.regl.limits.maxTextureSize)
 
