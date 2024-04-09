@@ -1,7 +1,7 @@
 {
   "name": "grx",
-  "version": "3.0.0",
-  "description": "Fastest Web Geber Viewer",
+  "version": "3.0.3",
+  "description": "Fastest Web Based EDA Manufacturing Artwork Viewer",
   "main": "./out/main/index.js",
   "author": "Hunter Creery",
   "homepage": "https://grx.creery.org",
