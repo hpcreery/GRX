@@ -80,7 +80,8 @@ void main() {
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(a_SymNum));
   float t_Height = pullSymbolParameter(u_Parameters.height, int(a_SymNum));
-  float OD = max(t_Outer_Dia, max(t_Width, t_Height));
+  float t_Line_Length = pullSymbolParameter(u_Parameters.line_length, int(a_SymNum));
+  float OD = max(t_Line_Length, max(t_Outer_Dia, max(t_Width, t_Height)));
 
   vec2 Size = vec2(t_Width, t_Height);
   if (Size.x == 0.0) {

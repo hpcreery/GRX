@@ -42,7 +42,9 @@ struct Shapes {
   // float Dogbone;
   // float DPack;
   float Ellipse;
-  float Moire;
+  // float Moire;
+  float MoireODB;
+  float MoireGerber;
   float Hole;
   float Null;
   float Polygon;

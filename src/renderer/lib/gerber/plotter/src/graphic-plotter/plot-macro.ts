@@ -249,7 +249,7 @@ function plotMoire(parameters: number[]): Shapes.Primitive {
     x: cx,
     y: cy,
     rotation: -degrees,
-    symbol: new Symbols.MoireSymbol({
+    symbol: new Symbols.MoireGerberSymbol({
       outer_dia: d,
       ring_gap: ringGap,
       ring_width: ringThx,
@@ -270,7 +270,7 @@ function plotThermal(parameters: number[]): Shapes.Primitive {
     x: x,
     y: y,
     rotation: -degrees,
-    symbol: new Symbols.SquareRoundThermalSymbol({
+    symbol: new Symbols.SquaredRoundThermalSymbol({
       outer_dia: od,
       inner_dia: id,
       gap: gap,

@@ -39,7 +39,9 @@ export const STANDARD_SYMBOLS = [
   'Oval_Thermal',
   'Oblong_Thermal',
   'Ellipse',
-  'Moire',
+  // 'Moire',
+  'MoireGerber',
+  'MoireODB',
   'Hole',
   'Polygon'
 
@@ -334,9 +336,15 @@ export class EllipseSymbol extends StandardSymbol {
   }
 }
 
-export class MoireSymbol extends StandardSymbol {
+export class MoireGerberSymbol extends StandardSymbol {
   constructor(symbol: Pick<TStandardSymbol, 'outer_dia' | 'ring_width' | 'ring_gap' | 'num_rings' | 'line_width' | 'line_length' | 'angle'> & Partial<{ id: string }>) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Moire, ...symbol })
+    super({ symbol: STANDARD_SYMBOLS_MAP.MoireGerber, ...symbol })
+  }
+}
+
+export class MoireODBSymbol extends StandardSymbol {
+  constructor(symbol: Pick<TStandardSymbol, 'outer_dia' | 'ring_width' | 'ring_gap' | 'num_rings' | 'line_width' | 'line_length' | 'angle'> & Partial<{ id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.MoireODB, ...symbol })
   }
 }
 
