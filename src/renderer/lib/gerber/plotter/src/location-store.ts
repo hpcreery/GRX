@@ -120,8 +120,8 @@ function parseCoordinate(
       ? signlessCoordinate.padEnd(digits, '0')
       : signlessCoordinate.padStart(digits, '0')
 
-  const leading = paddedCoordinate.slice(0, integerPlaces)
-  const trailing = paddedCoordinate.slice(integerPlaces)
+  const leading = paddedCoordinate.slice(0, paddedCoordinate.length - decimalPlaces)
+  const trailing = paddedCoordinate.slice(paddedCoordinate.length - decimalPlaces)
 
   return Number(`${sign}${leading}.${trailing}`)
 }
