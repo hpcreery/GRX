@@ -401,6 +401,7 @@ export class RenderEngineBackend {
   }
 
   public grabViewport(): void {
+    this.transform.velocity = [0,0]
     this.transform.dragging = true
   }
 
