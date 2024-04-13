@@ -178,29 +178,30 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
     }
 
     if (node.type === STEP_REPEAT_OPEN) {
-      this._stepRepeats.unshift(new Shapes.StepAndRepeat({
-        shapes: [],
-        repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
-          return {
-            datum: vec2.fromValues(location.stepRepeat.i * Math.floor(i / location.stepRepeat.x), location.stepRepeat.j * (i % location.stepRepeat.x)),
-            rotation: 0,
-            mirror_x: 0,
-            mirror_y: 0,
-            scale: 1,
-          }
-        }),
-      }))
+      if (location.stepRepeat.x <= 1 && location.stepRepeat.y <= 1 && location.stepRepeat.i === 0 && location.stepRepeat.j === 0) {
+        if (this._stepRepeats.length > 0) {
+          graphics.push(this._stepRepeats.shift()!)
+        }
+      } else {
+        this._stepRepeats.unshift(new Shapes.StepAndRepeat({
+          shapes: [],
+          repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
+            return {
+              datum: vec2.fromValues(location.stepRepeat.i * Math.floor(i / location.stepRepeat.y), location.stepRepeat.j * (i % location.stepRepeat.y)),
+              rotation: 0,
+              mirror_x: 0,
+              mirror_y: 0,
+              scale: 1,
+            }
+          }),
+        }))
+      }
     }
     if (this._stepRepeats.length > 0 && node.type === GRAPHIC) {
       this._stepRepeats[0].shapes.push(...graphics)
       graphics.length = 0
     }
-    if (node.type === DONE) {
-      if (this._stepRepeats.length > 0) {
-        graphics.push(this._stepRepeats.shift()!)
-      }
-    }
-    if (node.type === STEP_REPEAT_CLOSE) {
+    if (node.type === STEP_REPEAT_CLOSE || node.type === DONE) {
       if (this._stepRepeats.length > 0) {
         graphics.push(this._stepRepeats.shift()!)
       }

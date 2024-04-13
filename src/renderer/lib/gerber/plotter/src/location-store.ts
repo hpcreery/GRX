@@ -82,8 +82,8 @@ const LocationStorePrototype: LocationStore & LocationStoreState = {
       const {stepRepeat} = node
       const x = Number(stepRepeat.x)
       const y = Number(stepRepeat.y)
-      const i = parseCoordinate(stepRepeat.i, 1, options)
-      const j = parseCoordinate(stepRepeat.j, 1, options)
+      const i = Number(stepRepeat.i)
+      const j = Number(stepRepeat.j)
 
       stepRepeats = {x, y, i, j}
     }
