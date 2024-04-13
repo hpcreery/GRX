@@ -18,6 +18,7 @@ import type { LayerInfo } from '@src/renderer/engine'
 import * as Comlink from 'comlink'
 
 import { pluginList } from '@src/renderer/plugins'
+import { EngineEvents } from '@src/renderer/engine'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -63,7 +64,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     renderEngine.backend.then(async backend => {
       const reg = async (): Promise<void> => registerLayers(await backend.getLayers(), await backend.layersQueue)
       reg()
-      backend.addEventCallback('LAYER_ADDED', Comlink.proxy(reg))
+      backend.addEventCallback(EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
     })
   }, [])
 

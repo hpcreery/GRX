@@ -103,15 +103,12 @@ export interface LayerInfo {
   format: string
 }
 
-// export const RenderEngineEvents = {
-//   RENDER: 'render',
-//   LAYER_ADDED: 'layer-added',
-// } as const
-
-export interface RenderEngineEvents {
+export const EngineEvents = {
   RENDER: 'RENDER',
-  LAYER_ADDED: 'LAYER_ADDED'
-}
+  LAYERS_CHANGED: 'LAYERS_CHANGED',
+} as const
+
+export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents] 
 
 export interface Pointer {
   x: number
@@ -479,7 +476,7 @@ export class RenderEngineBackend {
     })
     this.layers.push(layer)
     this.render(true)
-    this.eventTarget.dispatchEvent(new Event('LAYER_ADDED'))
+    this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
   }
 
   public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
@@ -490,12 +487,20 @@ export class RenderEngineBackend {
       const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
-      await parser(params.file, params.props, Comlink.proxy(callback))
-      parser[Comlink.releaseProxy]()
-      instance.terminate()
-      const index = this.layersQueue.findIndex((file) => file.uid === tempUID)
-      if (index === -1) return
-      this.layersQueue.splice(index, 1)
+      try {
+        await parser(params.file, params.props, Comlink.proxy(callback))
+      } catch (error) {
+        console.error(error)
+        throw error 
+      } finally {
+        parser[Comlink.releaseProxy]()
+        instance.terminate()
+        const index = this.layersQueue.findIndex((file) => file.uid === tempUID)
+        if (index != -1) {
+          this.layersQueue.splice(index, 1)
+        }
+        this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
+      }
     } else {
       console.error('No parser found for format: ' + params.format)
     }
@@ -530,7 +535,7 @@ export class RenderEngineBackend {
     this.render(true)
   }
 
-  public addEventCallback(event: keyof RenderEngineEvents, listener: () => void): void {
+  public addEventCallback(event: TEngineEvents, listener: () => void): void {
     function runCallback(): void {
       listener()
     }

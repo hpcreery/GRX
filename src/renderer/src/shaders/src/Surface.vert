@@ -9,6 +9,7 @@ uniform float u_QtyFeatures;
 uniform float u_QtyContours;
 uniform float u_PixelSize;
 uniform float u_Index;
+uniform float u_IndexOffset;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -74,7 +75,8 @@ void main() {
   v_Indicies = a_Indicies;
   v_QtyVerts = a_QtyVerts;
 
-  float Index = u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures);
+  float Index = u_IndexOffset + (u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures));
+  // float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

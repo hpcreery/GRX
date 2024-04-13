@@ -114,7 +114,7 @@ void main() {
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
 
-  float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
+  float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

@@ -128,7 +128,7 @@ void main() {
   v_Center_Location = a_Center_Location;
   v_Clockwise = a_Clockwise;
 
-  float Index = u_IndexOffset / u_QtyFeatures + a_Index / u_QtyFeatures;
+  float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

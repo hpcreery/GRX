@@ -163,7 +163,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
-    frag: PadFrag.replace(dynamicShapeRegex, ''),
+    frag: PadFrag,
     vert: PadVert,
 
     uniforms: {},
@@ -236,7 +236,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
-    frag: ArcFrag.replace(dynamicShapeRegex, ''),
+    frag: ArcFrag,
 
     vert: ArcVert,
 
@@ -303,7 +303,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
-    frag: LineFrag.replace(dynamicShapeRegex, ''),
+    frag: LineFrag,
 
     vert: LineVert,
 
@@ -479,8 +479,6 @@ export function initializeRenderers(regl: REGL.Regl): void {
     }
   })
 }
-
-const dynamicShapeRegex = /^#pragma dynamic_shape\(?(?<shapes>(?:\w|,)+)?\)?/gm
 
 const { SYMBOL_PARAMETERS } = Symbols
 

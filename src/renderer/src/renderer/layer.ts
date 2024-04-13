@@ -160,7 +160,6 @@ export class ShapeRenderer {
         func: 'greater',
         range: [0, 1]
       },
-      // TODO: cull face should be configurable. Shaders should not flip faces when mirroring
       cull: {
         enable: false,
         face: 'back'
@@ -184,17 +183,13 @@ export class ShapeRenderer {
         ],
         u_IndexOffset: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => {
-          const ioff =
-            (this.transform.index * (context.qtyFeaturesRef ?? 1)) /
-            (context.prevQtyFeaturesRef ?? 1) || 0
-          return ioff
+        ) => {          
+          return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
         u_QtyFeatures: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
         ) => {
-          const qtyFeatures = context.qtyFeaturesRef ?? 1
-          return qtyFeatures
+          return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
@@ -469,7 +464,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     this.repeats.forEach((repeat, i) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.qtyFeatures
+      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = i
       super.render(context)
     })

@@ -5,7 +5,7 @@ import chroma from 'chroma-js'
 import { useGesture } from '@use-gesture/react'
 import { animated, useSpring } from '@react-spring/web'
 // import { TRendererLayer } from '../../old-renderer/types'
-import type Layer  from '@src/renderer/layer'
+import type Layer from '@src/renderer/layer'
 import { RenderEngine } from '@src/renderer'
 // import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from '../LayersSidebar'
@@ -91,21 +91,31 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       }
       reader.onload = async (e): Promise<void> => {
         if (e.target?.result !== null && e.target?.result !== undefined) {
-          await renderer.addFile({
-            format: file.format,
-            file: e.target?.result as string,
-            props: {
-              name: file.name,
-              // uid: file.uid
-            }
-          })
+          try {
+            await renderer.addFile({
+              format: file.format,
+              file: e.target?.result as string,
+              props: {
+                name: file.name,
+                // uid: file.uid
+              }
+            })
+            notifications.show({
+              title: 'File read',
+              message: `${file.name} file read.`,
+              color: 'green',
+              autoClose: 5000
+            })
+          } catch (fileParseError) {
+            console.error(fileParseError)
+            notifications.show({
+              title: 'File parse error',
+              message: `${file.name} file parse error.`,
+              color: 'red',
+              autoClose: 5000
+            })
+          }
           registerLayers(await renderer.getLayers())
-          notifications.show({
-            title: 'File read',
-            message: `${file.name} file read.`,
-            color: 'green',
-            autoClose: 5000
-          })
         } else {
           // messageApi.error(`${file.name} file upload failed.`)
         }
