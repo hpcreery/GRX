@@ -103,7 +103,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
               corners: shape.vertices,
               inner_dia: hole?.type === Constants.CIRCLE ? hole.diameter : 0,
               line_width: 0,
-              angle: shape.rotation ?? 0
+              angle: (shape.rotation ?? 0) * -1
             })
             break
         }
