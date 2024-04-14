@@ -50,7 +50,7 @@ class ShapeTransfrom implements Transform {
   public scale = 1
   public mirror_x: Binary = 0
   public mirror_y: Binary = 0
-  public order: ("scale" | "mirror" | "rotate" | "translate")[] | undefined = ['rotate', 'translate', 'scale', 'mirror']
+  public order: ("scale" | "mirror" | "rotate" | "translate")[] = ['translate', 'rotate', 'mirror', 'scale']
   public index = 0
   public polarity = 1
   public matrix = mat3.create()
@@ -58,7 +58,6 @@ class ShapeTransfrom implements Transform {
   public update(inputMatrix: mat3): void {
     const { rotation, scale, datum } = this
     this.matrix = mat3.clone(inputMatrix)
-    if (!this.order) this.order = ['rotate', 'translate', 'scale', 'mirror']
     for (const transform of this.order) {
       switch (transform) {
         case 'scale':
