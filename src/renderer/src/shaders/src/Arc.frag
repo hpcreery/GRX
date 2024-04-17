@@ -22,6 +22,7 @@ uniform vec3 u_Color;
 uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
+uniform bool u_QueryMode;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -171,14 +172,20 @@ void main() {
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = arcDistance(FragCoord);
 
-  if (u_PointerDown) {
+  if (u_QueryMode) {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     float PointerDist = arcDistance(PointerPosition);
-    if (PointerDist < 0.0) {
-      color = color * 0.5 + vec3(0.5, 0.5, 0.5);
-      alpha = ALPHA;
-    }
 
+    if (PointerDist < 0.0) {
+      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        return;
+      } else {
+        discard;
+      }
+    } else {
+      discard;
+    }
   }
 
   #pragma glslify: import('../modules/Debug.glsl')

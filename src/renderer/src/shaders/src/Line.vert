@@ -16,6 +16,8 @@ uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
+uniform bool u_PointerDown;
+uniform bool u_QueryMode;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -96,6 +98,10 @@ void main() {
   v_Polarity = a_Polarity;
 
   float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
+
+  if (u_QueryMode) {
+    FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+  }
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

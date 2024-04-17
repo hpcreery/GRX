@@ -12,6 +12,8 @@ uniform bool u_OutlineMode;
 uniform vec3 u_Color;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
+uniform bool u_QueryMode;
+uniform float u_Index;
 
 
 // SURFACE UNIFORMS
@@ -126,13 +128,59 @@ void main() {
 
   // if (u_PointerDown) {
   //   vec2 PointerPosition = transfromLocation(u_PointerPosition);
-  //   float PointerDist = surfaceDistMain(PointerPosition);
+  //   // float PointerDist = surfaceDistMain(PointerPosition);
 
-  //   if (PointerDist > 0.0) {
+  //   vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_Offset);
+  //   vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_Offset);
+  //   vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_Offset);
+
+  //   // if pointer dist is inside the triangle
+  //   float area = 0.5 * (-point2.y * point3.x + point1.y * (-point2.x + point3.x) + point1.x * (point2.y - point3.y) + point2.x * point3.y);
+  //   float s = 1.0 / (2.0 * area) * (point1.y * point3.x - point1.x * point3.y + (point3.y - point1.y) * PointerPosition.x + (point1.x - point3.x) * PointerPosition.y);
+  //   float t = 1.0 / (2.0 * area) * (point1.x * point2.y - point1.y * point2.x + (point1.y - point2.y) * PointerPosition.x + (point2.x - point1.x) * PointerPosition.y);
+  //   if (s > 0.0 && t > 0.0 && 1.0 - s - t > 0.0) {
+  //     // color = vec3(1.0, 1.0, 1.0);
   //     color = color * 0.5 + vec3(0.5, 0.5, 0.5);
   //     alpha = ALPHA;
   //   }
+
+  //   if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, u_Resolution.y - 0.5 - floor(v_Index / u_Resolution.x))) {
+  //     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  //     return;
+  //   } else {
+  //     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+  //     return;
+  //   }
+
+  //   // if (PointerDist > 0.0) {
+  //   //   color = color * 0.5 + vec3(0.5, 0.5, 0.5);
+  //   //   alpha = ALPHA;
+  //   // }
   // }
+
+  if (u_QueryMode) {
+    vec2 PointerPosition = transfromLocation(u_PointerPosition);
+    // float PointerDist = surfaceDistMain(PointerPosition);
+
+    vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_Offset);
+    vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_Offset);
+    vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_Offset);
+
+    // if pointer dist is inside the triangle
+    float area = 0.5 * (-point2.y * point3.x + point1.y * (-point2.x + point3.x) + point1.x * (point2.y - point3.y) + point2.x * point3.y);
+    float s = 1.0 / (2.0 * area) * (point1.y * point3.x - point1.x * point3.y + (point3.y - point1.y) * PointerPosition.x + (point1.x - point3.x) * PointerPosition.y);
+    float t = 1.0 / (2.0 * area) * (point1.x * point2.y - point1.y * point2.x + (point1.y - point2.y) * PointerPosition.x + (point2.x - point1.x) * PointerPosition.y);
+    if (s > 0.0 && t > 0.0 && 1.0 - s - t > 0.0) {
+      if (gl_FragCoord.xy == vec2(mod(u_Index, u_Resolution.x) + 0.5, floor(u_Index / u_Resolution.x) + 0.5)) {
+        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        return;
+      } else {
+        discard;
+      }
+    } else {
+      discard;
+    }
+  }
 
 
 

@@ -36,6 +36,12 @@ interface CommonUniforms {
   u_SymbolsTextureDimensions: vec2
 }
 
+interface QueryUnifroms {
+  u_QueryMode: boolean
+  u_Color: vec3
+}
+interface QueryAttributes { }
+
 // interface ShapeTransfrom extends Transform {
 //   index: number
 //   polarity: number
@@ -111,6 +117,7 @@ export class ShapeRenderer {
   }
 
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
@@ -120,6 +127,7 @@ export class ShapeRenderer {
     FrameBufferRendeAttachments
   >
   public surfaceFrameBuffer: REGL.Framebuffer2D
+  public queryFrameBuffer: REGL.Framebuffer2D
 
   public transform: ShapeTransfrom = new ShapeTransfrom()
 
@@ -182,7 +190,7 @@ export class ShapeRenderer {
         ],
         u_IndexOffset: (
           context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => {          
+        ) => {
           return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
         u_QtyFeatures: (
@@ -202,12 +210,28 @@ export class ShapeRenderer {
       }
     })
 
+    this.queryConfig = this.regl<
+      QueryUnifroms,
+      QueryAttributes,
+      Record<string, never>,
+      ShapeRendererCommonContext,
+      REGL.DefaultContext & WorldContext
+    >({
+      uniforms: {
+        u_QueryMode: true,
+        u_Color: [1,1,1],
+      }
+    })
+
     this.drawPads = ReglRenderers.drawPads!
     this.drawLines = ReglRenderers.drawLines!
     this.drawArcs = ReglRenderers.drawArcs!
     this.drawSurfaces = ReglRenderers.drawSurfaces!
     this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
 
+    this.queryFrameBuffer = this.regl.framebuffer({
+      depth: true
+    })
     this.surfaceFrameBuffer = this.regl.framebuffer({
       depth: true
     })
@@ -257,6 +281,46 @@ export class ShapeRenderer {
     return this
   }
 
+  public getFeatures(context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+    if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
+      console.error('Too many features to query')
+      return []
+    }
+    this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth: context.viewportWidth
+    const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
+    this.regl.clear({
+      framebuffer: this.queryFrameBuffer,
+      color: [0, 0, 0, 0],
+      depth: 0
+    })
+    context.resolution = [width, height]
+    this.queryFrameBuffer.use(() => {
+      this.commonConfig(() => {
+        this.queryConfig({resolution: [width, height]}, () => {
+          this.drawPrimatives(context)
+        })
+      })
+    })
+    const data = this.regl.read({
+      framebuffer: this.queryFrameBuffer,
+      x: 0,
+      y: 0,
+      width: width,
+      height: height
+    })
+    const features: Shapes.Shape[] = []
+    for (let i = 0; i < data.length; i+=4) {
+      const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
+      if (value > 0) {
+        console.log('feature', i, this.records[i/4 ])
+        features.push(this.records[i/4])
+      }
+    }
+    console.log('features', features)
+    return features
+  }
+
   public render(context: REGL.DefaultContext & WorldContext): void {
     this.transform.update(context.transformMatrix)
     if (this.dirty) {
@@ -266,18 +330,22 @@ export class ShapeRenderer {
       this.dirty = false
     }
     this.commonConfig(() => {
-      if (this.shapeCollection.shaderAttachment.pads.length != 0)
-        this.drawPads(this.shapeCollection.shaderAttachment.pads)
-      if (this.shapeCollection.shaderAttachment.arcs.length != 0)
-        this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
-      if (this.shapeCollection.shaderAttachment.lines.length != 0)
-        this.drawLines(this.shapeCollection.shaderAttachment.lines)
-      if (this.shapeCollection.shaderAttachment.surfaces.length != 0)
-        this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-      this.drawSurfaceWithHoles(context)
+      this.drawPrimatives(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
     })
+  }
+
+  private drawPrimatives(context: REGL.DefaultContext & WorldContext): void {
+    if (this.shapeCollection.shaderAttachment.pads.length != 0)
+      this.drawPads(this.shapeCollection.shaderAttachment.pads)
+    if (this.shapeCollection.shaderAttachment.arcs.length != 0)
+      this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
+    if (this.shapeCollection.shaderAttachment.lines.length != 0)
+      this.drawLines(this.shapeCollection.shaderAttachment.lines)
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0)
+      this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    this.drawSurfaceWithHoles(context)
   }
 }
 
@@ -380,9 +448,9 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
+        // this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
         super.render(context)
-        this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
+        // this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
       })
     })
   }

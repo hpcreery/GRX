@@ -10,6 +10,8 @@ uniform float u_QtyContours;
 uniform float u_PixelSize;
 uniform float u_Index;
 uniform float u_IndexOffset;
+uniform bool u_PointerDown;
+uniform bool u_QueryMode;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -77,6 +79,18 @@ void main() {
 
   float Index = u_IndexOffset + (u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures));
   // float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
+
+
+  if (u_QueryMode) {
+    vec2 New_Vertex_Position = vec2(0.0, 0.0);
+    if (a_Vertex_Position.x == 0.0)
+      New_Vertex_Position = vec2(1.0, -1.0);
+    else if (a_Vertex_Position.x == 1.0)
+      New_Vertex_Position = vec2(-1.0, 1.0);
+    else if (a_Vertex_Position.x == 2.0)
+      New_Vertex_Position = vec2(1.0, 1.0);
+    FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(u_Index, u_Resolution.x) + 0.5, floor(u_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+  }
 
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

@@ -184,9 +184,9 @@ export class RenderEngine {
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       await backend.grabViewport()
       const [xpos, ypos] = this.getMouseCanvasCoordinates(e)
-      backend.sample(xpos, ypos)
       const [x,y] = this.getMouseCanvasCoordinates(e)
-      backend.setPointer({ x, y, down: true})
+      await backend.setPointer({ x, y, down: true})
+      backend.sample(xpos, ypos)
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {

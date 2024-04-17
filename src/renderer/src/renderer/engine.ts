@@ -20,6 +20,7 @@ interface WorldUniforms {
   u_OutlineMode: boolean
   u_PointerPosition: vec2
   u_PointerDown: boolean
+  u_QueryMode: boolean
 }
 
 interface WorldAttributes {
@@ -262,10 +263,12 @@ export class RenderEngineBackend {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
+        // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
-        u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down
+        u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
+        u_QueryMode: false,
       },
 
       attributes: {
@@ -429,8 +432,9 @@ export class RenderEngineBackend {
     mat3.projection(this.transform.matrix, width, height)
     mat3.translate(this.transform.matrix, this.transform.matrix, position)
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [width, height])
     mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
     mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
     // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width / 2, width / height / 2])
@@ -553,8 +557,14 @@ export class RenderEngineBackend {
         width: 1,
         height: 1
       })
-      if (data.reduce((acc, val) => acc + val, 0) < 1) continue
-      console.log(layer.name)
+      // if (data.reduce((acc, val) => acc + val, 0) < 1) continue
+      // console.log(layer.name)
+      if (data.reduce((acc, val) => acc + val, 0) > 0) {
+        console.log(layer.name)
+      }
+      this.world((context) => {
+        layer.getFeatures(context)
+      })
     }
   }
 
