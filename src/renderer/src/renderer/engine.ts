@@ -1,7 +1,8 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
-import LayerRenderer, { LayerRendererProps } from './layer'
+import LayerRenderer, { LayerRendererProps, NestedFeature } from './layer'
 import { initializeRenderers } from './collections'
+import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { parser } from './plugins'
@@ -109,7 +110,7 @@ export const EngineEvents = {
   LAYERS_CHANGED: 'LAYERS_CHANGED',
 } as const
 
-export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents] 
+export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents]
 
 export interface Pointer {
   x: number
@@ -404,7 +405,7 @@ export class RenderEngineBackend {
   }
 
   public grabViewport(): void {
-    this.transform.velocity = [0,0]
+    this.transform.velocity = [0, 0]
     this.transform.dragging = true
   }
 
@@ -442,8 +443,6 @@ export class RenderEngineBackend {
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
     // logMatrix(this.transform.matrix)
-
-    // console.log(s)
     this.render()
   }
 
@@ -474,7 +473,6 @@ export class RenderEngineBackend {
   }
 
   public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
-    // console.log('Adding Layer', params.name, params.image)
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl
@@ -496,7 +494,7 @@ export class RenderEngineBackend {
         await parser(params.file, params.props, Comlink.proxy(callback))
       } catch (error) {
         console.error(error)
-        throw error 
+        throw error
       } finally {
         parser[Comlink.releaseProxy]()
         instance.terminate()
@@ -557,15 +555,21 @@ export class RenderEngineBackend {
         width: 1,
         height: 1
       })
-      // if (data.reduce((acc, val) => acc + val, 0) < 1) continue
-      // console.log(layer.name)
       if (data.reduce((acc, val) => acc + val, 0) > 0) {
         console.log(layer.name)
       }
-      this.world((context) => {
-        layer.getFeatures(context)
-      })
     }
+  }
+
+  public query(pointer: vec2): (Shapes.Shape | NestedFeature)[] {
+    const features: (Shapes.Shape | NestedFeature)[] = []
+    this.world((context) => {
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
+        features.push(...layer.query(pointer, context))
+      }
+    })
+    return features
   }
 
   public setPointer(mouse: Partial<Pointer>): void {

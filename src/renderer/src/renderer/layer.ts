@@ -39,8 +39,18 @@ interface CommonUniforms {
 interface QueryUnifroms {
   u_QueryMode: boolean
   u_Color: vec3
+  u_PointerPosition: vec2
 }
 interface QueryAttributes { }
+
+export interface NestedFeature {
+  ref: Shapes.Shape
+  features: (Shapes.Shape | NestedFeature)[]
+}
+
+interface QueryProps {
+  pointer: vec2
+}
 
 // interface ShapeTransfrom extends Transform {
 //   index: number
@@ -213,13 +223,14 @@ export class ShapeRenderer {
     this.queryConfig = this.regl<
       QueryUnifroms,
       QueryAttributes,
-      Record<string, never>,
+      QueryProps,
       ShapeRendererCommonContext,
       REGL.DefaultContext & WorldContext
     >({
       uniforms: {
         u_QueryMode: true,
         u_Color: [1,1,1],
+        u_PointerPosition: this.regl.prop<QueryProps, 'pointer'>('pointer')
       }
     })
 
@@ -281,7 +292,10 @@ export class ShapeRenderer {
     return this
   }
 
-  public getFeatures(context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape | NestedFeature)[] {
+    const origMatrix = mat3.clone(context.transformMatrix)
+    this.transform.update(context.transformMatrix)
+    context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
       console.error('Too many features to query')
       return []
@@ -294,10 +308,9 @@ export class ShapeRenderer {
       color: [0, 0, 0, 0],
       depth: 0
     })
-    context.resolution = [width, height]
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
-        this.queryConfig({resolution: [width, height]}, () => {
+        this.queryConfig({pointer}, () => {
           this.drawPrimatives(context)
         })
       })
@@ -309,20 +322,38 @@ export class ShapeRenderer {
       width: width,
       height: height
     })
-    const features: Shapes.Shape[] = []
+    const features: (Shapes.Shape | NestedFeature)[] = []
     for (let i = 0; i < data.length; i+=4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
-        console.log('feature', i, this.records[i/4 ])
         features.push(this.records[i/4])
       }
     }
-    console.log('features', features)
+    this.macroCollection.macros.forEach((macro) => {
+      macro.records.forEach((record) => {
+        macro.renderer.updateTransformFromPad(record)
+        const nestedFeatures: (Shapes.Shape | NestedFeature)[] = []
+        macro.renderer.query(pointer, context).forEach((feature) => {
+          nestedFeatures.push(feature)
+        })
+        if (nestedFeatures.length > 0) features.push({ ref: record, features: nestedFeatures })
+      })
+    })
+    this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
+      const nestedFeatures: (Shapes.Shape | NestedFeature)[] = []
+      stepAndRepeat.query(pointer, context).forEach((feature) => {
+        nestedFeatures.push(feature)
+      })
+      if (nestedFeatures.length > 0) features.push({ ref: stepAndRepeat.record, features: nestedFeatures })
+    })
+    context.transformMatrix = origMatrix
     return features
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
+    const origMatrix = mat3.clone(context.transformMatrix)  
     this.transform.update(context.transformMatrix)
+    context.transformMatrix = this.transform.matrix
     if (this.dirty) {
       this.shapeCollection.refresh()
       this.macroCollection.refresh()
@@ -334,6 +365,7 @@ export class ShapeRenderer {
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
     })
+    context.transformMatrix = origMatrix
   }
 
   private drawPrimatives(context: REGL.DefaultContext & WorldContext): void {
@@ -438,8 +470,14 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape | NestedFeature)[] {
+    this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
+    const featrures = super.query(pointer, context)
+    this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
+    return featrures
+  }
+
   public render(context: REGL.DefaultContext & WorldContext): void {
-    if (!this.visible) return
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
@@ -448,9 +486,9 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        // this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
+        this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
         super.render(context)
-        // this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
+        this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
       })
     })
   }
@@ -520,18 +558,40 @@ export class MacroRenderer extends ShapeRenderer {
   }
 }
 
-export class StepAndRepeatRenderer extends ShapeRenderer {
-  public repeats: Transform[]
+interface StepAndRepeatRendererProps {
+  regl: REGL.Regl
+  record: Shapes.StepAndRepeat
 
-  constructor(props: ShapeRendererProps & { repeats: Transform[] }) {
-    super(props)
-    this.repeats = props.repeats
+}
+
+export class StepAndRepeatRenderer extends ShapeRenderer {
+  public record: Shapes.StepAndRepeat
+
+  constructor(props: StepAndRepeatRendererProps) {
+    super({
+      regl: props.regl,
+      image: props.record.shapes
+    })
+    this.record = props.record
+    this.transform.index = props.record.index
+  }
+
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape | NestedFeature)[] {
+    const features: (Shapes.Shape | NestedFeature)[] = []
+    this.record.repeats.forEach((repeat, i) => {
+      Object.assign(this.transform, repeat)
+      context.qtyFeaturesRef = this.record.repeats.length
+      this.transform.index = i
+      const nestedFeatures = super.query(pointer, context)
+      if (nestedFeatures.length > 0) features.push(...nestedFeatures)
+    })
+    return features
   }
 
   public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
-    this.repeats.forEach((repeat, i) => {
+    this.record.repeats.forEach((repeat, i) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.repeats.length
+      context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = i
       super.render(context)
     })

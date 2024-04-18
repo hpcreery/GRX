@@ -77,8 +77,6 @@ void main() {
   v_Indicies = a_Indicies;
   v_QtyVerts = a_QtyVerts;
 
-  float Index = u_IndexOffset + (u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures));
-  // float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
 
 
   if (u_QueryMode) {
@@ -92,5 +90,7 @@ void main() {
     FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(u_Index, u_Resolution.x) + 0.5, floor(u_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }
 
+  float Index = u_IndexOffset + (u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures));
+  // float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

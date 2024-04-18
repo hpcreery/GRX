@@ -129,11 +129,11 @@ void main() {
   v_Center_Location = a_Center_Location;
   v_Clockwise = a_Clockwise;
 
-  float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
 
   if (u_QueryMode) {
     FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }
 
+  float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }
