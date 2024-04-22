@@ -26,14 +26,11 @@ export default function InfoModal(): JSX.Element | null {
       <Modal title="Information" opened={helpModalOpen} onClose={close}>
         <Title order={2}>Version: {__APP_VERSION__}</Title>
         <br />
-        NEW VERSION IS FINALLY HERE! TONS OF NEW FEATURES AND IMPROVEMENTS!
-        <br />
-        <br />
         <Accordion variant="contained" defaultValue="customization">
           <Accordion.Item value="Contributors" key="4">
             <Accordion.Control>Contributors</Accordion.Control>
             <Accordion.Panel>
-              GRX is a free and open source software for viewing Gerber files. Built by{' '}
+              GRX is a free and open source software for viewing EDA Manufacturing Artwork files ( like Gerber and GDSII ). Built by{' '}
               <Anchor href="https://github.com/hpcreery" target="_blank">
                 Hunter Creery
               </Anchor>{' '}

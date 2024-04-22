@@ -70,13 +70,13 @@ export default function App(): JSX.Element | null {
           style={{
             width: '100vw',
             height: '100vh',
-            cursor: 'crosshair',
             WebkitUserSelect: 'none',
             MozUserSelect: 'none',
             userSelect: 'none',
             touchAction: 'none',
             // backgroundColor: colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
           }}
+          
           ref={elementRef}
         />
       </Skeleton>

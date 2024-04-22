@@ -1,7 +1,8 @@
-import { LayerRendererProps } from './layer'
+import { LayerRendererProps, NestedFeature } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, RenderEngineBackend, RenderSettings } from './engine'
+import { Shape } from './shapes'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -16,11 +17,16 @@ interface PointerCoordinates {
   y: number
 }
 
+interface PointerSettings {
+  mode: 'move' | 'select'
+}
+
 export const PointerEvents = {
   POINTER_DOWN: 'pointerdown',
   POINTER_UP: 'pointerup',
   POINTER_MOVE: 'pointermove',
-  POINTER_HOVER: 'pointerhover'
+  POINTER_HOVER: 'pointerhover',
+  POINTER_SELECT: 'pointerselect'
 } as const
 
 export type PointerEvent = CustomEvent<PointerCoordinates>
@@ -39,7 +45,7 @@ export class RenderEngine {
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true
+      ZOOM_TO_CURSOR: true,
     },
     {
       set: (target, name, value): boolean => {
@@ -71,12 +77,25 @@ export class RenderEngine {
       return true
     },
   })
+  public pointerSettings: PointerSettings = new Proxy({
+    mode: 'move'
+  }, {
+    set: (target, name, value): boolean => {
+      if (name === 'mode') {
+        if (value === 'move') this.CONTAINER.style.cursor = 'grab'
+        if (value === 'select') this.CONTAINER.style.cursor = 'crosshair'
+      }
+      target[name] = value
+      return true
+    }
+  })
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvas: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
+    this.CONTAINER.style.cursor = 'grab'
     this.canvas = this.createCanvas()
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
     this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
@@ -151,31 +170,51 @@ export class RenderEngine {
       }
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
-      await backend.grabViewport()
-      const [x,y] = this.getMouseCanvasCoordinates(e)
-      const features = await backend.query([x, y])
-      console.log('features', features)
-      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      if (this.pointerSettings.mode === 'move') {
+        this.CONTAINER.style.cursor = 'grabbing'
+        await backend.grabViewport()
+        sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      } else if (this.pointerSettings.mode === 'select') {
+        const [x, y] = this.getMouseCanvasCoordinates(e)
+        const features = await backend.query([x, y])
+        console.log('features', features)
+        if (features.length > 0) {
+          this.pointer.dispatchEvent(
+            new CustomEvent<(Shape | NestedFeature)[]>(PointerEvents.POINTER_SELECT, {
+              detail: features
+            })
+          )
+        }
+      }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
-      await backend.releaseViewport()
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+      if (this.pointerSettings.mode === 'move') {
+        this.CONTAINER.style.cursor = 'grab'
+        await backend.releaseViewport()
+        sendPointerEvent(e, PointerEvents.POINTER_UP)
+      }
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
-      await backend.releaseViewport()
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+      if (this.pointerSettings.mode === 'move') {
+        await backend.releaseViewport()
+        sendPointerEvent(e, PointerEvents.POINTER_UP)
+      }
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
-      await backend.releaseViewport()
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+      if (this.pointerSettings.mode === 'move') {
+        await backend.releaseViewport()
+        sendPointerEvent(e, PointerEvents.POINTER_UP)
+      }
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
-      if (!await backend.isDragging()) {
-        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
-        return
+      if (this.pointerSettings.mode === 'move') {
+        if (!await backend.isDragging()) {
+          await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+          return
+        }
+        await backend.moveViewport(e.movementX, e.movementY)
+        sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       }
-      await backend.moveViewport(e.movementX, e.movementY)
-      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
     }
   }
 

@@ -11,7 +11,8 @@ import {
   // IconCube3dSphereOff,
   IconCube,
   // IconGridDots,
-  IconGrid4x4
+  IconGrid4x4,
+  IconClick
 } from '@tabler/icons-react'
 // import chroma from 'chroma-js'
 import {
@@ -53,9 +54,14 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       >
         <Group gap='xs'>
           <ActionIcon.Group>
-            <Tooltip openDelay={500} withArrow label="Coming Soon!">
-              <ActionIcon size='lg' radius="sm" disabled variant="default" onClick={(): void => { }}>
-                <IconArrowsMove size={18} />
+            <Tooltip openDelay={500} withArrow label="Move">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={(): void => { }}>
+                <IconArrowsMove size={18} onClick={() => renderEngine.pointerSettings.mode = 'move'}/>
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Query">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={(): void => { }}>
+                <IconClick size={18} onClick={() => renderEngine.pointerSettings.mode = 'select'} />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Coming Soon!">
