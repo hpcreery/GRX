@@ -185,11 +185,6 @@ export class RenderEngineBackend {
     }
   }
 
-  // public setGridProps(props: Partial<GridRenderProps>): void {
-  //   Object.assign(this.grid, props)
-  //   this.render(true)
-  // }
-
   private dirty = true
 
   // public stats: Stats = {

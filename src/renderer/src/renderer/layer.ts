@@ -116,14 +116,14 @@ export class ShapeRenderer {
   //   onChange.target(this.records).map((record, i) => (record.index = i))
   //   this.dirty = true
   // })
-  public readonly records: Shapes.Shape[] = []
+  public readonly image: Shapes.Shape[] = []
 
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
   public stepAndRepeatCollection: StepAndRepeatCollection
 
   public get qtyFeatures(): number {
-    return this.records.length
+    return this.image.length
   }
 
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
@@ -148,20 +148,20 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    this.records = props.image
-    this.indexRecords()
+    this.image = props.image
+    this.indexImage()
 
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
-      records: this.records
+      image: this.image
     })
     this.macroCollection = new MacroShaderCollection({
       regl: this.regl,
-      records: this.records
+      image: this.image
     })
     this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
-      records: this.records
+      image: this.image
     })
 
     this.commonConfig = this.regl<
@@ -279,16 +279,16 @@ export class ShapeRenderer {
       })
       this.flattenSurfaces({
         renderTexture: this.surfaceFrameBuffer,
-        index: attachment.index,
         qtyFeatures: this.qtyFeatures,
-        polarity: attachment.polarity
+        index: attachment.surfaceIndex,
+        polarity: attachment.surfacePolarity
       })
     })
     return this
   }
 
-  public indexRecords(): this {
-    this.records.map((record, i) => (record.index = i))
+  public indexImage(): this {
+    this.image.map((record, i) => (record.index = i))
     return this
   }
 
@@ -326,13 +326,14 @@ export class ShapeRenderer {
     for (let i = 0; i < data.length; i+=4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
-        features.push(this.records[i/4])
+        features.push(this.image[i/4])
       }
     }
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
-        macro.renderer.updateTransformFromPad(record)
         const nestedFeatures: (Shapes.Shape | NestedFeature)[] = []
+        macro.renderer.updateTransformFromPad(record)
+        macro.renderer.transform.index = 0
         macro.renderer.query(pointer, context).forEach((feature) => {
           nestedFeatures.push(feature)
         })
@@ -578,10 +579,10 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
 
   public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape | NestedFeature)[] {
     const features: (Shapes.Shape | NestedFeature)[] = []
-    this.record.repeats.forEach((repeat, i) => {
+    this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
-      this.transform.index = i
+      this.transform.index = 0
       const nestedFeatures = super.query(pointer, context)
       if (nestedFeatures.length > 0) features.push(...nestedFeatures)
     })

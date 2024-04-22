@@ -1313,11 +1313,7 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    // Engine.addLayer({
-    //   name: 'surfaces',
-    //   visible: true,
-    //   image: SURFACE_RECORDS_ARRAY
-    // })
+
 
     // Engine.addLayer({
     //   name: 'validation',
@@ -1432,6 +1428,12 @@ function REGLApp(): JSX.Element {
       props: {
         name: 'gtl_in',
       }
+    })
+
+    Engine.addLayer({
+      name: 'surfaces',
+      image: SURFACE_RECORDS_ARRAY,
+      units: 'mm'
     })
 
     Engine.addFile({

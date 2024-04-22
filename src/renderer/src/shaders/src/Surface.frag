@@ -6,28 +6,26 @@ precision highp float;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
-uniform float u_QtyContours;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
-uniform float u_Index;
-
 
 // SURFACE UNIFORMS
 uniform sampler2D u_Vertices;
 uniform vec2 u_VerticesDimensions;
-uniform float u_Polarity;
-
 
 // SURFACE VARYINGS
-varying float v_Index;
-varying float v_Polarity;
-varying float v_Offset;
 varying vec3 v_Indicies;
 varying float v_QtyVerts;
+varying float v_ContourIndex;
+varying float v_ContourPolarity;
+varying float v_ContourOffset;
+varying float v_SurfaceIndex;
+varying float v_SurfacePolarity;
+varying float v_SurfaceOffset;
 
 
 
@@ -87,21 +85,41 @@ float surfaceDistMain(vec2 FragCoord) {
   for (float i = -5.0; i <= 4.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
-    vec2 point1_p = getVertexPosition(indx * 2.0 + v_Offset);
-    vec2 point1_n = getVertexPosition(indx1 * 2.0 + v_Offset);
+    vec2 point1_p = getVertexPosition(indx * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 point1_n = getVertexPosition(indx1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
     dist = min(dist, sdfSegment(FragCoord, point1_n, point1_p));
     float indy = mod(v_Indicies.y + i, v_QtyVerts);
     float indy1 = mod(v_Indicies.y + i + 1.0, v_QtyVerts);
-    vec2 point2_p = getVertexPosition(indy * 2.0 + v_Offset);
-    vec2 point2_n = getVertexPosition(indy1 * 2.0 + v_Offset);
+    vec2 point2_p = getVertexPosition(indy * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 point2_n = getVertexPosition(indy1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
     dist = min(dist, sdfSegment(FragCoord, point2_n, point2_p));
     float indz = mod(v_Indicies.z + i, v_QtyVerts);
     float indz1 = mod(v_Indicies.z + i + 1.0, v_QtyVerts);
-    vec2 point3_p = getVertexPosition(indz * 2.0 + v_Offset);
-    vec2 point3_n = getVertexPosition(indz1 * 2.0 + v_Offset);
+    vec2 point3_p = getVertexPosition(indz * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 point3_n = getVertexPosition(indz1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
     dist = min(dist, sdfSegment(FragCoord, point3_n, point3_p));
   }
   return dist;
+}
+
+float sign(vec2 p1, vec2 p2, vec2 p3)
+{
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+}
+
+bool pointInTriangle(vec2 pt, vec2 v1, vec2 v2, vec2 v3)
+{
+    float d1, d2, d3;
+    bool has_neg, has_pos;
+
+    d1 = sign(pt, v1, v2);
+    d2 = sign(pt, v2, v3);
+    d3 = sign(pt, v3, v1);
+
+    has_neg = (d1 < 0.0) || (d2 < 0.0) || (d3 < 0.0);
+    has_pos = (d1 > 0.0) || (d2 > 0.0) || (d3 > 0.0);
+
+    return !(has_neg && has_pos);
 }
 
 void main() {
@@ -109,9 +127,9 @@ void main() {
   float pixel_size = u_PixelSize / scale;
 
 
-  // v_Polarity = Island (1) or Hole (0)
-  // u_Polarity = Positive (1) or Negative (0)
-  float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
+  // v_ContourPolarity = Island (1) or Hole (0)
+  // v_SurfacePolarity = Positive (1) or Negative (0)
+  float polarity = bool(v_ContourPolarity) ^^ bool(v_SurfacePolarity) ? 0.0 : 1.0;
   // float polarity = bool(1) ^^ bool(1) ? 0.0 : 1.0;
   // first | second | result
   // -----------------------
@@ -126,52 +144,16 @@ void main() {
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = surfaceDistMain(FragCoord);
 
-  // if (u_PointerDown) {
-  //   vec2 PointerPosition = transfromLocation(u_PointerPosition);
-  //   // float PointerDist = surfaceDistMain(PointerPosition);
-
-  //   vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_Offset);
-  //   vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_Offset);
-  //   vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_Offset);
-
-  //   // if pointer dist is inside the triangle
-  //   float area = 0.5 * (-point2.y * point3.x + point1.y * (-point2.x + point3.x) + point1.x * (point2.y - point3.y) + point2.x * point3.y);
-  //   float s = 1.0 / (2.0 * area) * (point1.y * point3.x - point1.x * point3.y + (point3.y - point1.y) * PointerPosition.x + (point1.x - point3.x) * PointerPosition.y);
-  //   float t = 1.0 / (2.0 * area) * (point1.x * point2.y - point1.y * point2.x + (point1.y - point2.y) * PointerPosition.x + (point2.x - point1.x) * PointerPosition.y);
-  //   if (s > 0.0 && t > 0.0 && 1.0 - s - t > 0.0) {
-  //     // color = vec3(1.0, 1.0, 1.0);
-  //     color = color * 0.5 + vec3(0.5, 0.5, 0.5);
-  //     alpha = ALPHA;
-  //   }
-
-  //   if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, u_Resolution.y - 0.5 - floor(v_Index / u_Resolution.x))) {
-  //     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  //     return;
-  //   } else {
-  //     gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-  //     return;
-  //   }
-
-  //   // if (PointerDist > 0.0) {
-  //   //   color = color * 0.5 + vec3(0.5, 0.5, 0.5);
-  //   //   alpha = ALPHA;
-  //   // }
-  // }
-
   if (u_QueryMode) {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     // float PointerDist = surfaceDistMain(PointerPosition);
 
-    vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_Offset);
-    vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_Offset);
-    vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_Offset);
+    vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
 
-    // if pointer dist is inside the triangle
-    float area = 0.5 * (-point2.y * point3.x + point1.y * (-point2.x + point3.x) + point1.x * (point2.y - point3.y) + point2.x * point3.y);
-    float s = 1.0 / (2.0 * area) * (point1.y * point3.x - point1.x * point3.y + (point3.y - point1.y) * PointerPosition.x + (point1.x - point3.x) * PointerPosition.y);
-    float t = 1.0 / (2.0 * area) * (point1.x * point2.y - point1.y * point2.x + (point1.y - point2.y) * PointerPosition.x + (point2.x - point1.x) * PointerPosition.y);
-    if (s > 0.0 && t > 0.0 && 1.0 - s - t > 0.0) {
-      if (gl_FragCoord.xy == vec2(mod(u_Index, u_Resolution.x) + 0.5, floor(u_Index / u_Resolution.x) + 0.5)) {
+    if (pointInTriangle(PointerPosition, point1, point2, point3)) {
+      if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
       } else {

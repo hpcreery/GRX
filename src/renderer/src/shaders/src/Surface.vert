@@ -6,9 +6,7 @@ precision highp float;
 uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
 uniform float u_QtyFeatures;
-uniform float u_QtyContours;
 uniform float u_PixelSize;
-uniform float u_Index;
 uniform float u_IndexOffset;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
@@ -21,18 +19,25 @@ uniform sampler2D u_Vertices;
 uniform vec2 u_VerticesDimensions;
 
 // SURFACE ATTRIBUTES
-attribute float a_Index;
-attribute float a_Polarity;
-attribute float a_Offset;
+attribute float a_ContourIndex;
+attribute float a_ContourPolarity;
+attribute float a_ContourOffset;
 attribute vec3 a_Indicies;
 attribute float a_QtyVerts;
+attribute float a_QtyContours;
+attribute float a_SurfaceIndex;
+attribute float a_SurfacePolarity;
+attribute float a_SurfaceOffset;
 
 // SURFACE VARYINGS
-varying float v_Index;
-varying float v_Polarity;
-varying float v_Offset;
 varying vec3 v_Indicies;
 varying float v_QtyVerts;
+varying float v_ContourIndex;
+varying float v_ContourPolarity;
+varying float v_ContourOffset;
+varying float v_SurfaceIndex;
+varying float v_SurfacePolarity;
+varying float v_SurfaceOffset;
 
 vec4 texelFetch(sampler2D tex, vec2 texSize, vec2 pixelCoord) {
   vec2 uv = (pixelCoord + 0.5) / texSize;
@@ -56,9 +61,9 @@ vec2 getVertexPosition(float index) {
 
 void main() {
 
-  vec2 point1 = getVertexPosition(a_Indicies.x * 2.0 + a_Offset);
-  vec2 point2 = getVertexPosition(a_Indicies.y * 2.0 + a_Offset);
-  vec2 point3 = getVertexPosition(a_Indicies.z * 2.0 + a_Offset);
+  vec2 point1 = getVertexPosition(a_Indicies.x * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  vec2 point2 = getVertexPosition(a_Indicies.y * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  vec2 point3 = getVertexPosition(a_Indicies.z * 2.0 + a_ContourOffset + a_SurfaceOffset);
 
   vec2 OffsetPosition = vec2(0.0, 0.0);
   if (a_Vertex_Position.x == 0.0)
@@ -68,14 +73,17 @@ void main() {
   else if (a_Vertex_Position.x == 2.0)
     OffsetPosition = point3;
 
-  // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_Offset);
+  // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_ContourOffset);
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
 
-  v_Index = a_Index;
-  v_Polarity = a_Polarity;
-  v_Offset = a_Offset;
+  v_ContourIndex = a_ContourIndex;
+  v_ContourPolarity = a_ContourPolarity;
+  v_ContourOffset = a_ContourOffset;
   v_Indicies = a_Indicies;
   v_QtyVerts = a_QtyVerts;
+  v_SurfaceIndex = a_SurfaceIndex;
+  v_SurfacePolarity = a_SurfacePolarity;
+  v_SurfaceOffset = a_SurfaceOffset;
 
 
 
@@ -87,10 +95,10 @@ void main() {
       New_Vertex_Position = vec2(-1.0, 1.0);
     else if (a_Vertex_Position.x == 2.0)
       New_Vertex_Position = vec2(1.0, 1.0);
-    FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(u_Index, u_Resolution.x) + 0.5, floor(u_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(a_SurfaceIndex, u_Resolution.x) + 0.5, floor(a_SurfaceIndex / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }
 
-  float Index = u_IndexOffset + (u_Index / u_QtyFeatures + a_Index / (u_QtyContours * u_QtyFeatures));
+  float Index = u_IndexOffset + (a_SurfaceIndex / u_QtyFeatures + a_ContourIndex / (a_QtyContours * u_QtyFeatures));
   // float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
   gl_Position = vec4(FinalPosition.xy, Index, 1);
 }

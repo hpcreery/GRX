@@ -86,32 +86,39 @@ export interface LineAttachments {
 interface SurfaceUniforms {
   u_Vertices: REGL.Texture2D
   u_VerticesDimensions: vec2
-  u_QtyContours: number
-  u_Index: number
-  u_Polarity: number
 }
 
 interface SurfaceAttributes {
-  a_Index: CustomAttributeConfig
-  a_Polarity: CustomAttributeConfig
-  a_Offset: CustomAttributeConfig
+  a_ContourIndex: CustomAttributeConfig
+  a_ContourPolarity: CustomAttributeConfig
+  a_ContourOffset: CustomAttributeConfig
   a_Indicies: CustomAttributeConfig
   a_Vertex_Position: number[][]
   a_QtyVerts: CustomAttributeConfig
+  a_QtyContours: CustomAttributeConfig
+  a_SurfaceIndex: CustomAttributeConfig
+  a_SurfacePolarity: CustomAttributeConfig
+  a_SurfaceOffset: CustomAttributeConfig
 }
 
 export interface SurfaceAttachments {
   vertices: REGL.Texture2D
   verticiesDimensions: vec2
-  polarity: Binary
-  index: number
   length: number
-  qtyContours: number
-  qtyVertsBuffer: REGL.Buffer
-  indexBuffer: REGL.Buffer
-  offsetBuffer: REGL.Buffer
-  polarityBuffer: REGL.Buffer
+  qtyContours: REGL.Buffer
+  contourVertexQtyBuffer: REGL.Buffer
+  contourIndexBuffer: REGL.Buffer
+  contourOffsetBuffer: REGL.Buffer
+  contourPolarityBuffer: REGL.Buffer
   indiciesBuffer: REGL.Buffer
+  surfacePolarityBuffer: REGL.Buffer
+  surfaceIndexBuffer: REGL.Buffer
+  surfaceOffsetBuffer: REGL.Buffer
+}
+
+export interface SurfaceWithHolesAttachments extends SurfaceAttachments {
+  surfacePolarity: Binary
+  surfaceIndex: number
 }
 
 interface FrameBufferRenderUniforms {
@@ -134,7 +141,7 @@ interface TShaderAttachment {
   lines: LineAttachments
   arcs: ArcAttachments
   surfaces: SurfaceAttachments[]
-  surfacesWithHoles: SurfaceAttachments[]
+  surfacesWithHoles: SurfaceWithHolesAttachments[]
 }
 
 interface TReglRenderers {
@@ -365,26 +372,23 @@ export function initializeRenderers(regl: REGL.Regl): void {
       u_VerticesDimensions: regl.prop<SurfaceAttachments, 'verticiesDimensions'>(
         'verticiesDimensions'
       ),
-      u_QtyContours: regl.prop<SurfaceAttachments, 'qtyContours'>('qtyContours'),
-      u_Index: regl.prop<SurfaceAttachments, 'index'>('index'),
-      u_Polarity: regl.prop<SurfaceAttachments, 'polarity'>('polarity')
     },
 
     attributes: {
-      a_Index: {
-        buffer: regl.prop<SurfaceAttachments, 'indexBuffer'>('indexBuffer'),
+      a_ContourIndex: {
+        buffer: regl.prop<SurfaceAttachments, 'contourIndexBuffer'>('contourIndexBuffer'),
         stride: 1 * glFloatSize,
         divisor: 1
       },
 
-      a_Polarity: {
-        buffer: regl.prop<SurfaceAttachments, 'polarityBuffer'>('polarityBuffer'),
+      a_ContourPolarity: {
+        buffer: regl.prop<SurfaceAttachments, 'contourPolarityBuffer'>('contourPolarityBuffer'),
         stride: 1 * glFloatSize,
         divisor: 1
       },
 
-      a_Offset: {
-        buffer: regl.prop<SurfaceAttachments, 'offsetBuffer'>('offsetBuffer'),
+      a_ContourOffset: {
+        buffer: regl.prop<SurfaceAttachments, 'contourOffsetBuffer'>('contourOffsetBuffer'),
         stride: 1 * glFloatSize,
         divisor: 1
       },
@@ -396,10 +400,35 @@ export function initializeRenderers(regl: REGL.Regl): void {
       },
 
       a_QtyVerts: {
-        buffer: regl.prop<SurfaceAttachments, 'qtyVertsBuffer'>('qtyVertsBuffer'),
+        buffer: regl.prop<SurfaceAttachments, 'contourVertexQtyBuffer'>('contourVertexQtyBuffer'),
         stride: 1 * glFloatSize,
         divisor: 1
       },
+
+      a_QtyContours: {
+        buffer: regl.prop<SurfaceAttachments, 'qtyContours'>('qtyContours'),
+        stride: 1 * glFloatSize,
+        divisor: 1
+      },
+
+      a_SurfaceIndex: {
+        buffer: regl.prop<SurfaceAttachments, 'surfaceIndexBuffer'>('surfaceIndexBuffer'),
+        stride: 1 * glFloatSize,
+        divisor: 1
+      },
+
+      a_SurfacePolarity: {
+        buffer: regl.prop<SurfaceAttachments, 'surfacePolarityBuffer'>('surfacePolarityBuffer'),
+        stride: 1 * glFloatSize,
+        divisor: 1
+      },
+
+      a_SurfaceOffset: {
+        buffer: regl.prop<SurfaceAttachments, 'surfaceOffsetBuffer'>('surfaceOffsetBuffer'),
+        stride: 1 * glFloatSize,
+        divisor: 1
+      },
+      
 
       a_Vertex_Position: [
         [0, 0],
@@ -492,7 +521,7 @@ interface shapesList {
 
 export class ShapesShaderCollection {
   private regl: REGL.Regl
-  private records: Shapes.Shape[] = []
+  private image: Shapes.Shape[] = []
 
   public symbolsCollection: SymbolShaderCollection
 
@@ -500,10 +529,10 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
-  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
-    const { regl, records } = props
+  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
+    const { regl, image } = props
     this.regl = regl
-    this.records = records
+    this.image = image
     this.symbolsCollection = new SymbolShaderCollection({
       regl
     })
@@ -544,20 +573,28 @@ export class ShapesShaderCollection {
 
     this.shaderAttachment.surfaces.map((surface) => {
       surface.vertices.destroy()
-      surface.indexBuffer.destroy()
-      surface.offsetBuffer.destroy()
-      surface.polarityBuffer.destroy()
+      surface.contourIndexBuffer.destroy()
+      surface.contourOffsetBuffer.destroy()
+      surface.contourPolarityBuffer.destroy()
       surface.indiciesBuffer.destroy()
-      surface.qtyVertsBuffer.destroy()
+      surface.contourVertexQtyBuffer.destroy()
+      surface.qtyContours.destroy()
+      surface.surfaceIndexBuffer.destroy()
+      surface.surfacePolarityBuffer.destroy()
+      surface.surfaceOffsetBuffer.destroy()
     })
     this.shaderAttachment.surfaces.length = 0
     this.shaderAttachment.surfacesWithHoles.map((surface) => {
       surface.vertices.destroy()
-      surface.indexBuffer.destroy()
-      surface.offsetBuffer.destroy()
-      surface.polarityBuffer.destroy()
+      surface.contourIndexBuffer.destroy()
+      surface.contourOffsetBuffer.destroy()
+      surface.contourPolarityBuffer.destroy()
       surface.indiciesBuffer.destroy()
-      surface.qtyVertsBuffer.destroy()
+      surface.contourVertexQtyBuffer.destroy()
+      surface.qtyContours.destroy()
+      surface.surfaceIndexBuffer.destroy()
+      surface.surfacePolarityBuffer.destroy()
+      surface.surfaceOffsetBuffer.destroy()
     })
     this.shaderAttachment.surfacesWithHoles.length = 0
 
@@ -579,7 +616,7 @@ export class ShapesShaderCollection {
       }
     }
 
-    this.records.forEach((record) => {
+    this.image.forEach((record) => {
       if (record.type === FeatureTypeIdentifyer.SURFACE) {
         this.shapes.surfaces.push(record)
       } else if (
@@ -647,45 +684,119 @@ export class ShapesShaderCollection {
       this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
     )
 
+    const surfacePolarities: number[] = []
+    const surfaceOffsets: number[] = []
+    const surfaceIndexes: number[] = []
+    const allContourPolarities: number[] = []
+    const allContourOffsets: number[] = []
+    const allContourIndexes: number[] = []
+    const allContourQty: number[] = []
+    const allIndicies: number[] = []
+    const allContourVertexQty: number[] = []
+    const allVertices: number[] = []
+
+    let surfaceOffset = 0
     this.shapes.surfaces.forEach((record) => {
-      const polarities: number[] = []
-      const offsets: number[] = []
-      const indexes: number[] = []
+      const contourPolarities: number[] = []
+      const contourOffsets: number[] = []
+      const contourIndexes: number[] = []
       const indicies: number[] = []
-      const vertQty: number[] = []
-      let offset = 0
-      let index = 0
+      const contourVertexQty: number[] = []
+      let contourOffset = 0
+      let contourIndex = 0
       let hasHoles = false
       const vertices = record.contours.flatMap((contour) => {
         if (contour.poly_type === 0) hasHoles = true
-        const verts = this.getVertices(contour)
-        const ears = earcut(verts)
+        const vertices = this.getVertices(contour)
+        const ears = earcut(vertices)
         ears.forEach((ear) => indicies.push(ear))
         const lengthArray = new Array<number>(ears.length / 3)
-        lengthArray.fill(contour.poly_type).forEach((polarity) => polarities.push(polarity))
-        lengthArray.fill(offset).forEach((offset) => offsets.push(offset))
-        lengthArray.fill(index).forEach((index) => indexes.push(index))
-        lengthArray.fill(verts.length / 2).forEach((qty) => vertQty.push(qty))
-        offset += verts.length
-        index++
-        return verts
+        lengthArray.fill(contour.poly_type).forEach((polarity) => contourPolarities.push(polarity))
+        lengthArray.fill(contourOffset).forEach((offset) => contourOffsets.push(offset))
+        lengthArray.fill(contourIndex).forEach((index) => contourIndexes.push(index))
+        lengthArray.fill(vertices.length / 2).forEach((qty) => contourVertexQty.push(qty))
+        contourOffset += vertices.length
+        contourIndex++
+        return vertices
       })
-      if (vertices.length > Math.pow(this.regl.limits.maxTextureSize, 2)) {
-        console.warn('Surface has too many vertices, skipping')
-        return
-      }
-      const width = vertices.length < this.regl.limits.maxTextureSize ? vertices.length % this.regl.limits.maxTextureSize : this.regl.limits.maxTextureSize
-      const height = Math.ceil(vertices.length / this.regl.limits.maxTextureSize)
-
-      const newData = new Array(width * height).fill(0).map((_, index) => {
-        return vertices[index] ?? 0
-      })
-
-      let targetAttachment = this.shaderAttachment.surfaces
+      
       if (hasHoles) {
-        targetAttachment = this.shaderAttachment.surfacesWithHoles
+        const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
+        const length = indicies.length / 3
+        this.shaderAttachment.surfacesWithHoles.push({
+          vertices: this.regl.texture({
+            width,
+            height,
+            type: 'float',
+            channels: 1,
+            wrap: 'clamp',
+            mag: 'nearest',
+            min: 'nearest',
+            data,
+          }),
+          verticiesDimensions: [width, height],
+          indiciesBuffer: this.regl.buffer(indicies),
+          contourPolarityBuffer: this.regl.buffer(contourPolarities),
+          contourOffsetBuffer: this.regl.buffer(contourOffsets),
+          contourIndexBuffer: this.regl.buffer(contourIndexes),
+          qtyContours: this.regl.buffer(new Array<number>(length).fill(record.contours.length)),
+          contourVertexQtyBuffer: this.regl.buffer(contourVertexQty),
+          surfaceIndex: record.index,
+          surfacePolarity: record.polarity,
+          surfaceIndexBuffer: this.regl.buffer(new Array<number>(length).fill(record.index)),
+          surfacePolarityBuffer: this.regl.buffer(new Array<Binary>(length).fill(record.polarity)),
+          surfaceOffsetBuffer: this.regl.buffer(new Array<number>(length).fill(0)),
+          length: length,
+        })
+      } else {
+        contourPolarities.forEach((polarity) => allContourPolarities.push(polarity))
+        contourOffsets.forEach((offset) => allContourOffsets.push(offset))
+        contourIndexes.forEach((index) => allContourIndexes.push(index))
+        contourVertexQty.forEach((qty) => allContourVertexQty.push(qty))
+        
+        indicies.forEach((index) => allIndicies.push(index))
+        vertices.forEach((vertex) => allVertices.push(vertex))
+        
+        const length = indicies.length / 3
+        new Array<number>(length).fill(0).forEach(() => surfaceIndexes.push(record.index))
+        new Array<Binary>(length).fill(0).forEach(() => surfacePolarities.push(record.polarity))
+        new Array<number>(length).fill(0).forEach(() => surfaceOffsets.push(surfaceOffset))
+        surfaceOffset += vertices.length
+        new Array<number>(length).fill(0).forEach(() => allContourQty.push(record.contours.length))
+        
+        
+        // OLD WAY ( SLOWER )
+        // const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
+        // const length = indicies.length / 3
+        // this.shaderAttachment.surfaces.push({
+        //   vertices: this.regl.texture({
+        //     width,
+        //     height,
+        //     type: 'float',
+        //     channels: 1,
+        //     wrap: 'clamp',
+        //     mag: 'nearest',
+        //     min: 'nearest',
+        //     data
+        //   }),
+        //   verticiesDimensions: [width, height],
+        //   contourPolarityBuffer: this.regl.buffer(contourPolarities),
+        //   contourOffsetBuffer: this.regl.buffer(contourOffsets),
+        //   contourIndexBuffer: this.regl.buffer(contourIndexes),
+        //   contourVertexQtyBuffer: this.regl.buffer(contourVertexQty),
+        //   indiciesBuffer: this.regl.buffer(indicies),
+        //   qtyContours: this.regl.buffer(new Array<number>(length).fill(record.contours.length)),
+        //   surfaceIndexBuffer: this.regl.buffer(new Array<number>(length).fill(record.index)),
+        //   surfacePolarityBuffer: this.regl.buffer(new Array<Binary>(length).fill(record.polarity)),
+        //   surfaceOffsetBuffer: this.regl.buffer(new Array<number>(length).fill(0)),
+        //   length: length,
+        // })
       }
-      targetAttachment.push({
+    })
+
+    if (allVertices.length != 0) {
+      const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, allVertices)
+      this.shaderAttachment.surfaces.push({
         vertices: this.regl.texture({
           width,
           height,
@@ -694,20 +805,21 @@ export class ShapesShaderCollection {
           wrap: 'clamp',
           mag: 'nearest',
           min: 'nearest',
-          data: newData
+          data
         }),
         verticiesDimensions: [width, height],
-        polarityBuffer: this.regl.buffer(polarities),
-        offsetBuffer: this.regl.buffer(offsets),
-        indexBuffer: this.regl.buffer(indexes),
-        indiciesBuffer: this.regl.buffer(indicies),
-        qtyVertsBuffer: this.regl.buffer(vertQty),
-        length: indicies.length / 3,
-        qtyContours: record.contours.length,
-        index: record.index,
-        polarity: record.polarity
+        contourPolarityBuffer: this.regl.buffer(allContourPolarities),
+        contourOffsetBuffer: this.regl.buffer(allContourOffsets),
+        contourIndexBuffer: this.regl.buffer(allContourIndexes),
+        contourVertexQtyBuffer: this.regl.buffer(allContourVertexQty),
+        indiciesBuffer: this.regl.buffer(allIndicies),
+        qtyContours: this.regl.buffer(allContourQty),
+        surfaceIndexBuffer: this.regl.buffer(surfaceIndexes),
+        surfacePolarityBuffer: this.regl.buffer(surfacePolarities),
+        surfaceOffsetBuffer: this.regl.buffer(surfaceOffsets),
+        length: allIndicies.length / 3,
       })
-    })
+    }
 
     return this
   }
@@ -827,7 +939,7 @@ export class SymbolShaderCollection {
 }
 
 export class MacroShaderCollection {
-  private records: Shapes.Shape[] = []
+  private image: Shapes.Shape[] = []
   public macros: Map<
     string,
     {
@@ -844,10 +956,10 @@ export class MacroShaderCollection {
     }
   >()
   private regl: REGL.Regl
-  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
-    const { records, regl } = props
+  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
+    const { image, regl } = props
     this.regl = regl
-    this.records = records
+    this.image = image
     this.refresh()
   }
 
@@ -874,7 +986,7 @@ export class MacroShaderCollection {
 
   public refresh(): this {
     this.macros.clear()
-    this.records.forEach((record) => {
+    this.image.forEach((record) => {
       if (record.type != FeatureTypeIdentifyer.PAD) {
         return
       }
@@ -887,7 +999,6 @@ export class MacroShaderCollection {
               image: record.symbol.shapes,
               flatten: record.symbol.flatten
             }),
-
             records: [],
             macro: record.symbol
           })
@@ -906,20 +1017,20 @@ export class MacroShaderCollection {
 }
 
 export class StepAndRepeatCollection {
-  private records: Shapes.Shape[] = []
+  private image: Shapes.Shape[] = []
   public steps: StepAndRepeatRenderer[] = []
   private regl: REGL.Regl
 
-  constructor(props: { regl: REGL.Regl; records: Shapes.Shape[] }) {
-    const { records, regl } = props
+  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
+    const { image, regl } = props
     this.regl = regl
-    this.records = records
+    this.image = image
     this.refresh()
   }
 
   public refresh(): this {
     this.steps.length = 0
-    this.records.forEach((record) => {
+    this.image.forEach((record) => {
       if (record.type != FeatureTypeIdentifyer.STEP_AND_REPEAT) {
         return
       }
@@ -1084,4 +1195,21 @@ function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
     prevx = x
     prevy = y
   }
+}
+
+export function fixedTextureData(maxTextureSize: number, inputData: number[]): {
+  width: number
+  height: number
+  data: number[]
+} {
+  if (inputData.length > Math.pow(maxTextureSize, 2)) {
+    throw new Error('Cannot fit data into size')
+  }
+  const width = inputData.length < maxTextureSize ? inputData.length % maxTextureSize : maxTextureSize
+  const height = Math.ceil(inputData.length / maxTextureSize)
+
+  const data = new Array(width * height).fill(0).map((_, index) => {
+    return inputData[index] ?? 0
+  })
+  return { width, height, data }
 }

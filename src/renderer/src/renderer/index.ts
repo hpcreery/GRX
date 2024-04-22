@@ -153,25 +153,20 @@ export class RenderEngine {
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       await backend.grabViewport()
       const [x,y] = this.getMouseCanvasCoordinates(e)
-      // await backend.setPointer({ x, y, down: true})
-      // backend.sample(xpos, ypos)
       const features = await backend.query([x, y])
       console.log('features', features)
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       await backend.releaseViewport()
-      // backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       await backend.releaseViewport()
-      // backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       await backend.releaseViewport()
-      // backend.setPointer({ x: 0, y: 0, down: false})
       sendPointerEvent(e, PointerEvents.POINTER_UP)
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
@@ -180,7 +175,6 @@ export class RenderEngine {
         return
       }
       await backend.moveViewport(e.movementX, e.movementY)
-      // backend.setPointer({ down: false})
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
     }
   }
