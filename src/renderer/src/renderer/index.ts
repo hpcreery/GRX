@@ -178,13 +178,11 @@ export class RenderEngine {
         const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.query([x, y])
         console.log('features', features)
-        if (features.length > 0) {
-          this.pointer.dispatchEvent(
-            new CustomEvent<(Shape | NestedFeature)[]>(PointerEvents.POINTER_SELECT, {
-              detail: features
-            })
-          )
-        }
+        this.pointer.dispatchEvent(
+          new CustomEvent<(Shape | NestedFeature)[]>(PointerEvents.POINTER_SELECT, {
+            detail: features
+          })
+        )
       }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {

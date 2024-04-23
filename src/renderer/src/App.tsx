@@ -8,6 +8,7 @@ import MousePosition from './components/MousePosition'
 import LayerSidebar from './components/LayersSidebar'
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
+import { FeatureSidebar } from './components/FeatureSidebar'
 
 export default function App(): JSX.Element | null {
   const { transparency } = useContext(ConfigEditorProvider)
@@ -49,6 +50,7 @@ export default function App(): JSX.Element | null {
           <Toolbar renderEngine={renderEngine} />
           <InfoModal />
           <MousePosition renderEngine={renderEngine} />
+          <FeatureSidebar renderEngine={renderEngine} />
         </Box>
       ) : (
         <>

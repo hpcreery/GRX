@@ -29,3 +29,14 @@ html, body {
   backdrop-filter: blur(30px) !important;
   background-color: color-mix(in srgb, var(--mantine-color-default) 80%, transparent) !important;
 }
+
+.fade-out-scroll {
+  --mask: linear-gradient(to bottom, 
+      rgba(0,0,0, 0) 0%, rgba(0,0,0, 0) 0%,
+      rgba(0,0,0, 1) 1%,   rgba(0,0,0, 1) 99%, 
+      rgba(0,0,0, 0) 100%, rgba(0,0,0, 0) 100%
+  ) 100% 50% / 100% 100% repeat-x;
+  -webkit-mask: var(--mask); 
+  mask: var(--mask);
+  backdrop-filter: blur(30px) !important;
+}
