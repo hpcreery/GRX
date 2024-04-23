@@ -176,7 +176,7 @@ void main() {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     float PointerDist = arcDistance(PointerPosition);
 
-    if (PointerDist < 0.0) {
+    if (PointerDist < pixel_size) {
       if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
