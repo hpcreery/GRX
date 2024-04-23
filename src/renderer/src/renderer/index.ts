@@ -170,10 +170,10 @@ export class RenderEngine {
       }
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
+      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
       if (this.pointerSettings.mode === 'move') {
         this.CONTAINER.style.cursor = 'grabbing'
         await backend.grabViewport()
-        sendPointerEvent(e, PointerEvents.POINTER_DOWN)
       } else if (this.pointerSettings.mode === 'select') {
         const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.query([x, y])
@@ -188,32 +188,32 @@ export class RenderEngine {
       }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === 'move') {
         this.CONTAINER.style.cursor = 'grab'
         await backend.releaseViewport()
-        sendPointerEvent(e, PointerEvents.POINTER_UP)
       }
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === 'move') {
         await backend.releaseViewport()
-        sendPointerEvent(e, PointerEvents.POINTER_UP)
       }
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === 'move') {
         await backend.releaseViewport()
-        sendPointerEvent(e, PointerEvents.POINTER_UP)
       }
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
+      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+      if (!await backend.isDragging()) {
+        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+        return
+      }
       if (this.pointerSettings.mode === 'move') {
-        if (!await backend.isDragging()) {
-          await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
-          return
-        }
         await backend.moveViewport(e.movementX, e.movementY)
-        sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       }
     }
   }
