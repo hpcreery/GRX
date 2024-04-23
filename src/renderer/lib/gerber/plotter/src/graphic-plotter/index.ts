@@ -111,7 +111,6 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
     // ** SURFACE
     if (nextGraphicType === SEGMENT && this._regionMode) {
-
       if (this._currentSurface === undefined) {
         this._currentSurface = new Shapes.Surface({
           polarity: transform.polarity === DARK ? 1 : 0,
@@ -136,12 +135,15 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         }))
       }
     }
+    
     if (
       node.type === REGION_MODE ||
       node.type === DONE ||
       (nextGraphicType === MOVE && this._currentSurface !== undefined) ||
       nextGraphicType === SHAPE ||
-      node.type === LOAD_POLARITY
+      node.type === LOAD_POLARITY ||
+      node.type === STEP_REPEAT_OPEN ||
+      node.type === STEP_REPEAT_CLOSE
     ) {
       if (this._currentSurface !== undefined) {
         graphics.push(this._currentSurface)
@@ -197,7 +199,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         }))
       }
     }
-    if (this._stepRepeats.length > 0 && node.type === GRAPHIC) {
+    if (this._stepRepeats.length > 0) {
       this._stepRepeats[0].shapes.push(...graphics)
       graphics.length = 0
     }
