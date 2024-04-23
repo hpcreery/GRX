@@ -1,6 +1,6 @@
 {
   "name": "grx",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "description": "Fastest Web Based EDA Manufacturing Artwork Viewer",
   "main": "./out/main/index.js",
   "author": "Hunter Creery",
