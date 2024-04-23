@@ -113,8 +113,8 @@ float lineDistMain(vec2 coord) {
   float dY = v_Start_Location.y - v_End_Location.y;
   float len = distance(v_Start_Location, v_End_Location);
   float angle = atan(dY/dX);
-  float start = drawShape(translate(coord, (v_Start_Location - Center_Location)) * rotateCW(-angle), int(v_SymNum));
-  float end = drawShape(translate(coord, (v_End_Location - Center_Location)) * rotateCW(-angle), int(v_SymNum));
+  float start = drawShape(translate(coord, (v_Start_Location - Center_Location)) * rotateCW(-angle + PI/2.0), int(v_SymNum));
+  float end = drawShape(translate(coord, (v_End_Location - Center_Location)) * rotateCW(-angle + PI/2.0), int(v_SymNum));
   float con = boxDist(coord * rotateCW(-angle), vec2(len, OD));
   float dist = merge(start,end);
   dist = merge(dist, con);
