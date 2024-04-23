@@ -34,7 +34,7 @@ export type Tool = Symbols.StandardSymbol | Symbols.MacroSymbol
 
 export interface ToolStore {
   block: string | undefined,
-  use: (node: GerberNode, plotOptions: PlotOptions) => Tool | undefined
+  use: (node: GerberNode, plotOptions: PlotOptions) => Tool
 }
 
 export function createToolStore(): ToolStore {
@@ -48,6 +48,10 @@ interface ToolStoreState {
   _currentBlockAperture: {code: string, nodes: Constants.ChildNode[]}[]
 }
 
+const defaultTool: Tool = new Symbols.NullSymbol({
+  id: '274x_NULL',
+})
+
 const ToolStorePrototype: ToolStore & ToolStoreState = {
   _currentToolCode: undefined,
   _toolsByCode: {},
@@ -55,7 +59,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
   _currentBlockAperture: [],
   block: undefined,
 
-  use(node: GerberNode, plotOptions: PlotOptions): Tool | undefined {
+  use(node: GerberNode, plotOptions: PlotOptions): Tool {
     if (node.type === TOOL_MACRO) {
       this._macrosByName[node.name] = node.children
     }
@@ -117,7 +121,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
     if (node.type == BLOCK_APERTURE_OPEN) {
       this._currentBlockAperture.unshift({nodes: [], code: node.code})
       this.block = node.code
-      return
+      return defaultTool
     }
     if (node.type == BLOCK_APERTURE_CLOSE) {
       const current = this._currentBlockAperture.shift()
@@ -133,14 +137,14 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
       if (this._currentBlockAperture.length > 0) {
         this.block = this._currentBlockAperture[0].code
       }
-      return
+      return defaultTool
     }
     if (this._currentBlockAperture?.length > 0) {
       this._currentBlockAperture[0].nodes.push(node)
     }
 
     return typeof this._currentToolCode === 'string'
-      ? this._toolsByCode[this._currentToolCode]
-      : undefined
+      ? this._toolsByCode[this._currentToolCode] ?? defaultTool
+      : defaultTool
   }
 }

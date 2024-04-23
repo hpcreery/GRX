@@ -38,7 +38,7 @@ import { vec2 } from 'gl-matrix'
 export interface GraphicPlotter {
   plot: (
     node: GerberNode,
-    tool: Tool | undefined,
+    tool: Tool,
     location: Location,
     transform: ApertureTransform
   ) => Shapes.Shape[]
@@ -76,7 +76,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
   plot(
     node: GerberNode,
-    tool: Tool | undefined,
+    tool: Tool,
     location: Location,
     transform: ApertureTransform
   ): Shapes.Shape[] {

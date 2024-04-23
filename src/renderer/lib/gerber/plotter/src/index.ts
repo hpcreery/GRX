@@ -38,7 +38,7 @@ export function plotShapes(nodes: ChildNode[], plotOptions: PlotOptions, toolSto
   for (const node of nodes) {
     const location: Location = locationStore.use(node, plotOptions)
     const apertureTransform: ApertureTransform = transformStore.use(node)
-    const tool: Tool | undefined = toolStore.use(node, plotOptions)
+    const tool: Tool = toolStore.use(node, plotOptions)
     if (toolStore.block && toolStore.block != block) continue
     const graphics: Shapes.Shape[] = graphicPlotter.plot(node, tool, location, apertureTransform)
 

@@ -119,6 +119,11 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
 
 }
 
+export class NullSymbol extends StandardSymbol {
+  constructor(symbol: Partial<{ id: string }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Null, outer_dia: 0, ...symbol })
+  }
+}
 
 export class RoundSymbol extends StandardSymbol {
   constructor(symbol: Pick<TStandardSymbol, 'outer_dia' | 'inner_dia'> & Partial<{ id: string }>) {
