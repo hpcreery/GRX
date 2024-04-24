@@ -175,6 +175,7 @@ export class RenderEngine {
         this.CONTAINER.style.cursor = 'grabbing'
         await backend.grabViewport()
       } else if (this.pointerSettings.mode === 'select') {
+        this.CONTAINER.style.cursor = 'wait'
         const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.query([x, y])
         console.log('features', features)
@@ -183,6 +184,7 @@ export class RenderEngine {
             detail: features
           })
         )
+        this.CONTAINER.style.cursor = 'crosshair'
       }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {

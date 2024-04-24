@@ -45,7 +45,7 @@ interface QueryAttributes { }
 
 export interface NestedFeature {
   ref: Shapes.Shape
-  features: (Shapes.Shape | NestedFeature)[]
+  features: Shapes.Shape[]
 }
 
 interface QueryProps {
@@ -292,7 +292,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape | NestedFeature)[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -322,7 +322,7 @@ export class ShapeRenderer {
       width: width,
       height: height
     })
-    const features: (Shapes.Shape | NestedFeature)[] = []
+    const features: Shapes.Shape[] = []
     for (let i = 0; i < data.length; i+=4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
@@ -331,21 +331,17 @@ export class ShapeRenderer {
     }
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
-        const nestedFeatures: (Shapes.Shape | NestedFeature)[] = []
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
         macro.renderer.query(pointer, context).forEach((feature) => {
-          nestedFeatures.push(feature)
+          features.push(feature)
         })
-        if (nestedFeatures.length > 0) features.push({ ref: record, features: nestedFeatures })
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      const nestedFeatures: (Shapes.Shape | NestedFeature)[] = []
       stepAndRepeat.query(pointer, context).forEach((feature) => {
-        nestedFeatures.push(feature)
+        features.push(feature)
       })
-      if (nestedFeatures.length > 0) features.push({ ref: stepAndRepeat.record, features: nestedFeatures })
     })
     context.transformMatrix = origMatrix
     return features
@@ -471,7 +467,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape | NestedFeature)[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
     const featrures = super.query(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
@@ -577,8 +573,8 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape | NestedFeature)[] {
-    const features: (Shapes.Shape | NestedFeature)[] = []
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
+    const features: Shapes.Shape[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length

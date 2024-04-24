@@ -159,7 +159,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
           overflowX: 'hidden'
         }}
         mod={['transparent']}
-        padding={5}
+        padding={4}
       >
         <ScrollArea
 
