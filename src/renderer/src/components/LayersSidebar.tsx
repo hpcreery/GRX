@@ -12,13 +12,14 @@ import {
   Select
 } from '@mantine/core'
 import { Dropzone, FileWithPath as FileWithFormat } from '@mantine/dropzone'
-import { IconFileX, IconFileVector } from '@tabler/icons-react'
+import { IconFileX, IconFileVector, IconContrast, IconContrastOff } from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
 import type { LayerInfo } from '@src/renderer/engine'
 import * as Comlink from 'comlink'
 
 import { pluginList } from '@src/renderer/plugins'
 import { EngineEvents } from '@src/renderer/engine'
+import { useContextMenu } from 'mantine-contextmenu'
 
 const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
@@ -35,6 +36,8 @@ export interface UploadFile extends FileWithFormat {
 export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Element | null {
   const [layers, setLayers] = useState<UploadFile[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
+  const [renderID, setRenderID] = useState<number>(0)
+  const { showContextMenu } = useContextMenu()
 
   function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string, uid: string}[]): void {
     const newLayers: UploadFile[] = []
@@ -79,6 +82,35 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
       return
     }
   }
+
+  const contextItems = [
+    {
+      title: 'Hide All Layers',
+      key: '1',
+      icon: <IconContrastOff stroke={1.5} size={18} />,
+      onClick: (): void => {
+        layers.forEach(async (layer) => {
+          const backend = await renderEngine.backend
+          if (!backend) return
+          await backend.setLayerProps(layer.uid, { visible: false })
+          setRenderID(renderID + 1)
+        })
+      }
+    },
+    {
+      title: 'Show All Layers',
+      key: '1',
+      icon: <IconContrast stroke={1.5} size={18} />,
+      onClick: (): void => {
+        layers.forEach(async (layer) => {
+          const backend = await renderEngine.backend
+          if (!backend) return
+          await backend.setLayerProps(layer.uid, { visible: true })
+          setRenderID(renderID + 1)
+        })
+      }
+    },
+  ]
 
   return (
     <div
@@ -147,7 +179,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         </Group>
       </Dropzone.FullScreen>
       <Card
-        // radius="12px"
+        onContextMenu={showContextMenu(contextItems)}
         radius='md'
         withBorder
         style={{
@@ -182,7 +214,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
             '--stack-gap': '2px'
           }}>
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid} file={layer} renderEngine={renderEngine} actions={actions} />
+              <LayerListItem key={layer.uid + renderID} file={layer} renderEngine={renderEngine} actions={actions} />
             ))}
           </Stack>
         </ScrollArea>
