@@ -1,8 +1,7 @@
-import { LayerRendererProps, NestedFeature } from './layer'
+import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings } from './engine'
-import { Shape } from './shapes'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)

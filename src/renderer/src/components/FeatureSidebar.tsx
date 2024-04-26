@@ -1,4 +1,4 @@
-import { ActionIcon, Affix, Code, ScrollArea, ThemeIcon, Transition } from '@mantine/core';
+import { ActionIcon, Affix, Badge, Code, ScrollArea, ThemeIcon, Transition } from '@mantine/core';
 import { Card, Text } from '@mantine/core';
 import { RenderEngine } from '@src/renderer';
 import { useEffect, useState, useContext } from 'react';
@@ -12,10 +12,13 @@ import {
   IconQuestionMark,
   IconX
 } from '@tabler/icons-react'
-import { QueryFeature } from '@src/renderer/engine';
+import { LayerInfo, QueryFeature } from '@src/renderer/engine';
 import classes from './FeatureSidebar.module.css';
 import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 import { getUnitsConversion } from '@src/renderer/utils';
+import chroma from 'chroma-js';
+import { STANDARD_SYMBOLS, StandardSymbol } from '@src/renderer/symbols';
+import { Units } from '@src/renderer/types';
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -36,6 +39,32 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
   const [features, setFeatures] = useState<QueryFeature[]>([])
   const [mounted, setMounted] = useState<boolean>(false)
   const { units } = useContext(ConfigEditorProvider)
+  const [layers, setLayers] = useState<LayerInfo[]>([])
+
+  function getSymbolInfo(symbol: StandardSymbol, shapeUnits: Units): (JSX.Element | null)[] {
+    return Object.entries(symbol).map(([key, value], index) => {
+      let representedValue = value
+      if (key === 'sym_num' || key === 'symbol' || key === 'type') return null
+      if (value === 0) return null
+      if ([
+        'width',
+        'height',
+        'corner_radius',
+        'outer_dia',
+        'inner_dia',
+        'line_width',
+        'line_length',
+        'gap',
+        'cut_size',
+        'ring_width',
+        'ring_gap',
+      ].includes(key)) {
+        representedValue = `${(value * getUnitsConversion(units) / getUnitsConversion(shapeUnits)).toFixed(3)}${units}`
+      }
+      return <Text key={index}>- {key}: <Code>{representedValue}</Code></Text>
+    }
+    )
+  }
 
 
   useEffect(() => {
@@ -48,6 +77,11 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       } else {
         setMounted(false)
       }
+      renderEngine.backend.then((backend) => {
+        backend.getLayers().then((layers) => {
+          setLayers(layers)
+        })
+      })
     }
     renderEngine.pointer.addEventListener(PointerEvents.POINTER_SELECT, handler)
     return () => {
@@ -56,6 +90,13 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
   }, [])
 
   const getInfo = (feature: QueryFeature): JSX.Element => {
+    const layer = layers.find(x => x.uid === feature.layer)
+    let layerColor = 'black'
+    let layerName = 'Unknown'
+    if (layer) {
+      layerColor = chroma.gl(layer.color[0], layer.color[1], layer.color[2]).hex()
+      layerName = layer.name
+    }
     switch (feature.type) {
       case 'line':
         return <>
@@ -65,20 +106,24 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text size="lg" fw={700} c='white'>
             Line
           </Text>
-          <Text>
-            Layer: <Code>{feature.layer}</Code>
-          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
             Index: <Code>{feature.index}</Code>
           </Text>
           <Text>
-            Polarity: <Code>{feature.polarity === 1 ? 'positive' : 'negative'}</Code>
+            Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
           </Text>
           <Text>
             Start: <Code>X:{(feature.xs * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units} Y:{(feature.ys * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units}</Code>
           </Text>
           <Text>
             End: <Code>X:{(feature.xe * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units} Y:{(feature.ye * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units}</Code>
+          </Text>
+          <Text>
+            Symbol: <Code>{STANDARD_SYMBOLS[feature.symbol.symbol]}</Code>
+          </Text>
+          <Text>
+            {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
         </>
       case 'pad':
@@ -89,14 +134,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text size="lg" fw={700} c='white'>
             Pad
           </Text>
-          <Text>
-            Layer: <Code>{feature.layer}</Code>
-          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
             Index: <Code>{feature.index}</Code>
           </Text>
           <Text>
-            Polarity: <Code>{feature.polarity === 1 ? 'positive' : 'negative'}</Code>
+            Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
           </Text>
           <Text>
             Center: <Code>X:{(feature.x * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units} Y:{(feature.y * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units}</Code>
@@ -110,6 +153,13 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Rotation (cw): <Code>{feature.rotation}&deg;</Code>
           </Text>
+          <Text>
+            Symbol: <Code>{feature.symbol.type == 'symbol_defintion' ? STANDARD_SYMBOLS[feature.symbol.symbol] : feature.symbol.id}</Code>
+          </Text>
+          {feature.symbol.type == 'symbol_defintion' ?
+            <Text>
+              {getSymbolInfo(feature.symbol, feature.units)}
+            </Text> : ''}
         </>
       case 'arc':
         return <>
@@ -119,14 +169,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text size="lg" fw={700} c='white'>
             Arc
           </Text>
-          <Text>
-            Layer: <Code>{feature.layer}</Code>
-          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
             Index: <Code>{feature.index}</Code>
           </Text>
           <Text>
-            Polarity: <Code>{feature.polarity === 1 ? 'positive' : 'negative'}</Code>
+            Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
           </Text>
           <Text>
             Start: <Code>X:{(feature.xs * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units} Y:{(feature.ys * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units}</Code>
@@ -140,6 +188,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Rotation: <Code>{feature.clockwise === 1 ? 'clockwise' : 'counter clockwise'}</Code>
           </Text>
+          <Text>
+            Symbol: <Code>{STANDARD_SYMBOLS[feature.symbol.symbol]}</Code>
+          </Text>
+          <Text>
+            {getSymbolInfo(feature.symbol, feature.units)}
+          </Text>
         </>
       case 'surface':
         return <>
@@ -149,14 +203,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text size="lg" fw={700} c='white'>
             Surface
           </Text>
-          <Text>
-            Layer: <Code>{feature.layer}</Code>
-          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
             Index: <Code>{feature.index}</Code>
           </Text>
           <Text>
-            Polarity: <Code>{feature.polarity === 1 ? 'positive' : 'negative'}</Code>
+            Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
           </Text>
           <Text>
             Islands: <Code>{feature.contours.filter(x => x.poly_type == 1).length}</Code>
@@ -176,14 +228,21 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text size="lg" fw={700} c='white'>
             Polyline
           </Text>
-          <Text>
-            Layer: <Code>{feature.layer}</Code>
-          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
             Index: <Code>{feature.index}</Code>
           </Text>
           <Text>
-            Polarity: <Code>{feature.polarity === 1 ? 'positive' : 'negative'}</Code>
+            Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
+          </Text>
+          <Text>
+            Width: <Code>{(feature.width * getUnitsConversion(units) / getUnitsConversion(feature.units)).toFixed(3)}{units}</Code>
+          </Text>
+          <Text>
+            End Style: <Code>{feature.pathtype}</Code>
+          </Text>
+          <Text>
+            Corner Style: <Code>{feature.cornertype}</Code>
           </Text>
           <Text>
             Qty Lines: <Code>{feature.lines.length}</Code>
@@ -194,6 +253,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             <IconQuestionMark />
           </CornerIcon>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text size="lg" fw={700} c='white'>
             Unknown
           </Text>

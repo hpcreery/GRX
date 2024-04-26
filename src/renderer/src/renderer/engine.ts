@@ -1,6 +1,6 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
-import LayerRenderer, { LayerRendererProps, NestedFeature } from './layer'
+import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers } from './collections'
 import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
@@ -565,7 +565,7 @@ export class RenderEngineBackend {
         if (!layer.visible) continue
         const layerFeatures = layer.query(pointer, context)
         for (const feature of layerFeatures) {
-          features.push(Object.assign(feature, { layer: layer.name, units: layer.units }))
+          features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
         }
       }
     })
