@@ -35,6 +35,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
+  const [pointerMode, setPointerMode] = React.useState<'move' | 'select'>(renderEngine.pointerSettings.mode)
 
 
   return (
@@ -55,12 +56,18 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         <Group gap='xs'>
           <ActionIcon.Group>
             <Tooltip openDelay={500} withArrow label="Move">
-              <ActionIcon size='lg' radius="sm" variant="default" onClick={() => renderEngine.pointerSettings.mode = 'move'}>
+              <ActionIcon size='lg' radius="sm" variant={pointerMode == 'move' ? "outline" : 'default'} onClick={() => {
+                renderEngine.pointerSettings.mode = 'move'
+                setPointerMode('move')
+              }}>
                 <IconArrowsMove size={18}/>
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Query">
-              <ActionIcon size='lg' radius="sm" variant="default" onClick={() => renderEngine.pointerSettings.mode = 'select'}>
+              <ActionIcon size='lg' radius="sm" variant={pointerMode == 'select' ? "outline" : 'default'} onClick={() => {
+                renderEngine.pointerSettings.mode = 'select'
+                setPointerMode('select')
+              }}>
                 <IconClick size={18} />
               </ActionIcon>
             </Tooltip>

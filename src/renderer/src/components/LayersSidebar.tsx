@@ -99,7 +99,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     },
     {
       title: 'Show All Layers',
-      key: '1',
+      key: '2',
       icon: <IconContrast stroke={1.5} size={18} />,
       onClick: (): void => {
         layers.forEach(async (layer) => {
