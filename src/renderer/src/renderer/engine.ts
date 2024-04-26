@@ -118,6 +118,8 @@ export interface Pointer {
   down: boolean
 }
 
+export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
+
 export class RenderEngineBackend {
 
   public settings: RenderSettings = {
@@ -556,12 +558,15 @@ export class RenderEngineBackend {
     }
   }
 
-  public query(pointer: vec2): (Shapes.Shape | NestedFeature)[] {
-    const features: (Shapes.Shape | NestedFeature)[] = []
+  public query(pointer: vec2): (QueryFeature)[] {
+    const features: (QueryFeature)[] = []
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        features.push(...layer.query(pointer, context))
+        const layerFeatures = layer.query(pointer, context)
+        for (const feature of layerFeatures) {
+          features.push(Object.assign(feature, { layer: layer.name, units: layer.units }))
+        }
       }
     })
     return features

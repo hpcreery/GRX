@@ -1,7 +1,7 @@
 import { LayerRendererProps, NestedFeature } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
-import type { GridRenderProps, RenderEngineBackend, RenderSettings } from './engine'
+import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings } from './engine'
 import { Shape } from './shapes'
 
 const Worker = new EngineWorker()
@@ -180,7 +180,7 @@ export class RenderEngine {
         const features = await backend.query([x, y])
         console.log('features', features)
         this.pointer.dispatchEvent(
-          new CustomEvent<(Shape | NestedFeature)[]>(PointerEvents.POINTER_SELECT, {
+          new CustomEvent<QueryFeature[]>(PointerEvents.POINTER_SELECT, {
             detail: features
           })
         )

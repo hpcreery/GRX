@@ -138,7 +138,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
 
           <div>
             <Text size="xl" inline>
-              Drag gerbers here or click to select files
+              Drag artwork here or click to select files
             </Text>
             <Text size="sm" color="dimmed" inline mt={7}>
               Attach as many files as you like

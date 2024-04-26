@@ -1,6 +1,6 @@
 import React from 'react'
 import { RenderEngine } from '@src/renderer'
-import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
+import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 import chroma from 'chroma-js'
 import { Text, Switch, Divider, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Radio } from '@mantine/core'
 
