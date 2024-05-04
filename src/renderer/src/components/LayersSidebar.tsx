@@ -12,7 +12,13 @@ import {
   Select
 } from '@mantine/core'
 import { Dropzone, FileWithPath as FileWithFormat } from '@mantine/dropzone'
-import { IconFileX, IconFileVector, IconContrast, IconContrastOff } from '@tabler/icons-react'
+import {
+  IconFileX,
+  IconFileVector,
+  IconContrast,
+  IconContrastOff,
+  IconClearAll
+} from '@tabler/icons-react'
 import LayerListItem from './sidebar/LayerListItem'
 import type { LayerInfo } from '@src/renderer/engine'
 import * as Comlink from 'comlink'
@@ -39,7 +45,10 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   const [renderID, setRenderID] = useState<number>(0)
   const { showContextMenu } = useContextMenu()
 
-  function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string, uid: string}[]): void {
+  function registerLayers(
+    rendererLayers: LayerInfo[],
+    loadingLayers: { name: string; uid: string }[]
+  ): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
@@ -63,17 +72,28 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     setFiles([])
   }
 
+  async function deleteAllLayers(): Promise<void> {
+    layers.forEach(async (layer) => {
+      const backend = await renderEngine.backend
+      if (!backend) return
+      await backend.removeLayer(layer.uid)
+      setLayers([])
+      setRenderID(0)
+    })
+  }
+
   useEffect(() => {
-    renderEngine.backend.then(async backend => {
-      const reg = async (): Promise<void> => registerLayers(await backend.getLayers(), await backend.layersQueue)
+    renderEngine.backend.then(async (backend) => {
+      const reg = async (): Promise<void> =>
+        registerLayers(await backend.getLayers(), await backend.layersQueue)
       reg()
       backend.addEventCallback(EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
     })
   }, [])
 
   const actions = {
-    download: (): void => { },
-    preview: (): void => { },
+    download: (): void => {},
+    preview: (): void => {},
     remove: async (file: UploadFile): Promise<void> => {
       const backend = await renderEngine.backend
       if (!backend) return
@@ -110,6 +130,12 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         })
       }
     },
+    {
+      title: 'Delete All Layers',
+      key: '3',
+      icon: <IconClearAll stroke={1.5} size={18} />,
+      onClick: () => deleteAllLayers()
+    }
   ]
 
   return (
@@ -122,47 +148,38 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         zIndex: 10
       }}
     >
-      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Intentification">
+      <Modal
+        opened={files.length > 0}
+        onClose={(): void => setFiles([])}
+        title="Layer Intentification"
+      >
         <Stack>
-          {
-            files.map((file) => (
-              <Select
-                key={file.uid}
-                label={file.name}
-                placeholder="Pick value"
-                data={pluginList}
-                defaultValue={file.format}
-                comboboxProps={{ shadow: 'md' }}
-                onChange={(value): void => {
-                  if (!value) return
-                  files.find((f) => f.uid === file.uid)!.format = value
-                }}
-              />
-            ))
-          }
-          {
-            files.length > 0 && (
-              <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
-            )
-          }
+          {files.map((file) => (
+            <Select
+              key={file.uid}
+              label={file.name}
+              placeholder="Pick value"
+              data={pluginList}
+              defaultValue={file.format}
+              comboboxProps={{ shadow: 'md' }}
+              onChange={(value): void => {
+                if (!value) return
+                files.find((f) => f.uid === file.uid)!.format = value
+              }}
+            />
+          ))}
+          {files.length > 0 && (
+            <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
+          )}
         </Stack>
       </Modal>
       <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
-        <Group
-          mih={220}
-          style={{ zIndex: 40 }}
-        >
+        <Group mih={220} style={{ zIndex: 40 }}>
           <Dropzone.Accept>
-            <IconFileVector
-              size="3.2rem"
-              stroke={1.5}
-            />
+            <IconFileVector size="3.2rem" stroke={1.5} />
           </Dropzone.Accept>
           <Dropzone.Reject>
-            <IconFileX
-              size="3.2rem"
-              stroke={1.5}
-            />
+            <IconFileX size="3.2rem" stroke={1.5} />
           </Dropzone.Reject>
           <Dropzone.Idle>
             <IconFileVector size="3.2rem" stroke={1.5} />
@@ -180,7 +197,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
       </Dropzone.FullScreen>
       <Card
         onContextMenu={showContextMenu(contextItems)}
-        radius='md'
+        radius="md"
         withBorder
         style={{
           width: 220,
@@ -194,8 +211,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         padding={4}
       >
         <ScrollArea
-
-          className='scroll-area-sidebar'
+          className="scroll-area-sidebar"
           type="scroll"
           scrollbars="y"
           h={'100%'}
@@ -204,19 +220,40 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
           <Group grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
-                <Button variant="default" {...props} radius='sm'>
+                <Button variant="default" {...props} radius="sm">
                   Upload Artwork
                 </Button>
               )}
             </FileButton>
           </Group>
-          <Stack justify="flex-start" style={{
-            '--stack-gap': '2px'
-          }}>
+          <Stack
+            justify="flex-start"
+            style={{
+              '--stack-gap': '2px'
+            }}
+          >
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid + renderID} file={layer} renderEngine={renderEngine} actions={actions} />
+              <LayerListItem
+                key={layer.uid + renderID}
+                file={layer}
+                renderEngine={renderEngine}
+                actions={actions}
+              />
             ))}
           </Stack>
+
+          {layers.length > 0 && (
+            <Group grow pb={5}>
+              <Button
+                color="red"
+                radius="sm"
+                rightSection={<IconClearAll size={14} />}
+                onClick={() => deleteAllLayers()}
+              >
+                Delete All
+              </Button>
+            </Group>
+          )}
         </ScrollArea>
       </Card>
     </div>
