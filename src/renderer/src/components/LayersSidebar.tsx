@@ -11,7 +11,7 @@ import {
   Modal,
   Select
 } from '@mantine/core'
-import { Dropzone, FileWithPath as FileWithFormat } from '@mantine/dropzone'
+import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from '@mantine/dropzone'
 import {
   IconFileX,
   IconFileVector,
@@ -63,8 +63,20 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     setLayers(newLayers)
   }
 
+  function identifyFileType(file: FileWithPath): string {
+    const defaultFormat = 'rs274x'
+    const extension = file.name.split('.').pop()?.toLowerCase()
+
+    if (!extension) return defaultFormat
+    if (extension === 'gds' || extension === 'gdsii' || extension === 'gds2') return 'gdsii'
+    // if (extension === 'gbr' || extension === 'geb' || extension === 'gerber' || extension === 'drl')
+    if (extension in ['gbr', 'geb', 'gerber', 'drl']) return 'rs274x'
+    return defaultFormat
+  }
   async function uploadFiles(files: FileWithFormat[]): Promise<void> {
-    setFiles(files.map((file) => Object.assign(file, { format: 'rs274x', uid: UID() })))
+    setFiles(
+      files.map((file) => Object.assign(file, { format: identifyFileType(file), uid: UID() }))
+    )
   }
 
   async function confirmFiles(files: UploadFile[]): Promise<void> {
@@ -151,7 +163,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
       <Modal
         opened={files.length > 0}
         onClose={(): void => setFiles([])}
-        title="Layer Intentification"
+        title="Layer Identification"
       >
         <Stack>
           {files.map((file) => (
