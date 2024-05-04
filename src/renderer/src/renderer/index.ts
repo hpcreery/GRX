@@ -44,11 +44,11 @@ export class RenderEngine {
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true,
+      ZOOM_TO_CURSOR: true
     },
     {
       set: (target, name, value): boolean => {
-        this.backend.then(engine => {
+        this.backend.then((engine) => {
           engine.settings[name] = value
           engine.render(true)
         })
@@ -57,39 +57,47 @@ export class RenderEngine {
       }
     }
   )
-  public grid: GridRenderProps = new Proxy({
-    enabled: true,
-    color: [0.2, 0.2, 0.2, 0.5],
-    spacing_x: 1,
-    spacing_y: 1,
-    offset_x: 0,
-    offset_y: 0,
-    _type: 0,
-    type: 'dots'
-  }, {
-    set: (target, name, value): boolean => {
-      this.backend.then(engine => {
-        engine.grid[name] = value
-        engine.render(true)
-      })
-      target[name] = value
-      return true
+  public grid: GridRenderProps = new Proxy(
+    {
+      enabled: true,
+      color: [0.2, 0.2, 0.2, 0.5],
+      spacing_x: 1,
+      spacing_y: 1,
+      offset_x: 0,
+      offset_y: 0,
+      _type: 0,
+      type: 'dots'
     },
-  })
-  public pointerSettings: PointerSettings = new Proxy({
-    mode: 'move'
-  }, {
-    set: (target, name, value): boolean => {
-      if (name === 'mode') {
-        if (value === 'move') this.CONTAINER.style.cursor = 'grab'
-        if (value === 'select') this.CONTAINER.style.cursor = 'crosshair'
+    {
+      set: (target, name, value): boolean => {
+        this.backend.then((engine) => {
+          engine.grid[name] = value
+          engine.render(true)
+        })
+        target[name] = value
+        return true
       }
-      target[name] = value
-      return true
     }
-  })
+  )
+  public pointerSettings: PointerSettings = new Proxy(
+    {
+      mode: 'move'
+    },
+    {
+      set: (target, name, value): boolean => {
+        if (name === 'mode') {
+          if (value === 'move') this.CONTAINER.style.cursor = 'grab'
+          if (value === 'select') this.CONTAINER.style.cursor = 'crosshair'
+        }
+        target[name] = value
+        return true
+      }
+    }
+  )
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
+  pointerCache: globalThis.PointerEvent[] = []
+  prevPinchDiff = -1
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvas: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
@@ -97,7 +105,11 @@ export class RenderEngine {
     this.CONTAINER.style.cursor = 'grab'
     this.canvas = this.createCanvas()
     const offscreenCanvas = this.canvas.transferControlToOffscreen()
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), { attributes, width: this.canvas.width, height: this.canvas.height })
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), {
+      attributes,
+      width: this.canvas.width,
+      height: this.canvas.height
+    })
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
     this.render(true)
@@ -115,7 +127,7 @@ export class RenderEngine {
 
   private resize(): void {
     const { clientWidth: width, clientHeight: height } = this.CONTAINER
-    this.backend.then(engine => {
+    this.backend.then((engine) => {
       engine.resize(width, height)
     })
   }
@@ -131,10 +143,10 @@ export class RenderEngine {
     const mouse_element_pos = this.getMouseCanvasCoordinates(e)
 
     // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = [
-      mouse_element_pos[0] / width,
-      mouse_element_pos[1] / height
-    ] as [number, number]
+    const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [
+      number,
+      number
+    ]
     // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
@@ -159,6 +171,13 @@ export class RenderEngine {
         })
       )
     }
+
+    const removePointerCache = (ev: globalThis.PointerEvent) => {
+      // Remove this event from the target's cache
+      const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId)
+      this.pointerCache.splice(index, 1)
+    }
+
     this.CONTAINER.onwheel = async (e): Promise<void> => {
       const settings = await backend.settings
       const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
@@ -170,6 +189,7 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      this.pointerCache.push(e)
       if (this.pointerSettings.mode === 'move') {
         this.CONTAINER.style.cursor = 'grabbing'
         await backend.grabViewport()
@@ -192,11 +212,19 @@ export class RenderEngine {
         this.CONTAINER.style.cursor = 'grab'
         await backend.releaseViewport()
       }
+      removePointerCache(e)
+      if (this.pointerCache.length < 2) {
+        this.prevPinchDiff = -1
+      }
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === 'move') {
         await backend.releaseViewport()
+      }
+      removePointerCache(e)
+      if (this.pointerCache.length < 2) {
+        this.prevPinchDiff = -1
       }
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
@@ -204,15 +232,44 @@ export class RenderEngine {
       if (this.pointerSettings.mode === 'move') {
         await backend.releaseViewport()
       }
+      removePointerCache(e)
+      if (this.pointerCache.length < 2) {
+        this.prevPinchDiff = -1
+      }
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
-      if (!await backend.isDragging()) {
+      const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
+      this.pointerCache[index] = e
+
+      if (!(await backend.isDragging())) {
         await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
         return
       }
       if (this.pointerSettings.mode === 'move') {
-        await backend.moveViewport(e.movementX, e.movementY)
+        // If two pointers are down, check for pinch gestures
+        if (this.pointerCache.length === 2) {
+          // Calculate the distance between the two pointers
+          const curPinchDiff = Math.hypot(
+            this.pointerCache[0].clientX - this.pointerCache[1].clientX,
+            this.pointerCache[0].clientY - this.pointerCache[1].clientY
+          )
+          if (this.prevPinchDiff < 0) {
+            this.prevPinchDiff = curPinchDiff
+          }
+          let zoomFactor = -(curPinchDiff - this.prevPinchDiff)
+          const settings = await backend.settings
+          const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+          if (settings.ZOOM_TO_CURSOR) {
+            backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, zoomFactor)
+          } else {
+            backend.zoomAtPoint(width / 2, height / 2, zoomFactor)
+          }
+          // Cache the distance for the next move event
+          this.prevPinchDiff = curPinchDiff
+        } else {
+          await backend.moveViewport(e.movementX, e.movementY)
+        }
       }
     }
   }
@@ -222,7 +279,11 @@ export class RenderEngine {
     backend.addLayer(params)
   }
 
-  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
+  public async addFile(params: {
+    file: string
+    format: string
+    props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>
+  }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
   }
