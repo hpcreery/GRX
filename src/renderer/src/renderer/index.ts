@@ -172,7 +172,7 @@ export class RenderEngine {
       )
     }
 
-    const removePointerCache = (ev: globalThis.PointerEvent) => {
+    const removePointerCache = (ev: globalThis.PointerEvent): void => {
       // Remove this event from the target's cache
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId)
       this.pointerCache.splice(index, 1)
@@ -257,7 +257,7 @@ export class RenderEngine {
           if (this.prevPinchDiff < 0) {
             this.prevPinchDiff = curPinchDiff
           }
-          let zoomFactor = -(curPinchDiff - this.prevPinchDiff)
+          const zoomFactor = -(curPinchDiff - this.prevPinchDiff)
           const settings = await backend.settings
           const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {

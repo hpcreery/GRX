@@ -16,7 +16,10 @@ import {
   // IconChartHistogram,
   IconEye,
   IconEyeOff,
-  IconColorPicker
+  IconColorPicker,
+  IconContrastOff,
+  IconContrast,
+  IconClearAll
 } from '@tabler/icons-react'
 import { useContextMenu } from 'mantine-contextmenu'
 import type { LayerInfo } from '@src/renderer/engine'
@@ -26,9 +29,12 @@ interface LayerListItemProps {
   file: UploadFile
   renderEngine: RenderEngine
   actions: {
-    download: () => void
-    preview: () => void
-    remove: (file: UploadFile) => void
+    download: () => void;
+    preview: () => void;
+    remove: (file: UploadFile) => Promise<void>;
+    hideAll: () => void;
+    showAll: () => void;
+    deleteAll: () => void;
   }
 }
 
@@ -201,7 +207,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     },
     {
       title: visible ? 'Hide Layer' : 'Show Layer',
-      key: '3',
+      key: '2',
       icon: visible ? <IconEyeOff stroke={1.5} size={18} /> : <IconEye stroke={1.5} size={18} />,
       onClick: toggleVisible
     },
@@ -218,11 +224,32 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
       key: 'divider'
     },
     {
+      title: 'Hide All Layers',
+      key: '3',
+      icon: <IconContrastOff stroke={1.5} size={18} />,
+      onClick: actions.hideAll
+    },
+    {
+      title: 'Show All Layers',
+      key: '4',
+      icon: <IconContrast stroke={1.5} size={18} />,
+      onClick: actions.showAll
+    },
+    {
+      key: 'divider2'
+    },
+    {
       title: 'Delete Layer',
-      key: '0',
+      key: '5',
       icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: deleteLayer
-    }
+    },
+    {
+      title: 'Delete All Layers',
+      key: '6',
+      icon: <IconClearAll stroke={1.5} size={18}  style={{ color: theme.colors.red[7] }}/>,
+      onClick: actions.deleteAll
+    },
   ]
 
   return (

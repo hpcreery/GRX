@@ -9,7 +9,8 @@ import {
   Stack,
   ScrollArea,
   Modal,
-  Select
+  Select,
+  useMantineTheme
 } from '@mantine/core'
 import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from '@mantine/dropzone'
 import {
@@ -43,7 +44,9 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   const [layers, setLayers] = useState<UploadFile[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
   const [renderID, setRenderID] = useState<number>(0)
+  const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState<boolean>(false)
   const { showContextMenu } = useContextMenu()
+  const theme = useMantineTheme()
 
   function registerLayers(
     rendererLayers: LayerInfo[],
@@ -103,16 +106,41 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     })
   }, [])
 
+  const closeDeleteConfirmModal = (): void => {
+    setDeleteConfirmModalOpen(false)
+  }
+
+  const openDeleteConfirmModal = (): void => {
+    setDeleteConfirmModalOpen(true)
+  }
+
   const actions = {
-    download: (): void => {},
-    preview: (): void => {},
+    download: (): void => { },
+    preview: (): void => { },
     remove: async (file: UploadFile): Promise<void> => {
       const backend = await renderEngine.backend
       if (!backend) return
       await backend.removeLayer(file.uid)
       setLayers(layers.filter((l) => l.uid !== file.uid))
       return
-    }
+    },
+    hideAll: (): void => {
+      layers.forEach(async (layer) => {
+        const backend = await renderEngine.backend
+        if (!backend) return
+        await backend.setLayerProps(layer.uid, { visible: false })
+        setRenderID(renderID + 1)
+      })
+    },
+    showAll: (): void => {
+      layers.forEach(async (layer) => {
+        const backend = await renderEngine.backend
+        if (!backend) return
+        await backend.setLayerProps(layer.uid, { visible: true })
+        setRenderID(renderID + 1)
+      })
+    },
+    deleteAll: openDeleteConfirmModal
   }
 
   const contextItems = [
@@ -120,33 +148,19 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
       title: 'Hide All Layers',
       key: '1',
       icon: <IconContrastOff stroke={1.5} size={18} />,
-      onClick: (): void => {
-        layers.forEach(async (layer) => {
-          const backend = await renderEngine.backend
-          if (!backend) return
-          await backend.setLayerProps(layer.uid, { visible: false })
-          setRenderID(renderID + 1)
-        })
-      }
+      onClick: actions.hideAll
     },
     {
       title: 'Show All Layers',
       key: '2',
       icon: <IconContrast stroke={1.5} size={18} />,
-      onClick: (): void => {
-        layers.forEach(async (layer) => {
-          const backend = await renderEngine.backend
-          if (!backend) return
-          await backend.setLayerProps(layer.uid, { visible: true })
-          setRenderID(renderID + 1)
-        })
-      }
+      onClick: actions.showAll
     },
     {
       title: 'Delete All Layers',
       key: '3',
-      icon: <IconClearAll stroke={1.5} size={18} />,
-      onClick: () => deleteAllLayers()
+      icon: <IconClearAll stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
+      onClick: actions.deleteAll
     }
   ]
 
@@ -184,6 +198,20 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
             <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
           )}
         </Stack>
+      </Modal>
+      <Modal opened={deleteConfirmModalOpen} onClose={closeDeleteConfirmModal} title="Confirm Delete All">
+        <Text>Are you sure you want to delete all layers?</Text>
+        <Group mt={10}>
+          {/* <Button onClick={closeDeleteConfirmModal} variant="default" fullWidth>
+            Cancel
+          </Button> */}
+          <Button onClick={() => {
+            deleteAllLayers()
+            setDeleteConfirmModalOpen(false)
+          }} color="red" fullWidth>
+            Delete
+          </Button>
+        </Group>
       </Modal>
       <Dropzone.FullScreen active={true} multiple={true} onDrop={uploadFiles}>
         <Group mih={220} style={{ zIndex: 40 }}>
@@ -254,8 +282,8 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
             ))}
           </Stack>
 
-          {layers.length > 0 && (
-            <Group grow pb={5}>
+          {/* {layers.length > 0 && (
+            <Group grow pt={5}>
               <Button
                 color="red"
                 radius="sm"
@@ -265,7 +293,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
                 Delete All
               </Button>
             </Group>
-          )}
+          )} */}
         </ScrollArea>
       </Card>
     </div>
