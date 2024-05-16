@@ -96,8 +96,8 @@ export class RenderEngine {
   )
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
-  pointerCache: globalThis.PointerEvent[] = []
-  prevPinchDiff = -1
+  private pointerCache: globalThis.PointerEvent[] = []
+  private prevPinchDiff = -1
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvas: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {

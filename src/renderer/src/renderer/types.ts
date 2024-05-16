@@ -1,6 +1,6 @@
 import { vec2 } from 'gl-matrix'
 
-export const FeatureTypeIdentifyer = {
+export const FeatureTypeIdentifier = {
   PAD: 'pad',
   LINE: 'line',
   BRUSHED_LINE: 'brushedline',
@@ -17,14 +17,14 @@ export const FeatureTypeIdentifyer = {
   STEP_AND_REPEAT: 'step_and_repeat',
 } as const
 
-export type FeatureTypeIdentifyers = typeof FeatureTypeIdentifyer[keyof typeof FeatureTypeIdentifyer]
+export type FeatureTypeIdentifiers = typeof FeatureTypeIdentifier[keyof typeof FeatureTypeIdentifier]
 
 export interface IPlotRecord {
-  type: FeatureTypeIdentifyers
+  type: FeatureTypeIdentifiers
 }
 
 export interface ISymbolRecord {
-  type: FeatureTypeIdentifyers
+  type: FeatureTypeIdentifiers
 }
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {

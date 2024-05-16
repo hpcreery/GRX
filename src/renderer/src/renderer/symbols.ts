@@ -1,4 +1,4 @@
-import { ISymbolRecord, FeatureTypeIdentifyer, toMap } from './types'
+import { ISymbolRecord, FeatureTypeIdentifier, toMap } from './types'
 import { Shape } from './shapes'
 import { malloc } from './utils'
 
@@ -92,7 +92,7 @@ export type TStandardSymbol = typeof SYMBOL_PARAMETERS_MAP
 type AtLeastOne<T, U = {[K in keyof T]: Pick<T, K> }> = Partial<T> & U[keyof U]
 
 export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
-  public readonly type = FeatureTypeIdentifyer.SYMBOL_DEFINITION
+  public readonly type = FeatureTypeIdentifier.SYMBOL_DEFINITION
   public id = ''
   public symbol = STANDARD_SYMBOLS_MAP.Null
   public sym_num = malloc<number>(0)
@@ -372,7 +372,7 @@ export type TMacroSymbol = {
 }
 
 export class MacroSymbol implements TMacroSymbol, ISymbolRecord {
-  public readonly type = FeatureTypeIdentifyer.MACRO_DEFINITION
+  public readonly type = FeatureTypeIdentifier.MACRO_DEFINITION
   public id = ''
   public sym_num = malloc<number>(0)
   public flatten = false

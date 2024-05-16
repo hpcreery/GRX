@@ -2,7 +2,7 @@ import REGL from 'regl'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
-import { FeatureTypeIdentifyer, Binary } from './types'
+import { FeatureTypeIdentifier, Binary } from './types'
 import { MacroRenderer, StepAndRepeatRenderer } from './layer'
 import onChange from 'on-change'
 
@@ -617,45 +617,45 @@ export class ShapesShaderCollection {
     }
 
     this.image.forEach((record) => {
-      if (record.type === FeatureTypeIdentifyer.SURFACE) {
+      if (record.type === FeatureTypeIdentifier.SURFACE) {
         this.shapes.surfaces.push(record)
       } else if (
-        record.type === FeatureTypeIdentifyer.PAD &&
-        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+        record.type === FeatureTypeIdentifier.PAD &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
       ) {
         fixSymbolGetter(record)
         this.shapes.pads.push(record)
       } else if (
-        record.type === FeatureTypeIdentifyer.LINE &&
-        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+        record.type === FeatureTypeIdentifier.LINE &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
       ) {
         fixSymbolGetter(record)
         this.shapes.lines.push(record)
       } else if (
-        record.type === FeatureTypeIdentifyer.ARC &&
-        record.symbol.type === FeatureTypeIdentifyer.SYMBOL_DEFINITION
+        record.type === FeatureTypeIdentifier.ARC &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
       ) {
         fixSymbolGetter(record)
         this.shapes.arcs.push(record)
-      } else if (record.type === FeatureTypeIdentifyer.POLYLINE) {
+      } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
         drawPolyline(record, this.shapes)
       }
     })
 
     this.shapes.pads.forEach((record) => {
-      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
     })
     this.shapes.lines.forEach((record) => {
-      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
     })
     this.shapes.arcs.forEach((record) => {
-      if (record.symbol.type != FeatureTypeIdentifyer.SYMBOL_DEFINITION) {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         return
       }
       this.symbolsCollection.add(record.symbol)
@@ -827,7 +827,7 @@ export class ShapesShaderCollection {
   public getVertices(contour: Shapes.Contour): number[] {
     let previous: { x: number; y: number } = { x: contour.xs, y: contour.ys }
     const vertices = contour.segments.flatMap((segment) => {
-      if (segment.type === FeatureTypeIdentifyer.LINESEGMENT) {
+      if (segment.type === FeatureTypeIdentifier.LINESEGMENT) {
         previous = { x: segment.x, y: segment.y }
         return [segment.x, segment.y]
       } else {
@@ -987,10 +987,10 @@ export class MacroShaderCollection {
   public refresh(): this {
     this.macros.clear()
     this.image.forEach((record) => {
-      if (record.type != FeatureTypeIdentifyer.PAD) {
+      if (record.type != FeatureTypeIdentifier.PAD) {
         return
       }
-      if (record.symbol.type == FeatureTypeIdentifyer.MACRO_DEFINITION) {
+      if (record.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
         // this.makeUnique(record.symbol)
         if (!this.macros.has(record.symbol.id)) {
           this.macros.set(record.symbol.id, {
@@ -1031,7 +1031,7 @@ export class StepAndRepeatCollection {
   public refresh(): this {
     this.steps.length = 0
     this.image.forEach((record) => {
-      if (record.type != FeatureTypeIdentifyer.STEP_AND_REPEAT) {
+      if (record.type != FeatureTypeIdentifier.STEP_AND_REPEAT) {
         return
       }
       this.steps.push(

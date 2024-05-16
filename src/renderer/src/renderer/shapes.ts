@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifyer, toMap, Transform, Binary, IntersectingTypes } from './types'
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes } from './types'
 import * as Symbols from './symbols'
 
 
@@ -54,7 +54,7 @@ export const SURFACE_RECORD_PARAMETERS_MAP = toMap(SURFACE_RECORD_PARAMETERS)
 export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
 export class Pad implements TPad_Record, IPlotRecord {
-  public readonly type = FeatureTypeIdentifyer.PAD
+  public readonly type = FeatureTypeIdentifier.PAD
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -108,7 +108,7 @@ export class Pad implements TPad_Record, IPlotRecord {
 export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
 export class Line implements TLine_Record, IPlotRecord {
-  public readonly type = FeatureTypeIdentifyer.LINE
+  public readonly type = FeatureTypeIdentifier.LINE
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -156,7 +156,7 @@ export class Line implements TLine_Record, IPlotRecord {
 export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
 export class Arc implements TArc_Record, IPlotRecord {
-  public readonly type = FeatureTypeIdentifyer.ARC
+  public readonly type = FeatureTypeIdentifier.ARC
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -238,7 +238,7 @@ type TContourArcSegment = {
 }
 
 export class Contour_Arc_Segment implements TContourArcSegment {
-  public readonly type = FeatureTypeIdentifyer.ARCSEGMENT
+  public readonly type = FeatureTypeIdentifier.ARCSEGMENT
   /**
    * end x
    */
@@ -266,7 +266,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
 }
 
 export class Contour_Line_Segment implements TContourLineSegment {
-  public readonly type = FeatureTypeIdentifyer.LINESEGMENT
+  public readonly type = FeatureTypeIdentifier.LINESEGMENT
   /**
    * end x
    */
@@ -282,7 +282,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
 }
 
 export class Contour implements TContour {
-  public readonly type = FeatureTypeIdentifyer.CONTOUR
+  public readonly type = FeatureTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole
    */
@@ -328,7 +328,7 @@ export class Contour implements TContour {
 }
 
 export class Surface implements TSurface {
-  public readonly type = FeatureTypeIdentifyer.SURFACE
+  public readonly type = FeatureTypeIdentifier.SURFACE
   public index = 0
   /**
    * 1 == positive, 0 == negative
@@ -367,7 +367,7 @@ export class Surface implements TSurface {
 }
 
 export class PolyLine {
-  public readonly type = FeatureTypeIdentifyer.POLYLINE
+  public readonly type = FeatureTypeIdentifier.POLYLINE
   public index = 0
   /**
    * line width
@@ -426,7 +426,7 @@ export class PolyLine {
 }
 
 export class StepAndRepeat {
-  public readonly type = FeatureTypeIdentifyer.STEP_AND_REPEAT
+  public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
