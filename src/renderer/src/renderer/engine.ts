@@ -6,7 +6,7 @@ import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { parser } from './plugins'
-import type { Units } from './types'
+import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import GridVert from '../shaders/src/Grid.vert'
 import { UID } from './utils'
@@ -521,6 +521,23 @@ export class RenderEngineBackend {
     })
   }
 
+  public getTransform(): Partial<RenderTransform> {
+    return {
+      zoom: this.transform.zoom,
+      position: this.transform.position,
+      velocity: this.transform.velocity,
+      dragging: this.transform.dragging,
+      matrix: this.transform.matrix,
+      matrixInverse: this.transform.matrixInverse,
+      // update: this.transform.update
+    }
+  }
+
+  public setTransform(transform: Partial<RenderTransform>): void {
+    Object.assign(this.transform, transform)
+    this.updateTransform()
+  }
+
   public removeLayer(uid: string): void {
     const index = this.layers.findIndex((layer) => layer.uid === uid)
     if (index === -1) return
@@ -576,6 +593,39 @@ export class RenderEngineBackend {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
       this.render(true)
+    }
+  }
+
+  public async zoomFit(): Promise<void> {
+    let boundingBox: BoundingBox = {
+      min: vec2.fromValues(Infinity, Infinity),
+      max: vec2.fromValues(-Infinity, -Infinity)
+    }
+    for (const layer of this.layers) {
+      // TODO: make for loop parallel
+      const layerBoundingBox = await layer.getBoundingBox()
+      console.log(layerBoundingBox)
+      boundingBox.min[0] = Math.min(boundingBox.min[0], layerBoundingBox.min[0])
+      boundingBox.min[1] = Math.min(boundingBox.min[1], layerBoundingBox.min[1])
+      boundingBox.max[0] = Math.max(boundingBox.max[0], layerBoundingBox.max[0])
+      boundingBox.max[1] = Math.max(boundingBox.max[1], layerBoundingBox.max[1])
+    }
+
+    const screenWidth = this.viewBox.width
+    const screenHeight = this.viewBox.height
+    const screenAR = screenWidth / screenHeight
+    const unitToPx = (screenWidth/2) / 1 // px per unit
+    const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
+    const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
+    const bbAR = bbWidth / bbHeight
+    if (bbAR > screenAR) {
+      const zoom = screenWidth / bbWidth
+      const offsetY = (screenHeight - bbHeight*zoom) / 2
+      this.setTransform({ position: [0, offsetY], zoom})
+    } else {
+      const zoom = screenHeight / bbHeight
+      const offsetX = (screenWidth - bbWidth*zoom) / 2
+      this.setTransform({ position: [offsetX, 0], zoom})
     }
   }
 

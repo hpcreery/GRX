@@ -1422,33 +1422,59 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addFile({
-      file: gtl_in,
-      format: 'rs274x',
-      props: {
-        name: 'gtl_in',
-      }
-    })
+    // Engine.addFile({
+    //   file: gtl_in,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'gtl_in',
+    //   }
+    // })
 
-    Engine.addLayer({
-      name: 'surfaces',
-      image: SURFACE_RECORDS_ARRAY,
-      units: 'mm'
-    })
+    // Engine.addLayer({
+    //   name: 'surfaces',
+    //   image: SURFACE_RECORDS_ARRAY,
+    //   units: 'mm'
+    // })
 
-    Engine.addFile({
-      file: gtl_mm,
-      format: 'rs274x',
-      props: {
-        name: 'gtl_mm',
-      }
-    })
+    // Engine.addFile({
+    //   file: gtl_mm,
+    //   format: 'rs274x',
+    //   props: {
+    //     name: 'gtl_mm',
+    //   }
+    // })
 
     Engine.addLayer({
       name: 'surface test',
       image: SURFACE_ARC_TEST,
       units: 'mm'
     })
+
+    // find all shapes in engine and loop through the shapes
+    // Engine.backend.then(backend => backend.getLayers().then(layers => {
+      
+    //   for (const layer of layers) {
+    //     console.log(layer)
+    //     // backend.setLayerProps(layer.uid, { visible: false })
+    //     layer.
+    //   }
+    // }))
+
+    // find all shapes in engine and loop through the shapes
+    // Engine.backend.then(backend => backend.layers.then(layers => {
+    //   for (const layer of layers) {
+    //     // backend.setLayerProps(layer.uid, { visible: false })
+    //     console.log(layer)
+    //   }
+    // }))
+
+    Engine.backend.then(backend => backend.transform.then(transform => {
+      console.log(transform)
+      transform.position[0] = 3
+      // transform.position[1] = 3
+      transform.update()
+    }))
+
 
 
     Engine.render(true)
@@ -1495,6 +1521,12 @@ function REGLApp(): JSX.Element {
               })
             }}>
             Randomize Colors
+          </Button>
+          <Button
+            onClick={async (): Promise<void> => {
+              engine.zoomFit()
+            }}>
+            Zoom Fit
           </Button>
           <br />
           Outline Mode

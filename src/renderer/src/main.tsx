@@ -5,7 +5,7 @@ import { MantineProvider, createTheme } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
-// import REGLApp from './renderer/DEMO'
+import REGLApp from './renderer/DEMO'
 import { Units } from './renderer/types'
 
 // STYLES
@@ -13,8 +13,6 @@ import '@mantine/core/styles.css';
 import 'mantine-contextmenu/styles.css';
 import '@mantine/dropzone/styles.css';
 import '@mantine/notifications/styles.css';
-
-// import REGLApp from './renderer/DEMO'
 
 
 function Main(): JSX.Element | null {
@@ -72,8 +70,8 @@ function Main(): JSX.Element | null {
       >
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Notifications />
-          <App />
-          {/* <REGLApp /> */}
+          {/* <App /> */}
+          <REGLApp />
         </ContextMenuProvider>
       </MantineProvider>
     </ConfigEditorProvider.Provider>
