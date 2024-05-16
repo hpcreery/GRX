@@ -1,4 +1,4 @@
-import { ActionIcon, Affix, Badge, Code, ScrollArea, ThemeIcon, Transition } from '@mantine/core';
+import { ActionIcon, Affix, Badge, Code, Divider, ScrollArea, ThemeIcon, Transition } from '@mantine/core';
 import { Card, Text } from '@mantine/core';
 import { RenderEngine } from '@src/renderer';
 import { useEffect, useState, useContext } from 'react';
@@ -19,6 +19,7 @@ import { getUnitsConversion } from '@src/renderer/utils';
 import chroma from 'chroma-js';
 import { STANDARD_SYMBOLS, StandardSymbol } from '@src/renderer/symbols';
 import { Units } from '@src/renderer/types';
+import * as Shapes from '@src/renderer/shapes'
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -89,6 +90,58 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
     }
   }, [])
 
+  const getParentInfo = (parent: Shapes.Parents[], feature_units: Units): JSX.Element => {
+    return (
+      <>
+        {parent.map(feature => {
+          switch (feature.type) {
+            case 'pad':
+              return <>
+                <Divider my="sm" />
+                <Text size="lg" fw={700} c='white'>
+                  Nested in Pad
+                </Text>
+                <Text>
+                  Index: <Code>{feature.index}</Code>
+                </Text>
+                <Text>
+                  Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
+                </Text>
+                <Text>
+                  Center: <Code>X:{(feature.x * getUnitsConversion(units) / getUnitsConversion(feature_units)).toFixed(3)}{units} Y:{(feature.y * getUnitsConversion(units) / getUnitsConversion(feature_units)).toFixed(3)}{units}</Code>
+                </Text>
+                <Text>
+                  Resize Factor: <Code>{feature.resize_factor}</Code>
+                </Text>
+                <Text>
+                  Mirror: <Code>X:{feature.mirror_x === 1 ? 'yes' : 'no'} Y:{feature.mirror_y === 1 ? 'yes' : 'no'}</Code>
+                </Text>
+                <Text>
+                  Rotation (cw): <Code>{feature.rotation}&deg;</Code>
+                </Text>
+                <Text>
+                  Symbol: <Code>{feature.symbol.id}</Code>
+                </Text>
+              </>
+            case 'step_and_repeat':
+              return <>
+                <Divider my="sm" />
+                <Text size="lg" fw={700} c='white'>
+                  Nested in Step and Repeat
+                </Text>
+                <Text>
+                  Index: <Code>{feature.index}</Code>
+                </Text>
+                <Text>
+                  Repeats: <Code>{feature.repeats.length}</Code>
+                </Text>
+              </>
+          }
+        })}
+      </>
+    )
+  }
+
   const getInfo = (feature: QueryFeature): JSX.Element => {
     const layer = layers.find(x => x.uid === feature.layer)
     let layerColor = 'black'
@@ -125,6 +178,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
+          {getParentInfo(feature.parent, feature.units)}
         </>
       case 'pad':
         return <>
@@ -160,6 +214,8 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             <Text>
               {getSymbolInfo(feature.symbol, feature.units)}
             </Text> : ''}
+          {/* {feature.parent.length > 0 ? feature.parent.map(p => <Text key={p.index}>Parent: <Code>{p.index}</Code></Text>) : ''} */}
+          {getParentInfo(feature.parent, feature.units)}
         </>
       case 'arc':
         return <>
@@ -194,6 +250,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
+          {getParentInfo(feature.parent, feature.units)}
         </>
       case 'surface':
         return <>
@@ -219,6 +276,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Edges: <Code>{feature.contours.map(ctr => ctr.segments.length).reduce((p, c) => p + c, 0) - 1}</Code>
           </Text>
+          {getParentInfo(feature.parent, feature.units)}
         </>
       case 'polyline':
         return <>
@@ -247,6 +305,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Qty Lines: <Code>{feature.lines.length}</Code>
           </Text>
+          {getParentInfo(feature.parent, feature.units)}
         </>
       default:
         return <>

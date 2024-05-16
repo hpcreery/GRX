@@ -118,7 +118,7 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
+export type QueryFeature = Shapes.Shape & {parent: Shapes.Parents[], layer: string, units: Units }
 
 export class RenderEngineBackend {
 
