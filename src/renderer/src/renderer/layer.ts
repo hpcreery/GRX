@@ -292,7 +292,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -322,11 +322,12 @@ export class ShapeRenderer {
       width: width,
       height: height
     })
-    const features: Shapes.Shape[] = []
+    const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
     for (let i = 0; i < data.length; i+=4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
-        features.push(this.image[i/4])
+        const feat = Object.assign({}, this.image[i/4])
+        features.push(Object.assign(feat, {parent: []}))
       }
     }
     this.macroCollection.macros.forEach((macro) => {
@@ -334,13 +335,24 @@ export class ShapeRenderer {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
         macro.renderer.query(pointer, context).forEach((feature) => {
-          features.push(feature)
+          const newFeature = Object.assign({}, feature)
+          const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
+          // @ts-ignore - intentionally removing symbol
+          delete newFeatureParent.symbol
+          newFeatureParent.symbol = {id: record.symbol.id}
+          newFeature.parent.push(record)
+          features.push(newFeature)
         })
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
       stepAndRepeat.query(pointer, context).forEach((feature) => {
-        features.push(feature)
+        const newFeature = Object.assign({}, feature)
+        const newFeatureParent = Object.assign({}, stepAndRepeat.record) as Omit<Shapes.StepAndRepeat, 'shapes'>
+        // @ts-ignore - intentionally removing shapes
+        delete newFeatureParent.shapes
+        newFeature.parent.push(newFeatureParent)
+        features.push(newFeature)
       })
     })
     context.transformMatrix = origMatrix
@@ -348,7 +360,7 @@ export class ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    const origMatrix = mat3.clone(context.transformMatrix)  
+    const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
     if (this.dirty) {
@@ -468,7 +480,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
     const features = super.query(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
@@ -574,8 +586,8 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
-    const features: Shapes.Shape[] = []
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+    const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length

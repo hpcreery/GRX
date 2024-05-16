@@ -118,7 +118,7 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
+export type QueryFeature = Shapes.Shape & {parent: Shapes.Parents[], layer: string, units: Units }
 
 export class RenderEngineBackend {
 
@@ -430,8 +430,8 @@ export class RenderEngineBackend {
     mat3.projection(this.transform.matrix, width, height)
     mat3.translate(this.transform.matrix, this.transform.matrix, position)
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
+    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
+    // mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
     // mat3.scale(this.transform.matrix, this.transform.matrix, [width, height])
     mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
     mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
@@ -583,7 +583,7 @@ export class RenderEngineBackend {
     if (!this.dirty && !force) return
     this.dirty = false
     this.regl.clear({
-      color: this.settings.BACKGROUND_COLOR,
+      color: [0,0,0,0],
       depth: 1
     })
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)

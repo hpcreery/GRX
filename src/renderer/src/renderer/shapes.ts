@@ -449,5 +449,10 @@ export class StepAndRepeat {
   }
 }
 
+export interface TruncatedPad extends Omit<Pad, 'symbol'> {
+  symbol: Pick<Symbols.Symbol, 'id'>
+}
+
 export type Primitive = Pad | Line | Arc
 export type Shape = Primitive | Surface | PolyLine | StepAndRepeat
+export type Parents = Omit<StepAndRepeat, 'shapes'> | TruncatedPad
