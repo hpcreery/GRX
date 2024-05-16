@@ -1,5 +1,6 @@
 // Graphic plotter
 // Takes nodes and turns them into graphics to be added to the image
+import * as Tree from '../tree'
 import {
   GerberNode,
   GraphicType,
@@ -22,7 +23,7 @@ import {
 } from '@hpcreery/tracespace-parser'
 
 import type { Tool } from '../tool-store'
-import type { Location } from '../location-store'
+import type { Location, Point } from '../location-store'
 
 import { FeatureTypeIdentifyer } from '@src/renderer/types'
 
@@ -126,16 +127,23 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
           y: location.endPoint.y,
         }))
       } else {
+        let center: Point = {
+          x: location.startPoint.x + location.arcOffsets.i,
+          y: location.startPoint.y + location.arcOffsets.j,
+        }
+        if (this._ambiguousArcCenter) {
+          center = getAmbiguousArcCenter(location, this._arcDirection as ArcDirection)
+        }
         this._currentSurface.contours[0].addSegment(new Shapes.Contour_Arc_Segment({
           x: location.endPoint.x,
           y: location.endPoint.y,
-          xc: location.startPoint.x + location.arcOffsets.i,
-          yc: location.startPoint.y + location.arcOffsets.j,
+          xc: center.x,
+          yc: center.y,
           clockwise: this._arcDirection === CW ? 1 : 0,
         }))
       }
     }
-    
+
     if (
       node.type === REGION_MODE ||
       node.type === DONE ||
@@ -164,6 +172,13 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
             ye: location.endPoint.y,
           }))
         } else {
+          let center: Point = {
+            x: location.startPoint.x + location.arcOffsets.i,
+            y: location.startPoint.y + location.arcOffsets.j,
+          }
+          if (this._ambiguousArcCenter) {
+            center = getAmbiguousArcCenter(location, this._arcDirection as ArcDirection)
+          }
           graphics.push(new Shapes.Arc({
             symbol: tool,
             polarity: transform.polarity === DARK ? 1 : 0,
@@ -171,8 +186,8 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
             ys: location.startPoint.y,
             xe: location.endPoint.x,
             ye: location.endPoint.y,
-            xc: location.startPoint.x + location.arcOffsets.i,
-            yc: location.startPoint.y + location.arcOffsets.j,
+            xc: center.x,
+            yc: center.y,
             clockwise: this._arcDirection === CW ? 1 : 0,
           }))
         }
@@ -251,29 +266,89 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
 }
 
-// const DrillGraphicPlotterTrait: Partial<GraphicPlotterImpl> = {
-//   _defaultGraphic: SHAPE,
-//   _ambiguousArcCenter: true,
+export function getAmbiguousArcCenter(location: Location, arcDirection: ArcDirection): Point {
+  const { startPoint, endPoint, arcOffsets } = location
+  const radius =
+    arcOffsets.a > 0
+      ? arcOffsets.a
+      : (arcOffsets.i ** 2 + arcOffsets.j ** 2) ** 0.5
+  // Get the center candidates and select the candidate with the smallest arc
+  const [_start, _end, center] = findCenterCandidates(location, radius)
+    .map(centerPoint => {
+      return getArcPositions(startPoint, endPoint, centerPoint, arcDirection)
+    })
+    .sort(([startA, endA], [startB, endB]) => {
+      const absSweepA = Math.abs(endA[2] - startA[2])
+      const absSweepB = Math.abs(endB[2] - startB[2])
+      return absSweepA - absSweepB
+    })[0]
 
-//   _setGraphicState(node: GerberNode): GraphicType | undefined {
-//     if (node.type === INTERPOLATE_MODE) {
-//       const {mode} = node
-//       this._arcDirection = arcDirectionFromMode(mode)
+  return {
+    x: center[0],
+    y: center[1],
+  }
+}
 
-//       if (mode === CW_ARC || mode === CCW_ARC || mode === LINE) {
-//         this._defaultGraphic = SEGMENT
-//       } else if (mode === MOVE) {
-//         this._defaultGraphic = MOVE
-//       } else {
-//         this._defaultGraphic = SHAPE
-//       }
-//     }
 
-//     if (node.type !== GRAPHIC) {
-//       return undefined
-//     }
 
-//     return node.graphic ?? this._defaultGraphic
-//   },
-// }
+export function getArcPositions(
+  startPoint: Point,
+  endPoint: Point,
+  centerPoint: Point,
+  arcDirection: ArcDirection
+): [start: Tree.ArcPosition, end: Tree.ArcPosition, center: Tree.Position] {
+  let startAngle = Math.atan2(
+    startPoint.y - centerPoint.y,
+    startPoint.x - centerPoint.x
+  )
+  let endAngle = Math.atan2(
+    endPoint.y - centerPoint.y,
+    endPoint.x - centerPoint.x
+  )
+
+  // If counter-clockwise, end angle should be greater than start angle
+  if (arcDirection === CCW) {
+    endAngle = endAngle > startAngle ? endAngle : endAngle + (Math.PI * 2)
+  } else {
+    startAngle = startAngle > endAngle ? startAngle : startAngle + (Math.PI * 2)
+  }
+
+  return [
+    [startPoint.x, startPoint.y, startAngle],
+    [endPoint.x, endPoint.y, endAngle],
+    [centerPoint.x, centerPoint.y],
+  ]
+}
+
+// Find arc center candidates by finding the intersection points
+// of two circles with `radius` centered on the start and end points
+// https://math.stackexchange.com/a/1367732
+function findCenterCandidates(location: Location, radius: number): Point[] {
+  // This function assumes that start and end are different points
+  const { x: x1, y: y1 } = location.startPoint
+  const { x: x2, y: y2 } = location.endPoint
+
+  // Distance between the start and end points
+  const [dx, dy] = [x2 - x1, y2 - y1]
+  const [sx, sy] = [x2 + x1, y2 + y1]
+  const distance = Math.sqrt(dx ** 2 + dy ** 2)
+
+  // If the distance to the midpoint equals the arc radius, then there is
+  // exactly one intersection at the midpoint; if the distance to the midpoint
+  // is greater than the radius, assume we've got a rounding error and just use
+  // the midpoint
+  if (radius <= distance / 2) {
+    return [{ x: x1 + dx / 2, y: y1 + dy / 2 }]
+  }
+
+  // No good name for these variables, but it's how the math works out
+  const factor = Math.sqrt((4 * radius ** 2) / distance ** 2 - 1)
+  const [xBase, yBase] = [sx / 2, sy / 2]
+  const [xAddend, yAddend] = [(dy * factor) / 2, (dx * factor) / 2]
+
+  return [
+    { x: xBase + xAddend, y: yBase - yAddend },
+    { x: xBase - xAddend, y: yBase + yAddend },
+  ]
+}
 
