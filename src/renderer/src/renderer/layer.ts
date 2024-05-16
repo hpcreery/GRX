@@ -6,7 +6,7 @@ import * as Symbols from './symbols'
 import { Binary, Transform, Units } from './types'
 import {
   ArcAttachments,
-  FrameBufferRendeAttachments,
+  FrameBufferRenderAttachments,
   LineAttachments,
   PadAttachments,
   ReglRenderers,
@@ -36,7 +36,7 @@ interface CommonUniforms {
   u_SymbolsTextureDimensions: vec2
 }
 
-interface QueryUnifroms {
+interface QueryUniforms {
   u_QueryMode: boolean
   u_Color: vec3
   u_PointerPosition: vec2
@@ -52,7 +52,7 @@ interface QueryProps {
   pointer: vec2
 }
 
-// interface ShapeTransfrom extends Transform {
+// interface ShapeTransform extends Transform {
 //   index: number
 //   polarity: number
 //   matrix: mat3
@@ -60,7 +60,7 @@ interface QueryProps {
 //   update: (inputMatrix: mat3) => void
 // }
 
-class ShapeTransfrom implements Transform {
+class ShapeTransform implements Transform {
   public datum: vec2 = vec2.create()
   public rotation = 0
   public scale = 1
@@ -98,7 +98,7 @@ class ShapeTransfrom implements Transform {
 export interface ShapeRendererProps {
   regl: REGL.Regl
   image: Shapes.Shape[]
-  transform?: Partial<ShapeTransfrom>
+  transform?: Partial<ShapeTransform>
 }
 
 interface ShapeRendererCommonContext {
@@ -134,12 +134,12 @@ export class ShapeRenderer {
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
   protected flattenSurfaces: REGL.DrawCommand<
     REGL.DefaultContext & WorldContext,
-    FrameBufferRendeAttachments
+    FrameBufferRenderAttachments
   >
   public surfaceFrameBuffer: REGL.Framebuffer2D
   public queryFrameBuffer: REGL.Framebuffer2D
 
-  public transform: ShapeTransfrom = new ShapeTransfrom()
+  public transform: ShapeTransform = new ShapeTransform()
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
@@ -221,7 +221,7 @@ export class ShapeRenderer {
     })
 
     this.queryConfig = this.regl<
-      QueryUnifroms,
+      QueryUniforms,
       QueryAttributes,
       QueryProps,
       ShapeRendererCommonContext,
@@ -311,7 +311,7 @@ export class ShapeRenderer {
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
         this.queryConfig({pointer}, () => {
-          this.drawPrimatives(context)
+          this.drawPrimitives(context)
         })
       })
     })
@@ -358,14 +358,15 @@ export class ShapeRenderer {
       this.dirty = false
     }
     this.commonConfig(() => {
-      this.drawPrimatives(context)
+      this.drawPrimitives(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
     })
     context.transformMatrix = origMatrix
   }
 
-  private drawPrimatives(context: REGL.DefaultContext & WorldContext): void {
+  private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
+    // this.drawBoundingBoxes(context)
     if (this.shapeCollection.shaderAttachment.pads.length != 0)
       this.drawPads(this.shapeCollection.shaderAttachment.pads)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0)
@@ -469,9 +470,9 @@ export default class LayerRenderer extends ShapeRenderer {
 
   public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
-    const featrures = super.query(pointer, context)
+    const features = super.query(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
-    return featrures
+    return features
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
@@ -500,7 +501,7 @@ export class MacroRenderer extends ShapeRenderer {
   public flatten: boolean
   private drawFrameBuffer: REGL.DrawCommand<
     REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
-    FrameBufferRendeAttachments
+    FrameBufferRenderAttachments
   >
   constructor(props: MacroRendererProps) {
     super(props)

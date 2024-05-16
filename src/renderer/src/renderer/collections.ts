@@ -129,7 +129,7 @@ interface FrameBufferRenderUniforms {
 }
 interface FrameBufferRendeAttributes {}
 
-export interface FrameBufferRendeAttachments {
+export interface FrameBufferRenderAttachments {
   qtyFeatures: number
   index: number
   polarity: number
@@ -150,7 +150,7 @@ interface TReglRenderers {
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
   drawFrameBuffer:
-    | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRendeAttachments>
+    | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
     | undefined
 }
 
@@ -449,7 +449,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
   ReglRenderers.drawFrameBuffer = regl<
     FrameBufferRenderUniforms,
     FrameBufferRendeAttributes,
-    FrameBufferRendeAttachments,
+    FrameBufferRenderAttachments,
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
@@ -501,10 +501,10 @@ export function initializeRenderers(regl: REGL.Regl): void {
       range: [0, 1]
     },
     uniforms: {
-      u_QtyFeatures: regl.prop<FrameBufferRendeAttachments, 'qtyFeatures'>('qtyFeatures'),
-      u_RenderTexture: regl.prop<FrameBufferRendeAttachments, 'renderTexture'>('renderTexture'),
-      u_Index: regl.prop<FrameBufferRendeAttachments, 'index'>('index'),
-      u_Polarity: regl.prop<FrameBufferRendeAttachments, 'polarity'>('polarity')
+      u_QtyFeatures: regl.prop<FrameBufferRenderAttachments, 'qtyFeatures'>('qtyFeatures'),
+      u_RenderTexture: regl.prop<FrameBufferRenderAttachments, 'renderTexture'>('renderTexture'),
+      u_Index: regl.prop<FrameBufferRenderAttachments, 'index'>('index'),
+      u_Polarity: regl.prop<FrameBufferRenderAttachments, 'polarity'>('polarity')
     }
   })
 }
