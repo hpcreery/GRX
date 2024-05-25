@@ -521,17 +521,17 @@ export class RenderEngineBackend {
     })
   }
 
-  public getTransform(): Partial<RenderTransform> {
-    return {
-      zoom: this.transform.zoom,
-      position: this.transform.position,
-      velocity: this.transform.velocity,
-      dragging: this.transform.dragging,
-      matrix: this.transform.matrix,
-      matrixInverse: this.transform.matrixInverse,
-      // update: this.transform.update
-    }
-  }
+  // public getTransform(): Partial<RenderTransform> {
+  //   return {
+  //     zoom: this.transform.zoom,
+  //     position: this.transform.position,
+  //     velocity: this.transform.velocity,
+  //     dragging: this.transform.dragging,
+  //     matrix: this.transform.matrix,
+  //     matrixInverse: this.transform.matrixInverse,
+  //     // update: this.transform.update
+  //   }
+  // }
 
   public setTransform(transform: Partial<RenderTransform>): void {
     Object.assign(this.transform, transform)
@@ -614,7 +614,7 @@ export class RenderEngineBackend {
     const screenWidth = this.viewBox.width
     const screenHeight = this.viewBox.height
     const screenAR = screenWidth / screenHeight
-    const unitToPx = (screenWidth/2) / 1 // px per unit
+    const unitToPx = (screenHeight/2) / 1 // px per unit
     const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
     const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
     const bbAR = bbWidth / bbHeight

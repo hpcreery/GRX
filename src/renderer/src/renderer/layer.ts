@@ -3,7 +3,7 @@ import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 // import onChange from 'on-change'
-import { Binary, Transform, Units, BoundingBox } from './types'
+import { Binary, Transform, Units, BoundingBox, FeatureTypeIdentifier } from './types'
 import {
   ArcAttachments,
   FrameBufferRenderAttachments,
@@ -150,7 +150,7 @@ export class ShapeRenderer {
 
     this.image = props.image
     this.indexImage()
-    // this.drawBoundingBoxes()
+    this.drawBoundingBoxes()
 
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
@@ -379,7 +379,6 @@ export class ShapeRenderer {
   }
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
-    // this.drawBoundingBoxes(context)
     if (this.shapeCollection.shaderAttachment.pads.length != 0)
       this.drawPads(this.shapeCollection.shaderAttachment.pads)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0)
@@ -389,6 +388,86 @@ export class ShapeRenderer {
     if (this.shapeCollection.shaderAttachment.surfaces.length != 0)
       this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
     this.drawSurfaceWithHoles(context)
+  }
+
+  public getBoundingBox(): BoundingBox {
+    let boundingBox: BoundingBox = {
+      min: vec2.fromValues(Infinity, Infinity),
+      max: vec2.fromValues(-Infinity, -Infinity)
+    }
+    for (const record of this.image) {
+      // TODO: move BB logic to each shape type
+      // if (record.type === 'surface') {
+      // if (record.type === FeatureTypeIdentifier.SURFACE) {
+      switch (record.type) {
+        case FeatureTypeIdentifier.SURFACE:
+          console.log('Shapes.Surface', record)
+          record.contours.forEach((contour) => {
+            contour.segments.forEach((segment) => {
+              if (segment.type === "linesegment") { // Shapes.Contour_Line_Segment.prototype.type
+                boundingBox.min[0] = Math.min(boundingBox.min[0], segment.x)
+                boundingBox.min[1] = Math.min(boundingBox.min[1], segment.y)
+                boundingBox.max[0] = Math.max(boundingBox.max[0], segment.x)
+                boundingBox.max[1] = Math.max(boundingBox.max[1], segment.y)
+              } else if (segment.type === "arcsegment") { // Shapes.Contour_Arc_Segment.prototype.type
+                boundingBox.min[0] = Math.min(boundingBox.min[0], segment.x)
+                boundingBox.min[1] = Math.min(boundingBox.min[1], segment.y)
+                boundingBox.max[0] = Math.max(boundingBox.max[0], segment.x)
+                boundingBox.max[1] = Math.max(boundingBox.max[1], segment.y)
+              }
+            })
+          })
+          break
+        case FeatureTypeIdentifier.LINE:
+          boundingBox.min[0] = Math.min(boundingBox.min[0], record.xs)
+          boundingBox.min[1] = Math.min(boundingBox.min[1], record.ys)
+          boundingBox.max[0] = Math.max(boundingBox.max[0], record.xs)
+          boundingBox.max[1] = Math.max(boundingBox.max[1], record.ys)
+
+          boundingBox.min[0] = Math.min(boundingBox.min[0], record.xe)
+          boundingBox.min[1] = Math.min(boundingBox.min[1], record.ye)
+          boundingBox.max[0] = Math.max(boundingBox.max[0], record.xe)
+          boundingBox.max[1] = Math.max(boundingBox.max[1], record.ye)
+          break
+        case FeatureTypeIdentifier.ARC:
+          // not actual bounding box, but good enough for now
+          boundingBox.min[0] = Math.min(boundingBox.min[0], record.xs)
+          boundingBox.min[1] = Math.min(boundingBox.min[1], record.ys)
+          boundingBox.max[0] = Math.max(boundingBox.max[0], record.xs)
+          boundingBox.max[1] = Math.max(boundingBox.max[1], record.ys)
+
+          boundingBox.min[0] = Math.min(boundingBox.min[0], record.xe)
+          boundingBox.min[1] = Math.min(boundingBox.min[1], record.ye)
+          boundingBox.max[0] = Math.max(boundingBox.max[0], record.xe)
+          boundingBox.max[1] = Math.max(boundingBox.max[1], record.ye)
+
+          boundingBox.min[0] = Math.min(boundingBox.min[0], record.xc)
+          boundingBox.min[1] = Math.min(boundingBox.min[1], record.yc)
+          boundingBox.max[0] = Math.max(boundingBox.max[0], record.xc)
+          boundingBox.max[1] = Math.max(boundingBox.max[1], record.yc)
+          break
+      }
+    }
+    return boundingBox
+  }
+
+  private drawBoundingBoxes() {
+    const { min, max } = this.getBoundingBox()
+    const polyline: Shapes.PolyLine = new Shapes.PolyLine({
+      xs: min[0],
+      ys: min[1],
+      cornertype: 'miter',
+      pathtype: 'square',
+      polarity: 1,
+      width: 0.05,
+    }).addLines([
+      {x : min[0], y: min[1]},
+      {x : max[0], y: min[1]},
+      {x : max[0], y: max[1]},
+      {x : min[0], y: max[1]},
+      {x : min[0], y: min[1]},
+    ])
+    this.image.push(polyline)
   }
 }
 
@@ -479,55 +558,6 @@ export default class LayerRenderer extends ShapeRenderer {
         u_Color: () => this.color
       }
     })
-  }
-
-  public getBoundingBox(): BoundingBox {
-    let boundingBox: BoundingBox = {
-      min: vec2.fromValues(Infinity, Infinity),
-      max: vec2.fromValues(-Infinity, -Infinity)
-    }
-    for (const record of this.image) {
-      // TODO: move BB logic to each shape type
-      if (record.type === 'surface') {
-        console.log('Shapes.Surface', record)
-        record.contours.forEach((contour) => {
-          contour.segments.forEach((segment) => {
-            if (segment.type === "linesegment") { // Shapes.Contour_Line_Segment.prototype.type
-              boundingBox.min[0] = Math.min(boundingBox.min[0], segment.x)
-              boundingBox.min[1] = Math.min(boundingBox.min[1], segment.y)
-              boundingBox.max[0] = Math.max(boundingBox.max[0], segment.x)
-              boundingBox.max[1] = Math.max(boundingBox.max[1], segment.y)
-            } else if (segment.type === "arcsegment") { // Shapes.Contour_Arc_Segment.prototype.type
-              boundingBox.min[0] = Math.min(boundingBox.min[0], segment.x)
-              boundingBox.min[1] = Math.min(boundingBox.min[1], segment.y)
-              boundingBox.max[0] = Math.max(boundingBox.max[0], segment.x)
-              boundingBox.max[1] = Math.max(boundingBox.max[1], segment.y)
-            }
-          })
-        })
-
-      }
-    }
-    return boundingBox
-  }
-
-  private drawBoundingBoxes() {
-    const { min, max } = this.getBoundingBox()
-    const polyline: Shapes.PolyLine = new Shapes.PolyLine({
-      xs: min[0],
-      ys: min[1],
-      cornertype: 'miter',
-      pathtype: 'square',
-      polarity: 1,
-      width: 0.05,
-    }).addLines([
-      {x : min[0], y: min[1]},
-      {x : max[0], y: min[1]},
-      {x : max[0], y: max[1]},
-      {x : min[0], y: max[1]},
-      {x : min[0], y: min[1]},
-    ])
-    this.image.push(polyline)
   }
 
   public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
