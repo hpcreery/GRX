@@ -287,7 +287,7 @@ export class ShapeRenderer {
     })
     return this
   }
-  
+
   public indexImage(): this {
     this.image.map((record, i) => (record.index = i))
     return this
@@ -482,7 +482,7 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 
   public getBoundingBox(): BoundingBox {
-    let boundingBox: BoundingBox = {
+    const boundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity)
     }
@@ -511,7 +511,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  private drawBoundingBoxes() {
+  private drawBoundingBoxes(): void {
     const { min, max } = this.getBoundingBox()
     const polyline: Shapes.PolyLine = new Shapes.PolyLine({
       xs: min[0],

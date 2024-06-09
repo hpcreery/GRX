@@ -411,13 +411,14 @@ export class RenderEngineBackend {
     this.toss()
   }
 
-  public zoom(x: number, y: number, s: number): void {
-    if (this.settings.ZOOM_TO_CURSOR) {
-      this.zoomAtPoint(x, y, s)
-    } else {
-      this.zoomAtPoint(x, x, s)
-    }
-  }
+  // public zoom(x: number, y: number, s: number): void {
+  //   this.zoomAtPoint(x, y, s)
+  //   // if (this.settings.ZOOM_TO_CURSOR) {
+  //     // this.zoomAtPoint(x, y, s)
+  //   // } else {
+  //   //   this.zoomAtPoint(x, x, s)
+  //   // }
+  // }
 
   public isDragging(): boolean {
     return this.transform.dragging
@@ -444,6 +445,7 @@ export class RenderEngineBackend {
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
+    console.log('zooming to point', x, y,':', s)
     const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
@@ -462,6 +464,12 @@ export class RenderEngineBackend {
     this.transform.position[1] = y - (y - this.transform.position[1]) * zoomBy
     this.transform.update()
   }
+
+  // public centerAtPoint(x: number, y: number): void {
+  //   this.transform.position[0] = x
+  //   this.transform.position[1] = y
+  //   this.transform.update()
+  // }
 
   public async getWorldPosition(x: number, y: number): Promise<[number, number]> {
     const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
@@ -596,37 +604,159 @@ export class RenderEngineBackend {
     }
   }
 
+  // public async zoomFit(): Promise<void> {
+  //   const boundingBox: BoundingBox = {
+  //     min: vec2.fromValues(Infinity, Infinity),
+  //     max: vec2.fromValues(-Infinity, -Infinity)
+  //   }
+  //   for (const layer of this.layers) {
+  //     // TODO: make for loop parallel
+  //     const layerBoundingBox = await layer.getBoundingBox()
+  //     console.log(layerBoundingBox)
+  //     boundingBox.min[0] = Math.min(boundingBox.min[0], layerBoundingBox.min[0])
+  //     boundingBox.min[1] = Math.min(boundingBox.min[1], layerBoundingBox.min[1])
+  //     boundingBox.max[0] = Math.max(boundingBox.max[0], layerBoundingBox.max[0])
+  //     boundingBox.max[1] = Math.max(boundingBox.max[1], layerBoundingBox.max[1])
+  //   }
+
+  //   const screenWidth = this.viewBox.width
+  //   const screenHeight = this.viewBox.height
+  //   const screenAR = screenWidth / screenHeight
+  //   const unitToPx = (screenWidth/2) / 1 // px per unit
+  //   const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
+  //   const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
+  //   const bbAR = bbWidth / bbHeight
+  //   if (bbAR > screenAR) {
+  //     const zoom = screenWidth / bbWidth
+  //     const offsetY = (screenHeight - bbHeight*zoom) / 2
+  //     this.setTransform({ position: [0, offsetY], zoom})
+  //   } else {
+  //     const zoom = screenHeight / bbHeight
+  //     const offsetX = (screenWidth - bbWidth*zoom) / 2
+  //     this.setTransform({ position: [offsetX, 0], zoom})
+  //   }
+  // }
+
   public async zoomFit(): Promise<void> {
-    let boundingBox: BoundingBox = {
-      min: vec2.fromValues(Infinity, Infinity),
-      max: vec2.fromValues(-Infinity, -Infinity)
-    }
-    for (const layer of this.layers) {
-      // TODO: make for loop parallel
-      const layerBoundingBox = await layer.getBoundingBox()
-      console.log(layerBoundingBox)
-      boundingBox.min[0] = Math.min(boundingBox.min[0], layerBoundingBox.min[0])
-      boundingBox.min[1] = Math.min(boundingBox.min[1], layerBoundingBox.min[1])
-      boundingBox.max[0] = Math.max(boundingBox.max[0], layerBoundingBox.max[0])
-      boundingBox.max[1] = Math.max(boundingBox.max[1], layerBoundingBox.max[1])
+    // const boundingBox: BoundingBox = {
+    //   min: vec2.fromValues(Infinity, Infinity),
+    //   max: vec2.fromValues(-Infinity, -Infinity)
+    // }
+    // for (const layer of this.layers) {
+    //   // TODO: make for loop parallel
+    //   const layerBoundingBox = await layer.getBoundingBox()
+    //   console.log(layerBoundingBox)
+    //   boundingBox.min[0] = Math.min(boundingBox.min[0], layerBoundingBox.min[0])
+    //   boundingBox.min[1] = Math.min(boundingBox.min[1], layerBoundingBox.min[1])
+    //   boundingBox.max[0] = Math.max(boundingBox.max[0], layerBoundingBox.max[0])
+    //   boundingBox.max[1] = Math.max(boundingBox.max[1], layerBoundingBox.max[1])
+    // }
+
+    const origTransform = Object.assign({}, this.transform)
+
+
+    this.transform.zoom = 0.01
+    // this.transform.position = [500, 500]
+    this.transform.position = [this.viewBox.width/2, this.viewBox.height/2]
+    this.transform.velocity = [0, 0]
+    this.transform.dragging = false
+    this.transform.update()
+
+    // console.log(this.viewBox)
+
+    const iterate = (): void => {
+      const boundingBox: BoundingBox = {
+        min: vec2.fromValues(Infinity, Infinity),
+        max: vec2.fromValues(-Infinity, -Infinity)
+      }
+      this.world((context) => {
+        for (const layer of this.layers) {
+          if (!layer.visible) continue
+          layer.render(context)
+          // this.renderToScreen({ frameBuffer: layer.framebuffer })
+          const data = this.regl.read({
+            framebuffer: layer.framebuffer,
+            x: 0,
+            y: 0,
+            width: this.viewBox.width,
+            height: this.viewBox.height
+          })
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i] > 0) {
+              const x = (i / 4) % this.viewBox.width
+              const y = Math.floor((i / 4) / this.viewBox.width)
+              boundingBox.min[0] = Math.min(boundingBox.min[0], x)
+              boundingBox.min[1] = Math.min(boundingBox.min[1], y)
+              boundingBox.max[0] = Math.max(boundingBox.max[0], x)
+              boundingBox.max[1] = Math.max(boundingBox.max[1], y)
+            }
+          }
+        }
+        if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) {
+          return
+        }
+        console.log('boundingBox', boundingBox.min, boundingBox.max)
+        console.log('newposition', this.transform.position)
+        if ((boundingBox.min[0] < 1 && boundingBox.max[0] === this.viewBox.width-1) || (boundingBox.min[1] < 1 && boundingBox.max[1] === this.viewBox.height-1)) {
+          return
+        }
+        if (this.transform.zoom < this.settings.MAX_ZOOM) {
+          // this.transform.position = [boundingBox.min[0], this.viewBox.height - boundingBox.max[1]]
+          const screenCenter = vec2.fromValues(this.viewBox.width/2, this.viewBox.height/2)
+          const center = vec2.fromValues((boundingBox.min[0] + boundingBox.max[0])/2, this.viewBox.height - ((boundingBox.min[1] + boundingBox.max[1])/2))
+          const diff = vec2.create()
+          vec2.sub(diff, screenCenter,center)
+          // const zoom = this.viewBox.width / (boundingBox.max[0] - boundingBox.min[0])
+          // this.transform.zoom = zoom
+          const newpos = vec2.create()
+          vec2.sub(newpos, this.transform.position, vec2.mul(diff, diff, [-1,-1]))
+          // vec2.add(newpos, this.transform.position, diff)
+          const { zoom } = this.transform
+          const newZoom = zoom + 10.3 / (1000 / zoom / 2)
+          const zoomBy = newZoom / zoom
+          this.transform.position[0] = diff[0] - (diff[0] - this.transform.position[0]) * zoomBy
+          this.transform.position[1] = diff[1] - (diff[1] - this.transform.position[1]) * zoomBy
+          this.transform.zoom = newZoom
+
+          // this.transform.position = diff
+          // vec2.sub(this.transform.position, [this.viewBox.width/2, this.viewBox.height/2], [(boundingBox.min[0] + boundingBox.max[0])/2, this.viewBox.height - ((boundingBox.min[1] + boundingBox.max[1])/2)])
+          // this.transform.zoom *= 1.2
+          // this.zoomAtPoint((boundingBox.min[0] + boundingBox.max[0])/2,  this.viewBox.height - ((boundingBox.min[1] + boundingBox.max[1])/2), -10/this.transform.zoom)
+          // const center = [(boundingBox.min[0] + boundingBox.max[0])/2, this.viewBox.height - ((boundingBox.min[1] + boundingBox.max[1])/2)]
+          // this.transform.position[0] = center[0] - (center[0] - this.transform.position[0])
+          // this.transform.position[1] = center[1] - (center[1] - this.transform.position[1])
+          // this.transform.update()
+          // this.transform.zoom *= 1.3
+          this.transform.update()
+          setTimeout(iterate, 100)
+        }
+      })
     }
 
-    const screenWidth = this.viewBox.width
-    const screenHeight = this.viewBox.height
-    const screenAR = screenWidth / screenHeight
-    const unitToPx = (screenWidth/2) / 1 // px per unit
-    const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
-    const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
-    const bbAR = bbWidth / bbHeight
-    if (bbAR > screenAR) {
-      const zoom = screenWidth / bbWidth
-      const offsetY = (screenHeight - bbHeight*zoom) / 2
-      this.setTransform({ position: [0, offsetY], zoom})
-    } else {
-      const zoom = screenHeight / bbHeight
-      const offsetX = (screenWidth - bbWidth*zoom) / 2
-      this.setTransform({ position: [offsetX, 0], zoom})
-    }
+    iterate()
+
+    // console.log(boundingBox)
+
+    // Object.assign(this.transform, origTransform)
+    this.render(true)
+
+
+    // const screenWidth = this.viewBox.width
+    // const screenHeight = this.viewBox.height
+    // const screenAR = screenWidth / screenHeight
+    // const unitToPx = (screenWidth/2) / 1 // px per unit
+    // const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
+    // const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
+    // const bbAR = bbWidth / bbHeight
+    // if (bbAR > screenAR) {
+    //   const zoom = screenWidth / bbWidth
+    //   const offsetY = (screenHeight - bbHeight*zoom) / 2
+    //   this.setTransform({ position: [0, offsetY], zoom})
+    // } else {
+    //   const zoom = screenHeight / bbHeight
+    //   const offsetX = (screenWidth - bbWidth*zoom) / 2
+    //   this.setTransform({ position: [offsetX, 0], zoom})
+    // }
   }
 
   public render(force = false): void {
@@ -637,6 +767,7 @@ export class RenderEngineBackend {
       depth: 1
     })
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
+    // console.log(this.transform)
     this.world((context) => {
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {

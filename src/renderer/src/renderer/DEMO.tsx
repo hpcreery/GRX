@@ -1447,12 +1447,17 @@ function REGLApp(): JSX.Element {
     Engine.addLayer({
       name: 'surface test',
       image: SURFACE_ARC_TEST,
-      units: 'mm'
+      units: 'mm',
+      transform: {
+        datum: [10, 10],
+        scale: 1,
+        rotation: 0,
+      }
     })
 
     // find all shapes in engine and loop through the shapes
     // Engine.backend.then(backend => backend.getLayers().then(layers => {
-      
+
     //   for (const layer of layers) {
     //     console.log(layer)
     //     // backend.setLayerProps(layer.uid, { visible: false })
