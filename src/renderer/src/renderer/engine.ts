@@ -230,6 +230,8 @@ export class RenderEngineBackend {
     }
 
     const gl = offscreenCanvas.getContext('webgl', attributes)!
+    console.log('WEBGL VERSION', gl.getParameter(gl.VERSION))
+    // console.log(gl)
 
     this.regl = REGL({
       gl,
