@@ -9,7 +9,7 @@ uniform float u_QtyFeatures;
 uniform float u_PixelSize;
 uniform float u_IndexOffset;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -87,7 +87,7 @@ void main() {
 
 
 
-  if (u_QueryMode) {
+  if (u_QueryMode == 1.0) {
     vec2 New_Vertex_Position = vec2(0.0, 0.0);
     if (a_Vertex_Position.x == 0.0)
       New_Vertex_Position = vec2(1.0, -1.0);

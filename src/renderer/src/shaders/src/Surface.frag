@@ -11,7 +11,7 @@ uniform bool u_OutlineMode;
 uniform vec3 u_Color;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // SURFACE UNIFORMS
 uniform sampler2D u_Vertices;
@@ -142,7 +142,7 @@ void main() {
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = surfaceDistMain(FragCoord);
 
-  if (u_QueryMode) {
+  if (u_QueryMode == 1.0) {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     // float PointerDist = surfaceDistMain(PointerPosition);
 

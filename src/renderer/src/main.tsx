@@ -70,8 +70,8 @@ function Main(): JSX.Element | null {
       >
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Notifications />
-          {/* <App /> */}
-          <REGLApp />
+          <App />
+          {/* <REGLApp /> */}
         </ContextMenuProvider>
       </MantineProvider>
     </ConfigEditorProvider.Provider>

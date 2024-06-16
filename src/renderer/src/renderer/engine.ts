@@ -21,7 +21,7 @@ interface WorldUniforms {
   u_OutlineMode: boolean
   u_PointerPosition: vec2
   u_PointerDown: boolean
-  u_QueryMode: boolean
+  u_QueryMode: number
 }
 
 interface WorldAttributes {
@@ -108,6 +108,12 @@ export interface LayerInfo {
 export const EngineEvents = {
   RENDER: 'RENDER',
   LAYERS_CHANGED: 'LAYERS_CHANGED',
+} as const
+
+export const QueryMode = {
+  NONE: 0,
+  DISTANCE: 1,
+  BOUNDING_BOX: 2,
 } as const
 
 export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents]
@@ -268,7 +274,7 @@ export class RenderEngineBackend {
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
-        u_QueryMode: false,
+        u_QueryMode: QueryMode.NONE,
       },
 
       attributes: {
@@ -413,15 +419,6 @@ export class RenderEngineBackend {
     this.toss()
   }
 
-  // public zoom(x: number, y: number, s: number): void {
-  //   this.zoomAtPoint(x, y, s)
-  //   // if (this.settings.ZOOM_TO_CURSOR) {
-  //     // this.zoomAtPoint(x, y, s)
-  //   // } else {
-  //   //   this.zoomAtPoint(x, x, s)
-  //   // }
-  // }
-
   public isDragging(): boolean {
     return this.transform.dragging
   }
@@ -447,7 +444,6 @@ export class RenderEngineBackend {
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
-    console.log('zooming to point', x, y,':', s)
     const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
@@ -585,12 +581,13 @@ export class RenderEngineBackend {
     }
   }
 
-  public query(pointer: vec2): (QueryFeature)[] {
+  public select(pointer: vec2): (QueryFeature)[] {
     const features: (QueryFeature)[] = []
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const layerFeatures = layer.query(pointer, context)
+        const layerFeatures = layer.select(pointer, context)
+        layer.boundingBox(pointer, context)
         for (const feature of layerFeatures) {
           features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
         }
@@ -640,6 +637,7 @@ export class RenderEngineBackend {
   // }
 
   public async zoomFit(): Promise<void> {
+    return
     // const boundingBox: BoundingBox = {
     //   min: vec2.fromValues(Infinity, Infinity),
     //   max: vec2.fromValues(-Infinity, -Infinity)
@@ -769,7 +767,6 @@ export class RenderEngineBackend {
       depth: 1
     })
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
-    // console.log(this.transform)
     this.world((context) => {
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {

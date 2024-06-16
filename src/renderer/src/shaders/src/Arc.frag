@@ -22,7 +22,7 @@ uniform vec3 u_Color;
 uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -172,7 +172,7 @@ void main() {
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = arcDistance(FragCoord);
 
-  if (u_QueryMode) {
+  if (u_QueryMode == 1.0) {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     float PointerDist = arcDistance(PointerPosition);
 

@@ -21,7 +21,7 @@ uniform vec3 u_Color;
 uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON VARYTINGS
 varying float v_Aspect;
@@ -35,6 +35,8 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror_X;
 varying float v_Mirror_Y;
+
+varying vec4 v_BoundingBox;
 
 //////////////////////////////
 // Rotation and translation //
@@ -102,7 +104,7 @@ void main() {
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
 
-  if (u_QueryMode) {
+  if (u_QueryMode == 1.0) {
     vec2 PointerPosition = transfromLocation(u_PointerPosition);
     float PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
 
@@ -116,6 +118,9 @@ void main() {
     } else {
       discard;
     }
+  } else if (u_QueryMode == 2.0) {
+    gl_FragColor = v_BoundingBox;
+    return;
   }
 
   #pragma glslify: import('../modules/Debug.glsl')

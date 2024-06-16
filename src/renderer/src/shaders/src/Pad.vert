@@ -18,7 +18,7 @@ uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -47,6 +47,8 @@ varying float v_Rotation;
 varying float v_Mirror_X;
 varying float v_Mirror_Y;
 
+varying vec4 v_BoundingBox;
+
 //////////////////////////////
 // Rotation and translation //
 //////////////////////////////
@@ -72,12 +74,9 @@ mat2 rotateCW(float angle) {
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-
-void main() {
+vec2 transform(vec2 vertex) {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   float pixel_size = u_PixelSize / scale;
-
-  float Aspect = u_Resolution.y / u_Resolution.x;
 
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(a_SymNum));
@@ -95,7 +94,7 @@ void main() {
 
   Size += vec2(pixel_size, pixel_size);
 
-  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
+  vec2 SizedPosition = vertex * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCCW(radians(a_Rotation));
   if (a_Mirror_X == 1.0) {
     RotatedPostion.x = -RotatedPostion.x;
@@ -105,6 +104,11 @@ void main() {
   }
   vec2 OffsetPosition = RotatedPostion + a_Location;
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
+  return FinalPosition.xy;
+}
+
+void main() {
+  float Aspect = u_Resolution.y / u_Resolution.x;
 
   v_Aspect = Aspect;
   v_Index = a_Index;
@@ -115,12 +119,17 @@ void main() {
   v_Mirror_Y = a_Mirror_Y;
   v_Polarity = a_Polarity;
   v_ResizeFactor = a_ResizeFactor;
+  v_BoundingBox = vec4(0,0,0,0);
 
+  vec2 FinalPosition = transform(a_Vertex_Position);
 
-  if (u_QueryMode) {
-    FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+  if (u_QueryMode == 1.0) {
+    FinalPosition = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+  } else if (u_QueryMode == 2.0) {
+    FinalPosition = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    v_BoundingBox = vec4(transform(vec2(0,0)), transform(vec2(1,1)) - transform(vec2(-1,-1))) / 1.0;
   }
 
   float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  gl_Position = vec4(FinalPosition, Index, 1);
 }

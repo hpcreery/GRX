@@ -202,7 +202,7 @@ export class RenderEngine {
       } else if (this.pointerSettings.mode === 'select') {
         this.CONTAINER.style.cursor = 'wait'
         const [x, y] = this.getMouseCanvasCoordinates(e)
-        const features = await backend.query([x, y])
+        const features = await backend.select([x, y])
         console.log('features', features)
         this.pointer.dispatchEvent(
           new CustomEvent<QueryFeature[]>(PointerEvents.POINTER_SELECT, {

@@ -21,7 +21,7 @@ uniform vec3 u_Color;
 uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -144,7 +144,7 @@ void main() {
 
 
 
-  if (u_QueryMode) {
+  if (u_QueryMode == 1.0) {
     vec2 PointerCoord = transfromLocation(u_PointerPosition);
     float PointerDist = lineDistMain(PointerCoord);
 

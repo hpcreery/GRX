@@ -19,7 +19,7 @@ import {
   StepAndRepeatCollection
 } from './collections'
 
-import { WorldContext } from './engine'
+import { WorldContext, QueryMode } from './engine'
 import { getUnitsConversion, UID } from './utils'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
@@ -37,7 +37,7 @@ interface CommonUniforms {
 }
 
 interface QueryUniforms {
-  u_QueryMode: boolean
+  u_QueryMode: number
   u_Color: vec3
   u_PointerPosition: vec2
 }
@@ -48,8 +48,10 @@ export interface NestedFeature {
   features: Shapes.Shape[]
 }
 
+type QueryModes = typeof QueryMode[keyof typeof QueryMode]
 interface QueryProps {
   pointer: vec2
+  mode: QueryModes
 }
 
 // interface ShapeTransform extends Transform {
@@ -229,8 +231,8 @@ export class ShapeRenderer {
       REGL.DefaultContext & WorldContext
     >({
       uniforms: {
-        u_QueryMode: true,
         u_Color: [1,1,1],
+        u_QueryMode: this.regl.prop<QueryProps, 'mode'>('mode'),
         u_PointerPosition: this.regl.prop<QueryProps, 'pointer'>('pointer')
       }
     })
@@ -293,36 +295,9 @@ export class ShapeRenderer {
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
-    const origMatrix = mat3.clone(context.transformMatrix)
-    this.transform.update(context.transformMatrix)
-    context.transformMatrix = this.transform.matrix
-    if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
-      console.error('Too many features to query')
-      return []
-    }
-    this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth: context.viewportWidth
-    const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
-    this.regl.clear({
-      framebuffer: this.queryFrameBuffer,
-      color: [0, 0, 0, 0],
-      depth: 0
-    })
-    this.queryFrameBuffer.use(() => {
-      this.commonConfig(() => {
-        this.queryConfig({pointer}, () => {
-          this.drawPrimitives(context)
-        })
-      })
-    })
-    const data = this.regl.read({
-      framebuffer: this.queryFrameBuffer,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height
-    })
+
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+    const data = this.query(1, pointer, context)
     const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
     for (let i = 0; i < data.length; i+=4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
@@ -335,7 +310,7 @@ export class ShapeRenderer {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        macro.renderer.query(pointer, context).forEach((feature) => {
+        macro.renderer.select(pointer, context).forEach((feature) => {
           const newFeature = Object.assign({}, feature)
           const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
           // @ts-ignore - intentionally removing symbol
@@ -347,7 +322,7 @@ export class ShapeRenderer {
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      stepAndRepeat.query(pointer, context).forEach((feature) => {
+      stepAndRepeat.select(pointer, context).forEach((feature) => {
         const newFeature = Object.assign({}, feature)
         const newFeatureParent = Object.assign({}, stepAndRepeat.record) as Omit<Shapes.StepAndRepeat, 'shapes'>
         // @ts-ignore - intentionally removing shapes
@@ -356,8 +331,67 @@ export class ShapeRenderer {
         features.push(newFeature)
       })
     })
-    context.transformMatrix = origMatrix
     return features
+  }
+
+  /**
+   * ### Query the shapes in the layer
+   * Careful using anything but a basic number for the mode parameter
+  */
+  public query(mode: QueryModes, pointer: vec2, context: REGL.DefaultContext & WorldContext): Uint8Array {
+    const origMatrix = mat3.clone(context.transformMatrix)
+    this.transform.update(context.transformMatrix)
+    context.transformMatrix = this.transform.matrix
+    if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
+      console.error('Too many features to query')
+      return new Uint8Array(0)
+    }
+    this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth: context.viewportWidth
+    const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
+    this.regl.clear({
+      framebuffer: this.queryFrameBuffer,
+      color: [0, 0, 0, 0],
+      depth: 0
+    })
+    this.queryFrameBuffer.use(() => {
+      this.commonConfig(() => {
+          this.queryConfig({pointer, mode}, () => {
+          this.drawPrimitives(context)
+        })
+      })
+    })
+    const data = this.regl.read({
+      framebuffer: this.queryFrameBuffer,
+      x: 0,
+      y: 0,
+      width: width,
+      height: height
+    })
+    context.transformMatrix = origMatrix
+    return data
+  }
+
+  public boundingBox(pointer: vec2, context: REGL.DefaultContext & WorldContext): {center: vec2, size: vec2} {
+    const data = this.query(2, pointer, context)
+    // const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
+    const box = {center: vec2.create(), size: vec2.create()}
+    const min = vec2.fromValues(Infinity, Infinity)
+    const max = vec2.fromValues(-Infinity, -Infinity)
+    for (let i = 0; i < data.length; i+=4) {
+      const value = data.slice(i, i + 4)//.reduce((acc, val) => acc + val, 0)
+      // value = (x,y)[center] , (w,h)[shape size]
+      if (value.reduce((acc, val) => acc + val, 0) == 0) continue
+      console.log('value: ', value[0], value[1], value[2], value[3])
+      min[0] = Math.min(min[0], value[0] - value[2] / 2)
+      min[1] = Math.min(min[1], value[1] - value[3] / 2)
+      max[0] = Math.max(max[0], value[0] + value[2] / 2)
+      max[1] = Math.max(max[1], value[1] + value[3] / 2)
+    }
+    vec2.divide(min, min, [25.5, 25.5])
+    vec2.divide(max, max, [25.5, 25.5])
+    console.log(min, max)
+    return box
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
@@ -530,9 +564,9 @@ export default class LayerRenderer extends ShapeRenderer {
     this.image.push(polyline)
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
-    const features = super.query(pointer, context)
+    const features = super.select(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
     return features
   }
@@ -636,13 +670,13 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
     const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.query(pointer, context)
+      const nestedFeatures = super.select(pointer, context)
       if (nestedFeatures.length > 0) features.push(...nestedFeatures)
     })
     return features

@@ -17,7 +17,7 @@ uniform mat3 u_Transform;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
-uniform bool u_QueryMode;
+uniform float u_QueryMode;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -69,11 +69,9 @@ mat2 rotateCW(float angle) {
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-void main() {
+vec2 transform(vec2 vertex) {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   float pixel_size = u_PixelSize / scale;
-
-  float Aspect = u_Resolution.y / u_Resolution.x;
 
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
@@ -115,10 +113,15 @@ void main() {
   Size = vec2(Width, Sagitta) + (ShapeSize * 2.0);
   // Size += vec2(pixel_size * 4.0, pixel_size * 4.0);
 
-  vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) + vec2(0.0, (a_Clockwise == 0.0 ? 1.0 : -1.0) * (radius - (Sagitta / 2.0)));
+  vec2 SizedPosition = vertex * (Size / 2.0) + vec2(0.0, (a_Clockwise == 0.0 ? 1.0 : -1.0) * (radius - (Sagitta / 2.0)));
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);
   vec2 OffsetPosition = RotatedPostion + a_Center_Location;
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition, 1);
+  return FinalPosition.xy;
+}
+
+void main() {
+  float Aspect = u_Resolution.y / u_Resolution.x;
 
   v_Aspect = Aspect;
   v_Index = a_Index;
@@ -129,11 +132,12 @@ void main() {
   v_Center_Location = a_Center_Location;
   v_Clockwise = a_Clockwise;
 
+  vec2 FinalPosition = transform(a_Vertex_Position);
 
-  if (u_QueryMode) {
-    FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+  if (u_QueryMode == 1.0) {
+    FinalPosition = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }
 
   float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  gl_Position = vec4(FinalPosition, Index, 1);
 }
