@@ -8,7 +8,8 @@ import plugins from './plugins'
 import type { parser } from './plugins'
 import type { Units } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
-import GridVert from '../shaders/src/Grid.vert'
+import LoadingFrag from '../shaders/src/Loading/Winding.frag'
+import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
 import { UID } from './utils'
 
 interface WorldProps { }
@@ -22,6 +23,7 @@ interface WorldUniforms {
   u_PointerPosition: vec2
   u_PointerDown: boolean
   u_QueryMode: boolean
+  u_Time: number
 }
 
 interface WorldAttributes {
@@ -213,6 +215,8 @@ export class RenderEngineBackend {
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
+  public loadingFrame: LoadingAnimation
+
   public parsers: {
     [key: string]: parser
   } = {}
@@ -269,6 +273,7 @@ export class RenderEngineBackend {
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
+        u_Time: (context: REGL.DefaultContext) => context.time
       },
 
       attributes: {
@@ -292,9 +297,11 @@ export class RenderEngineBackend {
       offset: 0
     })
 
+    this.loadingFrame = new LoadingAnimation(this.regl, this.world)
+
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
       {
-        vert: GridVert,
+        vert: FullScreenQuad,
         frag: GridFrag,
         uniforms: {
           u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
@@ -583,11 +590,15 @@ export class RenderEngineBackend {
 
   public render(force = false): void {
     if (!this.dirty && !force) return
+    // if (this.loadingFrame.enabled.value) {
+    //   this.loadingFrame.enabled.value = false
+    // }
     this.dirty = false
     this.regl.clear({
       color: [0,0,0,0],
       depth: 1
     })
+
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
       if (this.grid.enabled) this.renderGrid(this.grid)
@@ -633,4 +644,54 @@ export function logMatrix(matrix: mat3): void {
     `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
     }`
   )
+}
+
+export interface LoadingRenderProps {
+}
+
+interface LoadingRenderUniforms {
+}
+
+class LoadingAnimation {
+  private regl: REGL.Regl
+  private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
+  private tick: REGL.Cancellable = { cancel: () => { } }
+  private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+
+  public enabled = new Proxy({ value: false }, {
+    set: (target, name, value): boolean => {
+      target[name] = value
+      if (value) {
+        this.start()
+      } else {
+        this.stop()
+      }
+      return true
+    }
+  })
+
+
+  constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
+    this.regl = regl
+    this.world = world
+    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>(
+      {
+        vert: FullScreenQuad,
+        frag: LoadingFrag,
+      },
+    )
+    // this.enabled.value = true
+  }
+
+  private start(): void {
+    this.tick = this.regl.frame(() => {
+      this.world(() => {
+        this.renderLoading()
+      })
+    })
+  }
+
+  private stop(): void {
+    this.tick.cancel()
+  }
 }
