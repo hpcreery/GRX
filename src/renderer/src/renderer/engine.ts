@@ -588,11 +588,17 @@ export class RenderEngineBackend {
     }
   }
 
+  public startLoading(): void {
+    this.loadingFrame.start()
+  }
+
+  public stopLoading(): void {
+    this.loadingFrame.stop()
+  }
+
   public render(force = false): void {
     if (!this.dirty && !force) return
-    // if (this.loadingFrame.enabled.value) {
-    //   this.loadingFrame.enabled.value = false
-    // }
+    if (this.loadingFrame.enabled) return
     this.dirty = false
     this.regl.clear({
       color: [0,0,0,0],
@@ -658,18 +664,11 @@ class LoadingAnimation {
   private tick: REGL.Cancellable = { cancel: () => { } }
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
-  public enabled = new Proxy({ value: false }, {
-    set: (target, name, value): boolean => {
-      target[name] = value
-      if (value) {
-        this.start()
-      } else {
-        this.stop()
-      }
-      return true
-    }
-  })
+  private _enabled = false
 
+  get enabled(): boolean {
+    return this._enabled
+  }
 
   constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
     this.regl = regl
@@ -680,10 +679,11 @@ class LoadingAnimation {
         frag: LoadingFrag,
       },
     )
-    // this.enabled.value = true
+    // this.start()
   }
 
-  private start(): void {
+  public start(): void {
+    this._enabled = true
     this.tick = this.regl.frame(() => {
       this.world(() => {
         this.renderLoading()
@@ -691,7 +691,8 @@ class LoadingAnimation {
     })
   }
 
-  private stop(): void {
+  public stop(): void {
+    this._enabled = false
     this.tick.cancel()
   }
 }
