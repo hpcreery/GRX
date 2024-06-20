@@ -391,7 +391,7 @@ export class ShapeRenderer {
   }
 
   public getBoundingBox(): BoundingBox {
-    let contextBoundingBox: BoundingBox = {
+    const contextBoundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity)
     }
@@ -426,8 +426,8 @@ export class ShapeRenderer {
         max: vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
       }
     } else if (record.type === FeatureTypeIdentifier.SURFACE) {
-      let min: vec2 = vec2.fromValues(Infinity, Infinity)
-      let max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+      const min: vec2 = vec2.fromValues(Infinity, Infinity)
+      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
       for (const contour of record.contours) {
         const { xs, ys } = contour
         vec2.min(min, min, vec2.fromValues(xs, ys))
@@ -440,8 +440,8 @@ export class ShapeRenderer {
       }
       return {min, max}
     } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
-      let min: vec2 = vec2.fromValues(Infinity, Infinity)
-      let max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+      const min: vec2 = vec2.fromValues(Infinity, Infinity)
+      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
       for (const line of record.lines) {
         const { x, y } = line
         vec2.min(min, min, vec2.fromValues(x, y))
@@ -449,8 +449,8 @@ export class ShapeRenderer {
       }
       return {min, max}
     } else if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-      let min: vec2 = vec2.fromValues(Infinity, Infinity)
-      let max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+      const min: vec2 = vec2.fromValues(Infinity, Infinity)
+      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
       for (const shape of record.shapes) {
         const { min: shape_min, max: shape_max } = this.getBoundingBoxOfRecord(shape)
         vec2.min(min, min, shape_min)
