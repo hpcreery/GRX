@@ -1,5 +1,6 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes } from './types'
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, BoundingBox } from './types'
 import * as Symbols from './symbols'
+import { vec2 } from 'gl-matrix'
 
 
 export const PAD_RECORD_PARAMETERS = [
@@ -237,7 +238,7 @@ type TContourArcSegment = {
   clockwise: number;
 }
 
-export class Contour_Arc_Segment implements TContourArcSegment {
+export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARCSEGMENT
   /**
    * end x
@@ -265,7 +266,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
   }
 }
 
-export class Contour_Line_Segment implements TContourLineSegment {
+export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINESEGMENT
   /**
    * end x
@@ -281,7 +282,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
   }
 }
 
-export class Contour implements TContour {
+export class Contour implements TContour, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole
@@ -327,7 +328,7 @@ export class Contour implements TContour {
   }
 }
 
-export class Surface implements TSurface {
+export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.SURFACE
   public index = 0
   /**
@@ -366,7 +367,8 @@ export class Surface implements TSurface {
   }
 }
 
-export class PolyLine {
+// TODO: PolyLine type
+export class PolyLine implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.POLYLINE
   public index = 0
   /**
@@ -425,7 +427,7 @@ export class PolyLine {
   }
 }
 
-export class StepAndRepeat {
+export class StepAndRepeat implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
