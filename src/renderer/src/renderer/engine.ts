@@ -613,6 +613,7 @@ export class RenderEngineBackend {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity)
     }
+    this.transform.velocity = vec2.fromValues(0, 0)
     for (const layer of this.layers) {
       // TODO: make for loop parallel
       const layerBoundingBox = await layer.getBoundingBox()
@@ -637,6 +638,8 @@ export class RenderEngineBackend {
     const originPx = vec2.scale(vec2.create(), origin, unitToPx)
     const bbTopLeft = vec2.fromValues(boundingBox.min[0]*unitToPx, boundingBox.max[1]*unitToPx)
     const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
+    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity) return
+    if (boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
     if (bbAR > screenAR) {
       const zoom = screenWidthPx / bbWidthPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
@@ -650,6 +653,8 @@ export class RenderEngineBackend {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom})
     }
+  }
+
   public startLoading(): void {
     this.loadingFrame.start()
   }
@@ -678,7 +683,6 @@ export class RenderEngineBackend {
     })
 
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
-    // this.renderMeasurements()
     this.world((context) => {
       this.simpleMeasurement.render()
       if (this.grid.enabled) this.renderGrid(this.grid)

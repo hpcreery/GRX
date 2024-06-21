@@ -73,13 +73,6 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconClick size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Zoom Fit">
-              <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
-                renderEngine.zoomFit()
-              }}>
-                <IconZoomReset size={18} />
-              </ActionIcon>
-            </Tooltip>
             <Tooltip openDelay={500} withArrow label="Measure">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'measure' ? "outline" : 'default'} onClick={(): void => {
                 renderEngine.pointerSettings.mode = 'measure'
@@ -90,6 +83,13 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
             </Tooltip>
           </ActionIcon.Group>
           <ActionIcon.Group>
+            <Tooltip openDelay={500} withArrow label="Zoom Fit">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
+                renderEngine.zoomFit()
+              }}>
+                <IconZoomReset size={18} />
+              </ActionIcon>
+            </Tooltip>
             <Tooltip openDelay={500} withArrow label="Outline Mode">
               <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
                 renderEngine.settings.OUTLINE_MODE = !outlineMode
