@@ -597,7 +597,7 @@ export class RenderEngineBackend {
   }
 
   public async zoomFit(): Promise<void> {
-    let boundingBox: BoundingBox = {
+    const boundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity)
     }
