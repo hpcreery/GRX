@@ -3,7 +3,7 @@ import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
 // import onChange from 'on-change'
-import { Binary, Transform, Units, BoundingBox, FeatureTypeIdentifier } from './types'
+import { Binary, Transform, Units, BoundingBox } from './types'
 import {
   ArcAttachments,
   FrameBufferRenderAttachments,
@@ -230,7 +230,7 @@ export class ShapeRenderer {
     >({
       uniforms: {
         u_QueryMode: true,
-        u_Color: [1,1,1],
+        u_Color: [1, 1, 1],
         u_PointerPosition: this.regl.prop<QueryProps, 'pointer'>('pointer')
       }
     })
@@ -287,13 +287,13 @@ export class ShapeRenderer {
     })
     return this
   }
-  
+
   public indexImage(): this {
     this.image.map((record, i) => (record.index = i))
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -302,7 +302,7 @@ export class ShapeRenderer {
       return []
     }
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth: context.viewportWidth
+    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
     this.regl.clear({
       framebuffer: this.queryFrameBuffer,
@@ -311,7 +311,7 @@ export class ShapeRenderer {
     })
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
-        this.queryConfig({pointer}, () => {
+        this.queryConfig({ pointer }, () => {
           this.drawPrimitives(context)
         })
       })
@@ -323,12 +323,12 @@ export class ShapeRenderer {
       width: width,
       height: height
     })
-    const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
-    for (let i = 0; i < data.length; i+=4) {
+    const features: (Shapes.Shape & { parent: Shapes.Parents[] })[] = []
+    for (let i = 0; i < data.length; i += 4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
-        const feat = Object.assign({}, this.image[i/4])
-        features.push(Object.assign(feat, {parent: []}))
+        const feat = Object.assign({}, this.image[i / 4])
+        features.push(Object.assign(feat, { parent: [] }))
       }
     }
     this.macroCollection.macros.forEach((macro) => {
@@ -340,7 +340,7 @@ export class ShapeRenderer {
           const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
           // @ts-ignore - intentionally removing symbol
           delete newFeatureParent.symbol
-          newFeatureParent.symbol = {id: record.symbol.id}
+          newFeatureParent.symbol = { id: record.symbol.id }
           newFeature.parent.push(record)
           features.push(newFeature)
         })
@@ -396,107 +396,31 @@ export class ShapeRenderer {
       max: vec2.fromValues(-Infinity, -Infinity)
     }
     for (const record of this.image) {
-        const feature_bb = this.getBoundingBoxOfRecord(record)
-        contextBoundingBox.min = vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
-        contextBoundingBox.max = vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
+      const feature_bb = Shapes.getBoundingBoxOfShape(record)
+      vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
+      vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
     }
     return contextBoundingBox
   }
 
-  private getBoundingBoxOfRecord(record: Shapes.Shape | Shapes.Contour_Arc_Segment | Shapes.Contour_Line_Segment): BoundingBox {
-    // return feature.bounding_box()
-
-    // record.type: "pad" | "line" | "arc" | "surface" | "polyline" | "step_and_repeat"
-    if (record.type === FeatureTypeIdentifier.PAD) {
-      // TODO: get symbol bounding box
-      return {
-        min: vec2.fromValues(record.x, record.y),
-        max: vec2.fromValues(record.x, record.y)
-      }
-    } else if (record.type === FeatureTypeIdentifier.LINE) {
-      // TODO: get symbol bounding box
-      return {
-        min: vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye)),
-        max: vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
-      }
-    } else if (record.type === FeatureTypeIdentifier.ARC) {
-      // TODO: better arc bounding box
-      return {
-        min: vec2.fromValues(Math.min(record.xs, record.xe, record.xc), Math.min(record.ys, record.ye, record.yc)),
-        max: vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
-      }
-    } else if (record.type === FeatureTypeIdentifier.SURFACE) {
-      const min: vec2 = vec2.fromValues(Infinity, Infinity)
-      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-      for (const contour of record.contours) {
-        const { xs, ys } = contour
-        vec2.min(min, min, vec2.fromValues(xs, ys))
-        vec2.max(max, max, vec2.fromValues(xs, ys))
-        for (const segment of contour.segments) {
-          const { min: segment_min, max: segment_max } = this.getBoundingBoxOfRecord(segment)
-          vec2.min(min, min, segment_min)
-          vec2.max(max, max, segment_max)
-        }
-      }
-      return {min, max}
-    } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
-      const min: vec2 = vec2.fromValues(Infinity, Infinity)
-      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-      for (const line of record.lines) {
-        const { x, y } = line
-        vec2.min(min, min, vec2.fromValues(x, y))
-        vec2.max(max, max, vec2.fromValues(x, y))
-      }
-      return {min, max}
-    } else if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-      const min: vec2 = vec2.fromValues(Infinity, Infinity)
-      const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-      for (const shape of record.shapes) {
-        const { min: shape_min, max: shape_max } = this.getBoundingBoxOfRecord(shape)
-        vec2.min(min, min, shape_min)
-        vec2.max(max, max, shape_max)
-      }
-      for (const repeat of record.repeats) {
-        const { datum } = repeat
-        vec2.min(min, min, datum)
-        vec2.max(max, max, datum)
-      }
-      return {min, max}
-    } else if (record.type === FeatureTypeIdentifier.LINESEGMENT) {
-      // TODO: better line segment bounding box
-      return {
-        min: vec2.fromValues(record.x, record.y),
-        max: vec2.fromValues(record.x, record.y)
-      }
-    } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
-      // TODO: better arc segment bounding box
-      return {
-        min: vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc)),
-        max: vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
-      }
-    } else {
-      throw new Error('Unknown record type')
-    }
-  }
-
-  private drawBoundingBoxes() {
-    const { min, max } = this.getBoundingBox()
-    const polyline: Shapes.PolyLine = new Shapes.PolyLine({
-      xs: min[0],
-      ys: min[1],
-      cornertype: 'miter',
-      pathtype: 'square',
-      polarity: 1,
-      width: 0.001,
-    }).addLines([
-      {x : min[0], y: min[1]},
-      {x : max[0], y: min[1]},
-      {x : max[0], y: max[1]},
-      {x : min[0], y: max[1]},
-      {x : min[0], y: min[1]},
-    ])
-    this.image.push(polyline)
-  }
+  // private drawBoundingBoxes(): void {
+  //   const { min, max } = this.getBoundingBox()
+  //   const polyline: Shapes.PolyLine = new Shapes.PolyLine({
+  //     xs: min[0],
+  //     ys: min[1],
+  //     cornertype: 'miter',
+  //     pathtype: 'square',
+  //     polarity: 1,
+  //     width: 0.001,
+  //   }).addLines([
+  //     {x : min[0], y: min[1]},
+  //     {x : max[0], y: min[1]},
+  //     {x : max[0], y: max[1]},
+  //     {x : min[0], y: max[1]},
+  //     {x : min[0], y: min[1]},
+  //   ])
+  //   this.image.push(polyline)
+  // }
 }
 
 
@@ -588,7 +512,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
     const features = super.query(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
@@ -694,8 +618,8 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & {parent: Shapes.Parents[]})[] {
-    const features: (Shapes.Shape & {parent: Shapes.Parents[]})[] = []
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
+    const features: (Shapes.Shape & { parent: Shapes.Parents[] })[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length

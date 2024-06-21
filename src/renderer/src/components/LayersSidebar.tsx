@@ -101,7 +101,6 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     renderEngine.backend.then(async (backend) => {
       const reg = async (): Promise<void> => {
         renderEngine.zoomFit()
-        renderEngine.render(true)
         return registerLayers(await backend.getLayers(), await backend.layersQueue)
       }
       reg()

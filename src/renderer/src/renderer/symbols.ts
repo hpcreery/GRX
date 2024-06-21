@@ -1,6 +1,7 @@
-import { ISymbolRecord, FeatureTypeIdentifier, toMap } from './types'
-import { Shape } from './shapes'
+import { ISymbolRecord, FeatureTypeIdentifier, toMap, BoundingBox } from './types'
+import { Shape, getBoundingBoxOfShape } from './shapes'
 import { malloc } from './utils'
+import { vec2 } from 'gl-matrix'
 
 export const STANDARD_SYMBOLS = [
   'Null',
@@ -391,3 +392,24 @@ export class FlatMacroSymbol extends MacroSymbol {
 }
 
 export type Symbol = StandardSymbol | MacroSymbol
+
+export function getBoundingBoxOfSymbol(symbol: StandardSymbol | MacroSymbol): BoundingBox {
+  const min: vec2 = vec2.fromValues(0, 0)
+  const max: vec2 = vec2.fromValues(0, 0)
+  if (symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+    const { width, height, outer_dia, line_length } = symbol
+    const max_width = Math.max(width, outer_dia, line_length)
+    const max_height = Math.max(height, outer_dia, line_length)
+    vec2.set(min, -max_width / 2, -max_height / 2)
+    vec2.set(max, max_width / 2, max_height / 2)
+  } else {
+    for (const shape of symbol.shapes) {
+      const shapeBoundingBox = getBoundingBoxOfShape(shape)
+      const shapeMin = shapeBoundingBox.min
+      const shapeMax = shapeBoundingBox.max
+      vec2.min(min, min, shapeMin)
+      vec2.max(max, max, shapeMax)
+    }
+  }
+  return {min, max}
+}

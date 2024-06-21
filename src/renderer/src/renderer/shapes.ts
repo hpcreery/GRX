@@ -1,5 +1,6 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection } from './types'
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from './types'
 import * as Symbols from './symbols'
+import { vec2 } from 'gl-matrix'
 
 
 export const PAD_RECORD_PARAMETERS = [
@@ -240,7 +241,7 @@ type TContourArcSegment = {
   clockwise: number;
 }
 
-export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
+export class Contour_Arc_Segment implements TContourArcSegment {
   public readonly type = FeatureTypeIdentifier.ARCSEGMENT
   /**
    * end x
@@ -268,7 +269,7 @@ export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   }
 }
 
-export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
+export class Contour_Line_Segment implements TContourLineSegment {
   public readonly type = FeatureTypeIdentifier.LINESEGMENT
   /**
    * end x
@@ -284,7 +285,7 @@ export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   }
 }
 
-export class Contour implements TContour, IPlotRecord {
+export class Contour implements TContour {
   public readonly type = FeatureTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole
@@ -462,3 +463,92 @@ export interface TruncatedPad extends Omit<Pad, 'symbol'> {
 export type Primitive = Pad | Line | Arc
 export type Shape = Primitive | Surface | PolyLine | StepAndRepeat
 export type Parents = Omit<StepAndRepeat, 'shapes'> | TruncatedPad
+
+export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
+
+  if (record.type === FeatureTypeIdentifier.PAD) {
+    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+    const min = vec2.fromValues(record.x, record.y)
+    const max = vec2.fromValues(record.x, record.y)
+    vec2.add(min, symbolbox.min, min)
+    vec2.add(max, symbolbox.max, max)
+    return {
+      min,
+      max
+    }
+  } else if (record.type === FeatureTypeIdentifier.LINE) {
+    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+    const min = vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye))
+    const max = vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
+    vec2.add(min, symbolbox.min, min)
+    vec2.add(max, symbolbox.max, max)
+    return {
+      min,
+      max
+    }
+  } else if (record.type === FeatureTypeIdentifier.ARC) {
+    // TODO: better arc bounding box
+    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+    const min = vec2.fromValues(Math.min(record.xs, record.xe, record.xc), Math.min(record.ys, record.ye, record.yc))
+    const max = vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
+    vec2.add(min, symbolbox.min, min)
+    vec2.add(max, symbolbox.max, max)
+    return {
+      min,
+      max
+    }
+  } else if (record.type === FeatureTypeIdentifier.SURFACE) {
+    const min: vec2 = vec2.fromValues(Infinity, Infinity)
+    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+    for (const contour of record.contours) {
+      const { xs, ys } = contour
+      vec2.min(min, min, vec2.fromValues(xs, ys))
+      vec2.max(max, max, vec2.fromValues(xs, ys))
+      for (const segment of contour.segments) {
+        const { min: segment_min, max: segment_max } = getBoundingBoxOfShape(segment)
+        vec2.min(min, min, segment_min)
+        vec2.max(max, max, segment_max)
+      }
+    }
+    return {min, max}
+  } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
+    const min: vec2 = vec2.fromValues(Infinity, Infinity)
+    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+    for (const line of record.lines) {
+      const { x, y } = line
+      vec2.min(min, min, vec2.fromValues(x, y))
+      vec2.max(max, max, vec2.fromValues(x, y))
+    }
+    vec2.add(min, min, vec2.fromValues(-record.width, -record.width))
+    vec2.add(max, max, vec2.fromValues(record.width, record.width))
+    return {min, max}
+  } else if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
+    const min: vec2 = vec2.fromValues(Infinity, Infinity)
+    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
+    for (const shape of record.shapes) {
+      const { min: shape_min, max: shape_max } = getBoundingBoxOfShape(shape)
+      vec2.min(min, min, shape_min)
+      vec2.max(max, max, shape_max)
+    }
+    for (const repeat of record.repeats) {
+      const { datum } = repeat
+      vec2.min(min, min, datum)
+      vec2.max(max, max, datum)
+    }
+    return {min, max}
+  } else if (record.type === FeatureTypeIdentifier.LINESEGMENT) {
+    // TODO: better line segment bounding box
+    return {
+      min: vec2.fromValues(record.x, record.y),
+      max: vec2.fromValues(record.x, record.y)
+    }
+  } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
+    // TODO: better arc segment bounding box
+    return {
+      min: vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc)),
+      max: vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
+    }
+  } else {
+    throw new Error('Unknown record type')
+  }
+}

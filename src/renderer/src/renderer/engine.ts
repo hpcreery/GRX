@@ -653,6 +653,7 @@ export class RenderEngineBackend {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom})
     }
+    this.render(true)
   }
 
   public startLoading(): void {

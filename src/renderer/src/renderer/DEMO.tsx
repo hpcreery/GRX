@@ -16,12 +16,12 @@ import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?url'
 // import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
 // import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
 // import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
-import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+// import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
 // import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
-import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
-import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
+// import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
+// import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
 
 import { LayerRendererProps } from './layer'
 
@@ -1456,7 +1456,7 @@ function REGLApp(): JSX.Element {
 
     // find all shapes in engine and loop through the shapes
     // Engine.backend.then(backend => backend.getLayers().then(layers => {
-      
+
     //   for (const layer of layers) {
     //     console.log(layer)
     //     // backend.setLayerProps(layer.uid, { visible: false })
@@ -1532,7 +1532,7 @@ function REGLApp(): JSX.Element {
             }}>
             Zoom Fit
           </Button>
-          
+
           <Button
             onClick={async (): Promise<void> => {
               (await engine.backend).setTransform({ position: [0, 0], zoom: 16})
