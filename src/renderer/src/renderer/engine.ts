@@ -8,8 +8,10 @@ import plugins from './plugins'
 import type { parser } from './plugins'
 import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
-import GridVert from '../shaders/src/Grid.vert'
+import LoadingFrag from '../shaders/src/Loading/Winding.frag'
+import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
 import { UID } from './utils'
+import { SimpleMeasurement } from './measurements'
 
 interface WorldProps { }
 
@@ -22,6 +24,7 @@ interface WorldUniforms {
   u_PointerPosition: vec2
   u_PointerDown: boolean
   u_QueryMode: boolean
+  u_Time: number
 }
 
 interface WorldAttributes {
@@ -213,6 +216,9 @@ export class RenderEngineBackend {
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
+  public loadingFrame: LoadingAnimation
+  public simpleMeasurement: SimpleMeasurement
+
   public parsers: {
     [key: string]: parser
   } = {}
@@ -230,6 +236,8 @@ export class RenderEngineBackend {
     }
 
     const gl = offscreenCanvas.getContext('webgl', attributes)!
+    console.log('WEBGL VERSION', gl.getParameter(gl.VERSION))
+    // console.log(gl)
 
     this.regl = REGL({
       gl,
@@ -267,6 +275,7 @@ export class RenderEngineBackend {
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
+        u_Time: (context: REGL.DefaultContext) => context.time
       },
 
       attributes: {
@@ -290,9 +299,12 @@ export class RenderEngineBackend {
       offset: 0
     })
 
+    this.loadingFrame = new LoadingAnimation(this.regl, this.world)
+    this.simpleMeasurement = new SimpleMeasurement(this.regl)
+
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
       {
-        vert: GridVert,
+        vert: FullScreenQuad,
         frag: GridFrag,
         uniforms: {
           u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
@@ -638,21 +650,56 @@ export class RenderEngineBackend {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom})
     }
+  public startLoading(): void {
+    this.loadingFrame.start()
+  }
+
+  public stopLoading(): void {
+    this.loadingFrame.stop()
+  }
+
+  public addMeasurement(point: vec2): void {
+    this.simpleMeasurement.addMeasurement(point)
+    this.renderFast()
+  }
+
+  public updateMeasurement(point: vec2): void {
+    this.simpleMeasurement.updateMeasurement(point)
+    this.renderFast()
   }
 
   public render(force = false): void {
     if (!this.dirty && !force) return
+    if (this.loadingFrame.enabled) return
     this.dirty = false
     this.regl.clear({
       color: [0,0,0,0],
       depth: 1
     })
+
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
+    // this.renderMeasurements()
     this.world((context) => {
+      this.simpleMeasurement.render()
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.render(context)
+        this.renderToScreen({ frameBuffer: layer.framebuffer })
+      }
+    })
+  }
+
+  public renderFast(): void {
+    this.regl.clear({
+      color: [0,0,0,0],
+      depth: 1
+    })
+    this.world(() => {
+      this.simpleMeasurement.render()
+      if (this.grid.enabled) this.renderGrid(this.grid)
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
         this.renderToScreen({ frameBuffer: layer.framebuffer })
       }
     })
@@ -692,4 +739,49 @@ export function logMatrix(matrix: mat3): void {
     `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
     }`
   )
+}
+
+export interface LoadingRenderProps {
+}
+
+interface LoadingRenderUniforms {
+}
+
+class LoadingAnimation {
+  private regl: REGL.Regl
+  private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
+  private tick: REGL.Cancellable = { cancel: () => { } }
+  private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+
+  private _enabled = false
+
+  get enabled(): boolean {
+    return this._enabled
+  }
+
+  constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
+    this.regl = regl
+    this.world = world
+    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>(
+      {
+        vert: FullScreenQuad,
+        frag: LoadingFrag,
+      },
+    )
+    // this.start()
+  }
+
+  public start(): void {
+    this._enabled = true
+    this.tick = this.regl.frame(() => {
+      this.world(() => {
+        this.renderLoading()
+      })
+    })
+  }
+
+  public stop(): void {
+    this._enabled = false
+    this.tick.cancel()
+  }
 }

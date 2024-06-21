@@ -21,11 +21,14 @@ export type FeatureTypeIdentifiers = typeof FeatureTypeIdentifier[keyof typeof F
 
 export interface IPlotRecord {
   type: FeatureTypeIdentifiers
+  attributes: AttributeCollection
 }
 
 export interface ISymbolRecord {
   type: FeatureTypeIdentifiers
 }
+
+export type AttributeCollection = { [key: string]: string | undefined }
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }

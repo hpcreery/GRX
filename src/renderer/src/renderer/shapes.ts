@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes } from './types'
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection } from './types'
 import * as Symbols from './symbols'
 
 
@@ -55,6 +55,7 @@ export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
 export class Pad implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.PAD
+  public attributes: AttributeCollection = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -109,6 +110,7 @@ export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
 export class Line implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINE
+  public attributes: AttributeCollection = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -157,6 +159,7 @@ export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
 export class Arc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARC
+  public attributes: AttributeCollection = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -329,6 +332,7 @@ export class Contour implements TContour, IPlotRecord {
 
 export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.SURFACE
+  public attributes: AttributeCollection = {}
   public index = 0
   /**
    * 1 == positive, 0 == negative
@@ -366,9 +370,9 @@ export class Surface implements TSurface, IPlotRecord {
   }
 }
 
-// TODO: PolyLine type
 export class PolyLine implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.POLYLINE
+  public attributes: AttributeCollection = {}
   public index = 0
   /**
    * line width
@@ -428,6 +432,7 @@ export class PolyLine implements IPlotRecord {
 
 export class StepAndRepeat implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
+  public attributes: AttributeCollection = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */

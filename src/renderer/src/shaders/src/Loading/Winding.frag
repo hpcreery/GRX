@@ -2,22 +2,22 @@
 // Complex functions taken from https://www.shadertoy.com/view/fsyXzz
 
 precision highp float;
-uniform vec3      iResolution;           // viewport resolution (in pixels)
-uniform float     iTime;                 // shader playback time (in seconds)
-uniform float     iTimeDelta;            // render time (in seconds)
-uniform float     iFrameRate;            // shader frame rate
-uniform int       iFrame;                // shader playback frame
-uniform float     iChannelTime[4];       // channel playback time (in seconds)
-uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)
-uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
-uniform sampler2D iChannel0;             // input channel. XX = 2D/Cube
-uniform vec4      iDate;                 // (year, month, day, time in seconds)
+uniform vec2      u_Resolution;           // viewport resolution (in pixels)
+uniform float     u_Time;                 // shader playback time (in seconds)
+// uniform float     iTimeDelta;            // render time (in seconds)
+// uniform float     iFrameRate;            // shader frame rate
+// uniform int       iFrame;                // shader playback frame
+// uniform float     iChannelTime[4];       // channel playback time (in seconds)
+// uniform vec3      iChannelResolution[4]; // channel resolution (in pixels)
+// uniform vec4      iMouse;                // mouse pixel coords. xy: current (if MLB down), zw: click
+// uniform sampler2D iChannel0;             // input channel. XX = 2D/Cube
+// uniform vec4      iDate;                 // (year, month, day, time in seconds)
 
 
 #define PI 3.141592653589
-#define T ( iTime * 3. )
-#define M iMouse.xy
-#define R iResolution.xy
+// #define T ( u_Time * 3. )
+// #define M iMouse.xy
+// #define R u_Resolution.xy
 
 vec2 as_polar( vec2 z ) {
 	return vec2(
@@ -53,8 +53,10 @@ float line( vec2 z, vec2 p, vec2 q ) {
 
 void mainImage( out vec4 O, in vec2 I ) {
 	// Normalized pixel coordinates (from -1 to 1)
-	vec2 z = I / R * 2.0 - 1.0;
-	z.x *= R.x / R.y;
+	vec2 z = I / u_Resolution.xy * 2.0 - 1.0;
+	z.x *= u_Resolution.x / u_Resolution.y;
+
+  float T = u_Time * 2.;
 
 	vec2 p = vec2( -.5, 0.5 * cos( T ) );
 	vec2 q = vec2( .5, 0.5 * sin( T ) );
@@ -64,4 +66,8 @@ void mainImage( out vec4 O, in vec2 I ) {
 
 	// Output to screen
 	O = vec4( vec3( 1. - pow( ( line( z, p, q ) + line( z, p2, q2 ) ), 1. ) ) * vec3( 0.8, 0.8, 0.8 ), 1.0 );
+}
+
+void main() {
+  mainImage( gl_FragColor, gl_FragCoord.xy );
 }

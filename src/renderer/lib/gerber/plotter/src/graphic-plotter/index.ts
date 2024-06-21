@@ -25,7 +25,7 @@ import {
 import type { Tool } from '../tool-store'
 import type { Location, Point } from '../location-store'
 
-import { FeatureTypeIdentifyer } from '@src/renderer/types'
+import { FeatureTypeIdentifier } from '@src/renderer/types'
 
 export const CW = 'cw'
 export const CCW = 'ccw'
@@ -161,7 +161,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
     // ** LINE AND ARC
     if (nextGraphicType === SEGMENT && !this._regionMode) {
-      if (tool?.type !== FeatureTypeIdentifyer.MACRO_DEFINITION) {
+      if (tool?.type !== FeatureTypeIdentifier.MACRO_DEFINITION) {
         if (this._arcDirection === undefined) {
           graphics.push(new Shapes.Line({
             symbol: tool,
@@ -194,12 +194,20 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
       }
     }
 
+    if (this._stepRepeats.length > 0) {
+      this._stepRepeats[0].shapes.push(...graphics)
+      graphics.length = 0
+    }
+    if (node.type === STEP_REPEAT_CLOSE || node.type === DONE) {
+      if (this._stepRepeats.length > 0) {
+        graphics.push(this._stepRepeats.shift()!)
+      }
+    }
     if (node.type === STEP_REPEAT_OPEN) {
-      if (location.stepRepeat.x <= 1 && location.stepRepeat.y <= 1 && location.stepRepeat.i === 0 && location.stepRepeat.j === 0) {
-        if (this._stepRepeats.length > 0) {
-          graphics.push(this._stepRepeats.shift()!)
-        }
-      } else {
+      if (this._stepRepeats.length > 0) {
+        graphics.push(this._stepRepeats.shift()!)
+      }
+      if (location.stepRepeat.x > 1 || location.stepRepeat.y > 1 || location.stepRepeat.i != 0 || location.stepRepeat.j != 0) {
         this._stepRepeats.unshift(new Shapes.StepAndRepeat({
           shapes: [],
           repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
@@ -212,15 +220,6 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
             }
           }),
         }))
-      }
-    }
-    if (this._stepRepeats.length > 0) {
-      this._stepRepeats[0].shapes.push(...graphics)
-      graphics.length = 0
-    }
-    if (node.type === STEP_REPEAT_CLOSE || node.type === DONE) {
-      if (this._stepRepeats.length > 0) {
-        graphics.push(this._stepRepeats.shift()!)
       }
     }
 

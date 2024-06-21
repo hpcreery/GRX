@@ -2,6 +2,7 @@ import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings } from './engine'
+import { vec2 } from 'gl-matrix'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -16,8 +17,8 @@ interface PointerCoordinates {
   y: number
 }
 
-interface PointerSettings {
-  mode: 'move' | 'select'
+export interface PointerSettings {
+  mode: 'move' | 'select' | 'measure'
 }
 
 export const PointerEvents = {
@@ -97,7 +98,6 @@ export class RenderEngine {
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
-  private prevPinchDiff = -1
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvas: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
@@ -209,7 +209,12 @@ export class RenderEngine {
           })
         )
         this.CONTAINER.style.cursor = 'crosshair'
+      } else if (this.pointerSettings.mode === 'measure') {
+        this.CONTAINER.style.cursor = 'crosshair'
+        const [x1, y1] = await this.getMouseWorldCoordinates(e)
+        backend.addMeasurement([x1, y1])
       }
+
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
@@ -218,9 +223,6 @@ export class RenderEngine {
         await backend.releaseViewport()
       }
       removePointerCache(e)
-      if (this.pointerCache.length < 2) {
-        this.prevPinchDiff = -1
-      }
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
@@ -228,9 +230,6 @@ export class RenderEngine {
         await backend.releaseViewport()
       }
       removePointerCache(e)
-      if (this.pointerCache.length < 2) {
-        this.prevPinchDiff = -1
-      }
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
@@ -238,31 +237,31 @@ export class RenderEngine {
         await backend.releaseViewport()
       }
       removePointerCache(e)
-      if (this.pointerCache.length < 2) {
-        this.prevPinchDiff = -1
-      }
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
+      if (this.pointerSettings.mode === 'measure') {
+        this.CONTAINER.style.cursor = 'crosshair'
+        const [x1, y1] = await this.getMouseWorldCoordinates(e)
+        backend.updateMeasurement([x1, y1])
+      }
+
       if (!(await backend.isDragging())) {
         await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
         return
       }
+
       if (this.pointerSettings.mode === 'move') {
-        // If two pointers are down, check for pinch gestures
-        if (this.pointerCache.length === 2) {
-          // Calculate the distance between the two pointers
-          const curPinchDiff = Math.hypot(
-            this.pointerCache[0].clientX - this.pointerCache[1].clientX,
-            this.pointerCache[0].clientY - this.pointerCache[1].clientY
-          )
-          if (this.prevPinchDiff < 0) {
-            this.prevPinchDiff = curPinchDiff
-          }
-          const zoomFactor = -(curPinchDiff - this.prevPinchDiff)
+        // If more than 2 pointers are down, check for pinch gestures
+        if (this.pointerCache.length >= 2) {
+          const p1 = this.pointerCache[0]
+          const p2 = this.pointerCache[1]
+          const startDistance = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
+          const endDistance = Math.hypot((p1.clientX + p1.movementX) - (p2.clientX + p2.movementX), (p1.clientY + p1.movementY) - (p2.clientY + p2.movementY));
+          const zoomFactor = (startDistance - endDistance) / this.pointerCache.length;
           const settings = await backend.settings
           const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
@@ -270,8 +269,7 @@ export class RenderEngine {
           } else {
             backend.zoomAtPoint(width / 2, height / 2, zoomFactor)
           }
-          // Cache the distance for the next move event
-          this.prevPinchDiff = curPinchDiff
+          backend.moveViewport(e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
           await backend.moveViewport(e.movementX, e.movementY)
         }

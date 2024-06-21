@@ -26,6 +26,7 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
 import GridSettings from './toolbar/GridSettings'
+import type { PointerSettings } from '@src/renderer'
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -36,7 +37,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
-  const [pointerMode, setPointerMode] = React.useState<'move' | 'select'>(renderEngine.pointerSettings.mode)
+  const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
 
 
   return (
@@ -79,8 +80,11 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconZoomReset size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Coming Soon!">
-              <ActionIcon size='lg' radius="sm" disabled variant="default" onClick={(): void => { }}>
+            <Tooltip openDelay={500} withArrow label="Measure">
+              <ActionIcon size='lg' radius="sm" variant={pointerMode == 'measure' ? "outline" : 'default'} onClick={(): void => {
+                renderEngine.pointerSettings.mode = 'measure'
+                setPointerMode('measure')
+               }}>
                 <IconRulerMeasure size={18} />
               </ActionIcon>
             </Tooltip>
