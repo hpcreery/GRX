@@ -2,6 +2,7 @@ import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings } from './engine'
+import { vec2 } from 'gl-matrix'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -16,8 +17,8 @@ interface PointerCoordinates {
   y: number
 }
 
-interface PointerSettings {
-  mode: 'move' | 'select'
+export interface PointerSettings {
+  mode: 'move' | 'select' | 'measure'
 }
 
 export const PointerEvents = {
@@ -203,7 +204,12 @@ export class RenderEngine {
           })
         )
         this.CONTAINER.style.cursor = 'crosshair'
+      } else if (this.pointerSettings.mode === 'measure') {
+        this.CONTAINER.style.cursor = 'crosshair'
+        const [x1, y1] = await this.getMouseWorldCoordinates(e)
+        backend.addMeasurement([x1, y1])
       }
+
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
@@ -232,10 +238,17 @@ export class RenderEngine {
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
+      if (this.pointerSettings.mode === 'measure') {
+        this.CONTAINER.style.cursor = 'crosshair'
+        const [x1, y1] = await this.getMouseWorldCoordinates(e)
+        backend.updateMeasurement([x1, y1])
+      }
+
       if (!(await backend.isDragging())) {
         await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
         return
       }
+
       if (this.pointerSettings.mode === 'move') {
         // If more than 2 pointers are down, check for pinch gestures
         if (this.pointerCache.length >= 2) {

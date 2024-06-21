@@ -11,6 +11,7 @@ import GridFrag from '../shaders/src/Grid.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
 import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
 import { UID } from './utils'
+import { SimpleMeasurement } from './measurements'
 
 interface WorldProps { }
 
@@ -216,6 +217,7 @@ export class RenderEngineBackend {
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
   public loadingFrame: LoadingAnimation
+  public simpleMeasurement: SimpleMeasurement
 
   public parsers: {
     [key: string]: parser
@@ -298,6 +300,7 @@ export class RenderEngineBackend {
     })
 
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
+    this.simpleMeasurement = new SimpleMeasurement(this.regl)
 
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
       {
@@ -596,6 +599,16 @@ export class RenderEngineBackend {
     this.loadingFrame.stop()
   }
 
+  public addMeasurement(point: vec2): void {
+    this.simpleMeasurement.addMeasurement(point)
+    this.renderFast()
+  }
+
+  public updateMeasurement(point: vec2): void {
+    this.simpleMeasurement.updateMeasurement(point)
+    this.renderFast()
+  }
+
   public render(force = false): void {
     if (!this.dirty && !force) return
     if (this.loadingFrame.enabled) return
@@ -606,11 +619,28 @@ export class RenderEngineBackend {
     })
 
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
+    // this.renderMeasurements()
     this.world((context) => {
+      this.simpleMeasurement.render()
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {
         if (!layer.visible) continue
         layer.render(context)
+        this.renderToScreen({ frameBuffer: layer.framebuffer })
+      }
+    })
+  }
+
+  public renderFast(): void {
+    this.regl.clear({
+      color: [0,0,0,0],
+      depth: 1
+    })
+    this.world(() => {
+      this.simpleMeasurement.render()
+      if (this.grid.enabled) this.renderGrid(this.grid)
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
         this.renderToScreen({ frameBuffer: layer.framebuffer })
       }
     })
