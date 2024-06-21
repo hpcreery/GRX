@@ -1,10 +1,10 @@
 import ReactDOM from 'react-dom/client'
-import App from './App'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import { MantineProvider, createTheme } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
+import App from './App'
 import REGLApp from './renderer/DEMO'
 import { Units } from './renderer/types'
 
@@ -70,8 +70,8 @@ function Main(): JSX.Element | null {
       >
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Notifications />
-          {/* <App /> */}
-          <REGLApp />
+          <App />
+          {/* <REGLApp /> */}
         </ContextMenuProvider>
       </MantineProvider>
     </ConfigEditorProvider.Provider>

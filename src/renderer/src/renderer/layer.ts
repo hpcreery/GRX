@@ -150,7 +150,7 @@ export class ShapeRenderer {
 
     this.image = props.image
     this.indexImage()
-    this.drawBoundingBoxes()
+    // this.drawBoundingBoxes()
 
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
@@ -416,8 +416,8 @@ export class ShapeRenderer {
     } else if (record.type === FeatureTypeIdentifier.LINE) {
       // TODO: get symbol bounding box
       return {
-        min: vec2.fromValues(record.xs, record.ys),
-        max: vec2.fromValues(record.xe, record.ye)
+        min: vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye)),
+        max: vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
       }
     } else if (record.type === FeatureTypeIdentifier.ARC) {
       // TODO: better arc bounding box
@@ -487,7 +487,7 @@ export class ShapeRenderer {
       cornertype: 'miter',
       pathtype: 'square',
       polarity: 1,
-      width: 0.05,
+      width: 0.001,
     }).addLines([
       {x : min[0], y: min[1]},
       {x : max[0], y: min[1]},

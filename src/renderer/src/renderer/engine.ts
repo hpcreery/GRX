@@ -604,28 +604,39 @@ export class RenderEngineBackend {
     for (const layer of this.layers) {
       // TODO: make for loop parallel
       const layerBoundingBox = await layer.getBoundingBox()
-      console.log(layerBoundingBox)
-      boundingBox.min[0] = Math.min(boundingBox.min[0], layerBoundingBox.min[0])
-      boundingBox.min[1] = Math.min(boundingBox.min[1], layerBoundingBox.min[1])
-      boundingBox.max[0] = Math.max(boundingBox.max[0], layerBoundingBox.max[0])
-      boundingBox.max[1] = Math.max(boundingBox.max[1], layerBoundingBox.max[1])
+      boundingBox.min = vec2.min(boundingBox.min, boundingBox.min, layerBoundingBox.min)
+      boundingBox.max = vec2.max(boundingBox.max, boundingBox.max, layerBoundingBox.max)
     }
+    // console.log('Bounding Box:', boundingBox)
 
-    const screenWidth = this.viewBox.width
-    const screenHeight = this.viewBox.height
-    const screenAR = screenWidth / screenHeight
-    const unitToPx = (screenHeight/2) / 1 // px per unit
-    const bbWidth = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
-    const bbHeight = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
-    const bbAR = bbWidth / bbHeight
+    const screenWidthPx = this.viewBox.width
+    const screenHeightPx = this.viewBox.height
+    const screenAR = screenWidthPx / screenHeightPx
+    const unitToPx = (screenHeightPx/2) / 1 // px per unit
+    const bbWidthPx = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
+    const bbHeightPx = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
+    const bbAR = bbWidthPx / bbHeightPx
+    // console.log('Screen Width, Height:', screenWidthPx, screenHeightPx)
+    // console.log('Screen AR:', screenAR)
+    // console.log('BB Width, Height:', bbWidthPx, bbHeightPx)
+    // console.log('BB AR:', bbAR)
+    // zooming zooms to canvas -1,-1
+    const origin = vec2.fromValues(-1, 1)
+    const originPx = vec2.scale(vec2.create(), origin, unitToPx)
+    const bbTopLeft = vec2.fromValues(boundingBox.min[0]*unitToPx, boundingBox.max[1]*unitToPx)
+    const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
     if (bbAR > screenAR) {
-      const zoom = screenWidth / bbWidth
-      const offsetY = (screenHeight - bbHeight*zoom) / 2
-      this.setTransform({ position: [0, offsetY], zoom})
+      const zoom = screenWidthPx / bbWidthPx
+      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
+      const offsetX = bbTopLeftToOriginScaled[0]
+      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx/2 - bbHeightPx*zoom/ 2
+      this.setTransform({ position: [offsetX, offsetY], zoom})
     } else {
-      const zoom = screenHeight / bbHeight
-      const offsetX = (screenWidth - bbWidth*zoom) / 2
-      this.setTransform({ position: [offsetX, 0], zoom})
+      const zoom = screenHeightPx / bbHeightPx
+      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
+      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx/2 - bbWidthPx*zoom / 2
+      const offsetY = -bbTopLeftToOriginScaled[1]
+      this.setTransform({ position: [offsetX, offsetY], zoom})
     }
   }
 

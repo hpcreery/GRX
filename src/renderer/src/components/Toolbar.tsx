@@ -12,7 +12,8 @@ import {
   IconCube,
   // IconGridDots,
   IconGrid4x4,
-  IconClick
+  IconClick,
+  IconZoomReset
 } from '@tabler/icons-react'
 // import chroma from 'chroma-js'
 import {
@@ -69,6 +70,13 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 setPointerMode('select')
               }}>
                 <IconClick size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Zoom Fit">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
+                renderEngine.zoomFit()
+              }}>
+                <IconZoomReset size={18} />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Coming Soon!">

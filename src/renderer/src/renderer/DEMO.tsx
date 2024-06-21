@@ -7,6 +7,7 @@ import { Button, Switch, Box } from '@mantine/core'
 import { PointerEvent, PointerEvents } from '.'
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
+import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?url'
 
 // import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
 // import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
@@ -15,7 +16,7 @@ import { PointerEvent, PointerEvents } from '.'
 // import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
 // import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
 // import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
-// import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
 // import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
@@ -263,56 +264,56 @@ const SURFACE_ARC_TEST: Shapes.Surface[] = []
 
 
 let i = 0
-SURFACE_ARC_TEST.push(new Shapes.Surface({
-  polarity: 1,
-}).addContour(
-  new Shapes.Contour({
-    poly_type: 1,
-    // Start point.
-    xs: -1 + i,
-    ys: 0,
-    segments: [
-      new Shapes.Contour_Arc_Segment({
-        x: 0 + i,
-        y: -1,
-        xc: 0 + i,
-        yc: 0,
-        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-        clockwise: 1,
-      }),
-      new Shapes.Contour_Line_Segment({
-        x: -1 + i,
-        y: 0,
-      }),
-    ]
-  })
-))
+// SURFACE_ARC_TEST.push(new Shapes.Surface({
+//   polarity: 1,
+// }).addContour(
+//   new Shapes.Contour({
+//     poly_type: 1,
+//     // Start point.
+//     xs: -1 + i,
+//     ys: 0,
+//     segments: [
+//       new Shapes.Contour_Arc_Segment({
+//         x: 0 + i,
+//         y: -1,
+//         xc: 0 + i,
+//         yc: 0,
+//         // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+//         clockwise: 1,
+//       }),
+//       new Shapes.Contour_Line_Segment({
+//         x: -1 + i,
+//         y: 0,
+//       }),
+//     ]
+//   })
+// ))
 
 i += 1
-SURFACE_ARC_TEST.push(new Shapes.Surface({
-  polarity: 1,
-}).addContour(
-  new Shapes.Contour({
-    poly_type: 1,
-    // Start point.
-    xs: -1 + i,
-    ys: 0,
-    segments: [
-      new Shapes.Contour_Arc_Segment({
-        x: 0 + i,
-        y: -1,
-        xc: 0 + i,
-        yc: 0,
-        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-        clockwise: 0,
-      }),
-      new Shapes.Contour_Line_Segment({
-        x: -1 + i,
-        y: 0,
-      }),
-    ]
-  })
-))
+// SURFACE_ARC_TEST.push(new Shapes.Surface({
+//   polarity: 1,
+// }).addContour(
+//   new Shapes.Contour({
+//     poly_type: 1,
+//     // Start point.
+//     xs: -1 + i,
+//     ys: 0,
+//     segments: [
+//       new Shapes.Contour_Arc_Segment({
+//         x: 0 + i,
+//         y: -1,
+//         xc: 0 + i,
+//         yc: 0,
+//         // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+//         clockwise: 0,
+//       }),
+//       new Shapes.Contour_Line_Segment({
+//         x: -1 + i,
+//         y: 0,
+//       }),
+//     ]
+//   })
+// ))
 
 i += 1
 SURFACE_ARC_TEST.push(new Shapes.Surface({
@@ -1261,12 +1262,14 @@ function REGLApp(): JSX.Element {
 
     // Engine.addLayer({
     //   name: 'brush lines',
-    //   image: LINE_BRUSH_RECORDS_ARRAY_POS
+    //   image: LINE_RECORDS_ARRAY_POS,
+    //   units: 'mm'
     // })
 
     // Engine.addLayer({
     //   name: 'brush arcs',
-    //   image: ARC_BRUSH_RECORDS_ARRAY_POS
+    //   image: ARC_BRUSH_RECORDS_ARRAY_POS,
+    //   units: 'mm'
     // })
 
     // setTimeout(() => {
@@ -1384,14 +1387,6 @@ function REGLApp(): JSX.Element {
     // })
 
 
-    // Engine.addFile({
-    //   file: gdsiiFile,
-    //   format: 'gdsii',
-    //   props: {
-    //     name: 'gdsii',
-    //   }
-    // })
-
     // Engine.addLayer({
     //   name:'Step and Repeat',
     //   image: STEP_AND_REPEAT,
@@ -1444,10 +1439,19 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addLayer({
-      name: 'surface test',
-      image: SURFACE_ARC_TEST,
-      units: 'mm'
+    // Engine.addLayer({
+    //   name: 'surface test',
+    //   image: SURFACE_ARC_TEST,
+    //   units: 'mm'
+    // })
+
+    Engine.addFile({
+      file: gdsiiFile,
+      format: 'gdsii',
+      props: {
+        name: 'gdsii',
+      },
+      // units: 'mm'
     })
 
     // find all shapes in engine and loop through the shapes
@@ -1468,12 +1472,12 @@ function REGLApp(): JSX.Element {
     //   }
     // }))
 
-    Engine.backend.then(backend => backend.transform.then(transform => {
-      console.log(transform)
-      transform.position[0] = 3
-      // transform.position[1] = 3
-      transform.update()
-    }))
+    // Engine.backend.then(backend => backend.transform.then(transform => {
+    //   console.log(transform)
+    //   transform.position[0] = 3
+    //   // transform.position[1] = 3
+    //   transform.update()
+    // }))
 
 
 
@@ -1527,6 +1531,13 @@ function REGLApp(): JSX.Element {
               engine.zoomFit()
             }}>
             Zoom Fit
+          </Button>
+          
+          <Button
+            onClick={async (): Promise<void> => {
+              (await engine.backend).setTransform({ position: [0, 0], zoom: 16})
+            }}>
+            (0,0)
           </Button>
           <br />
           Outline Mode
