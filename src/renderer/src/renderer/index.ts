@@ -158,6 +158,11 @@ export class RenderEngine {
     return backend.getWorldPosition(...(await this.getMouseNormalizedWorldCoordinates(e)))
   }
 
+  public async zoomFit(): Promise<void> {
+    const backend = await this.backend
+    backend.zoomFit()
+  }
+
   private async addControls(): Promise<void> {
     const backend = await this.backend
     const sendPointerEvent = async (
@@ -303,5 +308,10 @@ export class RenderEngine {
     this.CONTAINER.onmouseup = null
     this.CONTAINER.onmousemove = null
     this.CONTAINER.onresize = null
+    this.CONTAINER.onpointerdown = null
+    this.CONTAINER.onpointerup = null
+    this.CONTAINER.onpointermove = null
+    this.CONTAINER.onpointercancel = null
+    this.CONTAINER.onpointerleave = null
   }
 }

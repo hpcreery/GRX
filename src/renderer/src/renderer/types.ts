@@ -52,4 +52,7 @@ export type NonIntersectingTypes<T, U> = { [K in Exclude<keyof T, keyof U>]: T[K
 
 export type Units = 'mm' | 'inch' | 'cm' | 'mil' | number
 
-
+export type BoundingBox = {
+  min: vec2
+  max: vec2
+}

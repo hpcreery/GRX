@@ -6,7 +6,7 @@ import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { parser } from './plugins'
-import type { Units } from './types'
+import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
 import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
@@ -533,6 +533,23 @@ export class RenderEngineBackend {
     })
   }
 
+  // public getTransform(): Partial<RenderTransform> {
+  //   return {
+  //     zoom: this.transform.zoom,
+  //     position: this.transform.position,
+  //     velocity: this.transform.velocity,
+  //     dragging: this.transform.dragging,
+  //     matrix: this.transform.matrix,
+  //     matrixInverse: this.transform.matrixInverse,
+  //     // update: this.transform.update
+  //   }
+  // }
+
+  public setTransform(transform: Partial<RenderTransform>): void {
+    Object.assign(this.transform, transform)
+    this.updateTransform()
+  }
+
   public removeLayer(uid: string): void {
     const index = this.layers.findIndex((layer) => layer.uid === uid)
     if (index === -1) return
@@ -591,6 +608,48 @@ export class RenderEngineBackend {
     }
   }
 
+  public async zoomFit(): Promise<void> {
+    const boundingBox: BoundingBox = {
+      min: vec2.fromValues(Infinity, Infinity),
+      max: vec2.fromValues(-Infinity, -Infinity)
+    }
+    for (const layer of this.layers) {
+      // TODO: make for loop parallel
+      const layerBoundingBox = await layer.getBoundingBox()
+      boundingBox.min = vec2.min(boundingBox.min, boundingBox.min, layerBoundingBox.min)
+      boundingBox.max = vec2.max(boundingBox.max, boundingBox.max, layerBoundingBox.max)
+    }
+    // console.log('Bounding Box:', boundingBox)
+
+    const screenWidthPx = this.viewBox.width
+    const screenHeightPx = this.viewBox.height
+    const screenAR = screenWidthPx / screenHeightPx
+    const unitToPx = (screenHeightPx/2) / 1 // px per unit
+    const bbWidthPx = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
+    const bbHeightPx = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
+    const bbAR = bbWidthPx / bbHeightPx
+    // console.log('Screen Width, Height:', screenWidthPx, screenHeightPx)
+    // console.log('Screen AR:', screenAR)
+    // console.log('BB Width, Height:', bbWidthPx, bbHeightPx)
+    // console.log('BB AR:', bbAR)
+    // zooming zooms to canvas -1,-1
+    const origin = vec2.fromValues(-1, 1)
+    const originPx = vec2.scale(vec2.create(), origin, unitToPx)
+    const bbTopLeft = vec2.fromValues(boundingBox.min[0]*unitToPx, boundingBox.max[1]*unitToPx)
+    const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
+    if (bbAR > screenAR) {
+      const zoom = screenWidthPx / bbWidthPx
+      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
+      const offsetX = bbTopLeftToOriginScaled[0]
+      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx/2 - bbHeightPx*zoom/ 2
+      this.setTransform({ position: [offsetX, offsetY], zoom})
+    } else {
+      const zoom = screenHeightPx / bbHeightPx
+      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
+      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx/2 - bbWidthPx*zoom / 2
+      const offsetY = -bbTopLeftToOriginScaled[1]
+      this.setTransform({ position: [offsetX, offsetY], zoom})
+    }
   public startLoading(): void {
     this.loadingFrame.start()
   }

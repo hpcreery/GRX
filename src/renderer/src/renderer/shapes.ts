@@ -240,7 +240,7 @@ type TContourArcSegment = {
   clockwise: number;
 }
 
-export class Contour_Arc_Segment implements TContourArcSegment {
+export class Contour_Arc_Segment implements TContourArcSegment, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARCSEGMENT
   /**
    * end x
@@ -268,7 +268,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
   }
 }
 
-export class Contour_Line_Segment implements TContourLineSegment {
+export class Contour_Line_Segment implements TContourLineSegment, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINESEGMENT
   /**
    * end x
@@ -284,7 +284,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
   }
 }
 
-export class Contour implements TContour {
+export class Contour implements TContour, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole

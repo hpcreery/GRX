@@ -99,8 +99,10 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
 
   useEffect(() => {
     renderEngine.backend.then(async (backend) => {
-      const reg = async (): Promise<void> =>
-        registerLayers(await backend.getLayers(), await backend.layersQueue)
+      const reg = async (): Promise<void> => {
+        renderEngine.zoomFit()
+        return registerLayers(await backend.getLayers(), await backend.layersQueue)
+      }
       reg()
       backend.addEventCallback(EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
     })
