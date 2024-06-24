@@ -21,7 +21,7 @@ export default function App(): JSX.Element | null {
   useEffect(() => {
     const Engine = new RenderEngine({ container: elementRef.current })
     setRenderEngine(Engine)
-    return () => {
+    return (): void => {
       Engine.destroy()
     }
   }, [])

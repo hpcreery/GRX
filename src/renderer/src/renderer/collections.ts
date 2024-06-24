@@ -136,6 +136,15 @@ export interface FrameBufferRenderAttachments {
   renderTexture: REGL.Framebuffer2D
 }
 
+export interface ScreenRenderProps {
+  renderTexture: REGL.Framebuffer | REGL.Texture2D
+  blend?: boolean
+}
+
+export interface ScreenRenderUniforms {
+  u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
+}
+
 interface TShaderAttachment {
   pads: PadAttachments
   lines: LineAttachments
@@ -152,6 +161,7 @@ interface TReglRenderers {
   drawFrameBuffer:
     | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
     | undefined
+  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
 }
 
 export const ReglRenderers: TReglRenderers = {
@@ -159,7 +169,8 @@ export const ReglRenderers: TReglRenderers = {
   drawArcs: undefined,
   drawLines: undefined,
   drawSurfaces: undefined,
-  drawFrameBuffer: undefined
+  drawFrameBuffer: undefined,
+  renderToScreen: undefined
 }
 
 export function initializeRenderers(regl: REGL.Regl): void {
@@ -428,7 +439,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
         stride: 1 * glFloatSize,
         divisor: 1
       },
-      
+
 
       a_Vertex_Position: [
         [0, 0],
@@ -507,6 +518,56 @@ export function initializeRenderers(regl: REGL.Regl): void {
       u_Polarity: regl.prop<FrameBufferRenderAttachments, 'polarity'>('polarity')
     }
   })
+
+  ReglRenderers.renderToScreen = regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
+    {
+      vert: `
+      precision highp float;
+      attribute vec2 a_Vertex_Position;
+      varying vec2 v_UV;
+      void main () {
+        v_UV = a_Vertex_Position;
+        gl_Position = vec4(a_Vertex_Position, 1, 1);
+      }
+    `,
+      frag: `
+      precision highp float;
+      uniform sampler2D u_RenderTexture;
+      varying vec2 v_UV;
+      void main () {
+        gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+      }
+    `,
+
+      // blend: {
+      //   enable: true,
+
+      //   func: {
+      //     srcRGB: 'one minus dst color',
+      //     srcAlpha: 'one',
+      //     dstRGB: 'one minus src color',
+      //     dstAlpha: 'one'
+      //   },
+
+      //   equation: {
+      //     rgb: 'add',
+      //     alpha: 'add'
+      //   },
+      //   color: [0, 0, 0, 0.1]
+      // },
+
+      depth: {
+        enable: false,
+        mask: false,
+        func: 'greater',
+        range: [0, 1]
+      },
+
+      uniforms: {
+        u_RenderTexture: regl.prop<ScreenRenderProps, 'renderTexture'>('renderTexture'),
+      }
+    }
+  )
 }
 
 const { SYMBOL_PARAMETERS } = Symbols
@@ -719,7 +780,7 @@ export class ShapesShaderCollection {
         contourIndex++
         return vertices
       })
-      
+
       if (hasHoles) {
         const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
         const length = indicies.length / 3
@@ -753,18 +814,18 @@ export class ShapesShaderCollection {
         contourOffsets.forEach((offset) => allContourOffsets.push(offset))
         contourIndexes.forEach((index) => allContourIndexes.push(index))
         contourVertexQty.forEach((qty) => allContourVertexQty.push(qty))
-        
+
         indicies.forEach((index) => allIndicies.push(index))
         vertices.forEach((vertex) => allVertices.push(vertex))
-        
+
         const length = indicies.length / 3
         new Array<number>(length).fill(0).forEach(() => surfaceIndexes.push(record.index))
         new Array<Binary>(length).fill(0).forEach(() => surfacePolarities.push(record.polarity))
         new Array<number>(length).fill(0).forEach(() => surfaceOffsets.push(surfaceOffset))
         surfaceOffset += vertices.length
         new Array<number>(length).fill(0).forEach(() => allContourQty.push(record.contours.length))
-        
-        
+
+
         // OLD WAY ( SLOWER )
         // const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
         // const length = indicies.length / 3

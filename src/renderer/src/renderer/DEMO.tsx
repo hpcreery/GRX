@@ -1481,7 +1481,9 @@ function REGLApp(): JSX.Element {
 
 
 
-    Engine.render(true)
+    Engine.render({
+      force: true
+    })
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 

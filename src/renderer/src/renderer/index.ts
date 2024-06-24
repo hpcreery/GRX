@@ -1,7 +1,7 @@
 import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
-import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings } from './engine'
+import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from './engine'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -50,7 +50,9 @@ export class RenderEngine {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
           engine.settings[name] = value
-          engine.render(true)
+          engine.render({
+            force: true
+          })
         })
         target[name] = value
         return true
@@ -72,7 +74,9 @@ export class RenderEngine {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
           engine.grid[name] = value
-          engine.render(true)
+          engine.render({
+            force: true
+          })
         })
         target[name] = value
         return true
@@ -111,7 +115,9 @@ export class RenderEngine {
     })
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
-    this.render(true)
+    this.render({
+      force: true
+    })
   }
 
   private createCanvas(): HTMLCanvasElement {
@@ -290,9 +296,9 @@ export class RenderEngine {
     backend.addFile(params)
   }
 
-  public async render(force = false): Promise<void> {
+  public async render(props: RenderProps): Promise<void> {
     const backend = await this.backend
-    backend.render(force)
+    backend.render(props)
   }
 
   public async destroy(): Promise<void> {

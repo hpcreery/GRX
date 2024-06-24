@@ -13,6 +13,10 @@ export default function GeneralSettingsModal({ renderEngine }: SettingsModalProp
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
 
+  React.useEffect(() => {
+    renderEngine.backend.then(backend => backend.setMeasurementUnits(units))
+  }, [units])
+
 
   return (
     <>

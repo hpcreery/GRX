@@ -22,23 +22,47 @@ import {
   Card,
   Group,
   Tooltip,
+  useMantineTheme,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
 import GridSettings from './toolbar/GridSettings'
 import type { PointerSettings } from '@src/renderer'
+import { useContextMenu } from 'mantine-contextmenu'
+import {
+  IconTrashX,
+} from '@tabler/icons-react'
+import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 
 interface ToolbarProps {
   renderEngine: RenderEngine
 }
 
 export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
+  const { units } = React.useContext(ConfigEditorProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
+  const { showContextMenu } = useContextMenu()
+  const theme = useMantineTheme()
 
+  const contextItems = [
+    {
+      title: 'Clear Measurements',
+      key: '1',
+      icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
+      onClick: async (): Promise<void> => {
+        const backend = await renderEngine.backend
+        backend.clearMeasurements()
+      }
+    },
+  ]
+
+  React.useEffect(() => {
+    renderEngine.backend.then(backend => backend.setMeasurementUnits(units))
+  }, [])
 
   return (
     <>
@@ -62,7 +86,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 renderEngine.pointerSettings.mode = 'move'
                 setPointerMode('move')
               }}>
-                <IconArrowsMove size={18}/>
+                <IconArrowsMove size={18} />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Query">
@@ -77,7 +101,8 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'measure' ? "outline" : 'default'} onClick={(): void => {
                 renderEngine.pointerSettings.mode = 'measure'
                 setPointerMode('measure')
-               }}>
+              }}
+                onContextMenu={showContextMenu(contextItems)}>
                 <IconRulerMeasure size={18} />
               </ActionIcon>
             </Tooltip>

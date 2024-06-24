@@ -1,7 +1,7 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
-import { initializeRenderers } from './collections'
+import { initializeRenderers, ReglRenderers, ScreenRenderProps } from './collections'
 import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
@@ -13,7 +13,7 @@ import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
 import { UID } from './utils'
 import { SimpleMeasurement } from './measurements'
 
-interface WorldProps { }
+export interface WorldProps { }
 
 interface WorldUniforms {
   u_Transform: mat3
@@ -38,13 +38,13 @@ export interface WorldContext {
   transformMatrix: mat3
 }
 
-interface ScreenRenderProps {
-  frameBuffer: REGL.Framebuffer
-}
+// interface ScreenRenderProps {
+//   renderTexture: REGL.Framebuffer | REGL.Texture2D
+// }
 
-interface ScreenRenderUniforms {
-  u_RenderTexture: REGL.Framebuffer
-}
+// interface ScreenRenderUniforms {
+//   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
+// }
 
 export interface RenderEngineBackendConfig {
   attributes?: WebGLContextAttributes | undefined
@@ -121,9 +121,13 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & {parent: Shapes.Parents[], layer: string, units: Units }
+export type QueryFeature = Shapes.Shape & { parent: Shapes.Parents[], layer: string, units: Units }
+
+export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
 export class RenderEngineBackend {
+
+  static defaultRenderProps = { force: false, updateLayers: true }
 
   public settings: RenderSettings = {
     MSPFRAME: 1000 / 60,
@@ -214,10 +218,11 @@ export class RenderEngineBackend {
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+  private blend: REGL.DrawCommand
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
   public loadingFrame: LoadingAnimation
-  public simpleMeasurement: SimpleMeasurement
+  public measurements: SimpleMeasurement
 
   public parsers: {
     [key: string]: parser
@@ -234,6 +239,8 @@ export class RenderEngineBackend {
       width,
       height
     }
+
+    // const ctx = offscreenCanvas.getContext('2d')
 
     const gl = offscreenCanvas.getContext('webgl', attributes)!
     console.log('WEBGL VERSION', gl.getParameter(gl.VERSION))
@@ -300,7 +307,7 @@ export class RenderEngineBackend {
     })
 
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
-    this.simpleMeasurement = new SimpleMeasurement(this.regl)
+    this.measurements = new SimpleMeasurement(this.regl)
 
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
       {
@@ -321,59 +328,81 @@ export class RenderEngineBackend {
       },
     )
 
-    this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
-      {
-        vert: `
-        precision highp float;
-        attribute vec2 a_Vertex_Position;
-        varying vec2 v_UV;
-        void main () {
-          v_UV = a_Vertex_Position;
-          gl_Position = vec4(a_Vertex_Position, 1, 1);
-        }
-      `,
-        frag: `
-        precision highp float;
-        uniform sampler2D u_RenderTexture;
-        varying vec2 v_UV;
-        void main () {
-          gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        }
-      `,
+    // this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
+    //   {
+    //     vert: `
+    //     precision highp float;
+    //     attribute vec2 a_Vertex_Position;
+    //     varying vec2 v_UV;
+    //     void main () {
+    //       v_UV = a_Vertex_Position;
+    //       gl_Position = vec4(a_Vertex_Position, 1, 1);
+    //     }
+    //   `,
+    //     frag: `
+    //     precision highp float;
+    //     uniform sampler2D u_RenderTexture;
+    //     varying vec2 v_UV;
+    //     void main () {
+    //       gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+    //     }
+    //   `,
 
-        blend: {
-          enable: true,
+    //     blend: {
+    //       enable: true,
 
-          func: {
-            srcRGB: 'one minus dst color',
-            srcAlpha: 'one',
-            dstRGB: 'one minus src color',
-            dstAlpha: 'one'
-          },
+    //       func: {
+    //         srcRGB: 'one minus dst color',
+    //         srcAlpha: 'one',
+    //         dstRGB: 'one minus src color',
+    //         dstAlpha: 'one'
+    //       },
 
-          equation: {
-            rgb: 'add',
-            alpha: 'add'
-          },
-          color: [0, 0, 0, 0.1]
+    //       equation: {
+    //         rgb: 'add',
+    //         alpha: 'add'
+    //       },
+    //       color: [0, 0, 0, 0.1]
+    //     },
+
+    //     depth: {
+    //       enable: false,
+    //       mask: false,
+    //       func: 'greater',
+    //       range: [0, 1]
+    //     },
+
+    //     uniforms: {
+    //       u_RenderTexture: (_context: REGL.DefaultContext, props: ScreenRenderProps) =>
+    //         props.renderTexture
+    //     }
+    //   }
+    // )
+
+    this.blend = this.regl({
+      blend: {
+        enable: true,
+
+        func: {
+          srcRGB: 'one minus dst color',
+          srcAlpha: 'one',
+          dstRGB: 'one minus src color',
+          dstAlpha: 'one'
         },
 
-        depth: {
-          enable: false,
-          mask: false,
-          func: 'greater',
-          range: [0, 1]
+        equation: {
+          rgb: 'add',
+          alpha: 'add'
         },
-
-        uniforms: {
-          u_RenderTexture: (_context: REGL.DefaultContext, props: ScreenRenderProps) =>
-            props.frameBuffer
-        }
-      }
-    )
+        color: [0, 0, 0, 0.1]
+      },
+    })
+    this.renderToScreen = ReglRenderers.renderToScreen!
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.render(true)
+    this.render({
+      force: true
+    })
   }
 
   public resize(width: number, height: number): void {
@@ -383,7 +412,9 @@ export class RenderEngineBackend {
     this.offscreenCanvas.height = height
     this.regl.poll()
     this.updateTransform()
-    this.render(true)
+    this.render({
+      force: true
+    })
   }
 
   public toss(): void {
@@ -487,7 +518,9 @@ export class RenderEngineBackend {
       regl: this.regl
     })
     this.layers.push(layer)
-    this.render(true)
+    this.render({
+      force: true
+    })
     this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
   }
 
@@ -554,14 +587,18 @@ export class RenderEngineBackend {
     const index = this.layers.findIndex((layer) => layer.uid === uid)
     if (index === -1) return
     this.layers.splice(index, 1)
-    this.render(true)
+    this.render({
+      force: true
+    })
   }
 
   public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, 'regl'>>): void {
     const layer = this.layers.find((layer) => layer.uid === uid)
     if (!layer) return
     Object.assign(layer, props)
-    this.render(true)
+    this.render({
+      force: true,
+    })
   }
 
   public addEventCallback(event: TEngineEvents, listener: () => void): void {
@@ -604,7 +641,9 @@ export class RenderEngineBackend {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      this.render(true)
+      this.render({
+        force: true,
+      })
     }
   }
 
@@ -625,7 +664,7 @@ export class RenderEngineBackend {
     const screenWidthPx = this.viewBox.width
     const screenHeightPx = this.viewBox.height
     const screenAR = screenWidthPx / screenHeightPx
-    const unitToPx = (screenHeightPx/2) / 1 // px per unit
+    const unitToPx = (screenHeightPx / 2) / 1 // px per unit
     const bbWidthPx = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
     const bbHeightPx = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
     const bbAR = bbWidthPx / bbHeightPx
@@ -636,7 +675,7 @@ export class RenderEngineBackend {
     // zooming zooms to canvas -1,-1
     const origin = vec2.fromValues(-1, 1)
     const originPx = vec2.scale(vec2.create(), origin, unitToPx)
-    const bbTopLeft = vec2.fromValues(boundingBox.min[0]*unitToPx, boundingBox.max[1]*unitToPx)
+    const bbTopLeft = vec2.fromValues(boundingBox.min[0] * unitToPx, boundingBox.max[1] * unitToPx)
     const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
     if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity) return
     if (boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
@@ -644,16 +683,18 @@ export class RenderEngineBackend {
       const zoom = screenWidthPx / bbWidthPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
       const offsetX = bbTopLeftToOriginScaled[0]
-      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx/2 - bbHeightPx*zoom/ 2
-      this.setTransform({ position: [offsetX, offsetY], zoom})
+      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx / 2 - bbHeightPx * zoom / 2
+      this.setTransform({ position: [offsetX, offsetY], zoom })
     } else {
       const zoom = screenHeightPx / bbHeightPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
-      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx/2 - bbWidthPx*zoom / 2
+      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx / 2 - bbWidthPx * zoom / 2
       const offsetY = -bbTopLeftToOriginScaled[1]
-      this.setTransform({ position: [offsetX, offsetY], zoom})
+      this.setTransform({ position: [offsetX, offsetY], zoom })
     }
-    this.render(true)
+    this.render({
+      force: true,
+    })
   }
 
   public startLoading(): void {
@@ -665,48 +706,58 @@ export class RenderEngineBackend {
   }
 
   public addMeasurement(point: vec2): void {
-    this.simpleMeasurement.addMeasurement(point)
-    this.renderFast()
+    this.measurements.addMeasurement(point)
+    this.render()
   }
 
   public updateMeasurement(point: vec2): void {
-    this.simpleMeasurement.updateMeasurement(point)
-    this.renderFast()
+    this.measurements.updateMeasurement(point)
+    this.render({
+      force: true,
+      updateLayers: false
+    })
   }
 
-  public render(force = false): void {
+  public clearMeasurements(): void {
+    this.measurements.clearMeasurements()
+    this.render({
+      force: true,
+      updateLayers: false
+    })
+  }
+
+  public setMeasurementUnits(units: Units): void {
+    this.measurements.setMeasurementUnits(units)
+    this.render({
+      force: true,
+      updateLayers: false
+    })
+  }
+
+
+  public render(props: RenderProps = RenderEngineBackend.defaultRenderProps): void {
+    const { force, updateLayers } = { ...RenderEngineBackend.defaultRenderProps, ...props }
     if (!this.dirty && !force) return
     if (this.loadingFrame.enabled) return
     this.dirty = false
     this.regl.clear({
-      color: [0,0,0,0],
+      color: [0, 0, 0, 0],
       depth: 1
     })
-
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
-      this.simpleMeasurement.render()
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        layer.render(context)
-        this.renderToScreen({ frameBuffer: layer.framebuffer })
+        updateLayers && layer.render(context)
+        this.blend(() => {
+          this.renderToScreen({ renderTexture: layer.framebuffer })
+        })
       }
-    })
-  }
-
-  public renderFast(): void {
-    this.regl.clear({
-      color: [0,0,0,0],
-      depth: 1
-    })
-    this.world(() => {
-      this.simpleMeasurement.render()
-      if (this.grid.enabled) this.renderGrid(this.grid)
-      for (const layer of this.layers) {
-        if (!layer.visible) continue
-        this.renderToScreen({ frameBuffer: layer.framebuffer })
-      }
+      this.measurements.render(context)
+      this.blend(() => {
+      this.renderToScreen({ renderTexture: this.measurements.framebuffer })
+      })
     })
   }
 
