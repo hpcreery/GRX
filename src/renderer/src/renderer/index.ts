@@ -102,16 +102,19 @@ export class RenderEngine {
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
-  public canvas: HTMLCanvasElement
+  public canvasGL: HTMLCanvasElement
+  public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
     this.CONTAINER.style.cursor = 'grab'
-    this.canvas = this.createCanvas()
-    const offscreenCanvas = this.canvas.transferControlToOffscreen()
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvas, [offscreenCanvas]), {
+    this.canvasGL = this.createCanvas()
+    this.canvas2D = this.createCanvas()
+    const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
+    const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]),Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
-      width: this.canvas.width,
-      height: this.canvas.height
+      width: this.canvasGL.width,
+      height: this.canvasGL.height
     })
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
@@ -124,14 +127,19 @@ export class RenderEngine {
     const canvas = document.createElement('canvas')
     canvas.width = this.CONTAINER.clientWidth
     canvas.height = this.CONTAINER.clientHeight
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
+    // canvas.style.width = String(this.CONTAINER.clientWidth)
+    // canvas.style.height = String(this.CONTAINER.clientHeight)
+    canvas.style.position = 'absolute'
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
 
   private resize(): void {
     const { clientWidth: width, clientHeight: height } = this.CONTAINER
+    // this.canvas2D.style.width = String(width)
+    // this.canvas2D.style.height = String(height)
+    // this.canvasGL.style.width = String(width)
+    // this.canvasGL.style.height = String(height)
     this.backend.then((engine) => {
       engine.resize(width, height)
     })

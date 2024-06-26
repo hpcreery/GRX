@@ -8,12 +8,6 @@ import { WorldContext } from './engine'
 import type { Units } from './types'
 import { getUnitsConversion } from './utils'
 
-import {
-  ReglRenderers,
-  ScreenRenderProps,
-} from './collections'
-
-
 interface SimpleMeasureRenderProps {
 }
 
@@ -29,6 +23,7 @@ interface SimpleMeasurementAttachments {
 
 export class SimpleMeasurement {
   private regl: REGL.Regl
+  private ctx: OffscreenCanvasRenderingContext2D
   private renderMeasurement: REGL.DrawCommand<REGL.DefaultContext, SimpleMeasureRenderProps>
   public textRenderer: TextRenderer
 
@@ -37,12 +32,11 @@ export class SimpleMeasurement {
   public currentMeasurement: { point1: vec2, point2: vec2 } | null = null
   public units: Units = 'mm'
 
-  private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
-
-  constructor(regl: REGL.Regl) {
+  constructor(regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D) {
     this.regl = regl
+    this.ctx = ctx
     this.framebuffer = this.regl.framebuffer()
-    this.textRenderer = new TextRenderer(this.regl)
+    this.textRenderer = new TextRenderer(this.ctx)
     this.renderMeasurement = this.regl<SimpleMeasureRenderUniforms, Record<string, never>, SimpleMeasureRenderProps>(
       {
         vert: SimpleMeasurementVert,
@@ -53,7 +47,6 @@ export class SimpleMeasurement {
         },
       },
     )
-    this.renderToScreen = ReglRenderers.renderToScreen!
   }
 
   private updateText(measurement: { point1: vec2, point2: vec2 }): void {
@@ -113,7 +106,6 @@ export class SimpleMeasurement {
     })
     this.textRenderer.render(context)
     this.framebuffer.use(() => {
-      this.renderToScreen({ renderTexture: this.textRenderer.imageTexture })
       this.measurements.forEach((measurement) => {
         this.renderMeasurement(measurement)
       })

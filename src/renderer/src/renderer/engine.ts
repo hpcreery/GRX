@@ -144,7 +144,8 @@ export class RenderEngineBackend {
     ZOOM_TO_CURSOR: true
   }
 
-  public offscreenCanvas: OffscreenCanvas
+  public offscreenCanvasGL: OffscreenCanvas
+  public offscreenCanvas2D: OffscreenCanvas
 
   public viewBox: {
     width: number
@@ -230,11 +231,15 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
+  public ctx: OffscreenCanvasRenderingContext2D
+
   constructor(
-    offscreenCanvas: OffscreenCanvas,
+    offscreenCanvasGL: OffscreenCanvas,
+    offscreenCanvas2D: OffscreenCanvas,
     { attributes, width, height }: RenderEngineBackendConfig
   ) {
-    this.offscreenCanvas = offscreenCanvas
+    this.offscreenCanvasGL = offscreenCanvasGL
+    this.offscreenCanvas2D = offscreenCanvas2D
     this.viewBox = {
       width,
       height
@@ -242,7 +247,8 @@ export class RenderEngineBackend {
 
     // const ctx = offscreenCanvas.getContext('2d')
 
-    const gl = offscreenCanvas.getContext('webgl', attributes)!
+    const gl = offscreenCanvasGL.getContext('webgl', attributes)!
+    this.ctx = offscreenCanvas2D.getContext('2d')!
     console.log('WEBGL VERSION', gl.getParameter(gl.VERSION))
     // console.log(gl)
 
@@ -307,7 +313,7 @@ export class RenderEngineBackend {
     })
 
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
-    this.measurements = new SimpleMeasurement(this.regl)
+    this.measurements = new SimpleMeasurement(this.regl, this.ctx)
 
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
       {
@@ -327,57 +333,6 @@ export class RenderEngineBackend {
         }
       },
     )
-
-    // this.renderToScreen = this.regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
-    //   {
-    //     vert: `
-    //     precision highp float;
-    //     attribute vec2 a_Vertex_Position;
-    //     varying vec2 v_UV;
-    //     void main () {
-    //       v_UV = a_Vertex_Position;
-    //       gl_Position = vec4(a_Vertex_Position, 1, 1);
-    //     }
-    //   `,
-    //     frag: `
-    //     precision highp float;
-    //     uniform sampler2D u_RenderTexture;
-    //     varying vec2 v_UV;
-    //     void main () {
-    //       gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-    //     }
-    //   `,
-
-    //     blend: {
-    //       enable: true,
-
-    //       func: {
-    //         srcRGB: 'one minus dst color',
-    //         srcAlpha: 'one',
-    //         dstRGB: 'one minus src color',
-    //         dstAlpha: 'one'
-    //       },
-
-    //       equation: {
-    //         rgb: 'add',
-    //         alpha: 'add'
-    //       },
-    //       color: [0, 0, 0, 0.1]
-    //     },
-
-    //     depth: {
-    //       enable: false,
-    //       mask: false,
-    //       func: 'greater',
-    //       range: [0, 1]
-    //     },
-
-    //     uniforms: {
-    //       u_RenderTexture: (_context: REGL.DefaultContext, props: ScreenRenderProps) =>
-    //         props.renderTexture
-    //     }
-    //   }
-    // )
 
     this.blend = this.regl({
       blend: {
@@ -408,8 +363,10 @@ export class RenderEngineBackend {
   public resize(width: number, height: number): void {
     this.viewBox.width = width
     this.viewBox.height = height
-    this.offscreenCanvas.width = width
-    this.offscreenCanvas.height = height
+    this.offscreenCanvasGL.width = width
+    this.offscreenCanvasGL.height = height
+    this.offscreenCanvas2D.width = width
+    this.offscreenCanvas2D.height = height
     this.regl.poll()
     this.updateTransform()
     this.render({
