@@ -57,7 +57,8 @@ export class SimpleMeasurement {
     const y = Math.abs(y1 - y2) * getUnitsConversion(this.units)
     this.textRenderer.texts.push({
       text: `${parseFloat(length.toFixed(4))}${typeof this.units == 'string' ? this.units : ''}\n[X:${parseFloat(x.toFixed(4))} Y:${parseFloat(y.toFixed(4))}]`,
-      location: [(x1 + x2) / 2, (y1 + y2) / 2]
+      location: [(x1 + x2) / 2, (y1 + y2) / 2],
+      textAlign: 'center'
     })
   }
 

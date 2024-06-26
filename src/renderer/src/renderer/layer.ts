@@ -512,6 +512,13 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
+  public getBoundingBox(): BoundingBox {
+    const boundingBox = super.getBoundingBox()
+    vec2.scale(boundingBox.min, boundingBox.min, 1 / getUnitsConversion(this.units))
+    vec2.scale(boundingBox.max, boundingBox.max, 1 / getUnitsConversion(this.units))
+    return boundingBox
+  }
+
   public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
     const features = super.query(pointer, context)

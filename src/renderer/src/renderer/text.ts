@@ -41,7 +41,6 @@ export class TextRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    this.ctx.clearRect(0, 0, context.viewportWidth, context.viewportWidth);
     this.texts.forEach(text => {
       this.resetFontStyle()
       if (text.font) this.ctx.font = text.font
