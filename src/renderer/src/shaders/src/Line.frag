@@ -78,11 +78,33 @@ float boxDist(vec2 p, vec2 size) {
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
 }
 
+float circleDist(vec2 p, float radius) {
+  return length(p) - radius;
+}
+
 
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+// Here we can redefine drawShape with a much smaller footprint to improve comiling performance. Limiting lines to only be drawn with squares and circles.
+float drawShape(vec2 FragCoord, int SymNum) {
 
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
+  float t_Width = pullSymbolParameter(u_Parameters.width, SymNum);
+  float t_Height = pullSymbolParameter(u_Parameters.height, SymNum);
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
+
+  float dist = 10.0;
+
+  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
+  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+    dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
+  } else {
+    dist = 1.0;
+  }
+  return dist;
+}
 
 //////////////////////////////
 //     Draw functions       //
