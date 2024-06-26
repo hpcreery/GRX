@@ -59,7 +59,13 @@ export class TextRenderer {
       vec2.multiply(position, position, [0.5, -0.5])
       vec2.add(position, position, [0.5, 0.5])
       vec2.multiply(position, position, vec2.fromValues(context.viewportWidth, context.viewportHeight))
-      this.drawStroked(text.text, position)
+      // this.drawStroked(text.text, position)
+      const lineHeight = this.ctx.measureText("M").width * 1.2;
+      const lines = text.text.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        vec2.add(position, position, [0, i * lineHeight])
+        this.drawStroked(lines[i], position)
+      }
     })
   }
 }

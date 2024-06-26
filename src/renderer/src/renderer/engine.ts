@@ -701,6 +701,8 @@ export class RenderEngineBackend {
       color: [0, 0, 0, 0],
       depth: 1
     })
+    this.ctx.clearRect(0, 0, this.viewBox.width, this.viewBox.height);
+
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
       if (this.grid.enabled) this.renderGrid(this.grid)

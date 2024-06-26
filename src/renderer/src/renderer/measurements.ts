@@ -53,8 +53,10 @@ export class SimpleMeasurement {
     const [x1, y1] = measurement.point1
     const [x2, y2] = measurement.point2
     const length = Math.hypot(x1 - x2, y1 - y2) * getUnitsConversion(this.units)
+    const x = Math.abs(x1 - x2) * getUnitsConversion(this.units)
+    const y = Math.abs(y1 - y2) * getUnitsConversion(this.units)
     this.textRenderer.texts.push({
-      text: `${parseFloat(length.toFixed(4))}${typeof this.units == 'string' ? this.units : ''}`,
+      text: `${parseFloat(length.toFixed(4))}${typeof this.units == 'string' ? this.units : ''}\n[X:${parseFloat(x.toFixed(4))} Y:${parseFloat(y.toFixed(4))}]`,
       location: [(x1 + x2) / 2, (y1 + y2) / 2]
     })
   }
