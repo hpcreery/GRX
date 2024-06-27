@@ -634,8 +634,11 @@ export class RenderEngineBackend {
     const originPx = vec2.scale(vec2.create(), origin, unitToPx)
     const bbTopLeft = vec2.fromValues(boundingBox.min[0] * unitToPx, boundingBox.max[1] * unitToPx)
     const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
-    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity) return
-    if (boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
+
+    // boundingBox logic validation
+    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
+    if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
+
     if (bbAR > screenAR) {
       const zoom = screenWidthPx / bbWidthPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
