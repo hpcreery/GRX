@@ -612,7 +612,7 @@ export class RenderEngineBackend {
         const layerFeatures = layer.query(pointer, context)
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
-          color: [1,1,1],
+          color: [0.5,0.5,0.5],
           alpha: 0.7,
           units: layer.units,
           name: 'selection',
