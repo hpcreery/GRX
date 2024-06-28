@@ -85,7 +85,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       })
     }
     renderEngine.pointer.addEventListener(PointerEvents.POINTER_SELECT, handler)
-    return () => {
+    return (): void => {
       renderEngine.pointer.removeEventListener(PointerEvents.POINTER_SELECT, handler)
     }
   }, [])
@@ -178,7 +178,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
-          {getParentInfo(feature.parent, feature.units)}
+          {/* {getParentInfo(feature.parent, feature.units)} */}
         </>
       case 'pad':
         return <>
@@ -215,7 +215,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
               {getSymbolInfo(feature.symbol, feature.units)}
             </Text> : ''}
           {/* {feature.parent.length > 0 ? feature.parent.map(p => <Text key={p.index}>Parent: <Code>{p.index}</Code></Text>) : ''} */}
-          {getParentInfo(feature.parent, feature.units)}
+          {/* {getParentInfo(feature.parent, feature.units)} */}
         </>
       case 'arc':
         return <>
@@ -250,7 +250,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
-          {getParentInfo(feature.parent, feature.units)}
+          {/* {getParentInfo(feature.parent, feature.units)} */}
         </>
       case 'surface':
         return <>
@@ -276,7 +276,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Edges: <Code>{feature.contours.map(ctr => ctr.segments.length).reduce((p, c) => p + c, 0) - 1}</Code>
           </Text>
-          {getParentInfo(feature.parent, feature.units)}
+          {/* {getParentInfo(feature.parent, feature.units)} */}
         </>
       case 'polyline':
         return <>
@@ -305,7 +305,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Qty Lines: <Code>{feature.lines.length}</Code>
           </Text>
-          {getParentInfo(feature.parent, feature.units)}
+          {/* {getParentInfo(feature.parent, feature.units)} */}
         </>
       default:
         return <>

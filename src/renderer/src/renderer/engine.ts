@@ -121,7 +121,7 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { parent: Shapes.Parents[], layer: string, units: Units }
+export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
@@ -213,6 +213,7 @@ export class RenderEngineBackend {
   // })
 
   public layers: LayerRenderer[] = []
+  public selections: LayerRenderer[] = []
   public layersQueue: { name: string, uid: string }[] = []
 
   public regl: REGL.Regl
@@ -220,6 +221,7 @@ export class RenderEngineBackend {
 
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   private blend: REGL.DrawCommand
+  private overlay: REGL.DrawCommand
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
 
   public loadingFrame: LoadingAnimation
@@ -352,6 +354,26 @@ export class RenderEngineBackend {
         color: [0, 0, 0, 0.1]
       },
     })
+
+    this.overlay = this.regl({
+      blend: {
+        enable: true,
+
+        func: {
+          srcRGB: 'src alpha',
+          srcAlpha: 'src alpha',
+          dstRGB: 'one minus src alpha',
+          dstAlpha: 'one minus src alpha'
+        },
+
+        equation: {
+          rgb: 'add',
+          alpha: 'add'
+        },
+        color: [0, 0, 0, 0.1]
+      },
+    })
+
     this.renderToScreen = ReglRenderers.renderToScreen!
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
@@ -583,14 +605,31 @@ export class RenderEngineBackend {
 
   public query(pointer: vec2): (QueryFeature)[] {
     const features: (QueryFeature)[] = []
+    this.selections.length = 0
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const layerFeatures = layer.query(pointer, context)
+        const newSelectionLayer = new LayerRenderer({
+          regl: this.regl,
+          color: [1,1,1],
+          alpha: 0.7,
+          units: layer.units,
+          name: 'selection',
+          image: [],
+        })
         for (const feature of layerFeatures) {
+          newSelectionLayer.image.push(feature)
           features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
         }
+        newSelectionLayer.image.sort((x, y) => x.index - y.index)
+        newSelectionLayer.indexImage()
+        newSelectionLayer.dirty = true
+        this.selections.push(newSelectionLayer)
       }
+    })
+    this.render({
+      force: true,
     })
     return features
   }
@@ -712,14 +751,14 @@ export class RenderEngineBackend {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         updateLayers && layer.render(context)
-        this.blend(() => {
-          this.renderToScreen({ renderTexture: layer.framebuffer })
-        })
+        this.blend(() => this.renderToScreen({ renderTexture: layer.framebuffer }))
+      }
+      for (const selection of this.selections) {
+        selection.render(context)
+        this.overlay(() => this.renderToScreen({ renderTexture: selection.framebuffer }))
       }
       this.measurements.render(context)
-      this.blend(() => {
-      this.renderToScreen({ renderTexture: this.measurements.framebuffer })
-      })
+      this.overlay(() => this.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
   }
 

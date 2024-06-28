@@ -39,6 +39,7 @@ interface CommonUniforms {
 interface QueryUniforms {
   u_QueryMode: boolean
   u_Color: vec3
+  u_Alpha: number
   u_PointerPosition: vec2
 }
 interface QueryAttributes { }
@@ -231,6 +232,7 @@ export class ShapeRenderer {
       uniforms: {
         u_QueryMode: true,
         u_Color: [1, 1, 1],
+        u_Alpha: 1,
         u_PointerPosition: this.regl.prop<QueryProps, 'pointer'>('pointer')
       }
     })
@@ -293,7 +295,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -323,38 +325,51 @@ export class ShapeRenderer {
       width: width,
       height: height
     })
-    const features: (Shapes.Shape & { parent: Shapes.Parents[] })[] = []
+    const features: Shapes.Shape[] = []
     for (let i = 0; i < data.length; i += 4) {
       const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       if (value > 0) {
         const feat = Object.assign({}, this.image[i / 4])
-        features.push(Object.assign(feat, { parent: [] }))
+        features.push(feat)
       }
     }
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        macro.renderer.query(pointer, context).forEach((feature) => {
-          const newFeature = Object.assign({}, feature)
-          const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
-          // @ts-ignore - intentionally removing symbol
-          delete newFeatureParent.symbol
-          newFeatureParent.symbol = { id: record.symbol.id }
-          newFeature.parent.push(record)
-          features.push(newFeature)
-        })
+        const macroFeatures = macro.renderer.query(pointer, context)
+        if (macroFeatures.length > 0) {
+          const macroCopy = Object.assign({}, record)
+          macroCopy.symbol = Object.assign({}, macro.macro)
+          macroCopy.symbol.shapes = macroFeatures
+          features.push(macroCopy)
+        }
+        // macro.renderer.query(pointer, context).forEach((feature) => {
+        //   const newFeature = Object.assign({}, feature)
+        //   const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
+        //   // @ts-ignore - intentionally removing symbol
+        //   delete newFeatureParent.symbol
+        //   newFeatureParent.symbol = { id: record.symbol.id }
+        //   newFeature.parent.push(record)
+        //   features.push(newFeature)
+        // })
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      stepAndRepeat.query(pointer, context).forEach((feature) => {
-        const newFeature = Object.assign({}, feature)
-        const newFeatureParent = Object.assign({}, stepAndRepeat.record) as Omit<Shapes.StepAndRepeat, 'shapes'>
-        // @ts-ignore - intentionally removing shapes
-        delete newFeatureParent.shapes
-        newFeature.parent.push(newFeatureParent)
-        features.push(newFeature)
-      })
+      // const stepAndRepeatFeatures = stepAndRepeat.query(pointer, context).forEach((feature) => {
+      //   const newFeature = Object.assign({}, feature)
+      //   const newFeatureParent = Object.assign({}, stepAndRepeat.record) as Omit<Shapes.StepAndRepeat, 'shapes'>
+      //   // @ts-ignore - intentionally removing shapes
+      //   delete newFeatureParent.shapes
+      //   newFeature.parent.push(newFeatureParent)
+      //   features.push(newFeature)
+      // })
+      const stepAndRepeatFeatures = stepAndRepeat.query(pointer, context)
+      if (stepAndRepeatFeatures.length > 0) {
+        const stepAndRepeatCopy = Object.assign({}, stepAndRepeat.record)
+        stepAndRepeatCopy.shapes = stepAndRepeatFeatures
+        features.push(stepAndRepeatCopy)
+      }
     })
     context.transformMatrix = origMatrix
     return features
@@ -433,6 +448,7 @@ export interface LayerRendererProps extends ShapeRendererProps {
   units: Units
   visible?: boolean
   color?: vec3
+  alpha?: number
   context?: string
   type?: string
   format?: string
@@ -440,6 +456,7 @@ export interface LayerRendererProps extends ShapeRendererProps {
 
 interface LayerUniforms {
   u_Color: vec3
+  u_Alpha: number
 }
 
 interface LayerAttributes { }
@@ -450,6 +467,7 @@ export default class LayerRenderer extends ShapeRenderer {
   public uid: string = UID()
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
+  public alpha: number = 1
   public context = 'misc'
   public type = 'document'
   public format = 'raw'
@@ -471,6 +489,9 @@ export default class LayerRenderer extends ShapeRenderer {
     this.name = props.name
     if (props.color !== undefined) {
       this.color = props.color
+    }
+    if (props.alpha !== undefined) {
+      this.alpha = props.alpha
     }
     if (props.context !== undefined) {
       this.context = props.context
@@ -507,7 +528,8 @@ export default class LayerRenderer extends ShapeRenderer {
       //   face: 'back'
       // },
       uniforms: {
-        u_Color: () => this.color
+        u_Color: () => this.color,
+        u_Alpha: () => this.alpha
       }
     })
   }
@@ -519,7 +541,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
     const features = super.query(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
@@ -625,8 +647,8 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): (Shapes.Shape & { parent: Shapes.Parents[] })[] {
-    const features: (Shapes.Shape & { parent: Shapes.Parents[] })[] = []
+  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
+    const features: Shapes.Shape[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length

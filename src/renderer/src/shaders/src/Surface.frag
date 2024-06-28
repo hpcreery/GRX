@@ -9,6 +9,7 @@ uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform vec3 u_Color;
+uniform float u_Alpha;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
@@ -136,8 +137,7 @@ void main() {
   // 1     | 0      | 0
   // 1     | 1      | 1
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
-
+  float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
   vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
   float dist = surfaceDistMain(FragCoord);
