@@ -53,8 +53,8 @@ export default function InfoModal(): JSX.Element | null {
                 React
               </Anchor>
               ,{' '}
-              <Anchor href="https://ui.mantine.dev/" target="_blank">
-                Maintine UI
+              <Anchor href="https://mantine.dev/" target="_blank">
+                Maintine
               </Anchor>
               , and{' '}
               <Anchor href="http://regl.party/" target="_blank">

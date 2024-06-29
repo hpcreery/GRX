@@ -24,7 +24,7 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
     }
     renderEngine.pointer.addEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
     renderEngine.pointer.addEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
-    return () => {
+    return (): void => {
       renderEngine.pointer.removeEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
       renderEngine.pointer.removeEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
     }

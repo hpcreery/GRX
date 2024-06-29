@@ -345,7 +345,26 @@ export class RenderEngineBackend {
       },
     )
 
-    this.updateBlendCommand()
+    this.blend = this.regl({
+      blend: {
+        enable: true,
+
+        func: {
+          srcRGB: this.settings.COLOR_BLEND === ColorBlend.OVERLAY ? 'src color'
+            : this.settings.COLOR_BLEND === ColorBlend.CONTRAST ? 'one minus dst color' :
+              'one minus dst color',
+          srcAlpha: 'one',
+          dstRGB: 'one minus src color',
+          dstAlpha: 'one'
+        },
+
+        equation: {
+          rgb: 'add',
+          alpha: 'add'
+        },
+        color: [0, 0, 0, 0.1]
+      },
+    })
 
     this.overlay = this.regl({
       blend: {

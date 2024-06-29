@@ -150,13 +150,13 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
           </Tooltip>
         </Group>
       </Card>
-      <Modal title="Settings" opened={settingsModalOpen} onClose={close}>
+      <Modal title="Settings" keepMounted opened={settingsModalOpen} onClose={close}>
         <GeneralSettings renderEngine={renderEngine} />
       </Modal>
-      <Modal title="Grid Settings" opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
+      <Modal title="Grid Settings" keepMounted opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
         <GridSettings renderEngine={renderEngine} />
       </Modal>
-      <Modal title="Engine Settings" opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
+      <Modal title="Engine Settings" keepMounted opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
         <EngineSettings renderEngine={renderEngine} />
       </Modal>
     </>
