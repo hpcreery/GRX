@@ -8,11 +8,16 @@ import App from './App'
 // import REGLApp from './renderer/DEMO'
 import { Units } from './renderer/types'
 
+import { Spotlight } from '@mantine/spotlight';
+import { spotlightStore, actions } from './contexts/Spotlight'
+
 // STYLES
 import '@mantine/core/styles.css';
 import 'mantine-contextmenu/styles.css';
 import '@mantine/dropzone/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/spotlight/styles.css';
+
 
 
 function Main(): JSX.Element | null {
@@ -69,6 +74,7 @@ function Main(): JSX.Element | null {
         theme={theme}
       >
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
+          <Spotlight store={spotlightStore} actions={actions} shortcut={['/']}/>
           <Notifications />
           <App />
           {/* <REGLApp /> */}

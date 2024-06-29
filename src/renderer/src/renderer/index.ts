@@ -55,6 +55,7 @@ export class RenderEngine {
             force: true
           })
         })
+        if (name == 'COLOR_BLEND') this.updateBlendCommand()
         target[name] = value
         return true
       }

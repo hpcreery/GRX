@@ -7,9 +7,13 @@ import {
   Switch,
   Divider
 } from '@mantine/core'
+import {
+  IconZoom,
+  IconZoomScan
+} from '@tabler/icons-react'
 import { ColorBlend, ColorBlends } from '@src/renderer/engine'
-
 import { useLocalStorage } from '@mantine/hooks'
+import { actions } from '@src/contexts/Spotlight'
 
 interface EngineSettingsProps {
   renderEngine: RenderEngine
@@ -28,9 +32,24 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
   useEffect(() => {
     renderEngine.settings.COLOR_BLEND = colorBlend
     renderEngine.settings.ZOOM_TO_CURSOR = zoomToCursor
-    renderEngine.updateBlendCommand()
-    renderEngine.render({ force: true })
   }, [colorBlend, zoomToCursor])
+
+  useEffect(() => {
+    actions.push({
+      id: 'zoom to cursor off',
+      label: 'Enable Zoom to Center',
+      description: 'Disable zoom to cursor',
+      onClick: () => setZoomToCursor(false),
+      leftSection: <IconZoomScan />,
+    })
+    actions.push({
+      id: 'zoom to cursor on',
+      label: 'Enable Zoom to Cursor',
+      description: 'Disable zoom to center',
+      onClick: () => setZoomToCursor(true),
+      leftSection: <IconZoom />,
+    })
+  }, [])
 
   return (
     <>
