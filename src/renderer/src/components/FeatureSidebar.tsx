@@ -10,7 +10,9 @@ import {
   IconPolygon,
   IconShape2,
   IconQuestionMark,
-  IconX
+  IconX,
+  IconPictureInPicture,
+  IconReplace
 } from '@tabler/icons-react'
 import { LayerInfo, QueryFeature } from '@src/renderer/engine';
 import classes from './FeatureSidebar.module.css';
@@ -18,7 +20,7 @@ import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 import { getUnitsConversion } from '@src/renderer/utils';
 import chroma from 'chroma-js';
 import { STANDARD_SYMBOLS, StandardSymbol } from '@src/renderer/symbols';
-import { Units } from '@src/renderer/types';
+import { AttributeCollection, Units } from '@src/renderer/types';
 import * as Shapes from '@src/renderer/shapes'
 
 interface ToolbarProps {
@@ -178,15 +180,25 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
-          {/* {getParentInfo(feature.parent, feature.units)} */}
+          <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
         </>
       case 'pad':
         return <>
+          {feature.symbol.type == 'symbol_defintion' ?
+            "" :
+              feature.symbol.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)
+            }
           <CornerIcon>
-            <IconCircle />
+          {feature.symbol.type == 'symbol_defintion' ? <IconCircle /> :
+            <IconPictureInPicture/> }
           </CornerIcon>
           <Text size="lg" fw={700} c='white'>
-            Pad
+            {feature.symbol.type == 'macro_definition' ? <>Nested in<br/>Macro Pad</> : <>Pad</>}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
@@ -213,9 +225,15 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           {feature.symbol.type == 'symbol_defintion' ?
             <Text>
               {getSymbolInfo(feature.symbol, feature.units)}
-            </Text> : ''}
-          {/* {feature.parent.length > 0 ? feature.parent.map(p => <Text key={p.index}>Parent: <Code>{p.index}</Code></Text>) : ''} */}
-          {/* {getParentInfo(feature.parent, feature.units)} */}
+            </Text> : ""
+              // feature.symbol.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)
+            }
+            <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
         </>
       case 'arc':
         return <>
@@ -250,7 +268,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             {getSymbolInfo(feature.symbol, feature.units)}
           </Text>
-          {/* {getParentInfo(feature.parent, feature.units)} */}
+          <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
         </>
       case 'surface':
         return <>
@@ -276,7 +299,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Edges: <Code>{feature.contours.map(ctr => ctr.segments.length).reduce((p, c) => p + c, 0) - 1}</Code>
           </Text>
-          {/* {getParentInfo(feature.parent, feature.units)} */}
+          <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
         </>
       case 'polyline':
         return <>
@@ -305,7 +333,35 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <Text>
             Qty Lines: <Code>{feature.lines.length}</Code>
           </Text>
-          {/* {getParentInfo(feature.parent, feature.units)} */}
+          <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
+        </>
+      case 'step_and_repeat':
+        return <>
+          {feature.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)}
+          <CornerIcon>
+            <IconReplace />
+          </CornerIcon>
+          <Text size="lg" fw={700} c='white'>
+            Nested in<br/>Step and Repeat
+          </Text>
+          <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
+          <Text>
+            Index: <Code>{feature.index}</Code>
+          </Text>
+          <Text>
+            Repeats: <Code>{feature.repeats.length}</Code>
+          </Text>
+          <Text>
+            Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
+          </Text>
+          <Text>
+            {getAttributes(feature.attributes)}
+          </Text>
         </>
       default:
         return <>
@@ -318,6 +374,14 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           </Text>
         </>
     }
+  }
+
+  const getAttributes = (attributes: AttributeCollection): JSX.Element => {
+    return <>{Object.entries(attributes).map((key, value) =>
+      <>
+        <Text key={`${key}`}>- {key}: <Code>{value}</Code></Text>
+      </>
+    )}</>
   }
 
 
