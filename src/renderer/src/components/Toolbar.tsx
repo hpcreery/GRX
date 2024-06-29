@@ -130,15 +130,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Engine Fill Settings">
-              <ActionIcon size='lg' radius="sm" variant="default" onClick={() => {
-                // const newStyle = fillStyle === 'contrast' ? 'overlay' : 'contrast'
-                // renderEngine.settings.COLOR_BLEND = newStyle
-                // renderEngine.updateBlendCommand()
-                // setFillStyle(newStyle)
-                // renderEngine.render({ force: true})
-                // console.log('Fill Style:', newStyle, renderEngine.settings.COLOR_BLEND)
-                engineSettingsModalHandlers.open()
-              }}>
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={engineSettingsModalHandlers.open}>
                 <IconEngine size={18} />
               </ActionIcon>
             </Tooltip>

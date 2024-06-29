@@ -124,6 +124,11 @@ export class RenderEngine {
     })
   }
 
+  public async onLoad(cb: () => void): Promise<void> {
+    await this.backend
+    cb()
+  }
+
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement('canvas')
     canvas.width = this.CONTAINER.clientWidth

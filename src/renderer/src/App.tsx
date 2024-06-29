@@ -16,11 +16,15 @@ export default function App(): JSX.Element | null {
   const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [renderEngine, setRenderEngine] = useState<RenderEngine>()
+  const [ready, setReady] = useState<boolean>(false)
 
   // Load in the gerber application
   useEffect(() => {
     const Engine = new RenderEngine({ container: elementRef.current })
     setRenderEngine(Engine)
+    Engine.onLoad(() => {
+      setReady(true)
+    })
     return (): void => {
       Engine.destroy()
     }
@@ -35,7 +39,7 @@ export default function App(): JSX.Element | null {
 
   return (
     <>
-      {renderEngine != undefined ? (
+      {ready && renderEngine ? (
         <Box
           mod={{ transparency }}
           style={{
