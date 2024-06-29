@@ -26,7 +26,7 @@ import {
   Tooltip,
   useMantineTheme,
 } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { useDisclosure, useHotkeys } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
 import GridSettings from './toolbar/GridSettings'
 import EngineSettings from './toolbar/EngineSettings'
@@ -104,6 +104,31 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
     })
   }, [])
 
+  useHotkeys([
+    ['a', () => {
+      renderEngine.pointerSettings.mode = 'move'
+      setPointerMode('move')
+    }],
+    ['s', () => {
+      renderEngine.pointerSettings.mode = 'select'
+      setPointerMode('select')
+
+    }],
+    ['d', () => {
+      renderEngine.pointerSettings.mode = 'measure'
+      setPointerMode('measure')
+    }],
+    ['o', () => {
+      renderEngine.settings.OUTLINE_MODE = !renderEngine.settings.OUTLINE_MODE
+      setOutlineMode(renderEngine.settings.OUTLINE_MODE)
+    }],
+    // ['g', gridSettingsModalHandlers.open],
+    // ['e', engineSettingsModalHandlers.open],
+    ['f', () => {
+      renderEngine.zoomFit()
+    }],
+  ]);
+
   const contextItems = [
     {
       title: 'Clear Measurements',
@@ -137,7 +162,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       >
         <Group gap='5'>
           <ActionIcon.Group>
-            <Tooltip openDelay={500} withArrow label="Move">
+            <Tooltip openDelay={500} withArrow label="Move (a)">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'move' ? "outline" : 'default'} onClick={() => {
                 renderEngine.pointerSettings.mode = 'move'
                 setPointerMode('move')
@@ -145,7 +170,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconArrowsMove size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Select">
+            <Tooltip openDelay={500} withArrow label="Select (s)">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'select' ? "outline" : 'default'} onClick={() => {
                 renderEngine.pointerSettings.mode = 'select'
                 setPointerMode('select')
@@ -153,7 +178,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconClick size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Measure">
+            <Tooltip openDelay={500} withArrow label="Measure (d)">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'measure' ? "outline" : 'default'} onClick={(): void => {
                 renderEngine.pointerSettings.mode = 'measure'
                 setPointerMode('measure')
@@ -164,7 +189,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
             </Tooltip>
           </ActionIcon.Group>
           <ActionIcon.Group>
-            <Tooltip openDelay={500} withArrow label="Zoom Fit">
+            <Tooltip openDelay={500} withArrow label="Zoom Fit (f)">
               <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
                 renderEngine.zoomFit()
               }}>
