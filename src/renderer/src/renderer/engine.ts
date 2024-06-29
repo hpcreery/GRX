@@ -58,11 +58,19 @@ export interface RenderEngineBackendConfig {
 //   lastRenderTime: number
 // }
 
+// export type ColorBlend = 'Contrast' | 'Overlay'
+export const ColorBlend = {
+  CONTRAST: 'Contrast',
+  OVERLAY: 'Overlay'
+} as const
+export type ColorBlends = typeof ColorBlend[keyof typeof ColorBlend]
+
 
 export interface RenderSettings {
   FPS: number
   MSPFRAME: number
   OUTLINE_MODE: boolean
+  COLOR_BLEND: ColorBlends
   BACKGROUND_COLOR: [number, number, number, number]
   MAX_ZOOM: number
   MIN_ZOOM: number
@@ -138,6 +146,7 @@ export class RenderEngineBackend {
       this.MSPFRAME = 1000 / value
     },
     OUTLINE_MODE: false,
+    COLOR_BLEND: 'Contrast',
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 100,
     MIN_ZOOM: 0.001,
@@ -336,24 +345,7 @@ export class RenderEngineBackend {
       },
     )
 
-    this.blend = this.regl({
-      blend: {
-        enable: true,
-
-        func: {
-          srcRGB: 'one minus dst color',
-          srcAlpha: 'one',
-          dstRGB: 'one minus src color',
-          dstAlpha: 'one'
-        },
-
-        equation: {
-          rgb: 'add',
-          alpha: 'add'
-        },
-        color: [0, 0, 0, 0.1]
-      },
-    })
+    this.updateBlendCommand()
 
     this.overlay = this.regl({
       blend: {
@@ -379,6 +371,29 @@ export class RenderEngineBackend {
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.render({
       force: true
+    })
+  }
+
+  public updateBlendCommand(): void {
+    this.blend = this.regl({
+      blend: {
+        enable: true,
+
+        func: {
+          srcRGB: this.settings.COLOR_BLEND === ColorBlend.OVERLAY ? 'src color'
+            : this.settings.COLOR_BLEND === ColorBlend.CONTRAST ? 'one minus dst color' :
+              'one minus dst color',
+          srcAlpha: 'one',
+          dstRGB: 'one minus src color',
+          dstAlpha: 'one'
+        },
+
+        equation: {
+          rgb: 'add',
+          alpha: 'add'
+        },
+        color: [0, 0, 0, 0.1]
+      },
     })
   }
 
@@ -612,7 +627,7 @@ export class RenderEngineBackend {
         const layerFeatures = layer.query(pointer, context)
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
-          color: [0.5,0.5,0.5],
+          color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,
           name: 'selection',

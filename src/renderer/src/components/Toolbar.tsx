@@ -13,7 +13,9 @@ import {
   // IconGridDots,
   IconGrid4x4,
   IconClick,
-  IconZoomReset
+  IconZoomReset,
+  IconTrashX,
+  IconEngine
 } from '@tabler/icons-react'
 // import chroma from 'chroma-js'
 import {
@@ -27,11 +29,9 @@ import {
 import { useDisclosure } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
 import GridSettings from './toolbar/GridSettings'
+import EngineSettings from './toolbar/EngineSettings'
 import type { PointerSettings } from '@src/renderer'
 import { useContextMenu } from 'mantine-contextmenu'
-import {
-  IconTrashX,
-} from '@tabler/icons-react'
 import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 
 interface ToolbarProps {
@@ -42,6 +42,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const { units } = React.useContext(ConfigEditorProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
+  const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
@@ -128,6 +129,19 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconGrid4x4 size={18} />
               </ActionIcon>
             </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Engine Fill Settings">
+              <ActionIcon size='lg' radius="sm" variant="default" onClick={() => {
+                // const newStyle = fillStyle === 'contrast' ? 'overlay' : 'contrast'
+                // renderEngine.settings.COLOR_BLEND = newStyle
+                // renderEngine.updateBlendCommand()
+                // setFillStyle(newStyle)
+                // renderEngine.render({ force: true})
+                // console.log('Fill Style:', newStyle, renderEngine.settings.COLOR_BLEND)
+                engineSettingsModalHandlers.open()
+              }}>
+                <IconEngine size={18} />
+              </ActionIcon>
+            </Tooltip>
           </ActionIcon.Group>
           <Tooltip openDelay={500} withArrow label="Settings">
             <ActionIcon size='lg' radius="sm" variant="default" onClick={open}>
@@ -141,6 +155,9 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       </Modal>
       <Modal title="Grid Settings" opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
         <GridSettings renderEngine={renderEngine} />
+      </Modal>
+      <Modal title="Engine Settings" opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
+        <EngineSettings renderEngine={renderEngine} />
       </Modal>
     </>
   )

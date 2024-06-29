@@ -12,8 +12,8 @@ export type LIBNAME = {
 }
 
 export type UNITS = {
-  userUnit: number
-  databaseUnit: number
+  userUnitsPerDatabaseUnit: number
+  metersPerDatabaseUnit: number
 }
 
 export type ENDLIB = never

@@ -71,8 +71,8 @@ export const RecordDefinitions: { [key: number]: RecordDefinition } = {
     description: 'Database units, size of database unit in user units',
     parse: (state, data: number[]) => {
       state.bnf.UNITS = {
-        userUnit: data[0],
-        databaseUnit: data[1]
+        userUnitsPerDatabaseUnit: data[0],
+        metersPerDatabaseUnit: data[1]
       }
     }
   },

@@ -22,7 +22,8 @@ type LayerHierarchy = {
 }
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
-  const scale = gdsii.UNITS.databaseUnit / gdsii.UNITS.userUnit
+  const scale = gdsii.UNITS.metersPerDatabaseUnit / gdsii.UNITS.userUnitsPerDatabaseUnit
+  // console.log('scale', scale)
   // const scale = 0.0001
 
   const availableCells = new Set<string>()

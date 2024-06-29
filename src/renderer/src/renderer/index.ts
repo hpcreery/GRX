@@ -41,6 +41,7 @@ export class RenderEngine {
         this.MSPFRAME = 1000 / value
       },
       OUTLINE_MODE: false,
+      COLOR_BLEND: 'Contrast',
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
@@ -302,6 +303,11 @@ export class RenderEngine {
   }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
+  }
+
+  public async updateBlendCommand(): Promise<void> {
+    const backend = await this.backend
+    backend.updateBlendCommand()
   }
 
   public async render(props: RenderProps): Promise<void> {
