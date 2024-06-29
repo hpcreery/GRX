@@ -33,6 +33,7 @@ import EngineSettings from './toolbar/EngineSettings'
 import type { PointerSettings } from '@src/renderer'
 import { useContextMenu } from 'mantine-contextmenu'
 import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
+import { actions } from '@src/contexts/Spotlight'
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -48,6 +49,60 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
+
+  React.useEffect(() => {
+    actions.push({
+      id: 'outline mode off',
+      label: 'Disable Outline Mode',
+      description: 'Default fill mode',
+      onClick: () => {
+        renderEngine.settings.OUTLINE_MODE = false
+        setOutlineMode(false)
+      },
+      leftSection: <IconCube />,
+    })
+    actions.push({
+      id: 'outline mode on',
+      label: 'Enable Outline Mode',
+      description: 'Show outline of all features',
+      onClick: () => {
+        renderEngine.settings.OUTLINE_MODE = true
+        setOutlineMode(true)
+      },
+      leftSection: <IconCube3dSphere />,
+    })
+    actions.push({
+      id: 'open settings modal',
+      label: 'Open Settings',
+      description: 'Show general settings',
+      onClick: open,
+      leftSection: <IconAdjustments />,
+    })
+    actions.push({
+      id: 'open grid settings modal',
+      label: 'Open Grid Settings',
+      description: 'Show grid settings',
+      onClick: gridSettingsModalHandlers.open,
+      leftSection: <IconGrid4x4 />,
+    })
+    actions.push({
+      id: 'open engine settings modal',
+      label: 'Open Engine Settings',
+      description: 'Show engine settings',
+      onClick: engineSettingsModalHandlers.open,
+      leftSection: <IconEngine />,
+    })
+    actions.push({
+      id: 'clear measurements',
+      label: 'Clear Measurements',
+      description: 'Delete and remove all measurements',
+      onClick: async (): Promise<void> => {
+        const backend = await renderEngine.backend
+        backend.clearMeasurements()
+      },
+      leftSection: <IconTrashX />,
+    })
+  }, [])
 
   const contextItems = [
     {
@@ -80,7 +135,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         }}
         padding={4}
       >
-        <Group gap='xs'>
+        <Group gap='5'>
           <ActionIcon.Group>
             <Tooltip openDelay={500} withArrow label="Move">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'move' ? "outline" : 'default'} onClick={() => {
