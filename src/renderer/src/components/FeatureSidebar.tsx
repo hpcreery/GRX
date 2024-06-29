@@ -21,7 +21,6 @@ import { getUnitsConversion } from '@src/renderer/utils';
 import chroma from 'chroma-js';
 import { STANDARD_SYMBOLS, StandardSymbol } from '@src/renderer/symbols';
 import { AttributeCollection, Units } from '@src/renderer/types';
-import * as Shapes from '@src/renderer/shapes'
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -91,58 +90,6 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       renderEngine.pointer.removeEventListener(PointerEvents.POINTER_SELECT, handler)
     }
   }, [])
-
-  const getParentInfo = (parent: Shapes.Parents[], feature_units: Units): JSX.Element => {
-    return (
-      <>
-        {parent.map(feature => {
-          switch (feature.type) {
-            case 'pad':
-              return <>
-                <Divider my="sm" />
-                <Text size="lg" fw={700} c='white'>
-                  Nested in Pad
-                </Text>
-                <Text>
-                  Index: <Code>{feature.index}</Code>
-                </Text>
-                <Text>
-                  Polarity: <Code>{feature.polarity === 1 ? '+' : '-'}</Code>
-                </Text>
-                <Text>
-                  Center: <Code>X:{(feature.x * getUnitsConversion(units) / getUnitsConversion(feature_units)).toFixed(3)}{units} Y:{(feature.y * getUnitsConversion(units) / getUnitsConversion(feature_units)).toFixed(3)}{units}</Code>
-                </Text>
-                <Text>
-                  Resize Factor: <Code>{feature.resize_factor}</Code>
-                </Text>
-                <Text>
-                  Mirror: <Code>X:{feature.mirror_x === 1 ? 'yes' : 'no'} Y:{feature.mirror_y === 1 ? 'yes' : 'no'}</Code>
-                </Text>
-                <Text>
-                  Rotation (cw): <Code>{feature.rotation}&deg;</Code>
-                </Text>
-                <Text>
-                  Symbol: <Code>{feature.symbol.id}</Code>
-                </Text>
-              </>
-            case 'step_and_repeat':
-              return <>
-                <Divider my="sm" />
-                <Text size="lg" fw={700} c='white'>
-                  Nested in Step and Repeat
-                </Text>
-                <Text>
-                  Index: <Code>{feature.index}</Code>
-                </Text>
-                <Text>
-                  Repeats: <Code>{feature.repeats.length}</Code>
-                </Text>
-              </>
-          }
-        })}
-      </>
-    )
-  }
 
   const getInfo = (feature: QueryFeature): JSX.Element => {
     const layer = layers.find(x => x.uid === feature.layer)
@@ -226,7 +173,6 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             <Text>
               {getSymbolInfo(feature.symbol, feature.units)}
             </Text> : ""
-              // feature.symbol.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)
             }
             <Text>
             Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
@@ -432,7 +378,13 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             )}
           </ScrollArea>
           <Affix withinPortal={false} position={{ bottom: 5, right: 10 }}>
-            <ActionIcon radius='sm' variant='subtle' onClick={() => setMounted(false)}>
+            <ActionIcon radius='sm' variant='subtle' onClick={() => {
+              setMounted(false)
+              renderEngine.backend.then(async engine => {
+                await engine.clearSelection()
+                await engine.render({force: true})
+              })
+            }}>
               <IconX />
             </ActionIcon>
           </Affix>

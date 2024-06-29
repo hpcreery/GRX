@@ -637,27 +637,24 @@ export class RenderEngineBackend {
     }
   }
 
-  public query(pointer: vec2): (QueryFeature)[] {
+  public select(pointer: vec2): (QueryFeature)[] {
     const features: (QueryFeature)[] = []
     this.selections.length = 0
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const layerFeatures = layer.query(pointer, context)
+        const layerFeatures = layer.select(pointer, context)
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
           color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,
           name: 'selection',
-          image: [],
+          image: layerFeatures,
         })
         for (const feature of layerFeatures) {
-          newSelectionLayer.image.push(feature)
           features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
         }
-        newSelectionLayer.image.sort((x, y) => x.index - y.index)
-        newSelectionLayer.indexImage()
         newSelectionLayer.dirty = true
         this.selections.push(newSelectionLayer)
       }
@@ -666,6 +663,10 @@ export class RenderEngineBackend {
       force: true,
     })
     return features
+  }
+
+  public clearSelection(): void {
+    this.selections.length = 0
   }
 
   public setPointer(mouse: Partial<Pointer>): void {

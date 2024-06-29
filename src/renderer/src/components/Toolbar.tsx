@@ -90,7 +90,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconArrowsMove size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Query">
+            <Tooltip openDelay={500} withArrow label="Select">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'select' ? "outline" : 'default'} onClick={() => {
                 renderEngine.pointerSettings.mode = 'select'
                 setPointerMode('select')

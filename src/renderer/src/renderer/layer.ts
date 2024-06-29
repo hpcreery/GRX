@@ -295,7 +295,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -337,7 +337,7 @@ export class ShapeRenderer {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        const macroFeatures = macro.renderer.query(pointer, context)
+        const macroFeatures = macro.renderer.select(pointer, context)
         if (macroFeatures.length > 0) {
           const macroCopy = Object.assign({}, record)
           macroCopy.symbol = Object.assign({}, macro.macro)
@@ -364,7 +364,7 @@ export class ShapeRenderer {
       //   newFeature.parent.push(newFeatureParent)
       //   features.push(newFeature)
       // })
-      const stepAndRepeatFeatures = stepAndRepeat.query(pointer, context)
+      const stepAndRepeatFeatures = stepAndRepeat.select(pointer, context)
       if (stepAndRepeatFeatures.length > 0) {
         const stepAndRepeatCopy = Object.assign({}, stepAndRepeat.record)
         stepAndRepeatCopy.shapes = stepAndRepeatFeatures
@@ -541,9 +541,9 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
-    const features = super.query(pointer, context)
+    const features = super.select(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
     return features
   }
@@ -647,13 +647,13 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public query(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
+  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
     const features: Shapes.Shape[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.query(pointer, context)
+      const nestedFeatures = super.select(pointer, context)
       if (nestedFeatures.length > 0) features.push(...nestedFeatures)
     })
     return features
