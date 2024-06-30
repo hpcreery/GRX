@@ -644,17 +644,19 @@ export class RenderEngineBackend {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const layerFeatures = layer.select(pointer, context)
+        for (const feature of layerFeatures) {
+          features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
+        }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
           color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,
           name: 'selection',
-          image: layerFeatures,
+          // we want to deep clone this object to avoid the layer renderer from mutating the properties
+          image: JSON.parse(JSON.stringify(layerFeatures)),
+          // image: layerFeatures
         })
-        for (const feature of layerFeatures) {
-          features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
-        }
         newSelectionLayer.dirty = true
         this.selections.push(newSelectionLayer)
       }

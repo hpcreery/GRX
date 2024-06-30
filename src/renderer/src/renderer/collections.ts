@@ -994,7 +994,7 @@ export class SymbolShaderCollection {
       format: 'luminance',
       data: symbols
     })
-    console.log('refreshing symbols', this.symbols.size)
+    // console.log('refreshing symbols', this.symbols.size)
     return this
   }
 }
