@@ -25,6 +25,7 @@ import {
   Group,
   Tooltip,
   useMantineTheme,
+  Kbd
 } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
 import GeneralSettings from './toolbar/GeneralSettings'
@@ -60,6 +61,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         setOutlineMode(false)
       },
       leftSection: <IconCube />,
+      rightSection: <Kbd>O</Kbd>
     })
     actions.push({
       id: 'outline mode on',
@@ -70,6 +72,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         setOutlineMode(true)
       },
       leftSection: <IconCube3dSphere />,
+      rightSection: <Kbd>O</Kbd>
     })
     actions.push({
       id: 'open settings modal',
@@ -77,6 +80,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       description: 'Show general settings',
       onClick: open,
       leftSection: <IconAdjustments />,
+      // rightSection: <Kbd></Kbd>
     })
     actions.push({
       id: 'open grid settings modal',
@@ -84,6 +88,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       description: 'Show grid settings',
       onClick: gridSettingsModalHandlers.open,
       leftSection: <IconGrid4x4 />,
+      // rightSection: <Kbd>A</Kbd>
     })
     actions.push({
       id: 'open engine settings modal',
@@ -91,6 +96,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       description: 'Show engine settings',
       onClick: engineSettingsModalHandlers.open,
       leftSection: <IconEngine />,
+      // rightSection: <Kbd>A</Kbd>
     })
     actions.push({
       id: 'clear measurements',
@@ -101,30 +107,64 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         backend.clearMeasurements()
       },
       leftSection: <IconTrashX />,
+      // rightSection: <Kbd>A</Kbd>
+    })
+    actions.push({
+      id: 'mouse move mode',
+      label: 'Mouse Move Mode',
+      description: 'Enable mouse move mode',
+      onClick: () => {
+        renderEngine.pointerSettings.mode = 'move'
+        setPointerMode('move')
+      },
+      leftSection: <IconArrowsMove />,
+      rightSection: <Kbd>A</Kbd>
+    })
+    actions.push({
+      id: 'mouse select mode',
+      label: 'Mouse Select Mode',
+      description: 'Enable mouse select mode',
+      onClick: () => {
+        renderEngine.pointerSettings.mode = 'select'
+        setPointerMode('select')
+      },
+      leftSection: <IconArrowsMove />,
+      rightSection: <Kbd>S</Kbd>
+    })
+    actions.push({
+      id: 'mouse measure mode',
+      label: 'Mouse Measure Mode',
+      description: 'Enable mouse measure mode',
+      onClick: () => {
+        renderEngine.pointerSettings.mode = 'measure'
+        setPointerMode('measure')
+      },
+      leftSection: <IconArrowsMove />,
+      rightSection: <Kbd>D</Kbd>
     })
   }, [])
 
   useHotkeys([
-    ['a', () => {
+    ['a', (): void => {
       renderEngine.pointerSettings.mode = 'move'
       setPointerMode('move')
     }],
-    ['s', () => {
+    ['s', (): void => {
       renderEngine.pointerSettings.mode = 'select'
       setPointerMode('select')
 
     }],
-    ['d', () => {
+    ['d', (): void => {
       renderEngine.pointerSettings.mode = 'measure'
       setPointerMode('measure')
     }],
-    ['o', () => {
+    ['o', (): void => {
       renderEngine.settings.OUTLINE_MODE = !renderEngine.settings.OUTLINE_MODE
       setOutlineMode(renderEngine.settings.OUTLINE_MODE)
     }],
     // ['g', gridSettingsModalHandlers.open],
     // ['e', engineSettingsModalHandlers.open],
-    ['f', () => {
+    ['f', (): void => {
       renderEngine.zoomFit()
     }],
   ]);
@@ -162,7 +202,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
       >
         <Group gap='5'>
           <ActionIcon.Group>
-            <Tooltip openDelay={500} withArrow label="Move (a)">
+            <Tooltip openDelay={500} withArrow label="Move">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'move' ? "outline" : 'default'} onClick={() => {
                 renderEngine.pointerSettings.mode = 'move'
                 setPointerMode('move')
@@ -170,7 +210,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconArrowsMove size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Select (s)">
+            <Tooltip openDelay={500} withArrow label="Select">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'select' ? "outline" : 'default'} onClick={() => {
                 renderEngine.pointerSettings.mode = 'select'
                 setPointerMode('select')
@@ -178,7 +218,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconClick size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Measure (d)">
+            <Tooltip openDelay={500} withArrow label="Measure">
               <ActionIcon size='lg' radius="sm" variant={pointerMode == 'measure' ? "outline" : 'default'} onClick={(): void => {
                 renderEngine.pointerSettings.mode = 'measure'
                 setPointerMode('measure')
@@ -189,7 +229,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
             </Tooltip>
           </ActionIcon.Group>
           <ActionIcon.Group>
-            <Tooltip openDelay={500} withArrow label="Zoom Fit (f)">
+            <Tooltip openDelay={500} withArrow label="Zoom Fit">
               <ActionIcon size='lg' radius="sm" variant="default" onClick={async (): Promise<void> => {
                 renderEngine.zoomFit()
               }}>
@@ -209,7 +249,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
                 <IconGrid4x4 size={18} />
               </ActionIcon>
             </Tooltip>
-            <Tooltip openDelay={500} withArrow label="Engine Fill Settings">
+            <Tooltip openDelay={500} withArrow label="Engine Settings">
               <ActionIcon size='lg' radius="sm" variant="default" onClick={engineSettingsModalHandlers.open}>
                 <IconEngine size={18} />
               </ActionIcon>
