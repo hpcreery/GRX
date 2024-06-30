@@ -1,5 +1,6 @@
 import gdsiiPluginWorker from '@lib/gdsii?worker'
 import gerberPluginWorker from '@lib/gerber?worker'
+import dxfPluginWorker from '@lib/dxf?worker'
 import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 
@@ -10,7 +11,8 @@ const plugins: {
   [key: string]: new () => Worker
 } = {
   gdsii: gdsiiPluginWorker,
-  rs274x: gerberPluginWorker
+  rs274x: gerberPluginWorker,
+  dxf: dxfPluginWorker,
 }
 
 export const pluginList = Object.keys(plugins)
