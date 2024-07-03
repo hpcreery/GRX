@@ -1,6 +1,6 @@
 // https://images.autodesk.com/adsk/files/autocad_2012_pdf_dxf-reference_enu.pdf
 
-import { vec3 } from 'gl-matrix'
+import { vec2, vec3 } from 'gl-matrix'
 import { Vector4 } from './vec'
 
 import * as DxfParser from 'dxf-parser'
@@ -19,7 +19,7 @@ type Layers = {
 type Blocks = {
   [blockName: string]: {
     shapes: Shapes.Shape[]
-    position: vec3
+    position: vec2
     // color: vec3
     // layer: string
   }
@@ -55,7 +55,6 @@ function ensureLayer(layers: Layers, layerName: string): void {
     layers[layerName] = {
       shapes: [],
       color: vec3.fromValues(0, 0, 0)
-      // color: color
     }
   }
 }
@@ -76,6 +75,7 @@ function ensureLayer(layers: Layers, layerName: string): void {
 
 function parseEntity(
   entity: DxfParser.IEntity,
+  blocks: Blocks,
 ): Shapes.Shape | undefined {
     // console.log('entity', JSON.stringify(entity))
     // EntityName = 'POINT' | '3DFACE' | 'ARC' | 'ATTDEF' | 'CIRCLE' | 'DIMENSION' | 'ELLIPSE' | 'INSERT' | 'LINE' | 'LWPOLYLINE' | 'MTEXT' | 'POLYLINE' | 'SOLID' | 'SPLINE' | 'TEXT' | 'VERTEX';
@@ -87,7 +87,7 @@ function parseEntity(
         (arc.extrusionDirectionX !== 0 || arc.extrusionDirectionY !== 0)
       ) {
         console.warn('ARC extrusionDirection not supported', arc)
-        return
+        // return
       }
       let cw: 0 | 1 = 0 // Default
       if (!arc.extrusionDirectionZ) {
@@ -97,8 +97,8 @@ function parseEntity(
       } else if (arc.extrusionDirectionZ === -1) {
         cw = 1
       } else {
-        console.warn('ARC extrusionDirectionZ not supported', arc)
-        return
+        console.warn('ARC extrusionDirectionZ not supported. Flattening to 0.', arc)
+        // return
       }
       const shape = new Shapes.Arc({
         xc: arc.center.x,
@@ -200,7 +200,7 @@ function parseEntity(
         polyline.isPolyfaceMesh
       ) {
         console.warn('POLYLINE 3D not supported', polyline)
-        return
+        // return
       }
       if (polyline.hasContinuousLinetypePattern) {
         // Linetype pattern is continuous but is not supported. Silently ignore.
@@ -230,22 +230,96 @@ function parseEntity(
         xs: lines[0].x,
         ys: lines[0].y,
         polarity: 1,
-        width: polyline.thickness // TODO: verify
+        width: polyline.thickness || 0 // TODO: verify
+      }).addLines(lines)
+      return shape
+    } else if (entity.type === 'INSERT') {
+      // console.warn('DXF entity type not supported', entity) // TODO: support
+      const insert = entity as DxfParser.IInsertEntity
+      const referenceBlock = blocks[insert.name]
+      if (!referenceBlock) {
+        console.warn('DXF INSERT referenceBlock not found', insert)
+        return
+      }
+      if (insert.xScale !== insert.yScale) {
+        console.warn('DXF INSERT xScale !== yScale not supported', insert)
+        return
+      }
+
+      const origin = vec2.fromValues(insert.position.x, insert.position.y)
+      const cols = insert.columnCount || 1
+      const rows = insert.rowCount || 1
+      // const xDisplace = vec2.fromValues(insert.columnSpacing, 0)
+      // const yDisplace = vec2.fromValues(0, insert.rowSpacing)
+      // const xSpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), xDisplace, origin), [cols, cols])
+      // const ySpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), yDisplace, origin), [rows, rows])
+
+      const repeats: Shapes.StepAndRepeat['repeats'] = []
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          repeats.push({
+            datum: vec2.add(vec2.create(), origin, vec2.fromValues(i * insert.columnSpacing, j * insert.rowSpacing)),
+            rotation: (insert.rotation || 0),
+            scale: insert.xScale || 1,
+            mirror_x: 0,
+            mirror_y: 0,
+            // order: ['mirror', 'translate', 'rotate', 'scale']
+          })
+        }
+      }
+
+      const shape = new Shapes.StepAndRepeat({
+        shapes: referenceBlock.shapes,
+        repeats: repeats
+      })
+
+      return shape
+    } else if (entity.type === 'LWPOLYLINE') {
+      const lwpolyline = entity as DxfParser.ILwpolylineEntity
+      if (lwpolyline.vertices.length < 2) {
+        console.warn('LWPOLYLINE vertices.length < 2 not supported', lwpolyline)
+        return
+      }
+      if (lwpolyline.elevation !== 0) {
+        console.warn('LWPOLYLINE elevation not supported', lwpolyline)
+      }
+      const lines: { x: number; y: number }[] = []
+      for (const vertex of lwpolyline.vertices) {
+        if (vertex.z === undefined || vertex.z != 0) {
+          console.warn('vertex.z != 0 not supported. Flattening to 0.', vertex)
+        }
+        if (vertex.bulge) { 
+          console.warn('advanced vertex not supported', vertex)
+          // continue
+        }
+        if (vertex.startWidth || vertex.endWidth || vertex.startWidth !== vertex.endWidth) {
+          console.warn('vertex.startWidth !== vertex.endWidth not supported', vertex)
+          // continue
+        }
+        lines.push({
+          x: vertex.x,
+          y: vertex.y
+        })
+      }
+      const shape = new Shapes.PolyLine({
+        // Start point.
+        xs: lines[0].x,
+        ys: lines[0].y,
+        polarity: 1,
+        width: lwpolyline.width || 0 // TODO: verify
       }).addLines(lines)
       return shape
     } else if (entity.type === 'POINT') {
-      // console.warn('entity type not supported', entity) // TODO: support
+      // console.warn('entity type not supported', entity)
+    } else if (entity.type === 'VERTEX') {
+      // console.warn('DXF entity type not supported', entity)
     } else if (entity.type === '3DFACE') {
       console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'ATTDEF') {
-      console.warn('DXF entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support when GRX supports shape attrubutes
     } else if (entity.type === 'DIMENSION') {
       console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'ELLIPSE') {
-      console.warn('DXF entity type not supported', entity) // TODO: support
-    } else if (entity.type === 'INSERT') {
-      console.warn('DXF entity type not supported', entity) // TODO: support
-    } else if (entity.type === 'LWPOLYLINE') {
       console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'MTEXT') {
       console.warn('DXF entity type not supported', entity) // TODO: support
@@ -253,8 +327,6 @@ function parseEntity(
       console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'TEXT') {
       console.warn('DXF entity type not supported', entity) // TODO: support
-    } else if (entity.type === 'VERTEX') {
-      // console.warn('DXF entity type not supported', entity) // TODO: support
     } else {
       console.warn('DXF entity type not supported', entity)
     }
@@ -278,13 +350,14 @@ export function convert(dxf: DxfParser.IDxf): Layers {
     for (const [_blockName, block] of Object.entries(dxf.blocks)) {
       blocks[block.name] = {
         shapes: [],
-        position: vec3.fromValues(block.position.x, block.position.y, 0),
+        position: vec2.fromValues(block.position.x, block.position.y),
       }
       // console.log('block', JSON.stringify(block))
       if (!block.entities) continue
       for (const entity of block.entities) {
-        const shape = parseEntity(entity)
+        const shape = parseEntity(entity, blocks)
         if (shape) {
+          ensureLayer(layers, entity.layer)
           blocks[block.name].shapes.push(shape)
         }
       }
@@ -292,11 +365,13 @@ export function convert(dxf: DxfParser.IDxf): Layers {
   }
 
   // Parse entities
-  for (const entity of dxf.entities) {
-    const shape = parseEntity(entity)
-    if (shape) {
-      ensureLayer(layers, entity.layer)
-      layers[entity.layer].shapes.push(shape)
+  if (dxf.entities) {
+    for (const entity of dxf.entities) {
+      const shape = parseEntity(entity, blocks)
+      if (shape) {
+        ensureLayer(layers, entity.layer)
+        layers[entity.layer].shapes.push(shape)
+      }
     }
   }
 
