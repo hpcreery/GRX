@@ -8,11 +8,20 @@ import * as Shapes from '../../src/renderer/shapes'
 
 import { NURBSCurve } from './curves/NURBSCurve'
 
-type LayerHierarchy = {
+type Layers = {
   [layerName: string]: {
     shapes: Shapes.Shape[]
     color: vec3
     visible?: boolean
+  }
+}
+
+type Blocks = {
+  [blockName: string]: {
+    shapes: Shapes.Shape[]
+    position: vec3
+    // color: vec3
+    // layer: string
   }
 }
 
@@ -27,13 +36,13 @@ function toColor(num: number): vec3 {
 }
 
 function addLayer(
-  layerHierarchy: LayerHierarchy,
+  layers: Layers,
   layerName: string,
   color: number,
   visible: boolean
 ): void {
-  if (!layerHierarchy[layerName]) {
-    layerHierarchy[layerName] = {
+  if (!layers[layerName]) {
+    layers[layerName] = {
       shapes: [],
       color: toColor(color),
       visible: visible
@@ -41,9 +50,9 @@ function addLayer(
   }
 }
 
-function ensureLayer(layerHierarchy: LayerHierarchy, layerName: string): void {
-  if (!layerHierarchy[layerName]) {
-    layerHierarchy[layerName] = {
+function ensureLayer(layers: Layers, layerName: string): void {
+  if (!layers[layerName]) {
+    layers[layerName] = {
       shapes: [],
       color: vec3.fromValues(0, 0, 0)
       // color: color
@@ -51,16 +60,23 @@ function ensureLayer(layerHierarchy: LayerHierarchy, layerName: string): void {
   }
 }
 
-export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
-  const layerHierarchy: LayerHierarchy = {}
+// function unsupported(
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   attribute: any,
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   check: (a: any) => boolean,
+//   message: string
+// ): boolean {
+//   if (check(attribute)) {
+//     console.warn('DXF entity/attribute not supported:', message, attribute)
+//     return true
+//   }
+//   return false
+// }
 
-  if (dxf.tables && dxf.tables.layer && dxf.tables.layer.layers) {
-    for (const [layerName, layer] of Object.entries(dxf.tables.layer.layers)) {
-      addLayer(layerHierarchy, layer.name, layer.color, layer.visible)
-    }
-  }
-
-  for (const entity of dxf.entities) {
+function parseEntity(
+  entity: DxfParser.IEntity,
+): Shapes.Shape | undefined {
     // console.log('entity', JSON.stringify(entity))
     // EntityName = 'POINT' | '3DFACE' | 'ARC' | 'ATTDEF' | 'CIRCLE' | 'DIMENSION' | 'ELLIPSE' | 'INSERT' | 'LINE' | 'LWPOLYLINE' | 'MTEXT' | 'POLYLINE' | 'SOLID' | 'SPLINE' | 'TEXT' | 'VERTEX';
     if (entity.type === 'ARC') {
@@ -71,7 +87,7 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         (arc.extrusionDirectionX !== 0 || arc.extrusionDirectionY !== 0)
       ) {
         console.warn('ARC extrusionDirection not supported', arc)
-        continue
+        return
       }
       let cw: 0 | 1 = 0 // Default
       if (!arc.extrusionDirectionZ) {
@@ -82,7 +98,7 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         cw = 1
       } else {
         console.warn('ARC extrusionDirectionZ not supported', arc)
-        continue
+        return
       }
       const shape = new Shapes.Arc({
         xc: arc.center.x,
@@ -93,8 +109,7 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         ye: arc.center.y + arc.radius * Math.sin(arc.endAngle),
         clockwise: cw
       })
-      ensureLayer(layerHierarchy, entity.layer)
-      layerHierarchy[entity.layer].shapes.push(shape)
+      return shape
     } else if (entity.type === 'CIRCLE') {
       const circle = entity as DxfParser.ICircleEntity
       const shape = new Shapes.Arc({
@@ -105,13 +120,12 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         xe: circle.center.x + circle.radius * Math.cos(2 * Math.PI),
         ye: circle.center.y + circle.radius * Math.sin(2 * Math.PI)
       })
-      ensureLayer(layerHierarchy, entity.layer)
-      layerHierarchy[entity.layer].shapes.push(shape)
+      return shape
     } else if (entity.type === 'LINE') {
       const line = entity as DxfParser.ILineEntity
       if (line.vertices.length !== 2) {
         console.warn('LINE vertices.length not supported', line)
-        continue
+        return
       }
       const shape = new Shapes.Line({
         xs: line.vertices[0].x,
@@ -119,8 +133,7 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         xe: line.vertices[1].x,
         ye: line.vertices[1].y
       })
-      ensureLayer(layerHierarchy, entity.layer)
-      layerHierarchy[entity.layer].shapes.push(shape)
+      return shape
     } else if (entity.type === 'SPLINE') {
       const spline = entity as DxfParser.ISplineEntity
 
@@ -137,13 +150,14 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
       if (spline.controlPoints) {
         for (const controlPoint of spline.controlPoints) {
           if (controlPoint.z === undefined || controlPoint.z != 0) {
-            console.warn('controlPoint.z not supported', controlPoint)
+            console.warn('controlPoint.z not supported. Flattening to 0.', controlPoint)
+            // continue
           }
           nurbsControlPoints.push(
             new Vector4(
               controlPoint.x,
               controlPoint.y,
-              controlPoint.z,
+              0, // controlPoint.z,
               1 // weight of control point: higher means stronger attraction
             )
           )
@@ -171,16 +185,41 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         // width: width
       }).addLines(lines)
 
-      ensureLayer(layerHierarchy, entity.layer)
-      layerHierarchy[entity.layer].shapes.push(shape)
+      return shape
     } else if (entity.type === 'POLYLINE') {
       const polyline = entity as DxfParser.IPolylineEntity
       if (polyline.vertices.length < 2) {
-        console.warn('POLYLINE vertices.length not supported', polyline)
-        continue
+        console.warn('POLYLINE vertices.length < 2 not supported', polyline)
+        return
+      }
+      if (
+        polyline.is3dPolyline ||
+        polyline.is3dPolygonMesh ||
+        polyline.is3dPolygonMeshClosed ||
+        polyline.extrusionDirection || 
+        polyline.isPolyfaceMesh
+      ) {
+        console.warn('POLYLINE 3D not supported', polyline)
+        return
+      }
+      if (polyline.hasContinuousLinetypePattern) {
+        // Linetype pattern is continuous but is not supported. Silently ignore.
+        // console.warn('POLYLINE Shape not supported', polyline)
+        // continue
       }
       const lines: { x: number; y: number }[] = []
       for (const vertex of polyline.vertices) {
+        if (vertex.z === undefined || vertex.z != 0) {
+          console.warn('vertex.z != 0 not supported. Flattening to 0.', vertex)
+        }
+        if (vertex.curveFitTangent || vertex.curveFittingVertex || vertex.splineVertex || vertex.splineControlPoint || vertex.bulge) { 
+          console.warn('advanced vertex not supported', vertex)
+          // continue
+        }
+        if (vertex.threeDPolylineMesh || vertex.threeDPolylineVertex || vertex.polyfaceMeshVertex) {
+          console.warn('3D vertex not supported', vertex)
+          // continue
+        }
         lines.push({
           x: vertex.x,
           y: vertex.y
@@ -190,37 +229,76 @@ export function convert(dxf: DxfParser.IDxf): LayerHierarchy {
         // Start point.
         xs: lines[0].x,
         ys: lines[0].y,
-        polarity: 1
-        // width: width
+        polarity: 1,
+        width: polyline.thickness // TODO: verify
       }).addLines(lines)
-      ensureLayer(layerHierarchy, entity.layer)
-      layerHierarchy[entity.layer].shapes.push(shape)
+      return shape
     } else if (entity.type === 'POINT') {
-      console.warn('entity type not supported', entity) // TODO: support
+      // console.warn('entity type not supported', entity) // TODO: support
     } else if (entity.type === '3DFACE') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'ATTDEF') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'DIMENSION') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'ELLIPSE') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'INSERT') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'LWPOLYLINE') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'MTEXT') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'SOLID') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'TEXT') {
-      console.warn('entity type not supported', entity) // TODO: support
+      console.warn('DXF entity type not supported', entity) // TODO: support
     } else if (entity.type === 'VERTEX') {
-      console.warn('entity type not supported', entity) // TODO: support
+      // console.warn('DXF entity type not supported', entity) // TODO: support
     } else {
-      console.warn('entity type not supported', entity)
+      console.warn('DXF entity type not supported', entity)
+    }
+    return
+  // }
+}
+
+export function convert(dxf: DxfParser.IDxf): Layers {
+  const layers: Layers = {}
+  const blocks: Blocks = {}
+
+  // Parse layers
+  if (dxf.tables && dxf.tables.layer && dxf.tables.layer.layers) {
+    for (const [_layerName, layer] of Object.entries(dxf.tables.layer.layers)) {
+      addLayer(layers, layer.name, layer.color, layer.visible)
     }
   }
 
-  return layerHierarchy
+  // Parse blocks
+  if (dxf.tables && dxf.blocks) {
+    for (const [_blockName, block] of Object.entries(dxf.blocks)) {
+      blocks[block.name] = {
+        shapes: [],
+        position: vec3.fromValues(block.position.x, block.position.y, 0),
+      }
+      // console.log('block', JSON.stringify(block))
+      if (!block.entities) continue
+      for (const entity of block.entities) {
+        const shape = parseEntity(entity)
+        if (shape) {
+          blocks[block.name].shapes.push(shape)
+        }
+      }
+    }
+  }
+
+  // Parse entities
+  for (const entity of dxf.entities) {
+    const shape = parseEntity(entity)
+    if (shape) {
+      ensureLayer(layers, entity.layer)
+      layers[entity.layer].shapes.push(shape)
+    }
+  }
+
+  return layers
 }
