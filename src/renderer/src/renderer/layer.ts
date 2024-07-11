@@ -301,6 +301,7 @@ export class ShapeRenderer {
     context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
       console.error('Too many features to query')
+      // TODO! for too many features, make multiple render passes in order to query all features
       return []
     }
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
