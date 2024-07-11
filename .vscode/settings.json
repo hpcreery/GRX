@@ -9,12 +9,12 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "editor.formatOnSave": false,
   "cSpell.words": [
     "Comlink",
     "Pixi",
     "uncull"
   ],
   "vue.codeActions.enabled": false,
-  "files.eol": "\n"
+  "files.eol": "\n",
+  "python.analysis.typeCheckingMode": "basic"
 }

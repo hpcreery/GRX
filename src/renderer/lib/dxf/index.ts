@@ -1,6 +1,6 @@
 // see https://github.com/vagran/dxf-viewer/tree/master/src/parser
 import DxfParser from 'dxf-parser'
-import * as CONVERTER from './converter'
+import * as converter from './converter'
 
 import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
@@ -17,23 +17,13 @@ export async function plugin(
   try {
     dxf = parser.parse(file)
   } catch (err) {
-    return console.error(err.stack)
+    return console.error(err)
   }
 
   console.log('dxf', JSON.stringify(dxf))
 
-  let units: 'inch' | 'mm' = 'inch'
-  // check if $INSUNITS exists
-  if (dxf.header && Object.keys(dxf.header).includes('$INSUNITS')) {
-    units = dxf.header['$INSUNITS'] === 1
-    ? 'inch'
-    : dxf.header['$INSUNITS'] === 4
-      ? 'mm'
-      : 'inch'
-  } else {
-    console.warn('No $INSUNITS found, defaulting to inches')
-  }
-  const layerHierarchy = CONVERTER.convert(dxf)
+  const units = converter.getUnits(dxf)
+  const layerHierarchy = converter.convert(dxf)
 
   for (const [layerName, layer] of Object.entries(layerHierarchy)) {
     delete props.name

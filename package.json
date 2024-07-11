@@ -24,7 +24,9 @@
     "prepare": "electron-builder install-app-deps && husky install",
     "create:icons": "electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons",
     "build:shaders": "node src/renderer/src/shaders/build.js",
-    "build:shaders:watch": "node src/renderer/src/shaders/watch.js"
+    "build:shaders:watch": "node src/renderer/src/shaders/watch.js",
+    "test": "vitest",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -101,6 +103,7 @@
     "rollup-plugin-glslify": "^1.3.1",
     "typescript": "^5.5.2",
     "vite": "^5.3.1",
+    "vitest": "^2.0.2",
     "vite-plugin-comlink": "^5.0.1",
     "vite-plugin-glsl": "^1.3.0"
   }
