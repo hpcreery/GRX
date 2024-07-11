@@ -1,10 +1,17 @@
-import { Modal, ActionIcon, Accordion, Title, Text, Anchor } from '@mantine/core'
+import { Modal, ActionIcon, Accordion, Text, Anchor, Table, Paper, TableData } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconUserQuestion } from '@tabler/icons-react'
+import { actions } from '@src/contexts/Spotlight'
 
 export default function InfoModal(): JSX.Element | null {
   const [helpModalOpen, { open, close }] = useDisclosure(false)
-
+  const tableData: TableData = {
+    head: ['Name', 'Note', 'Shortcut'],
+    body: actions.map(action => {
+      if (!action.rightSection) return undefined
+      return [action.label, action.description, action.rightSection]
+    }).filter(action => action != undefined)
+  };
   return (
     <>
       <ActionIcon
@@ -23,8 +30,10 @@ export default function InfoModal(): JSX.Element | null {
       >
         <IconUserQuestion size={18} />
       </ActionIcon>
-      <Modal title="Information" opened={helpModalOpen} onClose={close}>
-        <Title order={2}>Version: {__APP_VERSION__}</Title>
+      <Modal title={`Version: ${__APP_VERSION__}`} opened={helpModalOpen} onClose={close} size='xl'>
+        <Paper shadow="xs" p="0" withBorder>
+        <Table data={tableData} captionSide='top' verticalSpacing='sm'/>
+        </Paper>
         <br />
         <Accordion variant="contained" defaultValue="customization">
           <Accordion.Item value="Contributors" key="4">

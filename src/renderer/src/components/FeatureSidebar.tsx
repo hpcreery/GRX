@@ -243,7 +243,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             Holes: <Code>{feature.contours.filter(x => x.poly_type == 0).length}</Code>
           </Text>
           <Text>
-            Edges: <Code>{feature.contours.map(ctr => ctr.segments.length).reduce((p, c) => p + c, 0) - 1}</Code>
+            Edges: <Code>{feature.contours.map(ctr => ctr.segments.length).reduce((p, c) => p + c, 0)}</Code>
           </Text>
           <Text>
             Attributes: <Code>{Object.keys(feature.attributes).length}</Code>

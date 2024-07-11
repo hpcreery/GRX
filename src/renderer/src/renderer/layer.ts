@@ -344,26 +344,9 @@ export class ShapeRenderer {
           macroCopy.symbol.shapes = macroFeatures
           features.push(macroCopy)
         }
-        // macro.renderer.query(pointer, context).forEach((feature) => {
-        //   const newFeature = Object.assign({}, feature)
-        //   const newFeatureParent = Object.assign({}, record) as Shapes.TruncatedPad
-        //   // @ts-ignore - intentionally removing symbol
-        //   delete newFeatureParent.symbol
-        //   newFeatureParent.symbol = { id: record.symbol.id }
-        //   newFeature.parent.push(record)
-        //   features.push(newFeature)
-        // })
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      // const stepAndRepeatFeatures = stepAndRepeat.query(pointer, context).forEach((feature) => {
-      //   const newFeature = Object.assign({}, feature)
-      //   const newFeatureParent = Object.assign({}, stepAndRepeat.record) as Omit<Shapes.StepAndRepeat, 'shapes'>
-      //   // @ts-ignore - intentionally removing shapes
-      //   delete newFeatureParent.shapes
-      //   newFeature.parent.push(newFeatureParent)
-      //   features.push(newFeature)
-      // })
       const stepAndRepeatFeatures = stepAndRepeat.select(pointer, context)
       if (stepAndRepeatFeatures.length > 0) {
         const stepAndRepeatCopy = Object.assign({}, stepAndRepeat.record)
