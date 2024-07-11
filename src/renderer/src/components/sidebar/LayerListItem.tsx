@@ -133,8 +133,17 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         case 'rs274x':
           reader.readAsText(file)
           break
+        case 'dxf':
+          reader.readAsText(file)
+          break
         default:
           // reader.readAsText(file)
+          notifications.show({
+            title: 'Unknown reader for file',
+            message: `${file.format} does not have a reader.`,
+            color: 'red',
+            autoClose: 5000
+          })
           break
       }
     })
