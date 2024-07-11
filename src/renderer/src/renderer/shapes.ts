@@ -72,7 +72,7 @@ export class Pad implements TPad_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.Symbol = new Symbols.StandardSymbol({outer_dia: 0})
+  public symbol: Symbols.Symbol = new Symbols.StandardSymbol({ outer_dia: 0 })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -135,7 +135,7 @@ export class Line implements TLine_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({ outer_dia: 0 })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -192,7 +192,7 @@ export class Arc implements TArc_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({outer_dia: 0})
+  public symbol: Symbols.StandardSymbol = new Symbols.StandardSymbol({ outer_dia: 0 })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -465,90 +465,95 @@ export type Shape = Primitive | Surface | PolyLine | StepAndRepeat
 export type Parents = Omit<StepAndRepeat, 'shapes'> | TruncatedPad
 
 export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
-
-  if (record.type === FeatureTypeIdentifier.PAD) {
-    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-    const min = vec2.fromValues(record.x, record.y)
-    const max = vec2.fromValues(record.x, record.y)
-    vec2.add(min, symbolbox.min, min)
-    vec2.add(max, symbolbox.max, max)
-    return {
-      min,
-      max
+  let min = vec2.fromValues(Infinity, Infinity)
+  let max = vec2.fromValues(-Infinity, -Infinity)
+  switch (record.type) {
+    case FeatureTypeIdentifier.PAD: {
+      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+      min = vec2.fromValues(record.x, record.y)
+      max = vec2.fromValues(record.x, record.y)
+      vec2.add(min, symbolbox.min, min)
+      vec2.add(max, symbolbox.max, max)
+      break
     }
-  } else if (record.type === FeatureTypeIdentifier.LINE) {
-    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-    const min = vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye))
-    const max = vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
-    vec2.add(min, symbolbox.min, min)
-    vec2.add(max, symbolbox.max, max)
-    return {
-      min,
-      max
+    case FeatureTypeIdentifier.LINE: {
+      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+      min = vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye))
+      max = vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
+      vec2.add(min, symbolbox.min, min)
+      vec2.add(max, symbolbox.max, max)
+      break
     }
-  } else if (record.type === FeatureTypeIdentifier.ARC) {
-    // TODO: better arc bounding box
-    const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-    const min = vec2.fromValues(Math.min(record.xs, record.xe, record.xc), Math.min(record.ys, record.ye, record.yc))
-    const max = vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
-    vec2.add(min, symbolbox.min, min)
-    vec2.add(max, symbolbox.max, max)
-    return {
-      min,
-      max
+    case FeatureTypeIdentifier.ARC: {
+      // TODO: better arc bounding box
+      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
+      min = vec2.fromValues(Math.min(record.xs, record.xe, record.xc), Math.min(record.ys, record.ye, record.yc))
+      max = vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
+      vec2.add(min, symbolbox.min, min)
+      vec2.add(max, symbolbox.max, max)
+      break
     }
-  } else if (record.type === FeatureTypeIdentifier.SURFACE) {
-    const min: vec2 = vec2.fromValues(Infinity, Infinity)
-    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-    for (const contour of record.contours) {
-      const { xs, ys } = contour
-      vec2.min(min, min, vec2.fromValues(xs, ys))
-      vec2.max(max, max, vec2.fromValues(xs, ys))
-      for (const segment of contour.segments) {
-        const { min: segment_min, max: segment_max } = getBoundingBoxOfShape(segment)
-        vec2.min(min, min, segment_min)
-        vec2.max(max, max, segment_max)
+    case FeatureTypeIdentifier.SURFACE: {
+      min = vec2.fromValues(Infinity, Infinity)
+      max = vec2.fromValues(-Infinity, -Infinity)
+      for (const contour of record.contours) {
+        const { xs, ys } = contour
+        vec2.min(min, min, vec2.fromValues(xs, ys))
+        vec2.max(max, max, vec2.fromValues(xs, ys))
+        for (const segment of contour.segments) {
+          const { min: segment_min, max: segment_max } = getBoundingBoxOfShape(segment)
+          vec2.min(min, min, segment_min)
+          vec2.max(max, max, segment_max)
+        }
       }
+      break
     }
-    return {min, max}
-  } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
-    const min: vec2 = vec2.fromValues(Infinity, Infinity)
-    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-    for (const line of record.lines) {
-      const { x, y } = line
-      vec2.min(min, min, vec2.fromValues(x, y))
-      vec2.max(max, max, vec2.fromValues(x, y))
+    case FeatureTypeIdentifier.POLYLINE: {
+      min = vec2.fromValues(Infinity, Infinity)
+      max = vec2.fromValues(-Infinity, -Infinity)
+      for (const line of record.lines) {
+        const { x, y } = line
+        vec2.min(min, min, vec2.fromValues(x, y))
+        vec2.max(max, max, vec2.fromValues(x, y))
+      }
+      vec2.add(min, min, vec2.fromValues(-record.width, -record.width))
+      vec2.add(max, max, vec2.fromValues(record.width, record.width))
+      break
     }
-    vec2.add(min, min, vec2.fromValues(-record.width, -record.width))
-    vec2.add(max, max, vec2.fromValues(record.width, record.width))
-    return {min, max}
-  } else if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-    const min: vec2 = vec2.fromValues(Infinity, Infinity)
-    const max: vec2 = vec2.fromValues(-Infinity, -Infinity)
-    for (const shape of record.shapes) {
-      const { min: shape_min, max: shape_max } = getBoundingBoxOfShape(shape)
-      vec2.min(min, min, shape_min)
-      vec2.max(max, max, shape_max)
+    case FeatureTypeIdentifier.STEP_AND_REPEAT: {
+      min = vec2.fromValues(Infinity, Infinity)
+      max = vec2.fromValues(-Infinity, -Infinity)
+      for (const shape of record.shapes) {
+        const { min: shape_min, max: shape_max } = getBoundingBoxOfShape(shape)
+        vec2.min(min, min, shape_min)
+        vec2.max(max, max, shape_max)
+      }
+      for (const repeat of record.repeats) {
+        const { datum } = repeat
+        vec2.add(min, min, datum)
+        vec2.add(max, max, datum)
+      }
+      break
     }
-    for (const repeat of record.repeats) {
-      const { datum } = repeat
-      vec2.min(min, min, datum)
-      vec2.max(max, max, datum)
+    case FeatureTypeIdentifier.LINESEGMENT: {
+      // TODO: better line segment bounding box
+      min = vec2.fromValues(record.x, record.y)
+      max = vec2.fromValues(record.x, record.y)
+      break
     }
-    return {min, max}
-  } else if (record.type === FeatureTypeIdentifier.LINESEGMENT) {
-    // TODO: better line segment bounding box
-    return {
-      min: vec2.fromValues(record.x, record.y),
-      max: vec2.fromValues(record.x, record.y)
+    // } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
+    case FeatureTypeIdentifier.ARCSEGMENT: {
+      // TODO: better arc segment bounding box
+      min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))
+      max = vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
     }
-  } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
-    // TODO: better arc segment bounding box
-    return {
-      min: vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc)),
-      max: vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
-    }
-  } else {
-    throw new Error('Unknown record type')
+      break
+    default:
+      throw new Error('Unknown record type')
   }
+  if (isNaN(min[0]) || isNaN(min[1]) || isNaN(max[0]) || isNaN(max[1])) {
+    console.warn("Corrupt Feature Bounding Box", record, min, max)
+  }
+  return { min, max }
+
 }

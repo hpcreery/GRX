@@ -264,7 +264,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
           datum: vec2.add(
             vec2.create(),
             origin,
-            vec2.fromValues(i * insert.columnSpacing, j * insert.rowSpacing)
+            vec2.fromValues(i * insert.columnSpacing || 0, j * insert.rowSpacing || 0)
           ),
           rotation: insert.rotation || 0,
           scale: insert.xScale || 1,

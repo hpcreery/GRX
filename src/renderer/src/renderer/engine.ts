@@ -692,7 +692,6 @@ export class RenderEngineBackend {
       boundingBox.min = vec2.min(boundingBox.min, boundingBox.min, layerBoundingBox.min)
       boundingBox.max = vec2.max(boundingBox.max, boundingBox.max, layerBoundingBox.max)
     }
-    // console.log('Bounding Box:', boundingBox)
 
     const screenWidthPx = this.viewBox.width
     const screenHeightPx = this.viewBox.height
@@ -714,6 +713,7 @@ export class RenderEngineBackend {
     // boundingBox logic validation
     if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
     if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
+    if (isNaN(boundingBox.min[0]) || isNaN(boundingBox.min[1]) || isNaN(boundingBox.max[0]) || isNaN(boundingBox.max[1])) return
 
     if (bbAR > screenAR) {
       const zoom = screenWidthPx / bbWidthPx
