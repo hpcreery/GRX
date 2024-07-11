@@ -14,6 +14,7 @@ import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
 
 export async function plugin(file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+  console.log('GDSII plugin')
   const buffer = await (await fetch(file)).arrayBuffer()
   const tokens = LEXER.record_reader(buffer)
   const bnf = PARSER.parse(tokens)

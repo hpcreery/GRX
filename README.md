@@ -39,7 +39,7 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 - [x] GDSII
 - [ ] ODB++
 - [ ] IPC-2581
-- [ ] DXF
+- [x] DXF
 - [ ] OASIS
 
 ## Tools
