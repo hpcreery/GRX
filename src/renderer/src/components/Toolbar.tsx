@@ -128,7 +128,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         renderEngine.pointerSettings.mode = 'select'
         setPointerMode('select')
       },
-      leftSection: <IconArrowsMove />,
+      leftSection: <IconClick />,
       rightSection: <Kbd>S</Kbd>
     })
     actions.push({
@@ -139,7 +139,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         renderEngine.pointerSettings.mode = 'measure'
         setPointerMode('measure')
       },
-      leftSection: <IconArrowsMove />,
+      leftSection: <IconRulerMeasure />,
       rightSection: <Kbd>D</Kbd>
     })
   }, [])

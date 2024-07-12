@@ -1,4 +1,4 @@
-import { Modal, ActionIcon, Accordion, Text, Anchor, Table, Paper, TableData } from '@mantine/core'
+import { Modal, ActionIcon, Accordion, Text, Anchor, Table, Paper, TableData, Kbd } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconUserQuestion } from '@tabler/icons-react'
 import { actions } from '@src/contexts/Spotlight'
@@ -7,10 +7,14 @@ export default function InfoModal(): JSX.Element | null {
   const [helpModalOpen, { open, close }] = useDisclosure(false)
   const tableData: TableData = {
     head: ['Name', 'Note', 'Shortcut'],
-    body: actions.map(action => {
+    body: [
+      ['Command Finder', 'Open Command Finder', <Kbd key='command_finder'>/</Kbd>],
+      ...actions.map(action => {
       if (!action.rightSection) return undefined
       return [action.label, action.description, action.rightSection]
     }).filter(action => action != undefined)
+
+]
   };
   return (
     <>
