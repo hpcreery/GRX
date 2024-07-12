@@ -1,18 +1,22 @@
 import type {
-  GerberTree,
   UnitsType,
   Format,
   ZeroSuppression,
-} from '@hpcreery/tracespace-parser'
+} from '../../parser/types'
+import {
+  LEADING,
+  TRAILING,
+  IN,
+} from '../../parser/constants'
 import {
   UNITS,
   COORDINATE_FORMAT,
   GRAPHIC,
   COMMENT,
-  LEADING,
-  TRAILING,
-  IN,
-} from '@hpcreery/tracespace-parser'
+} from '../../parser/tree'
+import {
+  Tree,
+} from '../../parser/tree'
 
 export interface PlotOptions {
   units: UnitsType
@@ -22,8 +26,8 @@ export interface PlotOptions {
 
 const FORMAT_COMMENT_RE = /FORMAT={?(\d):(\d)/
 
-export function getPlotOptions(tree: GerberTree): PlotOptions {
-  const {children: treeNodes} = tree
+export function getPlotOptions(tree: Tree): PlotOptions {
+  const { children: treeNodes } = tree
   let units: UnitsType | undefined
   let coordinateFormat: Format | undefined
   let zeroSuppression: ZeroSuppression | undefined
@@ -50,7 +54,7 @@ export function getPlotOptions(tree: GerberTree): PlotOptions {
       }
 
       case GRAPHIC: {
-        const {coordinates} = node
+        const { coordinates } = node
 
         for (const coordinate of Object.values(coordinates)) {
           if (zeroSuppression !== undefined) break
@@ -69,7 +73,7 @@ export function getPlotOptions(tree: GerberTree): PlotOptions {
       }
 
       case COMMENT: {
-        const {comment} = node
+        const { comment } = node
         const formatMatch = FORMAT_COMMENT_RE.exec(comment)
 
         if (/suppress trailing/i.test(comment)) {

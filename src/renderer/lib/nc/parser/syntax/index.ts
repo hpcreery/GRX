@@ -1,11 +1,11 @@
-import type { Node } from '../tree'
+import type { ChildNode } from '../tree'
 import type { Token, LexerIterable, LexerState } from '../lexer'
 import { findSyntaxMatch } from './rules'
 import { drillGrammar } from './drill'
 
 
 export interface MatchResult {
-  nodes: Node[]
+  nodes: ChildNode[]
   unmatched: string
   lexerState: LexerState | undefined
 }
@@ -13,7 +13,7 @@ export interface MatchResult {
 export function matchSyntax(
   tokens: LexerIterable,
 ): MatchResult {
-  const nodes: Node[] = []
+  const nodes: ChildNode[] = []
   let matchedTokens: Token[] = []
   let nextLexerState: LexerState | undefined
   let unmatched = ''

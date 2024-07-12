@@ -1,11 +1,11 @@
 import type { Token } from '../lexer'
 import type { Filetype } from '../types'
-import type { Node } from '../tree'
+import type { ChildNode } from '../tree'
 
 export const SINGLE_TOKEN = 'TOKEN'
 export const MIN_TO_MAX = 'MIN_TO_MAX'
 
-export interface SyntaxRule<Node = Node> {
+export interface SyntaxRule<Node = ChildNode> {
   name: string
   rules: TokenRule[]
   createNodes: (tokens: Token[]) => Node[]

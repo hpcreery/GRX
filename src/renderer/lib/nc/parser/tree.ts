@@ -393,5 +393,3 @@ export interface Unimplemented extends BaseNode {
 }
 
 export type Tree = Root
-
-export type GerberNode = ChildNode

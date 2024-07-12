@@ -1,6 +1,7 @@
 // Track the location of the plotter and parse coordinate strings
-import type {GerberNode} from '@hpcreery/tracespace-parser'
-import {GRAPHIC, STEP_REPEAT_OPEN, TRAILING} from '@hpcreery/tracespace-parser'
+import type {ChildNode} from '../../parser/tree'
+import {GRAPHIC, STEP_REPEAT_OPEN} from '../../parser/tree'
+import {TRAILING} from '../../parser/constants'
 
 import type {PlotOptions} from './options'
 
@@ -31,7 +32,7 @@ export interface Location {
 }
 
 export interface LocationStore {
-  use: (node: GerberNode, options: PlotOptions) => Location
+  use: (node: ChildNode, options: PlotOptions) => Location
 }
 
 export function createLocationStore(): LocationStore {
@@ -49,7 +50,7 @@ const LocationStorePrototype: LocationStore & LocationStoreState = {
   _DEFAULT_STEP_REPEATS: {x: 0, y: 0, i: 1, j: 1},
   _previousPoint: {x: 0, y: 0},
 
-  use(node: GerberNode, options: PlotOptions): Location {
+  use(node: ChildNode, options: PlotOptions): Location {
     let arcOffsets = this._DEFAULT_ARC_OFFSETS
     let startPoint = this._previousPoint
     let endPoint = startPoint
