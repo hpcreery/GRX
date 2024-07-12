@@ -140,8 +140,6 @@ export type ChildNode =
 export interface Root extends BaseParent {
   /** Node type */
   type: typeof ROOT
-  /** The parsed file's type (Gerber or NC drill) */
-  filetype: Types.Filetype
 
   /** Parse results */
   children: ChildNode[]
@@ -266,7 +264,7 @@ export interface CoordinateFormat extends BaseNode {
  * - {@linkcode Types.Rectangle} (deprecated by the Gerber specification)
  *
  * Only `Circle` or `Rectangle` tools without a `hole` may create strokes.
- * `MacroShape` tools may not have a `hole` defined.
+ * `MacroShape` tools may not have a `hole` defined.gfrfdr
  *
  * @category Node
  */
