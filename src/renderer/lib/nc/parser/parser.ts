@@ -1,7 +1,7 @@
 import type { Lexer, LexerState } from './lexer'
 import { createLexer } from './lexer'
 import { matchSyntax } from './syntax'
-import type { GerberTree, GerberNode } from './tree'
+import type { Tree, ChildNode } from './tree'
 import { ROOT } from './tree'
 
 export * from './constants'
@@ -20,7 +20,7 @@ export interface Parser {
   /** Feed the parser with all or part of the source file */
   feed: (chunk: string) => this
   /** Get the resulting AST when you are done feeding the parser */
-  result: () => GerberTree
+  result: () => Tree
 }
 
 /**
@@ -44,7 +44,7 @@ export interface Parser {
  */
 export function createParser(): Parser {
   const lexer = createLexer()
-  const children: GerberNode[] = []
+  const children: ChildNode[] = []
   let lexerState: LexerState | undefined
   let unmatched = ''
 
@@ -65,12 +65,12 @@ export function createParser(): Parser {
     return parser
   }
 
-  function result(): GerberTree {
+  function result(): Tree {
 
     return { type: ROOT, children }
   }
 }
 
-export function parse(contents: string): GerberTree {
+export function parse(contents: string): Tree {
   return createParser().feed(contents).result()
 }
