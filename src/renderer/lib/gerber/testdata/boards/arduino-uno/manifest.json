@@ -1,0 +1,46 @@
+{
+  "layers": [
+    {
+      "name": "arduino-uno.cmp",
+      "format": "gerber",
+      "side": "top",
+      "type": "copper"
+    },
+    {
+      "name": "arduino-uno.drd",
+      "format": "drill",
+      "side": "all",
+      "type": "drill"
+    },
+    {
+      "name": "arduino-uno.gko",
+      "format": "gerber",
+      "side": "all",
+      "type": "outline"
+    },
+    {
+      "name": "arduino-uno.plc",
+      "format": "gerber",
+      "side": "top",
+      "type": "silkscreen"
+    },
+    {
+      "name": "arduino-uno.sol",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "copper"
+    },
+    {
+      "name": "arduino-uno.stc",
+      "format": "gerber",
+      "side": "top",
+      "type": "soldermask"
+    },
+    {
+      "name": "arduino-uno.sts",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "soldermask"
+    }
+  ]
+}

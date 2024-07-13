@@ -1,0 +1,56 @@
+{
+  "skipSnapshot": false,
+  "layers": [
+    {
+      "name": "pic18f14k50.gbl",
+      "side": "bottom",
+      "type": "copper",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.gbo",
+      "side": "bottom",
+      "type": "silkscreen",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.gbs",
+      "side": "bottom",
+      "type": "soldermask",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.gko",
+      "side": "all",
+      "type": "outline",
+      "format": "gerber",
+      "options": {
+        "plotAsOutline": 1.27
+      }
+    },
+    {
+      "name": "pic18f14k50.gtl",
+      "side": "top",
+      "type": "copper",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.gto",
+      "side": "top",
+      "type": "silkscreen",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.gts",
+      "side": "top",
+      "type": "soldermask",
+      "format": "gerber"
+    },
+    {
+      "name": "pic18f14k50.txt",
+      "side": "all",
+      "type": "drill",
+      "format": "drill"
+    }
+  ]
+}

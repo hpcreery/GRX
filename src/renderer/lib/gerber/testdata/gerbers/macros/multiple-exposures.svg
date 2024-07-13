@@ -1,0 +1,26 @@
+<svg
+  version="1.1"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  stroke-width="0"
+  width="1in" height="1in" viewBox="0 0 1000 1000">
+
+  <defs>
+    <mask id="multiple-exposures-mask-1" fill="#000">
+      <rect x="0" y="0" width="1000" height="1000" fill="#fff"/>
+      <circle cx="500" cy="500" r="200" />
+      <circle cx="150" cy="500" r="50" />
+      <circle cx="850" cy="500" r="50" />
+    </mask>
+    <mask id="multiple-exposures-mask-2" fill="#000">
+      <rect x="0" y="0" width="1000" height="1000" fill="#fff"/>
+      <circle cx="500" cy="150" r="50" />
+    </mask>
+  </defs>
+
+  <g fill="#0D8">
+    <rect x="0" y="250" width="1000" height="500" mask="url(#multiple-exposures-mask-1)"/>
+    <rect x="450" y="125" width="100" height="750" mask="url(#multiple-exposures-mask-2)"/>
+    <rect x="125" y="100" width="750" height="100" mask="url(#multiple-exposures-mask-2)"/>
+  </g>
+</svg>

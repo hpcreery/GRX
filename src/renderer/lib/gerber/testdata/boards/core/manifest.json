@@ -1,0 +1,67 @@
+{
+  "layers": [
+    {
+      "name": "core.GBL",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "copper"
+    },
+    {
+      "name": "core.GBO",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "silkscreen"
+    },
+    {
+      "name": "core.GBP",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "solderpaste"
+    },
+    {
+      "name": "core.GBS",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "soldermask"
+    },
+    {
+      "name": "core.GTL",
+      "format": "gerber",
+      "side": "top",
+      "type": "copper"
+    },
+    {
+      "name": "core.GTO",
+      "format": "gerber",
+      "side": "top",
+      "type": "silkscreen"
+    },
+    {
+      "name": "core.GTP",
+      "format": "gerber",
+      "side": "top",
+      "type": "solderpaste"
+    },
+    {
+      "name": "core.GTS",
+      "format": "gerber",
+      "side": "top",
+      "type": "soldermask"
+    },
+    {
+      "name": "core.MIL",
+      "format": "gerber",
+      "side": "all",
+      "type": "outline",
+      "options": {
+        "plotAsOutline": 0.003
+      }
+    },
+    {
+      "name": "core.TXT",
+      "format": "drill",
+      "side": "all",
+      "type": "drill"
+    }
+  ]
+}

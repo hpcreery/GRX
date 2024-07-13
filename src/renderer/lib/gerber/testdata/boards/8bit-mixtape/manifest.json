@@ -1,0 +1,69 @@
+{
+  "skipSnapshot": true,
+  "layers": [
+    {
+      "name": "mixtape.gbl",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "copper"
+    },
+    {
+      "name": "mixtape.gbo",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "silkscreen"
+    },
+    {
+      "name": "mixtape.gbp",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "solderpaste"
+    },
+    {
+      "name": "mixtape.gbs",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "soldermask"
+    },
+    {
+      "name": "mixtape.gml",
+      "format": "gerber",
+      "side": "all",
+      "type": "outline",
+      "options": {
+        "plotAsOutline": 0.2794
+      }
+    },
+    {
+      "name": "mixtape.gtl",
+      "format": "gerber",
+      "side": "top",
+      "type": "copper"
+    },
+    {
+      "name": "mixtape.gto",
+      "format": "gerber",
+      "side": "top",
+      "type": "silkscreen"
+    },
+    {
+      "name": "mixtape.gtp",
+      "format": "gerber",
+      "side": "top",
+      "type": "solderpaste"
+    },
+    {
+      "name": "mixtape.gts",
+      "format": "gerber",
+      "side": "top",
+      "type": "soldermask"
+    },
+    {
+      "name": "mixtape.txt",
+      "format": "drill",
+      "side": "all",
+      "type": "drill",
+      "options": {"zero": "L"}
+    }
+  ]
+}

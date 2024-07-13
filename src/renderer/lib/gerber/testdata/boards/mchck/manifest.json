@@ -1,0 +1,52 @@
+{
+  "layers": [
+    {
+      "name": "mchck-B_Cu.pho",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "copper"
+    },
+    {
+      "name": "mchck-B_Mask.pho",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "soldermask"
+    },
+    {
+      "name": "mchck-B_SilkS.pho",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "silkscreen"
+    },
+    {
+      "name": "mchck-Edge_Cuts.pho",
+      "format": "gerber",
+      "side": "all",
+      "type": "outline"
+    },
+    {
+      "name": "mchck-F_Cu.pho",
+      "format": "gerber",
+      "side": "top",
+      "type": "copper"
+    },
+    {
+      "name": "mchck-F_Mask.pho",
+      "format": "gerber",
+      "side": "top",
+      "type": "soldermask"
+    },
+    {
+      "name": "mchck-F_SilkS.pho",
+      "format": "gerber",
+      "side": "top",
+      "type": "silkscreen"
+    },
+    {
+      "name": "mchck.drl",
+      "format": "drill",
+      "side": "all",
+      "type": "drill"
+    }
+  ]
+}

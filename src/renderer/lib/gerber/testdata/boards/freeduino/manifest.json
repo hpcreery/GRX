@@ -1,0 +1,40 @@
+{
+  "layers": [
+    {
+      "name": "freeduino.cmp",
+      "format": "gerber",
+      "side": "top",
+      "type": "copper"
+    },
+    {
+      "name": "freeduino.drd",
+      "format": "drill",
+      "side": "all",
+      "type": "drill"
+    },
+    {
+      "name": "freeduino.plc",
+      "format": "gerber",
+      "side": "top",
+      "type": "silkscreen"
+    },
+    {
+      "name": "freeduino.sol",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "copper"
+    },
+    {
+      "name": "freeduino.stc",
+      "format": "gerber",
+      "side": "top",
+      "type": "soldermask"
+    },
+    {
+      "name": "freeduino.sts",
+      "format": "gerber",
+      "side": "bottom",
+      "type": "soldermask"
+    }
+  ]
+}

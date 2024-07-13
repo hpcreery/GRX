@@ -1,0 +1,46 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" stroke-linecap="round"
+  stroke-linejoin="round" stroke-width="0" fill-rule="evenodd" clip-rule="evenodd" fill="currentColor"
+  stroke="currentColor" viewBox="0.32030000000000003 -0.2662 0.3478 0.10149999999999998" width="0.3478in"
+  height="0.10149999999999998in">
+  <defs>
+    <mask id="_l2meZ9__ZOe__1" fill="black">
+      <rect x="0.32030000000000003" y="-0.2662" width="0.3478" height="0.10149999999999998" fill="white"></rect>
+      <circle cx="0.3841" cy="-0.2162" r="0.05"></circle>
+    </mask>
+    <mask id="_l2meZ9__ZOe__3" fill="black">
+      <rect x="0.32030000000000003" y="-0.2662" width="0.3478" height="0.10149999999999998" fill="white"></rect>
+      <path stroke-width="0.01" fill="none" d="M0.4102 -0.1886L0.4696 -0.2379"></path>
+    </mask>
+    <mask id="_l2meZ9__ZOe__5" fill="black">
+      <rect x="0.32030000000000003" y="-0.2662" width="0.3478" height="0.10149999999999998" fill="white"></rect>
+      <g>
+        <polygon
+          points="0.5145,-0.2031 0.5305,-0.2031 0.6217,-0.2031 0.6217,-0.21910000000000002 0.6057,-0.21910000000000002 0.5145,-0.21910000000000002">
+        </polygon>
+        <polygon
+          points="0.5145,-0.21109999999999998 0.5305,-0.21109999999999998 0.6217,-0.21109999999999998 0.6217,-0.2271 0.6057,-0.2271 0.5145,-0.2271">
+        </polygon>
+        <polygon
+          points="0.5145,-0.219 0.5305,-0.219 0.6217,-0.219 0.6217,-0.23500000000000001 0.6057,-0.23500000000000001 0.5145,-0.23500000000000001">
+        </polygon>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#_l2meZ9__ZOe__5)">
+    <path stroke-width="0.01" fill="none" d="M0.4174 -0.2423L0.4565 -0.193"></path>
+    <g mask="url(#_l2meZ9__ZOe__3)">
+      <circle cx="0.4333" cy="-0.2147" r="0.05"></circle>
+      <g mask="url(#_l2meZ9__ZOe__1)">
+        <g>
+          <polygon
+            points="0.32030000000000003,-0.1727 0.3843,-0.1727 0.6681,-0.1727 0.6681,-0.2367 0.6041,-0.2367 0.32030000000000003,-0.2367">
+          </polygon>
+          <polygon
+            points="0.32030000000000003,-0.1913 0.3843,-0.1913 0.6681,-0.1913 0.6681,-0.25529999999999997 0.6041,-0.25529999999999997 0.32030000000000003,-0.25529999999999997">
+          </polygon>
+        </g>
+      </g>
+    </g>
+  </g>
+  <path stroke-width="0.01" fill="none" d="M0.5232 -0.2176L0.6087 -0.2176"></path>
+</svg>
