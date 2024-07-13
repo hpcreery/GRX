@@ -1,4 +1,16 @@
-import { Modal, ActionIcon, Accordion, Text, Anchor, Table, Paper, TableData, Kbd } from '@mantine/core'
+import {
+  Modal,
+  ActionIcon,
+  Accordion,
+  Text,
+  Anchor,
+  Table,
+  Paper,
+  TableData,
+  Kbd,
+  Space,
+  Title
+} from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconUserQuestion } from '@tabler/icons-react'
 import { actions } from '@src/contexts/Spotlight'
@@ -8,14 +20,15 @@ export default function InfoModal(): JSX.Element | null {
   const tableData: TableData = {
     head: ['Name', 'Note', 'Shortcut'],
     body: [
-      ['Command Finder', 'Open Command Finder', <Kbd key='command_finder'>/</Kbd>],
-      ...actions.map(action => {
-      if (!action.rightSection) return undefined
-      return [action.label, action.description, action.rightSection]
-    }).filter(action => action != undefined)
-
-]
-  };
+      ['Command Finder', 'Open Command Finder', <Kbd key="command_finder">/</Kbd>],
+      ...actions
+        .map((action) => {
+          if (!action.rightSection) return undefined
+          return [action.label, action.description, action.rightSection]
+        })
+        .filter((action) => action != undefined)
+    ]
+  }
   return (
     <>
       <ActionIcon
@@ -34,16 +47,31 @@ export default function InfoModal(): JSX.Element | null {
       >
         <IconUserQuestion size={18} />
       </ActionIcon>
-      <Modal title={`Version: ${__APP_VERSION__}`} opened={helpModalOpen} onClose={close} size='xl'>
-        <Paper shadow="xs" p="0" withBorder>
-        <Table data={tableData} captionSide='top' verticalSpacing='sm'/>
+      <Modal title={`Version: ${__APP_VERSION__}`} opened={helpModalOpen} onClose={close} size="xl">
+        <Title order={5}>About:</Title>
+        <Paper shadow="xs" p="sm" withBorder>
+          <Text>
+            GRX is a free and open source software for viewing EDA Manufacturing Artwork files. It
+            currently supports Gerber, NC, GDSII, and DXF file formats.
+          </Text>
         </Paper>
-        <br />
+        <Space h="lg" />
+        <Title order={5}>Keyboard Shortcuts:</Title>
+        <Paper shadow="xs" p="0" withBorder>
+          <Table data={tableData} captionSide="top" verticalSpacing="sm" />
+        </Paper>
+        <Space h="lg" />
         <Accordion variant="contained" defaultValue="customization">
+          {/* <Accordion.Item value="Keyboard Shortcuts" key="5">
+            <Accordion.Control>Keyboard Shortcuts</Accordion.Control>
+            <Accordion.Panel>
+              <Table data={tableData} captionSide="top" verticalSpacing="sm" />
+            </Accordion.Panel>
+          </Accordion.Item> */}
           <Accordion.Item value="Contributors" key="4">
             <Accordion.Control>Contributors</Accordion.Control>
             <Accordion.Panel>
-              GRX is a free and open source software for viewing EDA Manufacturing Artwork files ( like Gerber and GDSII ). Built by{' '}
+              Built by{' '}
               <Anchor href="https://github.com/hpcreery" target="_blank">
                 Hunter Creery
               </Anchor>{' '}
