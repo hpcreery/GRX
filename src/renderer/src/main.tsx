@@ -6,6 +6,7 @@ import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 import App from './App'
 // import REGLApp from './renderer/DEMO'
+// import NCDemo from '@lib/nc/DEMO'
 import { Units } from './renderer/types'
 
 import { Spotlight } from '@mantine/spotlight';
@@ -17,6 +18,7 @@ import 'mantine-contextmenu/styles.css';
 import '@mantine/dropzone/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
+import '@mantine/code-highlight/styles.css';
 
 
 
@@ -77,6 +79,7 @@ function Main(): JSX.Element | null {
           <Spotlight store={spotlightStore} actions={actions} shortcut={['/']}/>
           <Notifications />
           <App />
+          {/* <NCDemo/> */}
           {/* <REGLApp /> */}
         </ContextMenuProvider>
       </MantineProvider>

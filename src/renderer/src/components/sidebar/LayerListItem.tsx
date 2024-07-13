@@ -131,9 +131,8 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           reader.readAsDataURL(file)
           break
         case 'rs274x':
-          reader.readAsText(file)
-          break
         case 'dxf':
+        case 'nc':
           reader.readAsText(file)
           break
         default:
