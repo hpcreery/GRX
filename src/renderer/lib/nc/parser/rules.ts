@@ -19,7 +19,8 @@ const getCodeValue = (text: string): string => {
 export const rules: Rules = {
   [Tokens.T_CODE]: {
     match: /T\d+/,
-    value: getCodeValue,
+    // value: getCodeValue,
+    value: text => text.slice(1)
   },
   [Tokens.G_CODE]: {
     match: /G\d+/,
@@ -43,6 +44,7 @@ export const rules: Rules = {
     value: (text: string): string => text.slice(1),
   },
   [Tokens.COORD_CHAR]: /[A-CFH-JNSX-Z]/,
+  // [Tokens.COORD_CHAR]: /[A-Z]/,
   [Tokens.NUMBER]: /[+-]?[\d.]+/,
   [Tokens.OPEN_PARENTHESIS]: "(",
   [Tokens.CLOSE_PARENTHESIS]: ")",

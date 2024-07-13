@@ -91,7 +91,6 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
 
     // ** HOLE
-    console.log(node.type, nextGraphicType, tool)
     if (nextGraphicType === SHAPE) {
       graphics.push(new Shapes.Pad({
         symbol: tool,

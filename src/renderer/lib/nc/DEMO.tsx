@@ -8,13 +8,11 @@ import { Shape } from '@src/renderer/shapes';
 
 const drill = `\
 M48
-INCH,TZ (asdf
-( PAREN )
-; colon
-T1C0.25
+INCH,TZ
+T01C0.25I01H11F123Z23B-0.2
 %
 G90
-T1
+T01
 G00X0Y0
 G02X2500Y2500A2500
 G03X5000Y5000A2500
@@ -22,8 +20,6 @@ G00X7500Y0
 G02X10000Y2500I2500J0
 G03X12500Y5000I0J2500
 M30
-
-
 `
 
 const tree = parse(drill)

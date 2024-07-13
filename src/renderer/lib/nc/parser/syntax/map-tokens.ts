@@ -62,9 +62,9 @@ export function tokensToPosition(
 ): Position {
   const { head = tokens[0], length = 0 } = options
   const tail =
-    length > 0
+    (length > 0
       ? tokens[tokens.indexOf(head) + length - 1]
-      : tokens[tokens.length - 1]
+      : tokens[tokens.length - 1])
 
   return {
     start: { line: head.line, column: head.col, offset: head.offset },

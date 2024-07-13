@@ -67,7 +67,7 @@ const tool: SyntaxRule = {
   name: 'tool',
   rules: [
     token(Lexer.T_CODE),
-    minToMax(0, 12, [
+    minToMax(0, 100, [
       token(Lexer.COORD_CHAR, 'C'),
       token(Lexer.COORD_CHAR, 'F'),
       token(Lexer.COORD_CHAR, 'S'),
@@ -82,7 +82,7 @@ const tool: SyntaxRule = {
   createNodes(tokens) {
     const code = tokens[0].value
     const position = tokensToPosition(tokens)
-    const { c } = tokensToCoordinates(tokens.slice(1, -1))
+    const { c, ...params } = tokensToCoordinates(tokens.slice(1, -1))
 
     return c === undefined
       ? [{ type: Tree.TOOL_CHANGE, position, code }]
@@ -90,6 +90,7 @@ const tool: SyntaxRule = {
         {
           type: Tree.TOOL_DEFINITION,
           shape: { type: Constants.CIRCLE, diameter: Number(c) },
+          attributes: params,
           hole: undefined,
           position,
           code,
@@ -130,7 +131,13 @@ const operation: SyntaxRule = {
       token(Lexer.G_CODE, '3'),
       token(Lexer.G_CODE, '5'),
     ]),
-    minToMax(2, 8, [token(Lexer.COORD_CHAR), token(Lexer.NUMBER)]),
+    minToMax(2, 8, [
+      token(Lexer.COORD_CHAR, 'X'),
+      token(Lexer.COORD_CHAR, 'Y'),
+      token(Lexer.COORD_CHAR, 'A'),
+      token(Lexer.COORD_CHAR, 'I'),
+      token(Lexer.COORD_CHAR, 'J'),
+      token(Lexer.NUMBER)]),
     zeroOrOne([token(Lexer.T_CODE)]),
     // token(Lexer.NEWLINE),
   ],
