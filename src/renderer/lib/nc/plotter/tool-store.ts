@@ -6,14 +6,11 @@ import { TOOL_CHANGE, TOOL_DEFINITION } from '../parser/tree'
 
 import * as Symbols from '@src/renderer/symbols'
 
-// import { createMacro } from './graphic-plotter/plot-macro'
-
 export const SIMPLE_TOOL = 'simpleTool'
 
 export const MACRO_TOOL = 'macroTool'
 
 import * as Constants from '@hpcreery/tracespace-parser'
-// import { plotShapes } from '.'
 import { PlotOptions } from './options'
 
 export interface SimpleTool {
@@ -22,14 +19,6 @@ export interface SimpleTool {
   dcode: string
   hole: HoleShape | undefined
 }
-
-// export interface MacroTool {
-//   type: typeof MACRO_TOOL
-//   name: string
-//   dcode: string
-//   macro: MacroBlock[]
-//   variableValues: number[]
-// }
 
 export type Tool = Symbols.StandardSymbol
 
@@ -45,7 +34,6 @@ export function createToolStore(): ToolStore {
 interface ToolStoreState {
   _currentToolCode: string | undefined
   _toolsByCode: Partial<Record<string, Tool>>
-  // _macrosByName: Partial<Record<string, MacroBlock[]>>
   _currentBlockAperture: { code: string, nodes: Constants.ChildNode[] }[]
 }
 
@@ -59,7 +47,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
   _currentBlockAperture: [],
   block: undefined,
 
-  use(node: ChildNode, plotOptions: PlotOptions): Tool {
+  use(node: ChildNode, _plotOptions: PlotOptions): Tool {
 
     if (node.type === TOOL_DEFINITION) {
       const { code, shape } = node

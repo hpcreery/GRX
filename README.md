@@ -31,8 +31,8 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
   - [x] X1
   - [ ] X2 ( coming soon! )
   - [ ] X3
-- [ ] NC
-  - [ ] XNC
+- [X] NC
+  - [X] XNC
   - [ ] IPC-NC-349
   - [ ] Excellon
   - [ ] Sieb & Meyer

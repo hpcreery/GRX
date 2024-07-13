@@ -4,7 +4,7 @@ import * as Tree from '../tree'
 import * as Constants from '../constants'
 import type * as Types from '../types'
 import type { SyntaxRule } from './rules'
-import { token, notToken, one, zeroOrOne, zeroOrMore, minToMax, anythineBut } from './rules'
+import { token, one, zeroOrOne, zeroOrMore, minToMax, anythineBut } from './rules'
 
 import {
   tokensToCoordinates,

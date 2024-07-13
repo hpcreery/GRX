@@ -195,8 +195,8 @@ interface ShapeLineProps {
 function ShapeLine(props: ShapeLineProps): JSX.Element {
   const {
     shape,
-    highlightedLines,
-    setHighlightedLines,
+    // highlightedLines,
+    // setHighlightedLines,
   } = props
   // const { position, ...obj } = shape
   // const startLine = position?.start.line
