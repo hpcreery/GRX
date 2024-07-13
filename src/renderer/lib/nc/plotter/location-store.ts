@@ -1,7 +1,7 @@
 // Track the location of the plotter and parse coordinate strings
-import type {ChildNode} from '../../parser/tree'
-import {GRAPHIC, STEP_REPEAT_OPEN} from '../../parser/tree'
-import {TRAILING} from '../../parser/constants'
+import type {ChildNode} from '../parser/tree'
+import {GRAPHIC, STEP_REPEAT_OPEN} from '../parser/tree'
+import {TRAILING} from '../parser/constants'
 
 import type {PlotOptions} from './options'
 

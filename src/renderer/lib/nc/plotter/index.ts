@@ -1,6 +1,5 @@
 // build abstract board images from @hpcreery/tracespace-parser ASTs
-// import type { GerberTree, ChildNode } from '@hpcreery/tracespace-parser'
-import type { Tree, ChildNode } from '../../parser/tree'
+import type { Tree, ChildNode } from '../parser/tree'
 
 import { getPlotOptions, PlotOptions } from './options'
 import { createToolStore, Tool, ToolStore } from './tool-store'
@@ -14,7 +13,6 @@ import * as Shapes from '@src/renderer/shapes'
 export * from './tree'
 export * from './tool-store'
 export * from './graphic-plotter'
-export { TWO_PI, positionsEqual } from './coordinate-math'
 
 export function plot(tree: Tree): ImageTree {
   const plotOptions: PlotOptions = getPlotOptions(tree)

@@ -2,21 +2,21 @@ import type {
   UnitsType,
   Format,
   ZeroSuppression,
-} from '../../parser/types'
+} from '../parser/types'
 import {
   LEADING,
   TRAILING,
   IN,
-} from '../../parser/constants'
+} from '../parser/constants'
 import {
   UNITS,
   COORDINATE_FORMAT,
   GRAPHIC,
   COMMENT,
-} from '../../parser/tree'
+} from '../parser/tree'
 import {
   Tree,
-} from '../../parser/tree'
+} from '../parser/tree'
 
 export interface PlotOptions {
   units: UnitsType
