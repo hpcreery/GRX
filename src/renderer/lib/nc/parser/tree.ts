@@ -94,6 +94,8 @@ export const INTERPOLATE_MODE = 'interpolateMode'
  */
 export const UNIMPLEMENTED = 'unimplemented'
 
+export const OPERATOR_MESSAGE = 'operatorMessage'
+
 interface BaseNode {
   type: string
   /** Location in the source file the node was parsed from */
@@ -128,6 +130,7 @@ export type ChildNode =
   | StepRepeatOpen
   | StepRepeatClose
   | Graphic
+  | OperatorMessage
   | Unimplemented
 
 /**
@@ -158,6 +161,14 @@ export interface Comment extends BaseNode {
   /** Contents of the comment as a string */
   comment: string
 }
+
+export interface OperatorMessage extends BaseNode {
+  /** Node type */
+  type: typeof OPERATOR_MESSAGE
+  /** Contents of the comment as a string */
+  message: string
+}
+
 
 /**
  * Node representing drill file's header start or end.
@@ -277,6 +288,8 @@ export interface ToolDefinition extends BaseNode {
   shape: Types.ToolShape
   /** Hole shape, if applicable */
   hole: Types.HoleShape | undefined
+  /** Tool Parameters */
+  // parameters: Object<string, string>
 }
 
 /**

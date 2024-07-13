@@ -22,13 +22,6 @@ export const G_CODE = 'G_CODE'
 export const M_CODE = 'M_CODE'
 
 /**
- * D-code token type
- *
- * @category Lexer
- */
-export const D_CODE = 'D_CODE'
-
-/**
  * Asterisk token type
  *
  * @category Lexer
@@ -99,6 +92,14 @@ export const COORD_CHAR = 'COORD_CHAR'
 export const NUMBER = 'NUMBER'
 
 /**
+ * Tool Number token type
+ *
+ * @category Lexer
+ */
+export const DIGIT = 'DIGIT'
+export const DOUBLE_DIGIT = 'DOUBLE_DIGIT'
+
+/**
  * Word token type
  *
  * @category Lexer
@@ -156,7 +157,6 @@ export type TokenType =
   | typeof T_CODE
   | typeof G_CODE
   | typeof M_CODE
-  | typeof D_CODE
   | typeof ASTERISK
   | typeof PERCENT
   | typeof EQUALS
@@ -166,6 +166,8 @@ export type TokenType =
   | typeof UNITS
   | typeof DRILL_ZERO_INCLUSION
   | typeof COORD_CHAR
+  | typeof DIGIT
+  | typeof DOUBLE_DIGIT
   | typeof NUMBER
   | typeof WORD
   | typeof OPEN_PARENTHESIS

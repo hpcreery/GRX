@@ -18,21 +18,17 @@ const getCodeValue = (text: string): string => {
 
 export const rules: Rules = {
   [Tokens.T_CODE]: {
-    match: /T\d+/,
-    // value: getCodeValue,
+    match: /T\d{1,2}/,
     value: text => text.slice(1)
   },
   [Tokens.G_CODE]: {
-    match: /G\d+/,
-    value: getCodeValue,
+    match: /G\d{1,2}/,
+    value: text => text.slice(1)
+
   },
   [Tokens.M_CODE]: {
-    match: /M\d+/,
-    value: getCodeValue,
-  },
-  [Tokens.D_CODE]: {
-    match: /D\d+/,
-    value: getCodeValue,
+    match: /M\d{1,2}/,
+    value: text => text.slice(1)
   },
   [Tokens.ASTERISK]: '*',
   [Tokens.PERCENT]: '%',
@@ -46,6 +42,8 @@ export const rules: Rules = {
   [Tokens.COORD_CHAR]: /[A-CFH-JNSX-Z]/,
   // [Tokens.COORD_CHAR]: /[A-Z]/,
   [Tokens.NUMBER]: /[+-]?[\d.]+/,
+  [Tokens.DOUBLE_DIGIT]: /\d{1,2}/,
+  [Tokens.DIGIT]: /\d/,
   [Tokens.OPEN_PARENTHESIS]: "(",
   [Tokens.CLOSE_PARENTHESIS]: ")",
   [Tokens.OPERATOR]: ['x', '/', '+', '-', '(', ')'],

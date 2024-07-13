@@ -1,6 +1,6 @@
 import type { Position } from 'unist'
 import type { Token } from '../lexer'
-import { NUMBER, COORD_CHAR, G_CODE, D_CODE } from '../lexer'
+import { NUMBER, COORD_CHAR, G_CODE } from '../lexer'
 import type { Coordinates, InterpolateModeType, GraphicType } from '../types'
 import { SEGMENT, MOVE, SHAPE, LINE, CW_ARC, CCW_ARC, DRILL } from '../constants'
 
@@ -25,29 +25,29 @@ export function tokensToMode(tokens: Token[]): InterpolateModeType | undefined {
   const maybeMode = tokens
     .filter(t => t.type === G_CODE)
     .map(t => {
-      if (t.value === '0') return MOVE
-      if (t.value === '1') return LINE
-      if (t.value === '2') return CW_ARC
-      if (t.value === '3') return CCW_ARC
-      if (t.value === '5') return DRILL
+      if (t.value === '00') return MOVE
+      if (t.value === '01') return LINE
+      if (t.value === '02') return CW_ARC
+      if (t.value === '03') return CCW_ARC
+      if (t.value === '05') return DRILL
       return false
     })
 
   return typeof maybeMode[0] === 'string' ? maybeMode[0] : undefined
 }
 
-export function tokensToGraphic(tokens: Token[]): GraphicType | undefined {
-  const maybeGraphic = tokens
-    .filter(t => t.type === D_CODE)
-    .map(t => {
-      if (t.value === '1') return SEGMENT
-      if (t.value === '2') return MOVE
-      if (t.value === '3') return SHAPE
-      return false
-    })
+// export function tokensToGraphic(tokens: Token[]): GraphicType | undefined {
+//   const maybeGraphic = tokens
+//     .filter(t => t.type === D_CODE)
+//     .map(t => {
+//       if (t.value === '1') return SEGMENT
+//       if (t.value === '2') return MOVE
+//       if (t.value === '3') return SHAPE
+//       return false
+//     })
 
-  return typeof maybeGraphic[0] === 'string' ? maybeGraphic[0] : undefined
-}
+//   return typeof maybeGraphic[0] === 'string' ? maybeGraphic[0] : undefined
+// }
 
 export function tokensToString(tokens: Token[]): string {
   return tokens
@@ -64,7 +64,7 @@ export function tokensToPosition(
   const tail =
     (length > 0
       ? tokens[tokens.indexOf(head) + length - 1]
-      : tokens[tokens.length - 1])
+      : tokens[tokens.length - 1]) || tokens[tokens.length - 1]
 
   return {
     start: { line: head.line, column: head.col, offset: head.offset },

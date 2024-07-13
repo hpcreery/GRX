@@ -9,9 +9,10 @@ import { Shape } from '@src/renderer/shapes';
 const drill = `\
 M48
 INCH,TZ
-T01C0.25I01H11F123Z23B-0.2
+T01C0.25
 %
 G90
+M45,TAPE PART
 T01
 G00X0Y0
 G02X2500Y2500A2500
