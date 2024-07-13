@@ -4,7 +4,7 @@ import * as Tree from '../tree'
 import * as Constants from '../constants'
 import type * as Types from '../types'
 import type { SyntaxRule } from './rules'
-import { token, notToken, one, zeroOrOne, zeroOrMore, minToMax } from './rules'
+import { token, notToken, one, zeroOrOne, zeroOrMore, minToMax, anythineBut } from './rules'
 
 import {
   tokensToCoordinates,
@@ -17,7 +17,7 @@ const units: SyntaxRule = {
   name: 'units',
   rules: [
     one([
-      token(Lexer.DRILL_UNITS),
+      token(Lexer.UNITS),
       token(Lexer.M_CODE, '71'),
       token(Lexer.M_CODE, '72'),
     ]),
@@ -26,7 +26,7 @@ const units: SyntaxRule = {
       token(Lexer.DRILL_ZERO_INCLUSION),
       token(Lexer.NUMBER, /^0{1,8}\.0{1,8}$/),
     ]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes(tokens) {
     const units =
@@ -74,9 +74,10 @@ const tool: SyntaxRule = {
       token(Lexer.COORD_CHAR, 'B'),
       token(Lexer.COORD_CHAR, 'H'),
       token(Lexer.COORD_CHAR, 'Z'),
+      token(Lexer.COORD_CHAR, 'I'),
       token(Lexer.NUMBER),
     ]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes(tokens) {
     const code = tokens[0].value
@@ -107,7 +108,7 @@ const mode: SyntaxRule = {
       token(Lexer.G_CODE, '3'),
       token(Lexer.G_CODE, '5'),
     ]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes: tokens => [
     {
@@ -131,7 +132,7 @@ const operation: SyntaxRule = {
     ]),
     minToMax(2, 8, [token(Lexer.COORD_CHAR), token(Lexer.NUMBER)]),
     zeroOrOne([token(Lexer.T_CODE)]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes(tokens) {
     const graphicTokens = tokens.filter(
@@ -177,7 +178,7 @@ const slot: SyntaxRule = {
     minToMax(2, 4, [token(Lexer.COORD_CHAR), token(Lexer.NUMBER)]),
     token(Lexer.G_CODE, '85'),
     minToMax(2, 4, [token(Lexer.COORD_CHAR), token(Lexer.NUMBER)]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes(tokens) {
     const gCode = tokens.find(t => t.type === Lexer.G_CODE)
@@ -204,7 +205,7 @@ const done: SyntaxRule = {
   name: 'done',
   rules: [
     one([token(Lexer.M_CODE, '30'), token(Lexer.M_CODE, '0')]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes: tokens => [
     { type: Tree.DONE, position: tokensToPosition(tokens) },
@@ -215,7 +216,7 @@ const header: SyntaxRule = {
   name: 'header',
   rules: [
     one([token(Lexer.M_CODE, '48'), token(Lexer.PERCENT)]),
-    token(Lexer.NEWLINE),
+    // token(Lexer.NEWLINE),
   ],
   createNodes: tokens => [
     { type: Tree.DRILL_HEADER, position: tokensToPosition(tokens) },
@@ -225,9 +226,9 @@ const header: SyntaxRule = {
 const comment: SyntaxRule = {
   name: 'comment',
   rules: [
-    token(Lexer.SEMICOLON),
-    zeroOrMore([notToken(Lexer.NEWLINE)]),
-    token(Lexer.NEWLINE),
+    one([token(Lexer.OPEN_PARENTHESIS), token(Lexer.SEMICOLON)]),
+    anythineBut([token(Lexer.CLOSE_PARENTHESIS), token(Lexer.NEWLINE)]),
+    one([token(Lexer.CLOSE_PARENTHESIS), token(Lexer.NEWLINE)]),
   ],
   createNodes: tokens => [
     {

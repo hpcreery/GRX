@@ -4,10 +4,10 @@ import { matchSyntax } from './syntax'
 import type { Tree, ChildNode } from './tree'
 import { ROOT } from './tree'
 
-export * from './constants'
-export * from './lexer'
-export * from './tree'
-export * from './types'
+// export * from './constants'
+// export * from './lexer'
+// export * from './tree'
+// export * from './types'
 
 /**
  * NC drill file parser.

@@ -26,6 +26,7 @@ export interface MinToMaxRule {
   min: number
   max: number
   match: SingleTokenRule[]
+  negate?: boolean
 }
 
 export function token(
@@ -57,6 +58,11 @@ export function zeroOrMore(match: SingleTokenRule[]): MinToMaxRule {
 export function oneOrMore(match: SingleTokenRule[]): MinToMaxRule {
   return { rule: MIN_TO_MAX, min: 1, max: Number.POSITIVE_INFINITY, match }
 }
+
+export function anythineBut(match: SingleTokenRule[]): MinToMaxRule {
+  return { rule: MIN_TO_MAX, min: 0, max: Number.POSITIVE_INFINITY, match, negate: true }
+}
+
 
 export function minToMax(
   min: number,
@@ -149,7 +155,7 @@ function tokenMatches(rule: TokenRule, token: Token): boolean {
   }
 
   if (Array.isArray(rule.match)) {
-    return rule.match.some(match => tokenMatches(match, token))
+    return rule.negate ? !rule.match.some(match => tokenMatches(match, token)) : rule.match.some(match => tokenMatches(match, token))
   }
 
   return false

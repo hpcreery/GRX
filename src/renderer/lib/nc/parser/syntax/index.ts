@@ -1,7 +1,7 @@
 import type { ChildNode } from '../tree'
 import type { Token, LexerIterable, LexerState } from '../lexer'
 import { findSyntaxMatch } from './rules'
-import { drillGrammar } from './drill'
+import { drillGrammar } from './nc'
 
 
 export interface MatchResult {

@@ -75,7 +75,7 @@ export const SEMICOLON = 'SEMICOLON'
  *
  * @category Lexer
  */
-export const DRILL_UNITS = 'DRILL_UNITS'
+export const UNITS = 'UNITS'
 
 /**
  * Drill zero-inclusion token type
@@ -134,6 +134,20 @@ export const CATCHALL = 'CATCHALL'
 export const ERROR = 'ERROR'
 
 /**
+ * Open Parenthesis token type
+ *
+ * @category Lexer
+ */
+export const OPEN_PARENTHESIS = "OPEN_PARANTHESIS"
+
+/**
+ * Close Parenthesis token type
+ *
+ * @category Lexer
+ */
+export const CLOSE_PARENTHESIS = "CLOSE_PARENTHESIS"
+
+/**
  * Union of all available token types
  *
  * @category Lexer
@@ -149,11 +163,13 @@ export type TokenType =
   | typeof COMMA
   | typeof OPERATOR
   | typeof SEMICOLON
-  | typeof DRILL_UNITS
+  | typeof UNITS
   | typeof DRILL_ZERO_INCLUSION
   | typeof COORD_CHAR
   | typeof NUMBER
   | typeof WORD
+  | typeof OPEN_PARENTHESIS
+  | typeof CLOSE_PARENTHESIS
   | typeof WHITESPACE
   | typeof NEWLINE
   | typeof CATCHALL
