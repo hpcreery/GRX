@@ -97,7 +97,7 @@ export const NUMBER = 'NUMBER'
  * @category Lexer
  */
 export const DIGIT = 'DIGIT'
-export const DOUBLE_DIGIT = 'DOUBLE_DIGIT'
+// export const DOUBLE_DIGIT = 'DOUBLE_DIGIT'
 
 /**
  * Word token type
@@ -167,7 +167,7 @@ export type TokenType =
   | typeof DRILL_ZERO_INCLUSION
   | typeof COORD_CHAR
   | typeof DIGIT
-  | typeof DOUBLE_DIGIT
+  // | typeof DOUBLE_DIGIT
   | typeof NUMBER
   | typeof WORD
   | typeof OPEN_PARENTHESIS

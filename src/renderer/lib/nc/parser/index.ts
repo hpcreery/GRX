@@ -56,6 +56,7 @@ export function createParser(): Parser {
     const result = matchSyntax(tokens)
 
     unmatched = result.unmatched
+    console.log('unmatched -> ', unmatched)
     lexerState = result.lexerState ?? lexerState
 
     for (const node of result.nodes) {

@@ -3,7 +3,7 @@ import * as Token from '../tokens'
 import * as Tree from '../tree'
 import * as Constants from '../constants'
 import type * as Types from '../types'
-import type { SyntaxRule } from './rules'
+import type { SyntaxRule } from '.'
 import { token, one, zeroOrOne, zeroOrMore, minToMax, anythineBut, notToken } from './rules'
 
 import {
@@ -161,14 +161,19 @@ const operation: SyntaxRule = {
       token(Token.COORD_CHAR, 'I'),
       token(Token.COORD_CHAR, 'J'),
       token(Token.NUMBER)]),
-    zeroOrOne([token(Token.T_CODE)]),
+      zeroOrOne([token(Token.G_CODE, '85')]),
+      minToMax(0, 4, [token(Token.COORD_CHAR), token(Token.NUMBER)]),
+      zeroOrOne([token(Token.T_CODE)]),
+    // token(Token.WHITESPACE)
   ],
   createNodes(tokens) {
+    console.log(tokens)
     const graphicTokens = tokens.filter(
       t => t.type === Token.COORD_CHAR || t.type === Token.NUMBER
     )
     const modeToken = tokens.find(t => t.type === Token.G_CODE)
     const toolToken = tokens.find(t => t.type === Token.T_CODE)
+    const slotToken = tokens.find(t => t.type === Token.G_CODE && t.value === "85")
     const coordinates = tokensToCoordinates(graphicTokens)
     const code = toolToken?.value
     const mode = tokensToMode(tokens)
@@ -204,27 +209,33 @@ const operation: SyntaxRule = {
 const slot: SyntaxRule = {
   name: 'slot',
   rules: [
-    minToMax(2, 4, [token(Token.COORD_CHAR), token(Token.NUMBER)]),
+    // minToMax(2, 4, [token(Token.COORD_CHAR), token(Token.NUMBER)]),
     token(Token.G_CODE, '85'),
     minToMax(2, 4, [token(Token.COORD_CHAR), token(Token.NUMBER)]),
   ],
   createNodes(tokens) {
-    const gCode = tokens.find(t => t.type === Token.G_CODE)
-    const splitIndex = gCode === undefined ? -1 : tokens.indexOf(gCode)
-    const start = Object.fromEntries(
-      Object.entries(tokensToCoordinates(tokens.slice(0, splitIndex))).map(
-        ([axis, value]) => [`${axis}0`, value]
-      )
-    )
-    const end = tokensToCoordinates(tokens.slice(splitIndex))
+    // const gCode = tokens.find(t => t.type === Token.G_CODE)
+    // const gCode = tokens[0]
+    // const splitIndex = gCode === undefined ? -1 : tokens.indexOf(gCode)
+    // const start = Object.fromEntries(
+    //   Object.entries(tokensToCoordinates(tokens.slice(0, splitIndex))).map(
+    //     ([axis, value]) => [`${axis}0`, value]
+    //   )
+    // )
+    console.log(tokens)
+    const end = tokensToCoordinates(tokens.slice(1))
+
+    const prevInterpolateMode = Constants.MOVE
 
     return [
+      { type: Tree.INTERPOLATE_MODE, mode: Constants.LINE },
       {
         type: Tree.GRAPHIC,
         position: tokensToPosition(tokens),
-        graphic: Constants.SLOT,
-        coordinates: { ...start, ...end },
+        graphic: undefined,
+        coordinates: { ...end },
       },
+      { type: Tree.INTERPOLATE_MODE, mode: prevInterpolateMode }
     ]
   },
 }
@@ -240,12 +251,11 @@ const operatorMessage: SyntaxRule = {
     zeroOrMore([notToken(Token.NEWLINE)]),
   ],
   createNodes(tokens) {
-    const message = tokens.slice(2,-1).map(t => t.text).join('')
     console.log(tokens)
     return [{
       type: Tree.OPERATOR_MESSAGE,
       position: tokensToPosition(tokens),
-      message: message
+      message: tokensToString(tokens.slice(2,-1))
     }]
   },
 }
@@ -291,10 +301,10 @@ export const drillGrammar: SyntaxRule[] = [
   mode,
   coordinateMode,
   operation,
-  slot,
+  // slot,
   comment,
   operatorMessage,
   units,
   done,
   header,
-].map(r => ({ ...r, filetype: Constants.DRILL }))
+]//.map(r => ({ ...r, filetype: Constants.DRILL }))

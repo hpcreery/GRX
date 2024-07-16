@@ -42,7 +42,7 @@ export const rules: Rules = {
   [Tokens.COORD_CHAR]: /[A-CFH-JNSX-Z]/,
   // [Tokens.COORD_CHAR]: /[A-Z]/,
   [Tokens.NUMBER]: /[+-]?[\d.]+/,
-  [Tokens.DOUBLE_DIGIT]: /\d{1,2}/,
+  // [Tokens.DOUBLE_DIGIT]: /\d{1,2}/,
   [Tokens.DIGIT]: /\d/,
   [Tokens.OPEN_PARENTHESIS]: "(",
   [Tokens.CLOSE_PARENTHESIS]: ")",

@@ -6,22 +6,7 @@ import { ChildNode } from './parser/tree'
 import { plot } from './plotter';
 import { Shape } from '@src/renderer/shapes';
 
-const drill = `\
-M48
-INCH,TZ
-T01C0.25
-%
-G90
-M45,TAPE PART
-T01
-G00X0Y0
-G02X2500Y2500A2500
-G03X5000Y5000A2500
-G00X7500Y0
-G02X10000Y2500I2500J0
-G03X12500Y5000I0J2500
-M30
-`
+const drill = `X0Y0(fifth comment)`
 
 const tree = parse(drill)
 const shapes = plot(tree)
