@@ -5,7 +5,8 @@ import { Flex, Textarea } from '@mantine/core'
 import { ChildNode } from './parser/tree'
 // import { plot } from './plotter';
 import { Shape } from '@src/renderer/shapes';
-import { parser, reset } from './earley-parser/parser'
+// import { parser, reset } from './earley-parser/parser'
+import { parser, SelectLexer } from './chevrotain-parser/parser'
 
 const drill = `T01`
 
@@ -16,35 +17,51 @@ const drill = `T01`
 export default function NCDemo(): JSX.Element {
   const [highlightedLines, setHighlightedLines] = React.useState<number[]>([])
   const [input, setInput] = React.useState<string>(drill)
-  const [parsed, setParsed] = React.useState<any[]>([])
+  const [parsed, setParsed] = React.useState<any>({})
   const [error, setError] = React.useState<string | undefined>(undefined)
 
   React.useEffect(() => {
     try {
-      reset()
+      // reset()
       console.time('parse')
-      // parser.feed(input)
-      input.split(/\r?\n/).forEach(chunk => {
-        console.log(chunk)
-        parser.feed(chunk)
-      })
-      // newTree.push()
-      console.log(JSON.stringify(parser.results, null, 1))
-      console.timeEnd('parse')
-      if (parser.results.length === 0) {
-        console.log('NO RESULTS')
-        setParsed([])
-      } else if (parser.results.length === 1) {
-        console.log('NO AMBIGUITY, PERFECTLY OPTIMIZED')
-        setParsed(parser.results[0])
-      } else if (parser.results.length > 1) {
-        console.log('AMBIGUITY DETECTED', parser.results.length, 'RESULTS')
-        setParsed(parser.results[0])
+      const lexingResult = SelectLexer.tokenize(input);
+      console.log(lexingResult)
+      if (lexingResult.errors.length > 0) {
+        console.error('LEXER ERRORS', lexingResult.errors)
       }
+      parser.input = lexingResult.tokens;
+      const result = parser.program();
+      console.log(result)
+
+      if (parser.errors.length > 0) {
+        // throw new Error("sad sad panda, Parsing errors detected");
+        // console.log('ERRORS', parser.errors.map(e => e.message))
+        parser.errors.forEach(e => console.error('PARSER ERROR: ', e.message))
+      }
+      setParsed(result)
+      // parser.feed(input)
+      // input.split(/\r?\n/).forEach(chunk => {
+      //   console.log(chunk)
+      //   parser.feed(chunk)
+      // })
+      // newTree.push()
+      // console.log(JSON.stringify(parser.results, null, 1))
+      console.timeEnd('parse')
+      // setParsed(parser.)
+      // if (parser.results.length === 0) {
+      //   console.log('NO RESULTS')
+      //   setParsed([])
+      // } else if (parser.results.length === 1) {
+      //   console.log('NO AMBIGUITY, PERFECTLY OPTIMIZED')
+      //   setParsed(parser.results[0])
+      // } else if (parser.results.length > 1) {
+      //   console.log('AMBIGUITY DETECTED', parser.results.length, 'RESULTS')
+      //   setParsed(parser.results[0])
+      // }
       // setParsed(newTree.results)
       setError(undefined)
     } catch (err) {
-      setParsed([])
+      setParsed({})
       setError(String(err))
 
     }

@@ -52,6 +52,7 @@
     "@tracespace/plotter": "^5.0.0-alpha.0",
     "@types/nearley": "^2.11.5",
     "@use-gesture/react": "^10.3.1",
+    "chevrotain": "^11.0.3",
     "chroma-js": "^2.4.2",
     "comlink": "^4.4.1",
     "dxf-parser": "^1.1.2",

@@ -59,7 +59,7 @@ import * as Tree from '../parser/tree'
 import * as Constants from '../parser/constants'
 const lexer = moo.states({
   main: {
-    _: { match: /[ \t\r\n\v\f]+/, lineBreaks: true },
+    _: { match: /[ \t\r\n\v\f]/, lineBreaks: true },
     number: /[+-]?(?:\d+\.?(?:\d+)?|\.\d+)/,
 
     units: { match: /METRIC|INCH/, value: v => {return {unit: v}} },
@@ -169,16 +169,11 @@ const grammar: Grammar = {
   Lexer: lexer,
   ParserRules: [
     {"name": "main", "symbols": ["commands"]},
-    {"name": "commands$ebnf$1", "symbols": [(lexer.has("_") ? {type: "_"} : _)], "postprocess": id},
-    {"name": "commands$ebnf$1", "symbols": [], "postprocess": () => null},
-    {"name": "commands$ebnf$2", "symbols": [(lexer.has("_") ? {type: "_"} : _)], "postprocess": id},
-    {"name": "commands$ebnf$2", "symbols": [], "postprocess": () => null},
-    {"name": "commands", "symbols": ["commands$ebnf$1", "command", "commands$ebnf$2", "commands"], "postprocess": ([,i,,j]) => {return [i[0],...j]}},
-    {"name": "commands$ebnf$3", "symbols": [(lexer.has("_") ? {type: "_"} : _)], "postprocess": id},
-    {"name": "commands$ebnf$3", "symbols": [], "postprocess": () => null},
-    {"name": "commands$ebnf$4", "symbols": [(lexer.has("_") ? {type: "_"} : _)], "postprocess": id},
-    {"name": "commands$ebnf$4", "symbols": [], "postprocess": () => null},
-    {"name": "commands", "symbols": ["commands$ebnf$3", "command", "commands$ebnf$4"], "postprocess": ([,i,]) => {return [i[0]]}},
+    {"name": "_$ebnf$1", "symbols": []},
+    {"name": "_$ebnf$1", "symbols": ["_$ebnf$1", (lexer.has("_") ? {type: "_"} : _)], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "_", "symbols": ["_$ebnf$1"], "postprocess": () => null},
+    {"name": "commands", "symbols": ["_", "command", "_", "commands"], "postprocess": ([,i,,j]) => {return [i[0],...j]}},
+    {"name": "commands", "symbols": ["_", "command", "_"], "postprocess": ([,i,]) => {return [i[0]]}},
     {"name": "command", "symbols": ["m48"]},
     {"name": "command", "symbols": ["toolDeclaration"]},
     {"name": "command", "symbols": ["units"]},
@@ -238,9 +233,7 @@ const grammar: Grammar = {
     {"name": "depthOffset", "symbols": [(lexer.has("Z") ? {type: "Z"} : Z)], "postprocess": ([f]) => {return {type: 'DEPTH', value: null}}},
     {"name": "x", "symbols": [(lexer.has("X") ? {type: "X"} : X), (lexer.has("number") ? {type: "number"} : number)], "postprocess": ([x, xValue]) => {return {x: xValue.value}}},
     {"name": "y", "symbols": [(lexer.has("Y") ? {type: "Y"} : Y), (lexer.has("number") ? {type: "number"} : number)], "postprocess": ([y, yValue]) => {return {y: yValue.value}}},
-    {"name": "xy$ebnf$1", "symbols": ["xory"]},
-    {"name": "xy$ebnf$1", "symbols": ["xy$ebnf$1", "xory"], "postprocess": (d) => d[0].concat([d[1]])},
-    {"name": "xy", "symbols": ["xy$ebnf$1"], "postprocess": ([x]) => {return Object.assign({}, ...x)}},
+    {"name": "xy", "symbols": ["xory", "xory"], "postprocess": ([x, y]) => {return Object.assign({}, x, y)}},
     {"name": "xory", "symbols": [(lexer.has("XorY") ? {type: "XorY"} : XorY), (lexer.has("number") ? {type: "number"} : number)], "postprocess": ([axis, value]) => {return {[axis.value]: value.value}}},
     {"name": "a", "symbols": [(lexer.has("A") ? {type: "A"} : A), (lexer.has("number") ? {type: "number"} : number)], "postprocess": ([a, aValue]) => {return {a: aValue.value}}},
     {"name": "i", "symbols": [(lexer.has("I") ? {type: "I"} : I), (lexer.has("number") ? {type: "number"} : number)], "postprocess": ([i, iValue]) => {return {i: iValue.value}}},

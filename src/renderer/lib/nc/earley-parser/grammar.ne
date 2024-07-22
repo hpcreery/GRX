@@ -6,7 +6,7 @@ import * as Tree from '../parser/tree'
 import * as Constants from '../parser/constants'
 const lexer = moo.states({
   main: {
-    _: { match: /[ \t\r\n\v\f]+/, lineBreaks: true },
+    _: { match: /[ \t\r\n\v\f]/, lineBreaks: true },
     number: /[+-]?(?:\d+\.?(?:\d+)?|\.\d+)/,
 
     units: { match: /METRIC|INCH/, value: v => {return {unit: v}} },
@@ -95,8 +95,9 @@ main -> commands
 # commands -> command {% ([i]) => {return [i[0]]} %}
 # commands -> command %_:* comment %_:* commands {% ([i,,c,,j]) => {return [i[0],c,...j]} %}
 # commands -> command %_:* comment %_:* {% ([i,,c]) => {return [i[0],c]} %}
-commands -> %_:? command %_:? commands {% ([,i,,j]) => {return [i[0],...j]} %}
-commands -> %_:? command %_:? {% ([,i,]) => {return [i[0]]} %}
+_ -> %_:* {% () => null %}
+commands -> _ command _ commands {% ([,i,,j]) => {return [i[0],...j]} %}
+commands -> _ command _ {% ([,i,]) => {return [i[0]]} %}
 # commands -> %_:? command %_:? {% id %}
 command ->
   m48 |
@@ -180,7 +181,7 @@ x -> %X %number {% ([x, xValue]) => {return {x: xValue.value}} %}
 y -> %Y %number {% ([y, yValue]) => {return {y: yValue.value}} %}
 # xy -> x y {% ([x, y]) => {return {...x, ...y}} %}
 # xy -> xory xory {% ([x, y]) => {return Object.assign({}, x, y)} %}
-xy -> xory:+ {% ([x]) => {return Object.assign({}, ...x)} %}
+xy -> xory xory {% ([x, y]) => {return Object.assign({}, x, y)} %}
 xory -> %XorY %number {% ([axis, value]) => {return {[axis.value]: value.value}} %}
 # xy -> x {% ([x]) => {return {...x, y: null}} %}
 # xy -> y {% ([y]) => {return {x: null, ...y}} %}
