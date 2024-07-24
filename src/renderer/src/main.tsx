@@ -6,7 +6,7 @@ import { useLocalStorage } from '@mantine/hooks'
 import { ContextMenuProvider } from 'mantine-contextmenu'
 import App from './App'
 // import REGLApp from './renderer/DEMO'
-// import NCDemo from '@lib/nc/DEMO'
+import NCDemo from '@lib/nc/DEMO'
 import { Units } from './renderer/types'
 
 import { Spotlight } from '@mantine/spotlight'

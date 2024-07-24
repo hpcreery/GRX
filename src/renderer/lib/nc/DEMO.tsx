@@ -1,40 +1,48 @@
 import React from 'react'
-import { parse } from './parser'
-import { CodeHighlight } from '@mantine/code-highlight';
-import { Flex } from '@mantine/core'
-import { ChildNode } from './parser/tree'
-import { plot } from './plotter';
+import { Flex, Textarea } from '@mantine/core'
 import { Shape } from '@src/renderer/shapes';
+import { parser, SelectLexer, NCToShapesVisitor } from './parser/parser'
 
-const drill = `\
-M48
-INCH,TZ (asdf
-( PAREN )
-; colon
-T1C0.25
-%
-G90
-T1
-G00X0Y0
-G02X2500Y2500A2500
-G03X5000Y5000A2500
-G00X7500Y0
-G02X10000Y2500I2500J0
-G03X12500Y5000I0J2500
-M30
-
-
-`
-
-const tree = parse(drill)
-const shapes = plot(tree)
+const drill = `T01`
 
 export default function NCDemo(): JSX.Element {
-  const [highlightedLines, setHighlightedLines] = React.useState<number[]>([])
+  const [input, setInput] = React.useState<string>(drill)
+  const [parsed, setParsed] = React.useState<any>({})
+  const [shapes, setShapes] = React.useState<Shape[]>([])
+  const [error, setError] = React.useState<string | undefined>(undefined)
 
-  // React.useEffect(() => {
-  //   console.log(highlightedLines)
-  // }, [highlightedLines])
+  React.useEffect(() => {
+    try {
+      // reset()
+      console.time('parse')
+      const lexingResult = SelectLexer.tokenize(input);
+      parser.input = lexingResult.tokens;
+      const result = parser.program();
+      setParsed(result)
+      console.timeEnd('parse')
+      const visitor = new NCToShapesVisitor()
+      visitor.visit(result)
+      console.log('result', visitor.result)
+      setShapes(visitor.result)
+      console.log(lexingResult)
+      if (lexingResult.errors.length > 0) {
+        console.error('LEXER ERRORS', lexingResult.errors)
+      }
+      console.log(result)
+      if (parser.errors.length > 0) {
+        // throw new Error("sad sad panda, Parsing errors detected");
+        // console.log('ERRORS', parser.errors.map(e => e.message))
+        parser.errors.forEach(e => console.error('PARSER ERROR: ', e.message))
+        setError(parser.errors.map(e => e.message).join('\n'))
+      } else {
+        setError(undefined)
+      }
+    } catch (err) {
+      setParsed({})
+      setError(String(err))
+
+    }
+  }, [input])
 
 
   return <div
@@ -50,182 +58,48 @@ export default function NCDemo(): JSX.Element {
         width: '100%'
       }}
     >
-      <div
+      <Textarea
         style={{
           overflow: 'auto',
           height: '100%',
           width: '100%'
-        }}>
-        {drill.split(/\r?\n/).map((line, i) => <RawLine
-          highlightedLines={highlightedLines}
-          setHighlightedLines={setHighlightedLines}
-          key={i}
-          line={line}
-          i={i+1} />)}
-      </div>
-      <div
-        style={{
-          overflow: 'auto',
-          height: '100%',
-          width: '100%'
-        }}>
-        {tree.children.map((child, i) => {
-          return <ParsedLine
-            highlightedLines={highlightedLines}
-            setHighlightedLines={setHighlightedLines}
-            key={i}
-            child={child} />
-        })}
-      </div>
-      <div
-        style={{
-          overflow: 'auto',
-          height: '100%',
-          width: '100%'
-        }}>
-        {shapes.children.map((shape, i) => {
-          return <ShapeLine
-            highlightedLines={highlightedLines}
-            setHighlightedLines={setHighlightedLines}
-            key={i}
-            shape={shape} />
-        })}
-      </div>
+        }}
+        styles={{
+          wrapper: {
+            height: '100%'
+          },
+          input: {
+            height: '100%'
+          }
+        }}
+        radius="0"
+        value={input}
+        onChange={e => setInput(e.currentTarget.value)}
+      />
+      {
+        <div
+          style={{
+            overflow: 'auto',
+            height: '100%',
+            width: '100%',
+            whiteSpace: 'preserve'
+          }}>
+          {error}
+          {JSON.stringify(parsed, null, 2)}
+        </div>
+      }
+            {
+        <div
+          style={{
+            overflow: 'auto',
+            height: '100%',
+            width: '100%',
+            whiteSpace: 'preserve'
+          }}>
+          {error}
+          {JSON.stringify(shapes, null, 2)}
+        </div>
+      }
     </Flex>
   </div>
-}
-
-const useHighlight = <E extends HTMLDivElement>(highlight?: boolean): React.Ref<E> => {
-  const element = React.useRef<E>(null)
-
-  React.useEffect(() => {
-    if (highlight === true) {
-      element.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-    }
-  }, [highlight])
-
-  return element
-}
-
-
-interface RawLineProps {
-  i: number
-  line: string
-  highlightedLines: number[]
-  setHighlightedLines: (lines: number[]) => unknown
-}
-
-function RawLine(props: RawLineProps): JSX.Element {
-  const { i, line, highlightedLines, setHighlightedLines, } = props
-  const highlight =
-    i >= Math.min(...highlightedLines) &&
-    i <= Math.max(...highlightedLines)
-  const targetRef = useHighlight(highlight)
-
-  return <CodeHighlight
-    styles={{
-      pre: {
-        paddingTop: 0,
-        paddingBottom: 0
-      }
-    }}
-    style={{
-      backgroundColor: highlight ? 'rgb(30,30,30)' : ''
-    }}
-    ref={targetRef}
-    withCopyButton={false}
-    code={line}
-    onMouseEnter={() => setHighlightedLines([i])}
-    onMouseLeave={() => setHighlightedLines([])}
-  >
-  </CodeHighlight>
-}
-
-interface ParsedLineProps {
-  child: ChildNode
-  highlightedLines: number[]
-  setHighlightedLines: (lines: number[]) => unknown
-}
-
-function ParsedLine(props: ParsedLineProps): JSX.Element {
-  const {
-    child,
-    highlightedLines,
-    setHighlightedLines,
-  } = props
-  const { position, ...obj } = child
-  const startLine = position?.start.line
-  const endLine = position?.end.line
-  const highlight = highlightedLines.some(
-    highlightedLine =>
-      startLine !== undefined &&
-      endLine !== undefined &&
-      startLine <= highlightedLine &&
-      endLine >= highlightedLine
-  )
-  const lines = [startLine, endLine].filter((n): n is number => n !== undefined)
-  const targetRef = useHighlight(highlight)
-
-  return <CodeHighlight
-    styles={{
-      pre: {
-        paddingTop: 0,
-        paddingBottom: 0
-      }
-    }}
-    style={{
-      backgroundColor: highlight ? 'rgb(30,30,30)' : ''
-    }}
-    withCopyButton={false}
-    onMouseEnter={() => setHighlightedLines(lines)}
-    onMouseLeave={() => setHighlightedLines([])}
-    ref={targetRef}
-    code={JSON.stringify(obj, null, 2)}
-    language="json"
-  />
-}
-
-
-interface ShapeLineProps {
-  shape: Shape
-  highlightedLines: number[]
-  setHighlightedLines: (lines: number[]) => unknown
-}
-
-function ShapeLine(props: ShapeLineProps): JSX.Element {
-  const {
-    shape,
-    // highlightedLines,
-    // setHighlightedLines,
-  } = props
-  // const { position, ...obj } = shape
-  // const startLine = position?.start.line
-  // const endLine = position?.end.line
-  // const highlight = highlightedLines.some(
-  //   highlightedLine =>
-  //     startLine !== undefined &&
-  //     endLine !== undefined &&
-  //     startLine <= highlightedLine &&
-  //     endLine >= highlightedLine
-  // )
-  // const lines = [startLine, endLine].filter((n): n is number => n !== undefined)
-  // const targetRef = useHighlight(highlight)
-
-  return <CodeHighlight
-    styles={{
-      pre: {
-        paddingTop: 0,
-        paddingBottom: 0
-      }
-    }}
-    style={{
-      // backgroundColor: highlight ? 'rgb(30,30,30)' : ''
-    }}
-    withCopyButton={false}
-    // onMouseEnter={() => setHighlightedLines(lines)}
-    // onMouseLeave={() => setHighlightedLines([])}
-    // ref={targetRef}
-    code={JSON.stringify(shape, null, 2)}
-    language="json"
-  />
 }
