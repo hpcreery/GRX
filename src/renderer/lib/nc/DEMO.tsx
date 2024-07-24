@@ -7,6 +7,7 @@ const drill = `T01`
 
 export default function NCDemo(): JSX.Element {
   const [input, setInput] = React.useState<string>(drill)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [parsed, setParsed] = React.useState<any>({})
   const [shapes, setShapes] = React.useState<Shape[]>([])
   const [error, setError] = React.useState<string | undefined>(undefined)
@@ -17,6 +18,7 @@ export default function NCDemo(): JSX.Element {
       console.time('parse')
       const lexingResult = SelectLexer.tokenize(input);
       parser.input = lexingResult.tokens;
+      // @ts-ignore parser missing type for dynamically created methods
       const result = parser.program();
       setParsed(result)
       console.timeEnd('parse')

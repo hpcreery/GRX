@@ -9,6 +9,7 @@ export async function plugin(file: string, props: Partial<Omit<LayerRendererProp
   console.time('parse')
   const lexingResult = SelectLexer.tokenize(file);
   parser.input = lexingResult.tokens;
+  // @ts-ignore parser missing type for dynamically created methods
   const result = parser.program();
   console.timeEnd('parse')
   console.time('visit')
