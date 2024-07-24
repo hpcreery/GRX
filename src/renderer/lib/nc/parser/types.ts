@@ -29,38 +29,12 @@ export type ZeroSuppression =
 /**
  * Absolute or incremental coordinates
  */
-export type Mode = typeof Constants.ABSOLUTE | typeof Constants.INCREMENTAL
-
-/**
- * Union type of valid tool shapes
- *
- * @category Shape
- */
-export type ToolShape = Circle
-
-// /**
-//  * Union type of non-macro tool shapes
-//  *
-//  * @category Shape
-//  */
-// export type SimpleShape = Circle
-
-/**
- * Union type of valid tool hole shapes
- *
- * @category Shape
- */
-export type HoleShape = Circle
-
-/**
- * A centered circle with a given diameter.
- *
- * @category Shape
- */
-export interface Circle {
-  type: typeof Constants.CIRCLE
-  diameter: number
+export type CoordinateMode = typeof Constants.ABSOLUTE | typeof Constants.INCREMENTAL
+export interface Point {
+  x: number
+  y: number
 }
+
 
 /**
  * A map of axes to coordinate strings used to define the location of a
@@ -71,53 +45,24 @@ export type Coordinates = Partial<Record<string, string>>
 /**
  * Parameters of a step repeat
  */
-export interface StepRepeatParameters {
-  x: string
-  y: string
-  i: string
-  j: string
-}
+// export interface StepRepeatParameters {
+//   x: string
+//   y: string
+//   i: string
+//   j: string
+// }
 
-/**
- * Valid graphical operation types
- */
-export type GraphicType =
-  | typeof Constants.SHAPE
-  | typeof Constants.MOVE
-  | typeof Constants.SEGMENT
-  | typeof Constants.SLOT
 
-/**
- * Valid interpolations modes
- */
+
+export type ArcPosition = [x: number, y: number, theta: number]
+export type Position = [x: number, y: number]
+
+export type ArcDirection = typeof Constants.CW_ARC | typeof Constants.CCW_ARC
+
 export type InterpolateModeType =
   | typeof Constants.LINE
   | typeof Constants.CW_ARC
   | typeof Constants.CCW_ARC
-  | typeof Constants.MOVE
-  | typeof Constants.DRILL
 
-// /**
-//  * Valid quadrant modes
-//  */
-// export type QuadrantModeType = typeof Constants.SINGLE | typeof Constants.MULTI
+export type Mode = typeof Constants.DRILL | typeof Constants.ROUT
 
-// /**
-//  * Valid image polarities
-//  */
-// export type Polarity = typeof Constants.DARK | typeof Constants.CLEAR
-
-// /**
-//  * Valid image mirroring modes
-//  */
-// export type Mirroring = typeof Constants.NO_MIRROR | typeof Constants.X | typeof Constants.Y | typeof Constants.XY
-
-// /**
-//  * Valid image scaling modes
-//  */
-// export type Scaling = number
-
-// /**
-//  * Valid image rotation modes
-//  */
-// export type Rotation = number

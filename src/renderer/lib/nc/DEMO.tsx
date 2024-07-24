@@ -1,16 +1,11 @@
 import React from 'react'
 import { Flex, Textarea } from '@mantine/core'
 import { Shape } from '@src/renderer/shapes';
-import { parser, SelectLexer, NCToShapesVisitor } from './chevrotain-parser/parser'
+import { parser, SelectLexer, NCToShapesVisitor } from './parser/parser'
 
 const drill = `T01`
 
-// const tree = parse(drill)
-// const shapes = plot(tree)
-// const new_tree = p("T01")
-
 export default function NCDemo(): JSX.Element {
-  const [highlightedLines, setHighlightedLines] = React.useState<number[]>([])
   const [input, setInput] = React.useState<string>(drill)
   const [parsed, setParsed] = React.useState<any>({})
   const [shapes, setShapes] = React.useState<Shape[]>([])

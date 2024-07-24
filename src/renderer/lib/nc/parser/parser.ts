@@ -1,13 +1,11 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule, generateCstDts } from "chevrotain"
-// import { CommandCstChildren, ProgramCstChildren, UnitsCstChildren } from './nccst';
 import * as Cst from './nccst';
 import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
 import { Units } from '@src/renderer/types'
-import { Format, UnitsType, ZeroSuppression } from '../parser/types';
-// import { LEADING, MOVE, TRAILING } from '../parser/constants';
-import * as Constants from '../parser/constants'
+import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode } from './types';
+import * as Constants from './constants';
 
 
 const DefaultTokens = {
@@ -522,45 +520,7 @@ const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 // const BaseCstVisitor = parser.getBaseCstVisitorConstructorWithDefaults();
 
 
-// export const CW = 'cw'
-// export const CCW = 'ccw'
 
-// filetype constants
-export const DRILL = 'drill'
-export const ROUT = 'rout'
-
-// Units constants
-export const MM = 'mm'
-export const IN = 'inch'
-
-// Format constants
-export const LEADING = 'leading'
-export const TRAILING = 'trailing'
-export const ABSOLUTE = 'absolute'
-export const INCREMENTAL = 'incremental'
-
-// Tool constants
-export const CIRCLE = 'circle'
-
-// Drawing constants
-export const SHAPE = 'shape'
-export const MOVE = 'move'
-export const SEGMENT = 'segment'
-export const SLOT = 'slot'
-
-// Interpolation / routing constants
-export const LINE = 'line'
-export const CW_ARC = 'cwArc'
-export const CCW_ARC = 'ccwArc'
-
-export type ArcDirection = typeof CW_ARC | typeof CCW_ARC
-
-export type InterpolateModeType =
-  | typeof LINE
-  | typeof CW_ARC
-  | typeof CCW_ARC
-
-export type Mode = typeof DRILL | typeof ROUT
 
 interface NCState {
   units: Units
@@ -574,6 +534,7 @@ interface NCState {
   y: number
   previousX: number
   previousY: number
+  coordinateMode: CoordinateMode
   coordinateFormat: Format
   zeroSuppression: ZeroSuppression
 }
@@ -586,8 +547,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   public result: Shapes.Shape[]
   public state: NCState = {
     plunged: false,
-    mode: DRILL,
-    interpolationMode: LINE,
+    mode: Constants.DRILL,
+    interpolationMode: Constants.LINE,
     units: 'inch',
     currentTool: defaultTool,
     x: 0,
@@ -595,7 +556,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     previousX: 0,
     previousY: 0,
     arcRadius: 0,
-    // arcDirection: CW,
+    coordinateMode: Constants.ABSOLUTE,
     coordinateFormat: [2, 4],
     zeroSuppression: 'trailing',
   }
@@ -620,15 +581,15 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   units(ctx: Cst.UnitsCstChildren): void {
     console.log('units', ctx)
     if (ctx.Units[0].image === 'METRIC') {
-      this.state.units = MM
+      this.state.units = Constants.MM
     } else {
-      this.state.units = IN
+      this.state.units = Constants.IN
     }
     if (ctx.TrailingZeros) {
-      this.state.zeroSuppression = LEADING
+      this.state.zeroSuppression = Constants.LEADING
     }
     if (ctx.LeadingZeros) {
-      this.state.zeroSuppression = TRAILING
+      this.state.zeroSuppression = Constants.TRAILING
     }
   }
 
@@ -734,7 +695,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.visit(ctx.coordinate)
     ctx.arcCenter ? this.visit(ctx.arcCenter) : null
     ctx.arcRadius ? this.visit(ctx.arcRadius) : null
-    if (this.state.mode == DRILL) {
+    if (this.state.mode == Constants.DRILL) {
       this.result.push(new Shapes.Pad({
         x: this.state.x,
         y: this.state.y,
@@ -742,7 +703,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       }))
     } else {
       if (this.state.plunged) {
-        if (this.state.interpolationMode === LINE) {
+        if (this.state.interpolationMode === Constants.LINE) {
           this.result.push(new Shapes.Line({
             xs: this.state.previousX,
             ys: this.state.previousY,
@@ -754,7 +715,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           const startPoint = { x: this.state.previousX, y: this.state.previousY }
           const endPoint = { x: this.state.x, y: this.state.y }
           const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.x ** 2 + this.state.arcCenterOffset.y ** 2) ** 0.5 : 0)
-          const center = getAmbiguousArcCenter(startPoint, endPoint, radius, this.state.interpolationMode == CW_ARC ? CW_ARC : CCW_ARC)
+          const center = getAmbiguousArcCenter(startPoint, endPoint, radius, this.state.interpolationMode == Constants.CW_ARC ? Constants.CW_ARC : Constants.CCW_ARC)
           this.result.push(new Shapes.Arc({
             xs: this.state.previousX,
             ys: this.state.previousY,
@@ -762,7 +723,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             ye: this.state.y,
             xc: center.x,
             yc: center.y,
-            clockwise: this.state.interpolationMode === CW_ARC ? 1 : 0,
+            clockwise: this.state.interpolationMode === Constants.CW_ARC ? 1 : 0,
             symbol: this.state.currentTool,
           }))
         }
@@ -837,17 +798,17 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   metricMode(ctx: Cst.MetricModeCstChildren): void {
     console.log('metricMode', ctx)
-    this.state.units = MM
+    this.state.units = Constants.MM
   }
 
   inchMode(ctx: Cst.InchModeCstChildren): void {
     console.log('inchMode', ctx)
-    this.state.units = IN
+    this.state.units = Constants.IN
   }
 
   routMode(ctx: Cst.RoutModeCstChildren): void {
     console.log('routMode', ctx)
-    this.state.mode = ROUT
+    this.state.mode = Constants.ROUT
     // this is questionable
     this.state.plunged = false
     this.visit(ctx.move)
@@ -855,7 +816,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   linearMove(ctx: Cst.LinearMoveCstChildren): void {
     console.log('linearMove', ctx)
-    this.state.interpolationMode = LINE
+    this.state.interpolationMode = Constants.LINE
     // this is questionable
     this.state.plunged = true
     this.visit(ctx.move)
@@ -863,7 +824,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   circularClockwiseMove(ctx: Cst.CircularClockwiseMoveCstChildren): void {
     console.log('circularClockwiseMove', ctx)
-    this.state.interpolationMode = CW_ARC
+    this.state.interpolationMode = Constants.CW_ARC
     // this is questionable
     this.state.plunged = true
     this.visit(ctx.move)
@@ -871,7 +832,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   circularCounterclockwiseMove(ctx: Cst.CircularCounterclockwiseMoveCstChildren): void {
     console.log('circularCounterclockwiseMove', ctx)
-    this.state.interpolationMode = CCW_ARC
+    this.state.interpolationMode = Constants.CCW_ARC
     // this is questionable
     this.state.plunged = true
     this.visit(ctx.move)
@@ -889,7 +850,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   cwCircle(ctx: Cst.CwCircleCstChildren): void {
     console.log('cwCircle', ctx)
     const prevMode = this.state.mode
-    this.state.mode = ROUT
+    this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
     const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.x ** 2 + this.state.arcCenterOffset.y ** 2) ** 0.5 : 0)
@@ -909,7 +870,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   ccwCircle(ctx: Cst.CcwCircleCstChildren): void {
     console.log('ccwCircle', ctx)
     const prevMode = this.state.mode
-    this.state.mode = ROUT
+    this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
     const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.x ** 2 + this.state.arcCenterOffset.y ** 2) ** 0.5 : 0)
@@ -940,10 +901,12 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   absoluteMode(ctx: Cst.AbsoluteModeCstChildren): void {
     console.log('absoluteMode', ctx)
+    this.state.coordinateMode = Constants.ABSOLUTE
   }
 
   incrementalMode(ctx: Cst.IncrementalModeCstChildren): void {
     console.log('incrementalMode', ctx)
+    this.state.coordinateMode = Constants.INCREMENTAL
   }
 
   zeroSet(ctx: Cst.ZeroSetCstChildren): void {
@@ -966,7 +929,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
     const digits = integerPlaces + decimalPlaces
     const paddedCoordinate =
-      zeroSuppression === TRAILING
+      zeroSuppression === Constants.TRAILING
         ? signlessCoordinate.padEnd(digits, '0')
         : signlessCoordinate.padStart(digits, '0')
 
@@ -1000,9 +963,6 @@ export function getAmbiguousArcCenter(startPoint: Point, endPoint: Point, radius
 }
 
 
-export type ArcPosition = [x: number, y: number, theta: number]
-export type Position = [x: number, y: number]
-
 export function getArcPositions(
   startPoint: Point,
   endPoint: Point,
@@ -1019,7 +979,7 @@ export function getArcPositions(
   )
 
   // If counter-clockwise, end angle should be greater than start angle
-  if (arcDirection === CCW_ARC) {
+  if (arcDirection === Constants.CCW_ARC) {
     endAngle = endAngle > startAngle ? endAngle : endAngle + (Math.PI * 2)
   } else {
     startAngle = startAngle > endAngle ? startAngle : startAngle + (Math.PI * 2)
@@ -1030,11 +990,6 @@ export function getArcPositions(
     [endPoint.x, endPoint.y, endAngle],
     [centerPoint.x, centerPoint.y],
   ]
-}
-
-export interface Point {
-  x: number
-  y: number
 }
 
 // Find arc center candidates by finding the intersection points
@@ -1070,5 +1025,4 @@ function findCenterCandidates(startPoint: Point, endPoint: Point, radius: number
 }
 
 
-
-// export const visitor = new NCToAstVisitor()
+// TODO: add support for more excellon Canned Cycle Commands
