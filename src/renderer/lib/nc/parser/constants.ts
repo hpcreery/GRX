@@ -2,6 +2,7 @@
 
 // filetype constants
 export const DRILL = 'drill'
+export const ROUT = 'rout'
 
 // Units constants
 export const MM = 'mm'
