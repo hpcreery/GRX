@@ -61,9 +61,10 @@ export interface UnitsCstNode extends CstNode {
 
 export type UnitsCstChildren = {
   Units: IToken[];
-  Comma?: IToken[];
+  Comma?: (IToken)[];
   TrailingZeros?: IToken[];
   LeadingZeros?: IToken[];
+  Number?: IToken[];
 };
 
 export interface HeaderEndCstNode extends CstNode {

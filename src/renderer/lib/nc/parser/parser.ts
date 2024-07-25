@@ -70,6 +70,7 @@ const DefaultTokens = {
   RParen: createToken({ name: "RParen", pattern: /\)/ }),
   // Attribute: createToken({ name: "Attribute", pattern: /#@!/ }),
   Semicolon: createToken({ name: "Semicolon", pattern: /;/, push_mode: "CommentMode" }),
+  // Unknown: createToken({ name: "Unknown", pattern: /./ }),
 } as const
 
 const CommentTokens = {
@@ -151,23 +152,14 @@ class NCParser extends CstParser {
   headerEnd!: ParserMethod<unknown[], CstNode>
 
   constructor() {
-    super(multiModeLexerDefinition)
+    super(multiModeLexerDefinition, {
+      recoveryEnabled: true,
+      // maxLookahead: 2,
+    })
 
     this.RULE("program", () => {
-      // this.MANY_SEP({
-      //   SEP: Tokens.NewLine,
-      //   DEF: () => {
-      //     this.SUBRULE(this.command)
-      //     this.OPTION(() => {
-      //       this.CONSUME(Tokens.Comment)
-      //     })
-      //   }
-      // })
       this.MANY(() => {
         this.SUBRULE(this.command)
-        // this.OPTION(() => {
-        //   this.CONSUME(Tokens.Comment)
-        // })
       })
     })
 
@@ -223,6 +215,10 @@ class NCParser extends CstParser {
           { ALT: (): IToken => this.CONSUME(DefaultTokens.LeadingZeros) },
         ])
       })
+      this.OPTION2(() => {
+        this.CONSUME2(DefaultTokens.Comma)
+        this.CONSUME(DefaultTokens.Number)
+      })
     })
 
     this.RULE("headerEnd", () => {
@@ -240,10 +236,12 @@ class NCParser extends CstParser {
       this.OPTION2(() => {
         this.CONSUME(CommentTokens.Text)
       })
-      this.OR2([
-        { ALT: (): IToken => this.CONSUME(CommentTokens.NewLine) },
-        { ALT: (): IToken => this.CONSUME(CommentTokens.RParen) },
-      ])
+      this.OPTION3(() => {
+        this.OR2([
+          { ALT: (): IToken => this.CONSUME(CommentTokens.NewLine) },
+          { ALT: (): IToken => this.CONSUME(CommentTokens.RParen) },
+        ])
+      })
     })
 
     this.RULE("toolChange", () => {
@@ -593,6 +591,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.LeadingZeros) {
       this.state.zeroSuppression = Constants.TRAILING
     }
+    if (ctx.Number) {
+      const [int, decimal] = ctx.Number[0].image.split('.')
+      this.state.coordinateFormat = [int.length, decimal.length]
+    }
   }
 
   headerEnd(ctx: Cst.HeaderCstChildren): void {
@@ -897,12 +899,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
 
     const { coordinateFormat, zeroSuppression } = this.state
-    const [integerPlaces, decimalPlaces] = coordinateFormat
+    let [integerPlaces, decimalPlaces] = coordinateFormat
     const [sign, signlessCoordinate] =
       coordinate.startsWith('+') || coordinate.startsWith('-')
         ? [coordinate[0], coordinate.slice(1)]
         : ['+', coordinate]
 
+    if (signlessCoordinate.length > integerPlaces + decimalPlaces) {
+      this.state.coordinateFormat = [coordinate.length - decimalPlaces, decimalPlaces]
+    }
+    [integerPlaces, decimalPlaces] = this.state.coordinateFormat
     const digits = integerPlaces + decimalPlaces
     const paddedCoordinate =
       zeroSuppression === Constants.TRAILING

@@ -88,7 +88,7 @@ export default function NCDemo(): JSX.Element {
           {JSON.stringify(parsed, null, 2)}
         </div>
       }
-            {
+      {
         <div
           style={{
             overflow: 'auto',
@@ -96,7 +96,6 @@ export default function NCDemo(): JSX.Element {
             width: '100%',
             whiteSpace: 'preserve'
           }}>
-          {error}
           {JSON.stringify(shapes, null, 2)}
         </div>
       }
