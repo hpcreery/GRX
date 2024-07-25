@@ -5,7 +5,7 @@ import ncPluginWorker from '@lib/nc?worker'
 import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 
-export type parser = (file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void) => Promise<void>
+export type parser = (buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void) => Promise<void>
 
 
 const plugins: {

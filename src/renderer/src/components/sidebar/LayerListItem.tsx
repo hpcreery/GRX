@@ -100,7 +100,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           try {
             await renderer.addFile({
               format: file.format,
-              file: e.target?.result as string,
+              buffer: e.target?.result as ArrayBuffer,
               props: {
                 name: file.name,
                 // uid: file.uid
@@ -126,25 +126,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           // messageApi.error(`${file.name} file upload failed.`)
         }
       }
-      switch (file.format) {
-        case 'gdsii':
-          reader.readAsDataURL(file)
-          break
-        case 'rs274x':
-        case 'dxf':
-        case 'nc':
-          reader.readAsText(file)
-          break
-        default:
-          // reader.readAsText(file)
-          notifications.show({
-            title: 'Unknown reader for file',
-            message: `${file.format} does not have a reader.`,
-            color: 'red',
-            autoClose: 5000
-          })
-          break
-      }
+      reader.readAsArrayBuffer(file)
     })
 
     return (): void => { }

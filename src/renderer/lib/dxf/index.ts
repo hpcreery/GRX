@@ -8,10 +8,12 @@ import * as Comlink from 'comlink'
 // import file from './testdata/noentities.dxf?url'
 
 export async function plugin(
-  file: string,
+  buffer: ArrayBuffer,
   props: Partial<Omit<LayerRendererProps, 'regl'>>,
   addLayer: (params: Omit<LayerRendererProps, 'regl'>) => void
 ): Promise<void> {
+  const decoder = new TextDecoder('utf-8')
+  const file = decoder.decode(buffer)
   const parser = new DxfParser()
   let dxf
   try {

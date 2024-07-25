@@ -1445,8 +1445,9 @@ function REGLApp(): JSX.Element {
     //   units: 'mm'
     // })
 
+    const enc = new TextEncoder()
     Engine.addFile({
-      file: gdsiiFile,
+      buffer: enc.encode(gdsiiFile),
       format: 'gdsii',
       props: {
         name: 'gdsii',
@@ -1490,7 +1491,7 @@ function REGLApp(): JSX.Element {
     setEngine(Engine)
     // Engine.SUPERTEST()
 
-    return () => {
+    return (): void => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
     }

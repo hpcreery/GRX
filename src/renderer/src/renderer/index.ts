@@ -303,7 +303,7 @@ export class RenderEngine {
   }
 
   public async addFile(params: {
-    file: string
+    buffer: ArrayBuffer
     format: string
     props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>
   }): Promise<void> {

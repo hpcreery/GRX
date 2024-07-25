@@ -537,16 +537,16 @@ export class RenderEngineBackend {
     this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
   }
 
-  public async addFile(params: { file: string, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
+  public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
     const pluginWorker = plugins[params.format]
     if (pluginWorker) {
       const tempUID = UID()
-      this.layersQueue.push({ name: params.file, uid: tempUID })
+      this.layersQueue.push({ name: params.props.name || '', uid: tempUID })
       const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const instance = new pluginWorker()
       const parser = Comlink.wrap<parser>(instance)
       try {
-        await parser(params.file, params.props, Comlink.proxy(callback))
+        await parser(params.buffer, params.props, Comlink.proxy(callback))
       } catch (error) {
         console.error(error)
         throw error

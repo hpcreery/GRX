@@ -4,7 +4,9 @@ import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
 
 
-export async function plugin(file: string, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+  const decoder = new TextDecoder('utf-8')
+  const file = decoder.decode(buffer)
   const tree = parse(file)
   const image = plot(tree)
   addLayer({

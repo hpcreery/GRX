@@ -32,8 +32,6 @@ export default function NCDemo(): JSX.Element {
       }
       console.log(result)
       if (parser.errors.length > 0) {
-        // throw new Error("sad sad panda, Parsing errors detected");
-        // console.log('ERRORS', parser.errors.map(e => e.message))
         parser.errors.forEach(e => console.error('PARSER ERROR: ', e.message))
         setError(parser.errors.map(e => e.message).join('\n'))
       } else {
