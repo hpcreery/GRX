@@ -16,6 +16,8 @@ export interface CommandCstNode extends CstNode {
 
 export type CommandCstChildren = {
   units?: UnitsCstNode[];
+  incrementalModeSwitch?: IncrementalModeSwitchCstNode[];
+  compensationIndex?: CompensationIndexCstNode[];
   toolDefinition?: ToolDefinitionCstNode[];
   toolChange?: ToolChangeCstNode[];
   comment?: CommentCstNode[];
@@ -100,6 +102,17 @@ export type CommentCstChildren = {
   Text?: IToken[];
   NewLine?: IToken[];
   RParen?: IToken[];
+};
+
+export interface CompensationIndexCstNode extends CstNode {
+  name: "compensationIndex";
+  children: CompensationIndexCstChildren;
+}
+
+export type CompensationIndexCstChildren = {
+  CP: IToken[];
+  Comma: (IToken)[];
+  Number: (IToken)[];
 };
 
 export interface ToolChangeCstNode extends CstNode {
@@ -571,6 +584,7 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   incrementalModeSwitch(children: IncrementalModeSwitchCstChildren, param?: IN): OUT;
   headerEnd(children: HeaderEndCstChildren, param?: IN): OUT;
   comment(children: CommentCstChildren, param?: IN): OUT;
+  compensationIndex(children: CompensationIndexCstChildren, param?: IN): OUT;
   toolChange(children: ToolChangeCstChildren, param?: IN): OUT;
   toolDefinition(children: ToolDefinitionCstChildren, param?: IN): OUT;
   toolDia(children: ToolDiaCstChildren, param?: IN): OUT;

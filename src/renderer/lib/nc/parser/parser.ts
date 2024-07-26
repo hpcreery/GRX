@@ -19,6 +19,7 @@ const DefaultTokens = {
   IncrementalMode: createToken({ name: "IncrementalMode", pattern: /ICI/ }),
   On: createToken({ name: "On", pattern: /ON/ }),
   Off: createToken({ name: "Off", pattern: /OFF/ }),
+  CP: createToken({ name: "CP", pattern: /CP/ }),
   T: createToken({ name: "T", pattern: /T\d{1,2}(?:\d{1,2})?/ }),
   // Tool Parameters
   F: createToken({ name: "F", pattern: /F/ }),
@@ -105,6 +106,7 @@ class NCParser extends CstParser {
   command!: ParserMethod<unknown[], CstNode>
   units!: ParserMethod<unknown[], CstNode>
   incrementalModeSwitch!: ParserMethod<unknown[], CstNode>
+  compensationIndex!: ParserMethod<unknown[], CstNode>
   toolDefinition!: ParserMethod<unknown[], CstNode>
   toolChange!: ParserMethod<unknown[], CstNode>
   comment!: ParserMethod<unknown[], CstNode>
@@ -171,6 +173,7 @@ class NCParser extends CstParser {
       this.OR([
         { ALT: (): CstNode => this.SUBRULE(this.units) },
         { ALT: (): CstNode => this.SUBRULE(this.incrementalModeSwitch) },
+        { ALT: (): CstNode => this.SUBRULE(this.compensationIndex) },
         { ALT: (): CstNode => this.SUBRULE(this.toolDefinition) },
         { ALT: (): CstNode => this.SUBRULE(this.toolChange) },
         { ALT: (): CstNode => this.SUBRULE(this.comment) },
@@ -256,6 +259,14 @@ class NCParser extends CstParser {
           { ALT: (): IToken => this.CONSUME(CommentTokens.RParen) },
         ])
       })
+    })
+
+    this.RULE("compensationIndex", () => {
+      this.CONSUME(DefaultTokens.CP)
+      this.CONSUME(DefaultTokens.Comma)
+      this.CONSUME(DefaultTokens.Number)
+      this.CONSUME2(DefaultTokens.Comma)
+      this.CONSUME2(DefaultTokens.Number)
     })
 
     this.RULE("toolChange", () => {
@@ -526,13 +537,16 @@ class NCParser extends CstParser {
 
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
-const dtsString = generateCstDts(productions);
-console.log(dtsString)
+
+const GENERATEDTS = true
+if (GENERATEDTS)
+{
+  const dtsString = generateCstDts(productions);
+  console.log(dtsString)
+}
 
 const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 // const BaseCstVisitor = parser.getBaseCstVisitorConstructorWithDefaults();
-
-
 
 
 interface NCState extends NCParams {
@@ -540,6 +554,7 @@ interface NCState extends NCParams {
   mode: Mode
   interpolationMode: InterpolateModeType
   currentTool: Symbols.StandardSymbol
+  cutterCompensation: number
   x: number
   y: number
   previousX: number
@@ -567,6 +582,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     interpolationMode: Constants.LINE,
     units: 'inch',
     currentTool: defaultTool,
+    cutterCompensation: 0,
     x: 0,
     y: 0,
     previousX: 0,
@@ -577,6 +593,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     zeroSuppression: 'trailing',
   }
   public toolStore: Partial<Record<string, Symbols.StandardSymbol>> = {}
+  public compensationStore: Partial<Record<string, number>> = {}
   constructor(params: Partial<NCParams> = {}) {
     super();
     Object.assign(this.state, params)
@@ -623,8 +640,19 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     console.log('comment', ctx)
   }
 
+  compensationIndex(ctx: Cst.CompensationIndexCstChildren): void {
+    this.compensationStore[ctx.Number[0].image] = parseFloat(ctx.Number[1].image)
+  }
+
   toolChange(ctx: Cst.ToolChangeCstChildren): void {
-    this.state.currentTool = this.toolStore[ctx.T[0].image] ?? defaultTool
+    const str = ctx.T[0].image
+    const tool = str.slice(0,3)
+    let compensationIndex = str.slice(3)
+    if (!compensationIndex) {
+      compensationIndex = tool.slice(1)
+    }
+    this.state.currentTool = this.toolStore[tool] ?? defaultTool
+    this.state.cutterCompensation = this.compensationStore[compensationIndex] ?? 0
   }
 
   toolDefinition(ctx: Cst.ToolDefinitionCstChildren): void {
