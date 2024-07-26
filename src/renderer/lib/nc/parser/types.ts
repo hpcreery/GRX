@@ -66,3 +66,5 @@ export type InterpolateModeType =
 
 export type Mode = typeof Constants.DRILL | typeof Constants.ROUT
 
+export type CutterCompensation = typeof Constants.OFF | typeof Constants.LEFT | typeof Constants.RIGHT
+

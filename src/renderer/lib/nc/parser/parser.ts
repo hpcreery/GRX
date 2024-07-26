@@ -4,8 +4,8 @@ import * as Cst from './nccst';
 import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
-import { Units } from '@src/renderer/types'
-import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode } from './types';
+import { Units, AttributeCollection } from '@src/renderer/types'
+import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation } from './types';
 import * as Constants from './constants';
 
 
@@ -538,7 +538,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = true
+const GENERATEDTS = false
 if (GENERATEDTS)
 {
   const dtsString = generateCstDts(productions);
@@ -555,6 +555,7 @@ interface NCState extends NCParams {
   interpolationMode: InterpolateModeType
   currentTool: Symbols.StandardSymbol
   cutterCompensation: number
+  cutterCompensationMode: CutterCompensation
   x: number
   y: number
   previousX: number
@@ -583,6 +584,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     units: 'inch',
     currentTool: defaultTool,
     cutterCompensation: 0,
+    cutterCompensationMode: Constants.OFF,
     x: 0,
     y: 0,
     previousX: 0,
@@ -657,10 +659,20 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   toolDefinition(ctx: Cst.ToolDefinitionCstChildren): void {
     const dia = this.visit(ctx.toolDia) as number
+
+    const attributes: AttributeCollection = {}
+
+    if (ctx.feed) attributes.feed = (ctx.feed[0].children.Number || [])[0]?.image
+    if (ctx.speed) attributes.speed = (ctx.speed[0].children.Number || [])[0]?.image
+    if (ctx.retractRate) attributes.retractRate = (ctx.retractRate[0].children.Number || [])[0]?.image
+    if (ctx.hitCount) attributes.hitCount = (ctx.hitCount[0].children.Number || [])[0]?.image
+    if (ctx.depthOffset) attributes.depthOffset = (ctx.depthOffset[0].children.Number || [])[0]?.image
+
     const tool = new Symbols.RoundSymbol({
       id: ctx.T[0].image,
       outer_dia: dia,
-      inner_dia: 0
+      inner_dia: 0,
+      attributes
     })
     this.state.currentTool = tool
     this.toolStore[tool.id] = tool
@@ -757,6 +769,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             xe: this.state.x,
             ye: this.state.y,
             symbol: this.state.currentTool,
+            attributes: {
+              cutterCompensation: (this.state.cutterCompensation).toString(),
+              cutterCompensationMode: this.state.cutterCompensationMode,
+            }
           }))
         } else {
           const startPoint = { x: this.state.previousX, y: this.state.previousY }
@@ -772,6 +788,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             yc: center.y,
             clockwise: this.state.interpolationMode === Constants.CW_ARC ? 1 : 0,
             symbol: this.state.currentTool,
+            attributes: {
+              cutterCompensation: (this.state.cutterCompensation).toString(),
+              cutterCompensationMode: this.state.cutterCompensationMode,
+            }
           }))
         }
       }
@@ -923,16 +943,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.mode = prevMode
   }
 
-  cutterCompensationOff(ctx: Cst.CutterCompensationOffCstChildren): void {
-    console.log('cutterCompensationOff', ctx)
+  cutterCompensationOff(_ctx: Cst.CutterCompensationOffCstChildren): void {
+    this.state.cutterCompensationMode = Constants.OFF
   }
 
-  cutterCompensationLeft(ctx: Cst.CutterCompensationLeftCstChildren): void {
-    console.log('cutterCompensationLeft', ctx)
+  cutterCompensationLeft(_ctx: Cst.CutterCompensationLeftCstChildren): void {
+    this.state.cutterCompensationMode = Constants.LEFT
   }
 
-  cutterCompensationRight(ctx: Cst.CutterCompensationRightCstChildren): void {
-    console.log('cutterCompensationRight', ctx)
+  cutterCompensationRight(_ctx: Cst.CutterCompensationRightCstChildren): void {
+    this.state.cutterCompensationMode = Constants.RIGHT
   }
 
   absoluteMode(_ctx: Cst.AbsoluteModeCstChildren): void {

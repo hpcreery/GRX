@@ -18,3 +18,8 @@ export const INCREMENTAL = 'incremental'
 export const LINE = 'line'
 export const CW_ARC = 'cwArc'
 export const CCW_ARC = 'ccwArc'
+
+// Cutter Compensation
+export const OFF = 'off'
+export const LEFT = 'left'
+export const RIGHT = 'right'
