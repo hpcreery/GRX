@@ -72,8 +72,9 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
 
     if (!extension) return defaultFormat
     if (['gds', 'gdsii', 'gds2'].includes(extension)) return 'gdsii'
-    if (['gbr', 'geb', 'gerber', 'drl'].includes(extension)) return 'rs274x'
+    if (['gbr', 'geb', 'gerber'].includes(extension)) return 'rs274x'
     if (['dxf'].includes(extension)) return 'dxf'
+    if (['nc', 'drl', 'dr', 'rt'].includes(extension)) return 'nc'
     return defaultFormat
   }
   async function uploadFiles(files: FileWithFormat[]): Promise<void> {

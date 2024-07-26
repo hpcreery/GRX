@@ -63,6 +63,15 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       ].includes(key)) {
         representedValue = `${(value * getUnitsConversion(units) / getUnitsConversion(shapeUnits)).toFixed(3)}${units}`
       }
+      if (key === 'attributes') {
+        return <>
+        <Text key={index}>- {key}: <Code>{Object.keys(value).length}</Code></Text>
+        {Object.entries(value as AttributeCollection).map(([key, value]) =>
+          <>
+            <Text key={`${key}`} style={{whiteSpace: 'preserve'}}>  ~ {key}: <Code>{value}</Code></Text>
+          </>
+        )}</>
+      }
       return <Text key={index}>- {key}: <Code>{representedValue}</Code></Text>
     }
     )
@@ -323,7 +332,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
   }
 
   const getAttributes = (attributes: AttributeCollection): JSX.Element => {
-    return <>{Object.entries(attributes).map((key, value) =>
+    return <>{Object.entries(attributes).map(([key, value]) =>
       <>
         <Text key={`${key}`}>- {key}: <Code>{value}</Code></Text>
       </>
