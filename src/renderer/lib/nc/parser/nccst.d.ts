@@ -67,6 +67,18 @@ export type UnitsCstChildren = {
   Number?: IToken[];
 };
 
+export interface IncrementalModeSwitchCstNode extends CstNode {
+  name: "incrementalModeSwitch";
+  children: IncrementalModeSwitchCstChildren;
+}
+
+export type IncrementalModeSwitchCstChildren = {
+  IncrementalMode: IToken[];
+  Comma: IToken[];
+  On?: IToken[];
+  Off?: IToken[];
+};
+
 export interface HeaderEndCstNode extends CstNode {
   name: "headerEnd";
   children: HeaderEndCstChildren;
@@ -556,6 +568,7 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT;
   command(children: CommandCstChildren, param?: IN): OUT;
   units(children: UnitsCstChildren, param?: IN): OUT;
+  incrementalModeSwitch(children: IncrementalModeSwitchCstChildren, param?: IN): OUT;
   headerEnd(children: HeaderEndCstChildren, param?: IN): OUT;
   comment(children: CommentCstChildren, param?: IN): OUT;
   toolChange(children: ToolChangeCstChildren, param?: IN): OUT;

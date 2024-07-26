@@ -1,5 +1,5 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule } from "chevrotain"
-// import { generateCstDts } from 'chevrotain'
+import { generateCstDts } from 'chevrotain'
 import * as Cst from './nccst';
 import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
@@ -16,6 +16,9 @@ const DefaultTokens = {
   Units: createToken({ name: "Units", pattern: /METRIC|INCH/ }),
   TrailingZeros: createToken({ name: "TrailingZeros", pattern: /TZ/ }),
   LeadingZeros: createToken({ name: "LeadingZeros", pattern: /LZ/ }),
+  IncrementalMode: createToken({ name: "IncrementalMode", pattern: /ICI/ }),
+  On: createToken({ name: "On", pattern: /ON/ }),
+  Off: createToken({ name: "Off", pattern: /OFF/ }),
   T: createToken({ name: "T", pattern: /T\d{1,2}(?:\d{1,2})?/ }),
   // Tool Parameters
   F: createToken({ name: "F", pattern: /F/ }),
@@ -101,6 +104,7 @@ export const SelectLexer = new Lexer(multiModeLexerDefinition)
 class NCParser extends CstParser {
   command!: ParserMethod<unknown[], CstNode>
   units!: ParserMethod<unknown[], CstNode>
+  incrementalModeSwitch!: ParserMethod<unknown[], CstNode>
   toolDefinition!: ParserMethod<unknown[], CstNode>
   toolChange!: ParserMethod<unknown[], CstNode>
   comment!: ParserMethod<unknown[], CstNode>
@@ -166,6 +170,7 @@ class NCParser extends CstParser {
     this.RULE("command", () => {
       this.OR([
         { ALT: (): CstNode => this.SUBRULE(this.units) },
+        { ALT: (): CstNode => this.SUBRULE(this.incrementalModeSwitch) },
         { ALT: (): CstNode => this.SUBRULE(this.toolDefinition) },
         { ALT: (): CstNode => this.SUBRULE(this.toolChange) },
         { ALT: (): CstNode => this.SUBRULE(this.comment) },
@@ -219,6 +224,15 @@ class NCParser extends CstParser {
         this.CONSUME2(DefaultTokens.Comma)
         this.CONSUME(DefaultTokens.Number)
       })
+    })
+
+    this.RULE("incrementalModeSwitch", () => {
+      this.CONSUME(DefaultTokens.IncrementalMode)
+      this.CONSUME(DefaultTokens.Comma)
+      this.OR([
+        { ALT: (): IToken => this.CONSUME(DefaultTokens.On) },
+        { ALT: (): IToken => this.CONSUME(DefaultTokens.Off) },
+      ])
     })
 
     this.RULE("headerEnd", () => {
@@ -512,8 +526,8 @@ class NCParser extends CstParser {
 
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
-// const dtsString = generateCstDts(productions);
-// console.log(dtsString)
+const dtsString = generateCstDts(productions);
+console.log(dtsString)
 
 const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 // const BaseCstVisitor = parser.getBaseCstVisitorConstructorWithDefaults();
@@ -597,6 +611,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
   }
 
+  incrementalModeSwitch(ctx: Cst.IncrementalModeSwitchCstChildren): void {
+    this.state.coordinateMode = ctx.On ? Constants.INCREMENTAL : Constants.ABSOLUTE
+  }
+
   headerEnd(ctx: Cst.HeaderCstChildren): void {
     console.log('headerEnd', ctx)
   }
@@ -647,12 +665,22 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   x(ctx: Cst.XCstChildren): void {
     this.state.previousX = this.state.x
-    this.state.x = this.parseCoordinate(ctx.Number[0].image)
+    const newx = this.parseCoordinate(ctx.Number[0].image)
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      this.state.x = newx
+    } else {
+      this.state.x += newx
+    }
   }
 
   y(ctx: Cst.YCstChildren): void {
     this.state.previousY = this.state.y
-    this.state.y = this.parseCoordinate(ctx.Number[0].image)
+    const newy = this.parseCoordinate(ctx.Number[0].image)
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      this.state.y = newy
+    } else {
+      this.state.y += newy
+    }
   }
 
   xy(ctx: Cst.XyCstChildren): void {
