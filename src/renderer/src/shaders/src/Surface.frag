@@ -13,6 +13,7 @@ uniform float u_Alpha;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
+uniform float u_Polarity;
 
 // SURFACE UNIFORMS
 uniform sampler2D u_Vertices;
@@ -129,6 +130,7 @@ void main() {
   // v_ContourPolarity = Island (1) or Hole (0)
   // v_SurfacePolarity = Positive (1) or Negative (0)
   float polarity = bool(v_ContourPolarity) ^^ bool(v_SurfacePolarity) ? 0.0 : 1.0;
+  polarity = bool(polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   // float polarity = bool(1) ^^ bool(1) ? 0.0 : 1.0;
   // first | second | result
   // -----------------------
