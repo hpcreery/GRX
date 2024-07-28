@@ -621,7 +621,6 @@ interface StepAndRepeatRendererProps {
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
   public record: Shapes.StepAndRepeat
-
   constructor(props: StepAndRepeatRendererProps) {
     super({
       regl: props.regl,
@@ -644,10 +643,10 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
-    this.record.repeats.forEach((repeat, i) => {
+    this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
-      this.transform.index = i
+      this.transform.index = 0
       super.render(context)
     })
   }
