@@ -106,12 +106,12 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                 // uid: file.uid
               }
             })
-            notifications.show({
-              title: 'File read',
-              message: `${file.name} file read.`,
-              color: 'green',
-              autoClose: 5000
-            })
+            // notifications.show({
+            //   title: 'File read',
+            //   message: `${file.name} file read.`,
+            //   color: 'green',
+            //   autoClose: 5000
+            // })
           } catch (fileParseError) {
             console.error(fileParseError)
             notifications.show({

@@ -33,7 +33,7 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
     "@emotion/react": "^11.11.4",
-    "@hpcreery/tracespace-parser": "^5.0.3",
+    "@hpcreery/tracespace-parser": "^5.0.4",
     "@hpcreery/tracespace-plotter": "^5.0.3",
     "@hpcreery/tracespace-renderer": "^5.0.3",
     "@mantine/carousel": "^7.11.1",
