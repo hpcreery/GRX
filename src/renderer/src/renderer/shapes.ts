@@ -528,11 +528,15 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
         vec2.min(min, min, shape_min)
         vec2.max(max, max, shape_max)
       }
+      const minDatum = vec2.fromValues(Infinity, Infinity)
+      const maxDatum = vec2.fromValues(-Infinity, -Infinity)
       for (const repeat of record.repeats) {
         const { datum } = repeat
-        vec2.add(min, min, datum)
-        vec2.add(max, max, datum)
+        vec2.min(minDatum, minDatum, datum)
+        vec2.max(maxDatum, maxDatum, datum)
       }
+      vec2.add(min, min, minDatum)
+      vec2.add(max, max, maxDatum)
       break
     }
     case FeatureTypeIdentifier.LINESEGMENT: {
