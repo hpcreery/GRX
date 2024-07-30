@@ -4,7 +4,7 @@ import * as Cst from './nccst';
 import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
-import { Units, AttributeCollection } from '@src/renderer/types'
+import { Units, AttributeCollection, Binary } from '@src/renderer/types'
 import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation } from './types';
 import * as Constants from './constants';
 
@@ -50,8 +50,11 @@ const DefaultTokens = {
   M45: createToken({ name: "M45", pattern: /M45/, push_mode: "TextMode" }),
   M47: createToken({ name: "M47", pattern: /M47/, push_mode: "TextMode" }),
   M48: createToken({ name: "M48", pattern: /M48/ }),
+  M70: createToken({ name: "M70", pattern: /M70/ }),
   M71: createToken({ name: "M71", pattern: /M71/ }),
   M72: createToken({ name: "M72", pattern: /M72/ }),
+  M80: createToken({ name: "M80", pattern: /M80/ }),
+  M90: createToken({ name: "M90", pattern: /M90/ }),
   // G Codes
   G00: createToken({ name: "G00", pattern: /G00/ }),
   G01: createToken({ name: "G01", pattern: /G01/ }),
@@ -323,12 +326,16 @@ class NCParser extends CstParser {
 
     this.RULE("x", () => {
       this.CONSUME(DefaultTokens.X)
-      this.CONSUME(DefaultTokens.Number)
+      this.OPTION(() => {
+        this.CONSUME(DefaultTokens.Number)
+      })
     })
 
     this.RULE("y", () => {
       this.CONSUME(DefaultTokens.Y)
-      this.CONSUME(DefaultTokens.Number)
+      this.OPTION(() => {
+        this.CONSUME(DefaultTokens.Number)
+      })
     })
 
     this.RULE("coordinate", () => {
@@ -389,7 +396,16 @@ class NCParser extends CstParser {
 
     this.RULE("repeatPatternOffset", () => {
       this.CONSUME(DefaultTokens.M02)
-      this.SUBRULE(this.xy)
+      this.OPTION(() => {
+        this.SUBRULE(this.coordinate)
+      })
+      this.MANY(() => {
+        this.OR([
+          { ALT: (): IToken => this.CONSUME(DefaultTokens.M70) },
+          { ALT: (): IToken => this.CONSUME(DefaultTokens.M80) },
+          { ALT: (): IToken => this.CONSUME(DefaultTokens.M90) },
+        ])
+      })
     })
 
     this.RULE("optionalStop", () => {
@@ -538,9 +554,8 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = false
-if (GENERATEDTS)
-{
+const GENERATEDTS = true
+if (GENERATEDTS) {
   const dtsString = generateCstDts(productions);
   console.log(dtsString)
 }
@@ -576,7 +591,9 @@ const defaultTool: Symbols.StandardSymbol = new Symbols.NullSymbol({
 })
 
 export class NCToShapesVisitor extends BaseCstVisitor {
-  public result: Shapes.Shape[]
+  public result: Shapes.Shape[] = []
+  public stepRepeatShapes: Shapes.Shape[][] = []
+  public stepRepeats: Shapes.StepAndRepeat[] = []
   public state: NCState = {
     plunged: false,
     mode: Constants.DRILL,
@@ -601,7 +618,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     Object.assign(this.state, params)
     // This helper will detect any missing or redundant methods on this visitor
     this.validateVisitor();
-    this.result = [];
   }
 
   program(ctx: Cst.ProgramCstChildren): void {
@@ -648,7 +664,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   toolChange(ctx: Cst.ToolChangeCstChildren): void {
     const str = ctx.T[0].image
-    const tool = str.slice(0,3)
+    const tool = str.slice(0, 3)
     let compensationIndex = str.slice(3)
     if (!compensationIndex) {
       compensationIndex = tool.slice(1)
@@ -662,11 +678,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
     const attributes: AttributeCollection = {}
 
-    if (ctx.feed) attributes.feed = (ctx.feed[0].children.Number || [])[0]?.image
-    if (ctx.speed) attributes.speed = (ctx.speed[0].children.Number || [])[0]?.image
-    if (ctx.retractRate) attributes.retractRate = (ctx.retractRate[0].children.Number || [])[0]?.image
-    if (ctx.hitCount) attributes.hitCount = (ctx.hitCount[0].children.Number || [])[0]?.image
-    if (ctx.depthOffset) attributes.depthOffset = (ctx.depthOffset[0].children.Number || [])[0]?.image
+    if (ctx.feed) attributes.feed = this.visit(ctx.feed) as string
+    if (ctx.speed) attributes.speed = this.visit(ctx.speed) as string
+    if (ctx.retractRate) attributes.retractRate = this.visit(ctx.retractRate) as string
+    if (ctx.hitCount) attributes.hitCount = this.visit(ctx.hitCount) as string
+    if (ctx.depthOffset) attributes.depthOffset = this.visit(ctx.depthOffset) as string
 
     const tool = new Symbols.RoundSymbol({
       id: ctx.T[0].image,
@@ -683,27 +699,33 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     return dia
   }
 
-  feed(ctx: Cst.FeedCstChildren): void {
-    console.log('feed', ctx)
+  feed(ctx: Cst.FeedCstChildren): string {
+    if (ctx.Number) return ctx.Number[0].image
+    return ''
   }
 
-  speed(ctx: Cst.SpeedCstChildren): void {
-    console.log('speed', ctx)
+  speed(ctx: Cst.SpeedCstChildren): string {
+    if (ctx.Number) return ctx.Number[0].image
+    return ''
   }
 
-  retractRate(ctx: Cst.RetractRateCstChildren): void {
-    console.log('retractRate', ctx)
+  retractRate(ctx: Cst.RetractRateCstChildren): string {
+    if (ctx.Number) ctx.Number[0].image
+    return ''
   }
 
-  hitCount(ctx: Cst.HitCountCstChildren): void {
-    console.log('hitCount', ctx)
+  hitCount(ctx: Cst.HitCountCstChildren): string {
+    if (ctx.Number) return ctx.Number[0].image
+    return ''
   }
 
-  depthOffset(ctx: Cst.DepthOffsetCstChildren): void {
-    console.log('depthOffset', ctx)
+  depthOffset(ctx: Cst.DepthOffsetCstChildren): string {
+    if (ctx.Number) return ctx.Number[0].image
+    return ''
   }
 
   x(ctx: Cst.XCstChildren): void {
+    if (!ctx.Number) return
     this.state.previousX = this.state.x
     const newx = this.parseCoordinate(ctx.Number[0].image)
     if (this.state.coordinateMode === Constants.ABSOLUTE) {
@@ -714,6 +736,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   y(ctx: Cst.YCstChildren): void {
+    if (!ctx.Number) return
     this.state.previousY = this.state.y
     const newy = this.parseCoordinate(ctx.Number[0].image)
     if (this.state.coordinateMode === Constants.ABSOLUTE) {
@@ -802,24 +825,53 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     console.log('endOfProgramNoRewind', ctx)
   }
 
-  beginPattern(ctx: Cst.BeginPatternCstChildren): void {
-    console.log('beginPattern', ctx)
+  beginPattern(_ctx: Cst.BeginPatternCstChildren): void {
+    this.stepRepeatShapes.push(this.result)
+    this.result = []
   }
 
-  endOfPattern(ctx: Cst.EndOfPatternCstChildren): void {
-    console.log('endOfPattern', ctx)
+  endOfPattern(_ctx: Cst.EndOfPatternCstChildren): void {
+    this.stepRepeats.push(new Shapes.StepAndRepeat({
+      shapes: this.result,
+    }))
+    this.result = this.stepRepeatShapes.pop() ?? []
+
   }
 
   repeatPatternOffset(ctx: Cst.RepeatPatternOffsetCstChildren): void {
-    console.log('repeatPatternOffset', ctx)
+    if (ctx.coordinate) {
+      this.visit(ctx.coordinate)
+      let mirror_x: Binary = 0
+      let mirror_y: Binary = 0
+      let rotation: number = 0
+      if (ctx.M80) {
+        mirror_x = 1
+      }
+      if (ctx.M90) {
+        mirror_y = 1
+      }
+      if (ctx.M70) {
+        mirror_y = mirror_y ? 0 : 1
+        rotation = 90
+      }
+      this.stepRepeats[0].repeats.push({
+        datum: [this.state.x, this.state.y],
+        rotation,
+        scale: 1,
+        mirror_x,
+        mirror_y,
+      })
+    } else {
+      // if (this.stepRepeats.length) this.result.push(this.stepRepeats.pop() as Shapes.StepAndRepeat)
+    }
   }
 
   optionalStop(ctx: Cst.OptionalStopCstChildren): void {
     console.log('optionalStop', ctx)
   }
 
-  endOfStepAndRepeat(ctx: Cst.EndOfStepAndRepeatCstChildren): void {
-    console.log('endOfStepAndRepeat', ctx)
+  endOfStepAndRepeat(_ctx: Cst.EndOfStepAndRepeatCstChildren): void {
+    if (this.stepRepeats.length) this.result.push(this.stepRepeats.pop() as Shapes.StepAndRepeat)
   }
 
   stopForInspect(ctx: Cst.StopForInspectCstChildren): void {
@@ -923,7 +975,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   ccwCircle(ctx: Cst.CcwCircleCstChildren): void {
-    console.log('ccwCircle', ctx)
     const prevMode = this.state.mode
     this.state.mode = Constants.ROUT
     this.state.plunged = false

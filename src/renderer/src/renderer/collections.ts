@@ -572,12 +572,19 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
 const { SYMBOL_PARAMETERS } = Symbols
 
-interface shapesList {
+interface ShapesList {
   pads: Shapes.Pad[]
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
   surfaces: Shapes.Surface[]
   clear: () => void
+}
+
+interface ShapesListHistogram {
+  pads: number
+  lines: number
+  arcs: number
+  surfaces: number
 }
 
 export class ShapesShaderCollection {
@@ -586,7 +593,7 @@ export class ShapesShaderCollection {
 
   public symbolsCollection: SymbolShaderCollection
 
-  public shapes: shapesList
+  public shapes: ShapesList
 
   public shaderAttachment: TShaderAttachment
 
@@ -627,6 +634,16 @@ export class ShapesShaderCollection {
     }
     this.refresh()
   }
+
+  public get histogram(): ShapesListHistogram {
+    return {
+      pads: this.shapes.pads.length,
+      lines: this.shapes.lines.length,
+      arcs: this.shapes.arcs.length,
+      surfaces: this.shapes.surfaces.length
+    }
+  }
+
 
   public refresh(): this {
     this.symbolsCollection.symbols.clear()
@@ -921,10 +938,11 @@ export class ShapesShaderCollection {
   }
 }
 
+
 export class SymbolShaderCollection {
   public texture: REGL.Texture2D
   public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
-  get length(): number {
+  public get length(): number {
     return this.symbols.size
   }
 
@@ -1106,7 +1124,7 @@ export class StepAndRepeatCollection {
   }
 }
 
-function drawPolyline(record: Shapes.PolyLine, shapes: shapesList): void {
+function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
   let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
   if (record.pathtype == 'round') {
     endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Round

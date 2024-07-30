@@ -206,7 +206,7 @@ export interface XCstNode extends CstNode {
 
 export type XCstChildren = {
   X: IToken[];
-  Number: IToken[];
+  Number?: IToken[];
 };
 
 export interface YCstNode extends CstNode {
@@ -216,7 +216,7 @@ export interface YCstNode extends CstNode {
 
 export type YCstChildren = {
   Y: IToken[];
-  Number: IToken[];
+  Number?: IToken[];
 };
 
 export interface CoordinateCstNode extends CstNode {
@@ -316,7 +316,10 @@ export interface RepeatPatternOffsetCstNode extends CstNode {
 
 export type RepeatPatternOffsetCstChildren = {
   M02: IToken[];
-  xy: XyCstNode[];
+  coordinate?: CoordinateCstNode[];
+  M70?: IToken[];
+  M80?: IToken[];
+  M90?: IToken[];
 };
 
 export interface OptionalStopCstNode extends CstNode {

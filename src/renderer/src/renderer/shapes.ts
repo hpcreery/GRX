@@ -92,11 +92,11 @@ export class Pad implements TPad_Record, IPlotRecord {
    */
   public polarity: Binary = 1
   /**
-   * 0 == no mirror, 1 == mirror
+   * 0 == no mirror, 1 == mirror ( x = -x )
    */
   public mirror_x: Binary = 0
   /**
-   * 0 == no mirror, 1 == mirror
+   * 0 == no mirror, 1 == mirror ( y = -y )
    */
   public mirror_y: Binary = 0
 

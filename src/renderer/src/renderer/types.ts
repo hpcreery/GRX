@@ -37,11 +37,29 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
 export type TransformOrder = ('scale' | 'rotate' | 'translate' | 'mirror')[]
 
 export interface Transform {
+  /**
+   * Translation in x and y
+   */
   datum: vec2
+  /**
+   * Rotation in degrees (clockwise)
+   */
   rotation: number
+  /**
+   * Scale factor, 1 = 100% (no scaling)
+   */
   scale: number
+  /**
+   * Mirror x cooriinate values => x = -x
+   */
   mirror_x: Binary
+  /**
+   * Mirror y cooriinate values => y = -y
+   */
   mirror_y: Binary
+  /**
+   * Order of transformations
+   */
   order?: TransformOrder
 }
 
