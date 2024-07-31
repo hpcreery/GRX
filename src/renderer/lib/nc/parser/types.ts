@@ -30,9 +30,15 @@ export type ZeroSuppression =
  * Absolute or incremental coordinates
  */
 export type CoordinateMode = typeof Constants.ABSOLUTE | typeof Constants.INCREMENTAL
+
 export interface Point {
   x: number
   y: number
+}
+
+export interface PossiblePoints {
+  x?: number
+  y?: number
 }
 
 

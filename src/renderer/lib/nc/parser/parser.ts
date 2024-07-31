@@ -5,7 +5,7 @@ import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
 import { Units, AttributeCollection, Binary } from '@src/renderer/types'
-import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation } from './types';
+import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation, PossiblePoints } from './types';
 import * as Constants from './constants';
 
 
@@ -554,7 +554,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = true
+const GENERATEDTS = false
 if (GENERATEDTS) {
   const dtsString = generateCstDts(productions);
   console.log(dtsString)
@@ -575,6 +575,8 @@ interface NCState extends NCParams {
   y: number
   previousX: number
   previousY: number
+  patternOffsetX: number
+  patternOffsetY: number
   arcRadius?: number
   arcCenterOffset?: { i: number, j: number }
 }
@@ -606,6 +608,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     y: 0,
     previousX: 0,
     previousY: 0,
+    patternOffsetX: 0,
+    patternOffsetY: 0,
     arcRadius: 0,
     coordinateMode: Constants.ABSOLUTE,
     coordinateFormat: [2, 4],
@@ -724,41 +728,35 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     return ''
   }
 
-  x(ctx: Cst.XCstChildren): void {
+  x(ctx: Cst.XCstChildren): number | undefined {
     if (!ctx.Number) return
-    this.state.previousX = this.state.x
     const newx = this.parseCoordinate(ctx.Number[0].image)
-    if (this.state.coordinateMode === Constants.ABSOLUTE) {
-      this.state.x = newx
-    } else {
-      this.state.x += newx
-    }
+    return newx
   }
 
-  y(ctx: Cst.YCstChildren): void {
+  y(ctx: Cst.YCstChildren): number | undefined {
     if (!ctx.Number) return
-    this.state.previousY = this.state.y
     const newy = this.parseCoordinate(ctx.Number[0].image)
-    if (this.state.coordinateMode === Constants.ABSOLUTE) {
-      this.state.y = newy
-    } else {
-      this.state.y += newy
+    return newy
+  }
+
+  xy(ctx: Cst.XyCstChildren): PossiblePoints {
+    return {
+      x: this.visit(ctx.x) as number | undefined,
+      y: this.visit(ctx.y) as number | undefined,
     }
   }
 
-  xy(ctx: Cst.XyCstChildren): void {
-    this.visit(ctx.x)
-    this.visit(ctx.y)
+  xory(ctx: Cst.XoryCstChildren): PossiblePoints {
+    if (ctx.x) return { x: this.visit(ctx.x) as number | undefined }
+    if (ctx.y) return { y: this.visit(ctx.y) as number | undefined }
+    return {}
   }
 
-  xory(ctx: Cst.XoryCstChildren): void {
-    if (ctx.x) this.visit(ctx.x)
-    if (ctx.y) this.visit(ctx.y)
-  }
-
-  coordinate(ctx: Cst.CoordinateCstChildren): void {
-    if (ctx.xy) this.visit(ctx.xy)
-    if (ctx.xory) this.visit(ctx.xory)
+  coordinate(ctx: Cst.CoordinateCstChildren): PossiblePoints {
+    if (ctx.xy) return this.visit(ctx.xy) as PossiblePoints
+    if (ctx.xory) return this.visit(ctx.xory) as PossiblePoints
+    return {}
   }
 
   arcRadius(ctx: Cst.ArcRadiusCstChildren): void {
@@ -767,16 +765,26 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   arcCenter(ctx: Cst.ArcCenterCstChildren): void {
-    const x = this.parseCoordinate(ctx.Number[0].image)
-    const y = this.parseCoordinate(ctx.Number[1].image)
-    this.state.arcCenterOffset = { i: x, j: y }
+    const i = this.parseCoordinate(ctx.Number[0].image)
+    const j = this.parseCoordinate(ctx.Number[1].image)
+    this.state.arcCenterOffset = { i, j }
     this.state.arcRadius = undefined
   }
 
   move(ctx: Cst.MoveCstChildren): void {
-    this.visit(ctx.coordinate)
-    ctx.arcCenter ? this.visit(ctx.arcCenter) : null
-    ctx.arcRadius ? this.visit(ctx.arcRadius) : null
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+
+    if (ctx.arcCenter) this.visit(ctx.arcCenter)
+    if (ctx.arcRadius) this.visit(ctx.arcRadius)
     if (this.state.mode == Constants.DRILL) {
       this.result.push(new Shapes.Pad({
         x: this.state.x,
@@ -828,19 +836,33 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   beginPattern(_ctx: Cst.BeginPatternCstChildren): void {
     this.stepRepeatShapes.push(this.result)
     this.result = []
+
   }
 
   endOfPattern(_ctx: Cst.EndOfPatternCstChildren): void {
     this.stepRepeats.push(new Shapes.StepAndRepeat({
       shapes: this.result,
+      repeats: [
+        {
+          datum: [0, 0],
+          rotation: 0,
+          scale: 1,
+          mirror_x: 0,
+          mirror_y: 0,
+        }
+      ],
     }))
     this.result = this.stepRepeatShapes.pop() ?? []
 
+    this.state.patternOffsetX = 0
+    this.state.patternOffsetY = 0
   }
 
   repeatPatternOffset(ctx: Cst.RepeatPatternOffsetCstChildren): void {
     if (ctx.coordinate) {
-      this.visit(ctx.coordinate)
+      const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+      this.state.patternOffsetX += x ?? 0
+      this.state.patternOffsetY += y ?? 0
       let mirror_x: Binary = 0
       let mirror_y: Binary = 0
       let rotation: number = 0
@@ -855,7 +877,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         rotation = 90
       }
       this.stepRepeats[0].repeats.push({
-        datum: [this.state.x, this.state.y],
+        datum: [this.state.patternOffsetX, this.state.patternOffsetY],
         rotation,
         scale: 1,
         mirror_x,
@@ -866,12 +888,14 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
   }
 
-  optionalStop(ctx: Cst.OptionalStopCstChildren): void {
-    console.log('optionalStop', ctx)
-  }
-
   endOfStepAndRepeat(_ctx: Cst.EndOfStepAndRepeatCstChildren): void {
     if (this.stepRepeats.length) this.result.push(this.stepRepeats.pop() as Shapes.StepAndRepeat)
+    this.state.patternOffsetX = 0
+    this.state.patternOffsetY = 0
+  }
+
+  optionalStop(ctx: Cst.OptionalStopCstChildren): void {
+    console.log('optionalStop', ctx)
   }
 
   stopForInspect(ctx: Cst.StopForInspectCstChildren): void {
