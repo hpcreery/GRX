@@ -4,7 +4,6 @@ import * as Symbols from './symbols'
 import { glFloatSize } from './constants'
 import { FeatureTypeIdentifier, Binary } from './types'
 import { MacroRenderer, StepAndRepeatRenderer } from './layer'
-import onChange from 'on-change'
 
 import PadFrag from '../shaders/src/Pad.frag'
 import PadVert from '../shaders/src/Pad.vert'
@@ -1001,10 +1000,10 @@ export class SymbolShaderCollection {
       return this
     }
     const symbols = Array.from(this.symbols.values()).map((symbol, i) => {
-      // symbol.sym_num = i
-      onChange.target(symbol).sym_num.value = i
+      symbol.sym_num.value = i
       return this.getSymbolParameters(symbol)
     })
+    // TODO: make symbols texture fit to max texture size
     this.texture({
       width: SYMBOL_PARAMETERS.length,
       height: symbols.length,
@@ -1012,7 +1011,6 @@ export class SymbolShaderCollection {
       format: 'luminance',
       data: symbols
     })
-    // console.log('refreshing symbols', this.symbols.size)
     return this
   }
 }

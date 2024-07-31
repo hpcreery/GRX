@@ -2,7 +2,6 @@ import REGL from 'regl'
 import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
-// import onChange from 'on-change'
 import { Binary, Transform, Units, BoundingBox } from './types'
 import {
   ArcAttachments,

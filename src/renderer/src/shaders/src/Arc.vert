@@ -75,9 +75,9 @@ void main() {
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(a_SymNum));
+  float t_Width = pullSymbolParameter(u_Parameters.width, int(a_SymNum));
+  float t_Height = pullSymbolParameter(u_Parameters.height, int(a_SymNum));
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
   vec2 ShapeSize = vec2(OD, OD) + vec2(pixel_size, pixel_size);
