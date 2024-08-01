@@ -340,7 +340,7 @@ class NCParser extends CstParser {
 
     this.RULE("coordinate", () => {
       this.OR([
-        { ALT: (): CstNode => this.SUBRULE(this.xy) },
+        { GATE: (): boolean => this.LA(1).endLine === this.LA(3).endLine, ALT: (): CstNode => this.SUBRULE(this.xy) },
         { ALT: (): CstNode => this.SUBRULE(this.xory) },
       ])
     })
