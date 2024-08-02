@@ -149,6 +149,36 @@ def generate_test_data():
     )
     save(doc, OUTPUT_DIR, name)
 
+    # Test INSERT
+    name = "test_INSERT"
+    doc = ezdxf.new()
+    msp = doc.modelspace()
+
+    line = doc.blocks.new(name="LINE")
+    line.add_line(start=(0, 0), end=(1, 1))
+
+    msp.add_blockref(
+        name="LINE",
+        insert=(0, 0),
+        dxfattribs={"layer": "MyLayer"},
+    )
+    msp.add_blockref(
+        name="LINE",
+        insert=(1, 0),
+        dxfattribs={"layer": "MyLayer"},
+    )
+    msp.add_blockref(
+        name="LINE",
+        insert=(0, 0),
+        dxfattribs={"layer": "MyLayer", "rotation": 90},
+    )
+    # msp.add_blockref(
+    #     name="LINE",
+    #     insert=(0, 0),
+    #     dxfattribs={"layer": "MyLayer", "xscale": -1},
+    # )
+    save(doc, OUTPUT_DIR, name)
+
 
 if __name__ == "__main__":
     generate_test_data()

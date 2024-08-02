@@ -122,6 +122,7 @@ export type STYPTABLE = never // unreleased feature
 export type STRTYPE = never // unreleased feature
 
 // TODO: implement this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ELFLAGS = Record<string, any>
 
 export type LINKTYPE = never // unreleased feature

@@ -241,7 +241,6 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
     }).addLines(lines)
     return shape
   } else if (entity.type === 'INSERT') {
-    // console.warn('DXF entity type not supported', entity) // TODO: support
     const insert = entity as DxfParser.IInsertEntity
     const referenceBlock = blocks[insert.name]
     if (!referenceBlock) {

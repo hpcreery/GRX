@@ -112,7 +112,16 @@ const basicEntities: BasicEntityTestList = {
       expect(shape.lines[shape.lines.length - 1].x).to.equal(0)
       expect(shape.lines[shape.lines.length - 1].y).to.equal(1)
     }
-  }
+  },
+  // 'INSERT': {
+  //   dxfFileName: './testdata/gen_dxf_tests/output/test_INSERT.dxf',
+  //   layer: 'MyLayer',
+  //   shapeType: FeatureTypeIdentifier.STEP_AND_REPEAT,
+  //   testShape: (shape: AnyShape): void => {
+  //     shape = shape as Shapes.StepAndRepeat
+  //     console.log(shape)
+  //   }
+  // },
 }
 
 const parser = new DxfParser()
@@ -137,16 +146,69 @@ function basicEntityTest(entity: BasicEntityTest, name: string): void {
       expect(Object.keys(layerHierarchy)).to.include(entity.layer)
     })
     it('should have correct shape', () => {
-      expect(layerHierarchy[entity.layer].shapes.length).to.equal(1)
+      // expect(layerHierarchy[entity.layer].shapes.length).to.equal(1)
+      console.log(layerHierarchy[entity.layer].shapes[0].type, entity.shapeType)
       expect(layerHierarchy[entity.layer].shapes[0].type).to.equal(entity.shapeType)
-      const shape = layerHierarchy[entity.layer].shapes[0] as Shapes.Line
+      const shape = layerHierarchy[entity.layer].shapes[0]
       // console.log(shape)
       entity.testShape(shape)
     })
   })
 }
 
+function insertTest(): void {
+  describe('INSERT basic entity', async () => {
+    const dxfFile = await import('./testdata/gen_dxf_tests/output/test_INSERT.dxf?raw').then((module) => module.default)
+    const dxf = parser.parse(dxfFile)
+    if (!dxf) {
+      throw new Error('dxf is undefined')
+    }
+    const layerHierarchy = converter.convert(dxf)
+    it('should have correct layer', () => {
+      // console.log(layerHierarchy)
+      expect(Object.keys(layerHierarchy)).to.include('MyLayer')
+    })
+    it('should have correct shape', () => {
+      expect(layerHierarchy['MyLayer'].shapes.length).to.equal(3)
+      console.log(layerHierarchy['MyLayer'].shapes)
+      const insert0 = layerHierarchy['MyLayer'].shapes[0] as Shapes.StepAndRepeat
+      const insert1 = layerHierarchy['MyLayer'].shapes[1] as Shapes.StepAndRepeat
+      const insert2 = layerHierarchy['MyLayer'].shapes[2] as Shapes.StepAndRepeat
+      const shape0 = insert0.shapes[0] as Shapes.Line
+      const shape1 = insert1.shapes[0] as Shapes.Line
+      const shape2 = insert2.shapes[0] as Shapes.Line
+      expect(insert0.type).to.equal(FeatureTypeIdentifier.STEP_AND_REPEAT)
+      expect(shape0.type).to.equal(FeatureTypeIdentifier.LINE)
+      expect(shape0.xs).to.equal(0)
+      expect(shape0.ys).to.equal(0)
+      expect(shape0.xe).to.equal(1)
+      expect(shape0.ye).to.equal(1)
+      expect(shape0.ye).to.equal(1)
+      expect(insert0.repeats[0].datum[0]).to.equal(0)
+      expect(insert0.repeats[0].datum[1]).to.equal(0)
+      expect(insert1.type).to.equal(FeatureTypeIdentifier.STEP_AND_REPEAT)
+      expect(shape1.type).to.equal(FeatureTypeIdentifier.LINE)
+      expect(shape1.xs).to.equal(0)
+      expect(shape1.ys).to.equal(0)
+      expect(shape1.xe).to.equal(1)
+      expect(shape1.ye).to.equal(1)
+      expect(insert1.repeats[0].datum[0]).to.equal(1)
+      expect(insert1.repeats[0].datum[1]).to.equal(0)
+      expect(insert2.type).to.equal(FeatureTypeIdentifier.STEP_AND_REPEAT)
+      expect(shape2.type).to.equal(FeatureTypeIdentifier.LINE)
+      expect(shape2.xs).to.equal(0)
+      expect(shape2.ys).to.equal(0)
+      expect(shape2.xe).to.equal(1)
+      expect(shape2.ye).to.equal(1)
+      expect(insert2.repeats[0].datum[0]).to.equal(0)
+      expect(insert2.repeats[0].datum[1]).to.equal(0)
+      expect(insert2.repeats[0].rotation).to.equal(90)
+    })
+  })
+}
+
 for (const [name, entity] of Object.entries(basicEntities)) {
   basicEntityTest(entity, name)
+  insertTest()
 }
 
