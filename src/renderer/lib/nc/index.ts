@@ -6,9 +6,11 @@ import { parser, SelectLexer, NCToShapesVisitor } from './parser/parser'
 
 export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
 
-  console.time('parse')
+  console.time('decode')
   const decoder = new TextDecoder('utf-8')
   const file = decoder.decode(buffer)
+  console.timeEnd('decode')
+  console.time('parse')
   const lexingResult = SelectLexer.tokenize(file);
   parser.input = lexingResult.tokens;
   // @ts-ignore parser missing type for dynamically created methods
@@ -18,7 +20,6 @@ export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRende
   const visitor = new NCToShapesVisitor()
   visitor.visit(result)
   console.timeEnd('visit')
-  // console.log('result', visitor.result)
 
   addLayer({
     name: props.name || 'NC',

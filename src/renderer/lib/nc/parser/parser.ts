@@ -983,13 +983,13 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
-    let radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
-    radius = radius - this.state.currentTool.outer_dia / 2
+    const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
+    const sweepRadius = radius - this.state.currentTool.outer_dia / 2
     this.result.push(new Shapes.Arc({
-      xs: this.state.x - radius,
-      ys: this.state.y - radius,
-      xe: this.state.x - radius,
-      ye: this.state.y - radius,
+      xs: this.state.x + sweepRadius,
+      ys: this.state.y,
+      xe: this.state.x + sweepRadius,
+      ye: this.state.y,
       xc: this.state.x,
       yc: this.state.y,
       clockwise: 1,
@@ -1003,13 +1003,13 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
-    let radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
-    radius = radius - this.state.currentTool.outer_dia / 2
+    const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
+    const sweepRadius = radius - this.state.currentTool.outer_dia / 2
     this.result.push(new Shapes.Arc({
-      xs: this.state.x - radius,
-      ys: this.state.y - radius,
-      xe: this.state.x - radius,
-      ye: this.state.y - radius,
+      xs: this.state.x + sweepRadius,
+      ys: this.state.y,
+      xe: this.state.x + sweepRadius,
+      ye: this.state.y,
       xc: this.state.x,
       yc: this.state.y,
       clockwise: 0,
