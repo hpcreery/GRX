@@ -166,6 +166,9 @@ float arcDistance(vec2 FragCoord) {
   float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
   float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
   float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  if (start_angle == end_angle) {
+    con = circleDist(FragCoord, radius - (OD / 2.0));
+  }
   con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
   float dist = merge(start, end);
   dist = merge(dist, con);
