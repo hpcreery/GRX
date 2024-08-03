@@ -792,6 +792,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         xe: this.state.x,
         ye: this.state.y,
       }))
+      this.result.push(new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: this.state.currentTool.id
+      }))
       this.result.push(new Shapes.Pad({
         x: this.state.x,
         y: this.state.y,
@@ -811,6 +816,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
               cutterCompensationMode: this.state.cutterCompensationMode,
             }
           }))
+          this.result.push(new Shapes.DatumText({
+            x: (this.state.x + this.state.previousX) / 2,
+            y: (this.state.y + this.state.previousY) / 2,
+            text: this.state.currentTool.id
+          }))
         } else {
           const startPoint = { x: this.state.previousX, y: this.state.previousY }
           const endPoint = { x: this.state.x, y: this.state.y }
@@ -829,6 +839,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
               cutterCompensation: (this.state.cutterCompensation).toString(),
               cutterCompensationMode: this.state.cutterCompensationMode,
             }
+          }))
+          this.result.push(new Shapes.DatumText({
+            x: center.x,
+            y: center.y,
+            text: this.state.currentTool.id
           }))
         }
       } else {
