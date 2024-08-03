@@ -4,22 +4,44 @@ import dxfPluginWorker from '@lib/dxf?worker'
 import ncPluginWorker from '@lib/nc?worker'
 import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
+import { TMessageLevel } from './engine'
 
-export type parser = (buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void) => Promise<void>
+export type Plugin = (
+  buffer: ArrayBuffer,
+  props: Partial<Omit<LayerRendererProps, 'regl'>>,
+  addLayer: (params: Omit<LayerRendererProps, 'regl'>) => void,
+  addMessage?: (level: TMessageLevel, title: string, message: string) => Promise<void>
+) => Promise<void>
 
-
-const plugins: {
-  [key: string]: new () => Worker
-} = {
-  gdsii: gdsiiPluginWorker,
-  rs274x: gerberPluginWorker,
-  dxf: dxfPluginWorker,
-  nc: ncPluginWorker,
+export interface PluginsDefinition {
+  [key: string]: {
+    plugin: new () => Worker
+    matchFile: (ext: string) => boolean
+  }
+}
+export const plugins: PluginsDefinition = {
+  rs274x: {
+    plugin: gerberPluginWorker,
+    matchFile: (ext) => ['gbr', 'geb', 'gerber'].includes(ext)
+  },
+  gdsii: {
+    plugin: gdsiiPluginWorker,
+    matchFile: (ext) => ['gds', 'gdsii', 'gds2'].includes(ext)
+  },
+  dxf: {
+    plugin: dxfPluginWorker,
+    matchFile: (ext) => ['dxf'].includes(ext)
+  },
+  nc: {
+    plugin: ncPluginWorker,
+    matchFile: (ext) => ['nc', 'drl', 'dr', 'rt', 'xnc'].includes(ext)
+  }
 }
 
+export const defaultFormat = 'rs274x'
 export const pluginList = Object.keys(plugins)
 
-export function registerFunction(plugin: parser): void {
+export function registerFunction(plugin: Plugin): void {
   Comlink.expose(plugin)
 }
 

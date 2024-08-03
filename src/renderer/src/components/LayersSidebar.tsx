@@ -24,7 +24,7 @@ import LayerListItem from './sidebar/LayerListItem'
 import type { LayerInfo } from '@src/renderer/engine'
 import * as Comlink from 'comlink'
 
-import { pluginList } from '@src/renderer/plugins'
+import { pluginList, plugins } from '@src/renderer/plugins'
 import { EngineEvents } from '@src/renderer/engine'
 import { useContextMenu } from 'mantine-contextmenu'
 
@@ -67,14 +67,13 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   }
 
   function identifyFileType(file: FileWithPath): string {
-    const defaultFormat = 'rs274x'
-    const extension = file.name.split('.').pop()?.toLowerCase()
+    const defaultFormat = pluginList[0]
 
+    const extension = file.name.split('.').pop()?.toLowerCase()
     if (!extension) return defaultFormat
-    if (['gds', 'gdsii', 'gds2'].includes(extension)) return 'gdsii'
-    if (['gbr', 'geb', 'gerber'].includes(extension)) return 'rs274x'
-    if (['dxf'].includes(extension)) return 'dxf'
-    if (['nc', 'drl', 'dr', 'rt', 'xnc'].includes(extension)) return 'nc'
+    for (const plugin in plugins) {
+      if (plugins[plugin].matchFile(extension)) return plugin
+    }
     return defaultFormat
   }
   async function uploadFiles(files: FileWithFormat[]): Promise<void> {
@@ -118,8 +117,8 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   }
 
   const actions = {
-    download: (): void => { },
-    preview: (): void => { },
+    download: (): void => {},
+    preview: (): void => {},
     remove: async (file: UploadFile): Promise<void> => {
       const backend = await renderEngine.backend
       if (!backend) return
@@ -202,16 +201,24 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
           )}
         </Stack>
       </Modal>
-      <Modal opened={deleteConfirmModalOpen} onClose={closeDeleteConfirmModal} title="Confirm Delete All">
+      <Modal
+        opened={deleteConfirmModalOpen}
+        onClose={closeDeleteConfirmModal}
+        title="Confirm Delete All"
+      >
         <Text>Are you sure you want to delete all layers?</Text>
         <Group mt={10}>
           {/* <Button onClick={closeDeleteConfirmModal} variant="default" fullWidth>
             Cancel
           </Button> */}
-          <Button onClick={() => {
-            deleteAllLayers()
-            setDeleteConfirmModalOpen(false)
-          }} color="red" fullWidth>
+          <Button
+            onClick={() => {
+              deleteAllLayers()
+              setDeleteConfirmModalOpen(false)
+            }}
+            color="red"
+            fullWidth
+          >
             Delete
           </Button>
         </Group>

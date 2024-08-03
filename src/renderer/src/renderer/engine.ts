@@ -5,7 +5,7 @@ import { initializeRenderers, ReglRenderers, ScreenRenderProps } from './collect
 import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
-import type { parser } from './plugins'
+import type { Plugin, PluginsDefinition } from './plugins'
 import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
@@ -119,9 +119,19 @@ export interface LayerInfo {
 export const EngineEvents = {
   RENDER: 'RENDER',
   LAYERS_CHANGED: 'LAYERS_CHANGED',
+  MESSAGE: 'MESSAGE',
 } as const
 
+
 export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents]
+
+export const MessageLevel = {
+  INFO: 'blue',
+  WARN: 'yellow',
+  ERROR: 'red',
+} as const
+
+export type TMessageLevel = typeof MessageLevel[keyof typeof MessageLevel]
 
 export interface Pointer {
   x: number
@@ -236,13 +246,13 @@ export class RenderEngineBackend {
   public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
-  public parsers: {
-    [key: string]: parser
-  } = {}
+  public parsers: PluginsDefinition = {}
 
   public eventTarget = new EventTarget()
 
   public ctx: OffscreenCanvasRenderingContext2D
+
+  public message: { level: TMessageLevel, title: string, message: string } = { level: MessageLevel.INFO, title: '', message: '' }
 
   constructor(
     offscreenCanvasGL: OffscreenCanvas,
@@ -525,6 +535,11 @@ export class RenderEngineBackend {
     return [mouse[0], mouse[1]]
   }
 
+  public async addMessage(params: { level: TMessageLevel, title: string, message: string }): Promise<void> {
+    this.message = params
+    this.eventTarget.dispatchEvent(new Event(EngineEvents.MESSAGE))
+  }
+
   public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
     const layer = new LayerRenderer({
       ...params,
@@ -538,15 +553,19 @@ export class RenderEngineBackend {
   }
 
   public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
-    const pluginWorker = plugins[params.format]
+    const pluginWorker = plugins[params.format].plugin
     if (pluginWorker) {
       const tempUID = UID()
       this.layersQueue.push({ name: params.props.name || '', uid: tempUID })
-      const callback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
+      const addLayerCallback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
+      const addMessageCallback = async (level, title: string, message: string): Promise<void> => {
+        // await notifications.show({title, message})
+        this.addMessage({ level, title, message })
+      }
       const instance = new pluginWorker()
-      const parser = Comlink.wrap<parser>(instance)
+      const parser = Comlink.wrap<Plugin>(instance)
       try {
-        await parser(params.buffer, params.props, Comlink.proxy(callback))
+        await parser(params.buffer, params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
       } catch (error) {
         console.error(error)
         throw error
@@ -558,6 +577,7 @@ export class RenderEngineBackend {
           this.layersQueue.splice(index, 1)
         }
         this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
+        this.addMessage({ level: MessageLevel.INFO, title: 'File Loaded', message: 'File loaded successfully' })
       }
     } else {
       console.error('No parser found for format: ' + params.format)
