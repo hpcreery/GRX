@@ -456,13 +456,49 @@ export class StepAndRepeat implements IPlotRecord {
   }
 }
 
-export interface TruncatedPad extends Omit<Pad, 'symbol'> {
-  symbol: Pick<Symbols.Symbol, 'id'>
+export class DatumPoint {
+  public readonly type = FeatureTypeIdentifier.DATUM_POINT
+  public x = 0
+  public y = 0
+  public attributes: AttributeCollection = {}
+  public index = 0
+
+  constructor(props: Partial<Omit<DatumPoint, 'type'>>) {
+    Object.assign(this, props)
+  }
 }
 
+export class DatumText {
+  public readonly type = FeatureTypeIdentifier.DATUM_TEXT
+  public x = 0
+  public y = 0
+  public text = ''
+  public attributes: AttributeCollection = {}
+  public index = 0
+
+  constructor(props: Partial<Omit<DatumText, 'type'>>) {
+    Object.assign(this, props)
+  }
+}
+
+export class DatumLine {
+  public readonly type = FeatureTypeIdentifier.DATUM_LINE
+  public xs = 0
+  public ys = 0
+  public xe = 0
+  public ye = 0
+  public attributes: AttributeCollection = {}
+  public index = 0
+
+  constructor(props: Partial<Omit<DatumLine, 'type'>>) {
+    Object.assign(this, props)
+  }
+}
+
+
 export type Primitive = Pad | Line | Arc
-export type Shape = Primitive | Surface | PolyLine | StepAndRepeat
-export type Parents = Omit<StepAndRepeat, 'shapes'> | TruncatedPad
+export type Datum = DatumPoint | DatumText | DatumLine
+export type Shape = Primitive | Surface | PolyLine | StepAndRepeat | Datum
 
 export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
   let min = vec2.fromValues(Infinity, Infinity)
@@ -551,6 +587,10 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
       min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))
       max = vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
     }
+      break
+    case FeatureTypeIdentifier.DATUM_LINE:
+    case FeatureTypeIdentifier.DATUM_POINT:
+    case FeatureTypeIdentifier.DATUM_TEXT:
       break
     default:
       throw new Error('Unknown record type')

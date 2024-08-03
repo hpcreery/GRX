@@ -786,6 +786,12 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.arcCenter) this.visit(ctx.arcCenter)
     if (ctx.arcRadius) this.visit(ctx.arcRadius)
     if (this.state.mode == Constants.DRILL) {
+      this.result.push(new Shapes.DatumLine({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+      }))
       this.result.push(new Shapes.Pad({
         x: this.state.x,
         y: this.state.y,
@@ -825,6 +831,13 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             }
           }))
         }
+      } else {
+        this.result.push(new Shapes.DatumLine({
+          xs: this.state.previousX,
+          ys: this.state.previousY,
+          xe: this.state.x,
+          ye: this.state.y,
+        }))
       }
     }
   }

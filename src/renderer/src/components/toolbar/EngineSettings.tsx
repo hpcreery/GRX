@@ -5,14 +5,17 @@ import {
   Flex,
   Select,
   Switch,
-  Divider
+  Divider,
+  Kbd
 } from '@mantine/core'
 import {
   IconZoom,
-  IconZoomScan
+  IconZoomScan,
+  IconHexagonPlus,
+  IconHexagonOff,
 } from '@tabler/icons-react'
 import { ColorBlend, ColorBlends } from '@src/renderer/engine'
-import { useLocalStorage } from '@mantine/hooks'
+import { useHotkeys, useLocalStorage } from '@mantine/hooks'
 import { actions } from '@src/contexts/Spotlight'
 
 interface EngineSettingsProps {
@@ -28,11 +31,16 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
     key: 'engine:ZOOM_TO_CURSOR',
     defaultValue: renderEngine.settings.ZOOM_TO_CURSOR
   })
+  const [showDatums, setShowDatums] = useLocalStorage<boolean>({
+    key: 'engine:SHOW_DATUMS',
+    defaultValue: renderEngine.settings.SHOW_DATUMS
+  })
 
   useEffect(() => {
     renderEngine.settings.COLOR_BLEND = colorBlend
     renderEngine.settings.ZOOM_TO_CURSOR = zoomToCursor
-  }, [colorBlend, zoomToCursor])
+    renderEngine.settings.SHOW_DATUMS = showDatums
+  }, [colorBlend, zoomToCursor, showDatums])
 
   useEffect(() => {
     actions.push({
@@ -49,7 +57,32 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
       onClick: () => setZoomToCursor(true),
       leftSection: <IconZoom />,
     })
+    actions.push({
+      id: 'show datums off',
+      label: 'Hide Datums',
+      description: 'Hide datums',
+      onClick: () => setShowDatums(false),
+      leftSection: <IconHexagonOff />,
+      rightSection: <Kbd>P</Kbd>
+    })
+    actions.push({
+      id: 'show datums on',
+      label: 'Show Datums',
+      description: 'Show datums',
+      onClick: () => setShowDatums(true),
+      leftSection: <IconHexagonPlus />,
+      rightSection: <Kbd>I</Kbd>
+    })
   }, [])
+
+  useHotkeys([
+    ['i', (): void => {
+      setShowDatums(true)
+    }],
+    ['p', (): void => {
+      setShowDatums(false)
+    }],
+  ]);
 
   return (
     <>
@@ -63,6 +96,14 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
         <Switch
           checked={zoomToCursor}
           onChange={(event): void => setZoomToCursor(event.currentTarget.checked)}
+        />
+      </Flex>
+      <Divider my="sm" />
+      <Flex align="center" style={{ width: '100%' }} justify="space-between">
+        <Text>Show Datums</Text>
+        <Switch
+          checked={showDatums}
+          onChange={(event): void => setShowDatums(event.currentTarget.checked)}
         />
       </Flex>
     </>

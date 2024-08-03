@@ -10,10 +10,10 @@ import * as LEXER from './lexer'
 import * as PARSER from './parser'
 import * as CONVERTER from './converter'
 
-import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
+import { AddLayerProps } from '@src/renderer/plugins'
 
-export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
   console.log('GDSII plugin')
   const tokens = LEXER.record_reader(buffer)
   const bnf = PARSER.parse(tokens)

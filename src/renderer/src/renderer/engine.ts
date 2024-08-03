@@ -5,7 +5,7 @@ import { initializeRenderers, ReglRenderers, ScreenRenderProps } from './collect
 import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
-import type { Plugin, PluginsDefinition } from './plugins'
+import type { Plugin, PluginsDefinition, AddLayerProps } from './plugins'
 import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
@@ -75,6 +75,7 @@ export interface RenderSettings {
   MAX_ZOOM: number
   MIN_ZOOM: number
   ZOOM_TO_CURSOR: boolean
+  SHOW_DATUMS: boolean
 }
 
 export interface RenderTransform {
@@ -160,7 +161,8 @@ export class RenderEngineBackend {
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 100,
     MIN_ZOOM: 0.001,
-    ZOOM_TO_CURSOR: true
+    ZOOM_TO_CURSOR: true,
+    SHOW_DATUMS: false
   }
 
   public offscreenCanvasGL: OffscreenCanvas
@@ -235,6 +237,7 @@ export class RenderEngineBackend {
   public selections: LayerRenderer[] = []
   public layersQueue: { name: string, uid: string }[] = []
 
+  public ctx: OffscreenCanvasRenderingContext2D
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
@@ -249,8 +252,6 @@ export class RenderEngineBackend {
   public parsers: PluginsDefinition = {}
 
   public eventTarget = new EventTarget()
-
-  public ctx: OffscreenCanvasRenderingContext2D
 
   public message: { level: TMessageLevel, title: string, message: string } = { level: MessageLevel.INFO, title: '', message: '' }
 
@@ -540,10 +541,11 @@ export class RenderEngineBackend {
     this.eventTarget.dispatchEvent(new Event(EngineEvents.MESSAGE))
   }
 
-  public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
+  public async addLayer(params: AddLayerProps): Promise<void> {
     const layer = new LayerRenderer({
       ...params,
-      regl: this.regl
+      regl: this.regl,
+      ctx: this.ctx,
     })
     this.layers.push(layer)
     this.render({
@@ -552,13 +554,13 @@ export class RenderEngineBackend {
     this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
   }
 
-  public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>> }): Promise<void> {
+  public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<AddLayerProps, 'image'>> }): Promise<void> {
     const pluginWorker = plugins[params.format].plugin
     if (pluginWorker) {
       const tempUID = UID()
       this.layersQueue.push({ name: params.props.name || '', uid: tempUID })
-      const addLayerCallback = async (params: Omit<LayerRendererProps, "regl">): Promise<void> => await this.addLayer({ ...params, format: params.format })
-      const addMessageCallback = async (level, title: string, message: string): Promise<void> => {
+      const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
+      const addMessageCallback = async (level: TMessageLevel, title: string, message: string): Promise<void> => {
         // await notifications.show({title, message})
         this.addMessage({ level, title, message })
       }
@@ -612,6 +614,13 @@ export class RenderEngineBackend {
   // }
 
   public setTransform(transform: Partial<RenderTransform>): void {
+    if (transform.zoom) {
+      if (transform.zoom < this.settings.MIN_ZOOM) {
+        transform.zoom = this.settings.MIN_ZOOM
+      } else if (transform.zoom > this.settings.MAX_ZOOM) {
+        transform.zoom = this.settings.MAX_ZOOM
+      }
+    }
     Object.assign(this.transform, transform)
     this.updateTransform()
   }
@@ -669,6 +678,7 @@ export class RenderEngineBackend {
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
+          ctx: this.ctx,
           color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,

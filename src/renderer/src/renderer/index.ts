@@ -2,6 +2,7 @@ import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from './engine'
+import { AddLayerProps } from './plugins'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -45,7 +46,8 @@ export class RenderEngine {
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
-      ZOOM_TO_CURSOR: true
+      ZOOM_TO_CURSOR: true,
+      SHOW_DATUMS: false
     },
     {
       set: (target, name, value): boolean => {
@@ -297,7 +299,7 @@ export class RenderEngine {
     }
   }
 
-  public async addLayer(params: Omit<LayerRendererProps, 'regl'>): Promise<void> {
+  public async addLayer(params: AddLayerProps): Promise<void> {
     const backend = await this.backend
     backend.addLayer(params)
   }

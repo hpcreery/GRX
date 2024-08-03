@@ -937,6 +937,37 @@ export class ShapesShaderCollection {
   }
 }
 
+export class DatumCollection {
+  private image: Shapes.Shape[] = []
+  public lines: Shapes.DatumLine[] = []
+  public points: Shapes.DatumPoint[] = []
+  public texts: Shapes.DatumText[] = []
+
+
+  constructor(props: { image: Shapes.Shape[] }) {
+    const { image } = props
+    this.image = image
+    this.refresh()
+  }
+
+  public refresh(): this {
+    this.image.map((record) => {
+      switch (record.type) {
+        case FeatureTypeIdentifier.DATUM_LINE:
+          this.lines.push(record)
+          break
+        case FeatureTypeIdentifier.DATUM_POINT:
+          this.points.push(record)
+          break
+        case FeatureTypeIdentifier.DATUM_TEXT:
+          this.texts.push(record)
+          break
+      }})
+    return this
+  }
+
+}
+
 
 export class SymbolShaderCollection {
   public texture: REGL.Texture2D
@@ -1033,9 +1064,11 @@ export class MacroShaderCollection {
     }
   >()
   private regl: REGL.Regl
-  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
-    const { image, regl } = props
+  private ctx: OffscreenCanvasRenderingContext2D
+  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D, image: Shapes.Shape[] }) {
+    const { image, regl, ctx } = props
     this.regl = regl
+    this.ctx = ctx
     this.image = image
     this.refresh()
   }
@@ -1073,6 +1106,7 @@ export class MacroShaderCollection {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
+              ctx: this.ctx,
               image: record.symbol.shapes,
               flatten: record.symbol.flatten
             }),
@@ -1097,10 +1131,12 @@ export class StepAndRepeatCollection {
   private image: Shapes.Shape[] = []
   public steps: StepAndRepeatRenderer[] = []
   private regl: REGL.Regl
+  private ctx: OffscreenCanvasRenderingContext2D
 
-  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
-    const { image, regl } = props
+  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D, image: Shapes.Shape[] }) {
+    const { image, regl, ctx } = props
     this.regl = regl
+    this.ctx = ctx
     this.image = image
     this.refresh()
   }
@@ -1114,6 +1150,7 @@ export class StepAndRepeatCollection {
       this.steps.push(
         new StepAndRepeatRenderer({
           regl: this.regl,
+          ctx: this.ctx,
           record: record,
         })
       )

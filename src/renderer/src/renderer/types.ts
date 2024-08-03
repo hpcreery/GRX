@@ -3,9 +3,7 @@ import { vec2 } from 'gl-matrix'
 export const FeatureTypeIdentifier = {
   PAD: 'pad',
   LINE: 'line',
-  BRUSHED_LINE: 'brushedline',
   ARC: 'arc',
-  BRUSHED_ARC: 'brushedarc',
   ARCSEGMENT: 'arcsegment',
   LINESEGMENT: 'linesegment',
   CONTOUR: 'contour',
@@ -15,6 +13,9 @@ export const FeatureTypeIdentifier = {
   SYMBOL_DEFINITION: 'symbol_defintion',
   MACRO_DEFINITION: 'macro_definition',
   STEP_AND_REPEAT: 'step_and_repeat',
+  DATUM_POINT: 'datum_point',
+  DATUM_TEXT: 'datum_text',
+  DATUM_LINE: 'datum_line',
 } as const
 
 export type FeatureTypeIdentifiers = typeof FeatureTypeIdentifier[keyof typeof FeatureTypeIdentifier]

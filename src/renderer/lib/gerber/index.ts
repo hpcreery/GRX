@@ -1,10 +1,10 @@
 import { plot } from './plotter/src'
 import { parse } from '@hpcreery/tracespace-parser'
-import type { LayerRendererProps } from '@src/renderer/layer'
+import { AddLayerProps } from '@src/renderer/plugins'
 import * as Comlink from 'comlink'
 
 
-export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
   const decoder = new TextDecoder('utf-8')
   const file = decoder.decode(buffer)
   const tree = parse(file)

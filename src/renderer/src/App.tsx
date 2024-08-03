@@ -9,7 +9,7 @@ import LayerSidebar from './components/LayersSidebar'
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import { FeatureSidebar } from './components/FeatureSidebar'
-import { EngineEvents, TMessageLevel } from './renderer/engine'
+import { EngineEvents } from './renderer/engine'
 import * as Comlink from 'comlink'
 import { notifications } from '@mantine/notifications'
 
