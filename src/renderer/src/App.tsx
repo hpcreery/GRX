@@ -103,13 +103,15 @@ export default function App(): JSX.Element | null {
       >
         <div
           id="GRX"
+          tabIndex={0}
           style={{
             width: '100vw',
             height: '100vh',
             WebkitUserSelect: 'none',
             MozUserSelect: 'none',
             userSelect: 'none',
-            touchAction: 'none'
+            touchAction: 'none',
+            outline: 'none',
             // backgroundColor: colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
           }}
           ref={elementRef}

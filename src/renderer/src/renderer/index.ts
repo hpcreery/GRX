@@ -1,4 +1,3 @@
-import { LayerRendererProps } from './layer'
 import * as Comlink from 'comlink'
 import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from './engine'
@@ -96,6 +95,7 @@ export class RenderEngine {
         if (name === 'mode') {
           if (value === 'move') this.CONTAINER.style.cursor = 'grab'
           if (value === 'select') this.CONTAINER.style.cursor = 'crosshair'
+          if (value === 'measure') this.CONTAINER.style.cursor = 'crosshair'
         }
         target[name] = value
         return true
@@ -115,7 +115,7 @@ export class RenderEngine {
     this.canvas2D = this.createCanvas()
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
     const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]),Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
       width: this.canvasGL.width,
       height: this.canvasGL.height
@@ -297,6 +297,35 @@ export class RenderEngine {
         }
       }
     }
+    this.CONTAINER.onkeydown = async (e): Promise<void> => {
+      // if (e.key === 'Escape') {
+      //   await backend.cancelMeasurement()
+      //   this.pointerSettings.mode = 'move'
+      //   this.CONTAINER.style.cursor = 'grab'
+      // }
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const isDragging = await backend.isDragging()
+        if (isDragging) return
+        this.backend.then((engine) => {
+          engine.grabViewport()
+          switch (e.key) {
+            case 'ArrowUp':
+              engine.moveViewport(0, 10)
+              break
+            case 'ArrowDown':
+              engine.moveViewport(0, -10)
+              break
+            case 'ArrowLeft':
+              engine.moveViewport(10, 0)
+              break
+            case 'ArrowRight':
+              engine.moveViewport(-10, 0)
+              break
+          }
+          engine.releaseViewport()
+        })
+      }
+    }
   }
 
   public async addLayer(params: AddLayerProps): Promise<void> {
@@ -307,7 +336,7 @@ export class RenderEngine {
   public async addFile(params: {
     buffer: ArrayBuffer
     format: string
-    props: Partial<Omit<LayerRendererProps, 'regl' | 'image'>>
+    props: Partial<Omit<AddLayerProps, 'image'>>
   }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)

@@ -12,7 +12,7 @@ import {
   IconZoom,
   IconZoomScan,
   IconHexagonPlus,
-  IconHexagonOff,
+  // IconHexagonOff,
 } from '@tabler/icons-react'
 import { ColorBlend, ColorBlends } from '@src/renderer/engine'
 import { useHotkeys, useLocalStorage } from '@mantine/hooks'
@@ -58,18 +58,10 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
       leftSection: <IconZoom />,
     })
     actions.push({
-      id: 'show datums off',
-      label: 'Hide Datums',
-      description: 'Hide datums',
-      onClick: () => setShowDatums(false),
-      leftSection: <IconHexagonOff />,
-      rightSection: <Kbd>P</Kbd>
-    })
-    actions.push({
-      id: 'show datums on',
-      label: 'Show Datums',
-      description: 'Show datums',
-      onClick: () => setShowDatums(true),
+      id: 'show datums toggle',
+      label: 'Toggle Datums',
+      description: 'Toggle view of datums',
+      onClick: () => setShowDatums(!showDatums),
       leftSection: <IconHexagonPlus />,
       rightSection: <Kbd>I</Kbd>
     })
@@ -77,10 +69,7 @@ export default function EngineSettings({ renderEngine }: EngineSettingsProps): J
 
   useHotkeys([
     ['i', (): void => {
-      setShowDatums(true)
-    }],
-    ['p', (): void => {
-      setShowDatums(false)
+      setShowDatums(!showDatums)
     }],
   ]);
 

@@ -555,6 +555,18 @@ export class RenderEngineBackend {
   }
 
   public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<AddLayerProps, 'image'>> }): Promise<void> {
+    console.log(params.format)
+    if (params.format == '') {
+      console.error('No format provided')
+      // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
+      return
+    }
+    if (!Object.keys(plugins).includes(params.format)) {
+      console.error('No parser found for format: ' + params.format)
+      this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
+      return
+    }
+
     const pluginWorker = plugins[params.format].plugin
     if (pluginWorker) {
       const tempUID = UID()
@@ -583,6 +595,7 @@ export class RenderEngineBackend {
       }
     } else {
       console.error('No parser found for format: ' + params.format)
+      this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
     }
   }
 
