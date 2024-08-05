@@ -2,16 +2,12 @@
 import DxfParser from 'dxf-parser'
 import * as converter from './converter'
 
-import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
+import { AddLayerProps } from '@src/renderer/plugins'
 
 // import file from './testdata/noentities.dxf?url'
 
-export async function plugin(
-  buffer: ArrayBuffer,
-  props: Partial<Omit<LayerRendererProps, 'regl'>>,
-  addLayer: (params: Omit<LayerRendererProps, 'regl'>) => void
-): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
   const decoder = new TextDecoder('utf-8')
   const file = decoder.decode(buffer)
   const parser = new DxfParser()

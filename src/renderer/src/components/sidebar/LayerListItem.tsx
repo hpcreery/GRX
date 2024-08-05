@@ -95,12 +95,12 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         const percent = Math.round((e.loaded / e.total) * 100)
         console.log(`${file.name} ${percent}% read`)
       }
-      reader.onload = async (e): Promise<void> => {
-        if (e.target?.result !== null && e.target?.result !== undefined) {
+      reader.onload = async (_e): Promise<void> => {
+        if (reader.result !== null && reader.result !== undefined) {
           try {
             await renderer.addFile({
               format: file.format,
-              buffer: e.target?.result as ArrayBuffer,
+              buffer: reader.result as ArrayBuffer,
               props: {
                 name: file.name,
                 // uid: file.uid
@@ -123,7 +123,12 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           }
           registerLayers(await renderer.getLayers())
         } else {
-          // messageApi.error(`${file.name} file upload failed.`)
+          notifications.show({
+            title: 'File upload failed',
+            message: `${file.name} file upload failed.`,
+            color: 'red',
+            autoClose: 5000
+          })
         }
       }
       reader.readAsArrayBuffer(file)

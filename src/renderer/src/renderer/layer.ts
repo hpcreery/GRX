@@ -5,6 +5,7 @@ import * as Symbols from './symbols'
 import { Binary, Transform, Units, BoundingBox } from './types'
 import {
   ArcAttachments,
+  DatumCollection,
   FrameBufferRenderAttachments,
   LineAttachments,
   PadAttachments,
@@ -20,6 +21,7 @@ import {
 
 import { WorldContext } from './engine'
 import { getUnitsConversion, UID } from './utils'
+import { LineRenderer, PointRenderer, TextRenderer } from './datum'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -95,11 +97,22 @@ class ShapeTransform implements Transform {
 
 }
 
-export interface ShapeRendererProps {
+export interface RendererProps {
   regl: REGL.Regl
+  ctx: OffscreenCanvasRenderingContext2D
+}
+
+export interface ShapeProps {
   image: Shapes.Shape[]
   transform?: Partial<ShapeTransform>
 }
+
+// export interface ShapeRendererProps extends RendererProps {
+//   image: Shapes.Shape[]
+//   transform?: Partial<ShapeTransform>
+// }
+
+export interface ShapeRendererProps extends RendererProps, ShapeProps { }
 
 interface ShapeRendererCommonContext {
   qtyFeaturesRef: number
@@ -109,6 +122,7 @@ interface ShapeRendererCommonContext {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
+  public ctx: OffscreenCanvasRenderingContext2D
   public dirty = false
   // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
   // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
@@ -121,6 +135,7 @@ export class ShapeRenderer {
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
   public stepAndRepeatCollection: StepAndRepeatCollection
+  public datumCollection: DatumCollection
 
   public get qtyFeatures(): number {
     return this.image.length
@@ -132,6 +147,9 @@ export class ShapeRenderer {
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
+  protected drawDatumLines: LineRenderer
+  protected drawDatumText: TextRenderer
+  protected drawDatumPoints: PointRenderer
   protected flattenSurfaces: REGL.DrawCommand<
     REGL.DefaultContext & WorldContext,
     FrameBufferRenderAttachments
@@ -143,6 +161,7 @@ export class ShapeRenderer {
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
+    this.ctx = props.ctx
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
@@ -158,10 +177,15 @@ export class ShapeRenderer {
     })
     this.macroCollection = new MacroShaderCollection({
       regl: this.regl,
+      ctx: this.ctx,
       image: this.image
     })
     this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
+      ctx: this.ctx,
+      image: this.image
+    })
+    this.datumCollection = new DatumCollection({
       image: this.image
     })
 
@@ -241,6 +265,10 @@ export class ShapeRenderer {
     this.drawArcs = ReglRenderers.drawArcs!
     this.drawSurfaces = ReglRenderers.drawSurfaces!
     this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
+
+    this.drawDatumLines = new LineRenderer(this.ctx, this.datumCollection.lines)
+    this.drawDatumText = new TextRenderer(this.ctx, this.datumCollection.texts)
+    this.drawDatumPoints = new PointRenderer(this.ctx, this.datumCollection.points)
 
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true
@@ -366,14 +394,23 @@ export class ShapeRenderer {
       this.shapeCollection.refresh()
       this.macroCollection.refresh()
       this.stepAndRepeatCollection.refresh()
+      this.datumCollection.refresh()
       this.dirty = false
     }
     this.commonConfig(() => {
       this.drawPrimitives(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
+      this.drawDatums(context)
     })
     context.transformMatrix = origMatrix
+  }
+
+  private drawDatums(context: REGL.DefaultContext & WorldContext): void {
+    if (context.settings.SHOW_DATUMS === false) return
+    this.drawDatumLines.render(context)
+    this.drawDatumText.render(context)
+    this.drawDatumPoints.render(context)
   }
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
@@ -421,8 +458,7 @@ export class ShapeRenderer {
   // }
 }
 
-
-export interface LayerRendererProps extends ShapeRendererProps {
+export interface LayerProps {
   name: string
   uid?: string
   /**
@@ -435,7 +471,11 @@ export interface LayerRendererProps extends ShapeRendererProps {
   context?: string
   type?: string
   format?: string
+
 }
+
+export interface LayerRendererProps extends ShapeRendererProps, LayerProps { }
+
 
 interface LayerUniforms {
   u_Color: vec3
@@ -614,6 +654,7 @@ export class MacroRenderer extends ShapeRenderer {
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
+  ctx: OffscreenCanvasRenderingContext2D
   record: Shapes.StepAndRepeat
 
 }
@@ -623,6 +664,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   constructor(props: StepAndRepeatRendererProps) {
     super({
       regl: props.regl,
+      ctx: props.ctx,
       image: props.record.shapes
     })
     this.record = props.record

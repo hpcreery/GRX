@@ -1,10 +1,10 @@
-import type { LayerRendererProps } from '@src/renderer/layer'
 import * as Comlink from 'comlink'
 
 import { parser, SelectLexer, NCToShapesVisitor } from './parser/parser'
+import { AddLayerProps } from '@src/renderer/plugins'
 
 
-export async function plugin(buffer: ArrayBuffer, props: Partial<Omit<LayerRendererProps, "regl">>, addLayer: (params: Omit<LayerRendererProps, "regl">) => void): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
 
   console.time('decode')
   const decoder = new TextDecoder('utf-8')

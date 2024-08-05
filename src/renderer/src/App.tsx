@@ -9,7 +9,7 @@ import LayerSidebar from './components/LayersSidebar'
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import { FeatureSidebar } from './components/FeatureSidebar'
-import { EngineEvents, TMessageLevel } from './renderer/engine'
+import { EngineEvents } from './renderer/engine'
 import * as Comlink from 'comlink'
 import { notifications } from '@mantine/notifications'
 
@@ -103,13 +103,15 @@ export default function App(): JSX.Element | null {
       >
         <div
           id="GRX"
+          tabIndex={0}
           style={{
             width: '100vw',
             height: '100vh',
             WebkitUserSelect: 'none',
             MozUserSelect: 'none',
             userSelect: 'none',
-            touchAction: 'none'
+            touchAction: 'none',
+            outline: 'none',
             // backgroundColor: colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
           }}
           ref={elementRef}

@@ -2,14 +2,16 @@ import gdsiiPluginWorker from '@lib/gdsii?worker'
 import gerberPluginWorker from '@lib/gerber?worker'
 import dxfPluginWorker from '@lib/dxf?worker'
 import ncPluginWorker from '@lib/nc?worker'
-import { LayerRendererProps } from './layer'
+import { LayerProps, ShapeProps } from './layer'
 import * as Comlink from 'comlink'
 import { TMessageLevel } from './engine'
 
+export interface AddLayerProps extends ShapeProps, LayerProps {}
+
 export type Plugin = (
   buffer: ArrayBuffer,
-  props: Partial<Omit<LayerRendererProps, 'regl'>>,
-  addLayer: (params: Omit<LayerRendererProps, 'regl'>) => void,
+  props: Partial<AddLayerProps>,
+  addLayer: (params: AddLayerProps) => void,
   addMessage?: (level: TMessageLevel, title: string, message: string) => Promise<void>
 ) => Promise<void>
 

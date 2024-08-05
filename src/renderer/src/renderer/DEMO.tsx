@@ -1096,6 +1096,25 @@ new Array<number>(1)
 
   })
 
+const DATUMS: Shapes.Shape[] = []
+DATUMS.push(new Shapes.DatumLine({
+  xs: 0,
+  ys: 0,
+  xe: 1,
+  ye: 0,
+}))
+
+DATUMS.push(new Shapes.DatumPoint({
+  x: 0,
+  y: 1,
+}))
+
+DATUMS.push(new Shapes.DatumText({
+  text: 'Hello World',
+  x: 1,
+  y: 1,
+}))
+
 
 // const VALIDATION_ARC = new Shapes.Arc({
 //   // Cnter point.
@@ -1146,7 +1165,7 @@ function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement('div'))
   const [engine, setEngine] = React.useState<RenderEngine>()
   const [_outlineMode, setOutlineMode] = React.useState<boolean>(true)
-  const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image">[]>([])
+  const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | 'ctx'>[]>([])
 
   React.useEffect(() => {
     const Engine = new RenderEngine({
@@ -1315,6 +1334,12 @@ function REGLApp(): JSX.Element {
     //   name: 'surface-arc-combo',
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
+
+    Engine.addLayer({
+      name: 'datums',
+      image: DATUMS,
+      units: 'mm'
+    })
 
 
 
