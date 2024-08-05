@@ -21,7 +21,7 @@
     "build:mac": "npm run build && electron-builder --mac --config",
     "build:linux": "npm run build && electron-builder --linux --config",
     "build:all": "npm run build && electron-builder --win --mac --linux --config",
-    "prepare": "electron-builder install-app-deps && husky install",
+    "build:prepare": "electron-builder install-app-deps && husky install",
     "create:icons": "electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons",
     "build:shaders": "node src/renderer/src/shaders/build.js",
     "build:shaders:watch": "node src/renderer/src/shaders/watch.js",
@@ -30,8 +30,6 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@electron-toolkit/preload": "^3.0.1",
-    "@electron-toolkit/utils": "^3.0.0",
     "@hpcreery/tracespace-parser": "^5.0.4",
     "@hpcreery/tracespace-plotter": "^5.0.3",
     "@hpcreery/tracespace-renderer": "^5.0.3",
@@ -57,7 +55,6 @@
     "comlink": "^4.4.1",
     "dxf-parser": "^1.1.2",
     "earcut": "^2.2.4",
-    "electron-updater": "^6.2.1",
     "gl-matrix": "^3.4.3",
     "glslify": "^7.1.1",
     "mantine-contextmenu": "^7.11.2",
@@ -73,6 +70,8 @@
   },
   "devDependencies": {
     "npm-check-updates": "^16.14.20",
+    "@electron-toolkit/preload": "^3.0.1",
+    "@electron-toolkit/utils": "^3.0.0",
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@electron-toolkit/tsconfig": "^1.0.1",
@@ -95,6 +94,7 @@
     "concurrently": "^8.2.2",
     "electron": "^31.3.1",
     "electron-builder": "^25.0.0-alpha.6",
+    "electron-updater": "^6.2.1",
     "electron-vite": "^2.3.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
