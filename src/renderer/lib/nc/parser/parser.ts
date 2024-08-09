@@ -594,7 +594,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = true
+const GENERATEDTS = false
 if (GENERATEDTS) {
   const dtsString = generateCstDts(productions);
   console.log(dtsString)

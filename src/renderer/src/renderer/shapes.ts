@@ -456,18 +456,6 @@ export class StepAndRepeat implements IPlotRecord {
   }
 }
 
-// export class DatumPoint {
-//   public readonly type = FeatureTypeIdentifier.DATUM_POINT
-//   public x = 0
-//   public y = 0
-//   public attributes: AttributeCollection = {}
-//   public index = 0
-
-//   constructor(props: Partial<Omit<DatumPoint, 'type'>>) {
-//     Object.assign(this, props)
-//   }
-// }
-
 export class DatumPoint implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_POINT
   public attributes: AttributeCollection = {}
@@ -532,20 +520,6 @@ export class DatumText {
   }
 }
 
-// export class DatumLine {
-//   public readonly type = FeatureTypeIdentifier.DATUM_LINE
-//   public xs = 0
-//   public ys = 0
-//   public xe = 0
-//   public ye = 0
-//   public attributes: AttributeCollection = {}
-//   public index = 0
-
-//   constructor(props: Partial<Omit<DatumLine, 'type'>>) {
-//     Object.assign(this, props)
-//   }
-// }
-
 
 export class DatumLine implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_LINE
@@ -591,24 +565,6 @@ export class DatumLine implements TLine_Record, IPlotRecord {
     Object.assign(this, record)
   }
 }
-
-// export class DatumArc {
-//   public readonly type = FeatureTypeIdentifier.DATUM_ARC
-//   public xs = 0
-//   public ys = 0
-//   public xe = 0
-//   public ye = 0
-//   public xc = 0
-//   public yc = 0
-//   public clockwise = 0
-//   public attributes: AttributeCollection = {}
-//   public index = 0
-
-//   constructor(props: Partial<Omit<DatumArc, 'type'>>) {
-//     Object.assign(this, props)
-//   }
-
-// }
 
 export class DatumArc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_ARC
