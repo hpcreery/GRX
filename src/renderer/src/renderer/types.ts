@@ -16,6 +16,7 @@ export const FeatureTypeIdentifier = {
   DATUM_POINT: 'datum_point',
   DATUM_TEXT: 'datum_text',
   DATUM_LINE: 'datum_line',
+  DATUM_ARC: 'datum_arc',
 } as const
 
 export type FeatureTypeIdentifiers = typeof FeatureTypeIdentifier[keyof typeof FeatureTypeIdentifier]

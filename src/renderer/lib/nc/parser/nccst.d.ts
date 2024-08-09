@@ -288,7 +288,7 @@ export interface EndOfProgramNoRewindCstNode extends CstNode {
 
 export type EndOfProgramNoRewindCstChildren = {
   M00: IToken[];
-  xy?: XyCstNode[];
+  coordinate?: CoordinateCstNode[];
 };
 
 export interface BeginPatternCstNode extends CstNode {
@@ -329,7 +329,7 @@ export interface OptionalStopCstNode extends CstNode {
 
 export type OptionalStopCstChildren = {
   M06: IToken[];
-  xy?: XyCstNode[];
+  coordinate?: CoordinateCstNode[];
 };
 
 export interface EndOfStepAndRepeatCstNode extends CstNode {
@@ -348,7 +348,7 @@ export interface StopForInspectCstNode extends CstNode {
 
 export type StopForInspectCstChildren = {
   M09: IToken[];
-  xy?: XyCstNode[];
+  coordinate?: CoordinateCstNode[];
 };
 
 export interface ZAxisRoutPositionWithDepthControlledCountoringCstNode extends CstNode {
@@ -394,7 +394,7 @@ export interface EndOfProgramRewindCstNode extends CstNode {
 
 export type EndOfProgramRewindCstChildren = {
   M30: IToken[];
-  xy?: XyCstNode[];
+  coordinate?: CoordinateCstNode[];
 };
 
 export interface LongOperatorMessageCstNode extends CstNode {
@@ -580,6 +580,66 @@ export type ZeroSetCstChildren = {
   xy: XyCstNode[];
 };
 
+export interface SelectVisionToolCstNode extends CstNode {
+  name: "selectVisionTool";
+  children: SelectVisionToolCstChildren;
+}
+
+export type SelectVisionToolCstChildren = {
+  G34: IToken[];
+  Comma: (IToken)[];
+  Number: (IToken)[];
+};
+
+export interface SinglePointVisionOffsetCstNode extends CstNode {
+  name: "singlePointVisionOffset";
+  children: SinglePointVisionOffsetCstChildren;
+}
+
+export type SinglePointVisionOffsetCstChildren = {
+  G35: IToken[];
+  coordinate?: CoordinateCstNode[];
+};
+
+export interface MultiPointVisionOffsetCstNode extends CstNode {
+  name: "multiPointVisionOffset";
+  children: MultiPointVisionOffsetCstChildren;
+}
+
+export type MultiPointVisionOffsetCstChildren = {
+  G36: IToken[];
+  coordinate: CoordinateCstNode[];
+};
+
+export interface CancelVisionOffsetCstNode extends CstNode {
+  name: "cancelVisionOffset";
+  children: CancelVisionOffsetCstChildren;
+}
+
+export type CancelVisionOffsetCstChildren = {
+  G37: IToken[];
+};
+
+export interface VisionCorrectedSingleHoleCstNode extends CstNode {
+  name: "visionCorrectedSingleHole";
+  children: VisionCorrectedSingleHoleCstChildren;
+}
+
+export type VisionCorrectedSingleHoleCstChildren = {
+  G38: IToken[];
+  coordinate: CoordinateCstNode[];
+};
+
+export interface VisionAutoCalibrationCstNode extends CstNode {
+  name: "visionAutoCalibration";
+  children: VisionAutoCalibrationCstChildren;
+}
+
+export type VisionAutoCalibrationCstChildren = {
+  G39: IToken[];
+  coordinate: CoordinateCstNode[];
+};
+
 export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT;
   command(children: CommandCstChildren, param?: IN): OUT;
@@ -635,4 +695,10 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   absoluteMode(children: AbsoluteModeCstChildren, param?: IN): OUT;
   incrementalMode(children: IncrementalModeCstChildren, param?: IN): OUT;
   zeroSet(children: ZeroSetCstChildren, param?: IN): OUT;
+  selectVisionTool(children: SelectVisionToolCstChildren, param?: IN): OUT;
+  singlePointVisionOffset(children: SinglePointVisionOffsetCstChildren, param?: IN): OUT;
+  multiPointVisionOffset(children: MultiPointVisionOffsetCstChildren, param?: IN): OUT;
+  cancelVisionOffset(children: CancelVisionOffsetCstChildren, param?: IN): OUT;
+  visionCorrectedSingleHole(children: VisionCorrectedSingleHoleCstChildren, param?: IN): OUT;
+  visionAutoCalibration(children: VisionAutoCalibrationCstChildren, param?: IN): OUT;
 }

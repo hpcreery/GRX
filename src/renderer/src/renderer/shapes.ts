@@ -495,6 +495,24 @@ export class DatumLine {
   }
 }
 
+export class DatumArc {
+  public readonly type = FeatureTypeIdentifier.DATUM_ARC
+  public xs = 0
+  public ys = 0
+  public xe = 0
+  public ye = 0
+  public xc = 0
+  public yc = 0
+  public clockwise = 0
+  public attributes: AttributeCollection = {}
+  public index = 0
+
+  constructor(props: Partial<Omit<DatumArc, 'type'>>) {
+    Object.assign(this, props)
+  }
+
+}
+
 
 export type Primitive = Pad | Line | Arc
 export type Datum = DatumPoint | DatumText | DatumLine

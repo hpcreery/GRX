@@ -4,7 +4,7 @@ import * as Cst from './nccst';
 import * as Shapes from '@src/renderer/shapes'
 import * as Symbols from '@src/renderer/symbols'
 
-import { Units, AttributeCollection, Binary } from '@src/renderer/types'
+import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from '@src/renderer/types'
 import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation, PossiblePoints } from './types';
 import * as Constants from './constants';
 
@@ -64,6 +64,12 @@ const DefaultTokens = {
   G05: createToken({ name: "G05", pattern: /G05/ }),
   G32: createToken({ name: "G32", pattern: /G32/ }),
   G33: createToken({ name: "G33", pattern: /G33/ }),
+  G34: createToken({ name: "G34", pattern: /G34/ }),
+  G35: createToken({ name: "G35", pattern: /G35/ }),
+  G36: createToken({ name: "G36", pattern: /G36/ }),
+  G37: createToken({ name: "G37", pattern: /G37/ }),
+  G38: createToken({ name: "G38", pattern: /G38/ }),
+  G39: createToken({ name: "G39", pattern: /G39/ }),
   G40: createToken({ name: "G40", pattern: /G40/ }),
   G41: createToken({ name: "G41", pattern: /G41/ }),
   G42: createToken({ name: "G42", pattern: /G42/ }),
@@ -382,7 +388,7 @@ class NCParser extends CstParser {
     this.RULE("endOfProgramNoRewind", () => {
       this.CONSUME(DefaultTokens.M00)
       this.OPTION(() => {
-        this.SUBRULE(this.xy)
+        this.SUBRULE(this.coordinate)
       })
     })
 
@@ -411,7 +417,7 @@ class NCParser extends CstParser {
     this.RULE("optionalStop", () => {
       this.CONSUME(DefaultTokens.M06)
       this.OPTION(() => {
-        this.SUBRULE(this.xy)
+        this.SUBRULE(this.coordinate)
       })
     })
 
@@ -422,7 +428,7 @@ class NCParser extends CstParser {
     this.RULE("stopForInspect", () => {
       this.CONSUME(DefaultTokens.M09)
       this.OPTION(() => {
-        this.SUBRULE(this.xy)
+        this.SUBRULE(this.coordinate)
       })
     })
 
@@ -445,7 +451,7 @@ class NCParser extends CstParser {
     this.RULE("endOfProgramRewind", () => {
       this.CONSUME(DefaultTokens.M30)
       this.OPTION(() => {
-        this.SUBRULE(this.xy)
+        this.SUBRULE(this.coordinate)
       })
     })
 
@@ -545,7 +551,41 @@ class NCParser extends CstParser {
       this.SUBRULE(this.xy)
     })
 
+    this.RULE("selectVisionTool", () => {
+      this.CONSUME(DefaultTokens.G34)
+      this.CONSUME(DefaultTokens.Comma)
+      this.CONSUME(DefaultTokens.Number)
+      this.OPTION(() => {
+        this.CONSUME2(DefaultTokens.Comma)
+        this.CONSUME2(DefaultTokens.Number)
+      })
+    })
 
+    this.RULE("singlePointVisionOffset", () => {
+      this.CONSUME(DefaultTokens.G35)
+      this.OPTION(() => {
+        this.SUBRULE(this.coordinate)
+      })
+    })
+
+    this.RULE("multiPointVisionOffset", () => {
+      this.CONSUME(DefaultTokens.G36)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("cancelVisionOffset", () => {
+      this.CONSUME(DefaultTokens.G37)
+    })
+
+    this.RULE("visionCorrectedSingleHole", () => {
+      this.CONSUME(DefaultTokens.G38)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("visionAutoCalibration", () => {
+      this.CONSUME(DefaultTokens.G39)
+      this.SUBRULE(this.coordinate)
+    })
 
     this.performSelfAnalysis()
   }
@@ -554,7 +594,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = false
+const GENERATEDTS = true
 if (GENERATEDTS) {
   const dtsString = generateCstDts(productions);
   console.log(dtsString)
@@ -565,6 +605,8 @@ const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 
 interface NCState extends NCParams {
+  chainIndex: number
+  chainSubIndex: number
   plunged: boolean
   mode: Mode
   interpolationMode: InterpolateModeType
@@ -597,6 +639,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   public stepRepeatShapes: Shapes.Shape[][] = []
   public stepRepeats: Shapes.StepAndRepeat[] = []
   public state: NCState = {
+    chainIndex: 0,
+    chainSubIndex: 0,
     plunged: false,
     mode: Constants.DRILL,
     interpolationMode: Constants.LINE,
@@ -669,12 +713,13 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   toolChange(ctx: Cst.ToolChangeCstChildren): void {
     const str = ctx.T[0].image
     const tool = str.slice(0, 3)
-    let compensationIndex = str.slice(3)
-    if (!compensationIndex) {
-      compensationIndex = tool.slice(1)
-    }
+    const compensationIndex = str.slice(3)
     this.state.currentTool = this.toolStore[tool] ?? defaultTool
-    this.state.cutterCompensation = this.compensationStore[compensationIndex] ?? 0
+    if (compensationIndex !== '') {
+      this.state.cutterCompensation = this.compensationStore[compensationIndex] ?? 0
+    } else {
+      this.state.cutterCompensation = this.state.currentTool.outer_dia
+    }
   }
 
   toolDefinition(ctx: Cst.ToolDefinitionCstChildren): void {
@@ -804,46 +849,142 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       }))
     } else {
       if (this.state.plunged) {
+        const lastPath = this.result.findLast(shape => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC)
         if (this.state.interpolationMode === Constants.LINE) {
+          const angle = Math.atan2(this.state.y - this.state.previousY, this.state.x - this.state.previousX)
+          let xs = this.state.previousX
+          let ys = this.state.previousY
+          let xe = this.state.x
+          let ye = this.state.y
+          this.result.push(new Shapes.DatumText({
+            x: (this.state.x + this.state.previousX) / 2,
+            y: (this.state.y + this.state.previousY) / 2,
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
+          }))
+          this.result.push(new Shapes.DatumLine({
+            xs,
+            ys,
+            xe,
+            ye,
+          }))
+          if (this.state.cutterCompensationMode === Constants.LEFT) {
+            xs += Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation / 2
+            ys += Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation / 2
+            xe += Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation / 2
+            ye += Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation / 2
+          } else if (this.state.cutterCompensationMode === Constants.RIGHT) {
+            xs += Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation / 2
+            ys += Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation / 2
+            xe += Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation / 2
+            ye += Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation / 2
+          }
+          if (lastPath) {
+            if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
+              if (lastPath.type == FeatureTypeIdentifier.LINE) {
+                const insersectionPoint = findLineIntersection(lastPath, { xs, ys, xe, ye })
+                if (insersectionPoint != undefined) {
+                  xs = insersectionPoint.x
+                  ys = insersectionPoint.y
+                  lastPath.xe = insersectionPoint.x
+                  lastPath.ye = insersectionPoint.y
+                }
+              } else {
+                const insersectionPoints = findArcLineIntersections(lastPath, { xs, ys, xe, ye })
+                // the first point is the one closer to the line start point
+                if (insersectionPoints != undefined) {
+                  xs = insersectionPoints[0].x
+                  ys = insersectionPoints[0].y
+                  lastPath.xe = insersectionPoints[0].x
+                  lastPath.ye = insersectionPoints[0].y
+                }
+
+              }
+            }
+          }
           this.result.push(new Shapes.Line({
-            xs: this.state.previousX,
-            ys: this.state.previousY,
-            xe: this.state.x,
-            ye: this.state.y,
+            xs,
+            ys,
+            xe,
+            ye,
             symbol: this.state.currentTool,
             attributes: {
               cutterCompensation: (this.state.cutterCompensation).toString(),
               cutterCompensationMode: this.state.cutterCompensationMode,
+              chainIndex: `${this.state.chainIndex}`,
+              chainSubIndex: `${this.state.chainSubIndex++}`,
             }
-          }))
-          this.result.push(new Shapes.DatumText({
-            x: (this.state.x + this.state.previousX) / 2,
-            y: (this.state.y + this.state.previousY) / 2,
-            text: this.state.currentTool.id
           }))
         } else {
           const startPoint = { x: this.state.previousX, y: this.state.previousY }
           const endPoint = { x: this.state.x, y: this.state.y }
           const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
           const center = getAmbiguousArcCenter(startPoint, endPoint, radius, this.state.interpolationMode == Constants.CW_ARC ? Constants.CW_ARC : Constants.CCW_ARC)
+          const startAngle = Math.atan2(startPoint.y - center.y, startPoint.x - center.x)
+          const endAngle = Math.atan2(endPoint.y - center.y, endPoint.x - center.x)
+          const clockwise = this.state.interpolationMode == Constants.CW_ARC ? 1 : 0
+          const cwFlip = this.state.interpolationMode == Constants.CW_ARC ? -1 : 1
+          let xs = startPoint.x
+          let ys = startPoint.y
+          let xe = endPoint.x
+          let ye = endPoint.y
+          if (this.state.cutterCompensationMode === Constants.LEFT) {
+            xs -= (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
+            ys -= (Math.sin(startAngle) * this.state.cutterCompensation / 2) * cwFlip
+            xe -= (Math.cos(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+            ye -= (Math.sin(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+          } else if (this.state.cutterCompensationMode === Constants.RIGHT) {
+            xs += (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
+            ys += (Math.sin(startAngle) * this.state.cutterCompensation / 2) * cwFlip
+            xe += (Math.cos(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+            ye += (Math.sin(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+          }
+          const datumLocation = {
+            x: (startPoint.x + endPoint.x) / 2,
+            y: (startPoint.y + endPoint.y) / 2,
+          }
+          this.result.push(new Shapes.DatumText({
+            x: datumLocation.x,
+            y: datumLocation.y,
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
+          }))
+          if (lastPath) {
+            if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
+              if (lastPath.type == FeatureTypeIdentifier.ARC) {
+                const insersectionPoints = findArcIntersections({ xs, ys, xe, ye, xc: center.x, yc: center.y }, lastPath)
+                // the first point is the one closer to the first circle start point
+                if (insersectionPoints != undefined) {
+                  xs = insersectionPoints[0].x
+                  ys = insersectionPoints[0].y
+                  lastPath.xe = insersectionPoints[0].x
+                  lastPath.ye = insersectionPoints[0].y
+                }
+              } else {
+                const insersectionPoints = findArcLineIntersections({xs, ys, xe, ye, xc: center.x, yc: center.y}, lastPath)
+                // the second point is the one closer to the line end point
+                if (insersectionPoints != undefined) {
+                  xs = insersectionPoints[1].x
+                  ys = insersectionPoints[1].y
+                  lastPath.xe = insersectionPoints[1].x
+                  lastPath.ye = insersectionPoints[1].y
+                }
+              }
+            }
+          }
           this.result.push(new Shapes.Arc({
-            xs: this.state.previousX,
-            ys: this.state.previousY,
-            xe: this.state.x,
-            ye: this.state.y,
+            xs,
+            ys,
+            xe,
+            ye,
             xc: center.x,
             yc: center.y,
-            clockwise: this.state.interpolationMode === Constants.CW_ARC ? 1 : 0,
+            clockwise,
             symbol: this.state.currentTool,
             attributes: {
               cutterCompensation: (this.state.cutterCompensation).toString(),
               cutterCompensationMode: this.state.cutterCompensationMode,
+              chainIndex: `${this.state.chainIndex}`,
+              chainSubIndex: `${this.state.chainSubIndex++}`,
             }
-          }))
-          this.result.push(new Shapes.DatumText({
-            x: center.x,
-            y: center.y,
-            text: this.state.currentTool.id
           }))
         }
       } else {
@@ -932,10 +1073,30 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   zAxisRoutPositionWithDepthControlledCountoring(_ctx: Cst.ZAxisRoutPositionWithDepthControlledCountoringCstChildren): void {
     this.state.plunged = true
+    this.state.chainIndex++
+    this.state.chainSubIndex = 0
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+      attributes: {
+        type: 'plunge',
+        chainIndex: `${this.state.chainIndex}`,
+      }
+    }))
   }
 
   zAxisRoutPosition(_ctx: Cst.ZAxisRoutPositionCstChildren): void {
     this.state.plunged = true
+    this.state.chainIndex++
+    this.state.chainSubIndex = 0
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+      attributes: {
+        type: 'plunge',
+        chainIndex: `${this.state.chainIndex}`,
+      }
+    }))
   }
 
   retractWithClamping(_ctx: Cst.RetractWithClampingCstChildren): void {
@@ -1070,6 +1231,90 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     console.log('zeroSet', ctx)
   }
 
+  selectVisionTool(ctx: Cst.SelectVisionToolCstChildren): void {
+    console.log('selectVisionTool', ctx)
+  }
+
+  singlePointVisionOffset(ctx: Cst.SinglePointVisionOffsetCstChildren): void {
+    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.result.push(new Shapes.DatumLine({
+      xs: this.state.previousX,
+      ys: this.state.previousY,
+      xe: this.state.x,
+      ye: this.state.y,
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'AlignmentPoint'
+    }))
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+    }))
+  }
+
+  multiPointVisionOffset(ctx: Cst.MultiPointVisionOffsetCstChildren): void {
+    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.result.push(new Shapes.DatumLine({
+      xs: this.state.previousX,
+      ys: this.state.previousY,
+      xe: this.state.x,
+      ye: this.state.y,
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'AlignmentPoint'
+    }))
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+    }))
+  }
+
+  cancelVisionOffset(ctx: Cst.CancelVisionOffsetCstChildren): void {
+    console.log('cancelVisionOffset', ctx)
+  }
+
+  visionCorrectedSingleHole(ctx: Cst.VisionCorrectedSingleHoleCstChildren): void {
+    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.result.push(new Shapes.DatumLine({
+      xs: this.state.previousX,
+      ys: this.state.previousY,
+      xe: this.state.x,
+      ye: this.state.y,
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'VisionCorrection'
+    }))
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+    }))
+  }
+
+  visionAutoCalibration(ctx: Cst.VisionAutoCalibrationCstChildren): void {
+    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.result.push(new Shapes.DatumLine({
+      xs: this.state.previousX,
+      ys: this.state.previousY,
+      xe: this.state.x,
+      ye: this.state.y,
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'VisionCorrection'
+    }))
+    this.result.push(new Shapes.DatumPoint({
+      x: this.state.x,
+      y: this.state.y,
+    }))
+  }
+
   parseCoordinate(
     coordinate: string,
   ): number {
@@ -1107,7 +1352,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
 export function getAmbiguousArcCenter(startPoint: Point, endPoint: Point, radius: number, arcDirection: ArcDirection): Point {
   // Get the center candidates and select the candidate with the smallest arc
-  const [_start, _end, center] = findCenterCandidates(startPoint, endPoint, radius)
+  const [_start, _end, center] = findCircleIntersections(startPoint, endPoint, radius)
     .map(centerPoint => {
       return getArcPositions(startPoint, endPoint, centerPoint, arcDirection)
     })
@@ -1156,7 +1401,7 @@ export function getArcPositions(
 // Find arc center candidates by finding the intersection points
 // of two circles with `radius` centered on the start and end points
 // https://math.stackexchange.com/a/1367732
-function findCenterCandidates(startPoint: Point, endPoint: Point, radius: number): Point[] {
+function findCircleIntersections(startPoint: Point, endPoint: Point, radius: number): Point[] {
   // This function assumes that start and end are different points
   const { x: x1, y: y1 } = startPoint
   const { x: x2, y: y2 } = endPoint
@@ -1171,7 +1416,8 @@ function findCenterCandidates(startPoint: Point, endPoint: Point, radius: number
   // is greater than the radius, assume we've got a rounding error and just use
   // the midpoint
   if (radius <= distance / 2) {
-    return [{ x: x1 + dx / 2, y: y1 + dy / 2 }]
+    const point = { x: x1 + dx / 2, y: y1 + dy / 2 }
+    return [point, point]
   }
 
   // No good name for these variables, but it's how the math works out
@@ -1185,5 +1431,162 @@ function findCenterCandidates(startPoint: Point, endPoint: Point, radius: number
   ]
 }
 
+interface Line {
+  xs: number
+  ys: number
+  xe: number
+  ye: number
+}
+
+/**
+ * Find the intersection point of two lines
+ * http://paulbourke.net/geometry/pointlineplane/
+ * @param line1
+ * @param line2
+ * @returns point of intersection or undefined if the lines are parallel
+ */
+function findLineIntersection(line1: Line, line2: Line): Point | undefined {
+
+  const [x1, y1] = [line1.xs, line1.ys]
+  const [x2, y2] = [line1.xe, line1.ye]
+  const [x3, y3] = [line2.xs, line2.ys]
+  const [x4, y4] = [line2.xe, line2.ye]
+
+  // Check if none of the lines are of length 0
+  if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
+    return
+  }
+
+  const denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+
+  // Lines are parallel
+  if (denominator === 0) {
+    return
+  }
+
+  const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
+
+  // Return a object with the x and y coordinates of the intersection
+  const x = x1 + ua * (x2 - x1)
+  const y = y1 + ua * (y2 - y1)
+
+  return { x, y }
+}
+
+interface Arc {
+  xs: number
+  ys: number
+  xe: number
+  ye: number
+  xc: number
+  yc: number
+
+}
+
+/**
+ * Find the intersection points of a circle and a line, the first point returned is the one closer to the line start point
+ * https://www.reddit.com/r/gamemaker/comments/m38s5j/line_circle_intersect_function_to_share/
+ * @param arc
+ * @param line
+ * @returns  the first point is the one closer to the line start point
+ */
+function findArcLineIntersections(arc: Arc, line: Line): Point[] | undefined {
+  const cx = arc.xc
+  const cy = arc.yc
+  const radius = Math.sqrt((cx - arc.xs) ** 2 + (cy - arc.ys) ** 2)
+  const x1 = line.xs
+  const y1 = line.ys
+  const x2 = line.xe
+  const y2 = line.ye
+
+  // Find intersect points with a line and a circle
+  // Circle origin [cx, cy] with radius radius
+  // Line of [x1, y1] to [x2, y2]
+
+  const _cx = x1 - cx;
+  const _cy = y1 - cy;
+
+  const _vx = x2 - x1,
+    _vy = y2 - y1,
+    _a = _vx * _vx + _vy * _vy,
+    _b = 2 * (_vx * _cx + _vy * _cy),
+    _c = _cx * _cx + _cy * _cy - radius * radius
+  let determinant = _b * _b - 4 * _a * _c;
+
+  if (_a <= 0.000001 || determinant < 0) {
+    // No real solutions.
+    return;
+  }
+  else if (determinant == 0) {
+    // Line is tangent to the circle
+    const _t = -_b / (2 * _a);
+    const point = { x: x1 + _t * _vx, y: y1 + _t * _vy };
+    return [point, point];
+  }
+  else {
+    // Line intersects circle
+    determinant = Math.sqrt(determinant);
+    const _t1 = (-_b - determinant) / (2 * _a);
+    const _t2 = (-_b + determinant) / (2 * _a);
+
+    // First point is closest to [x1, y1]
+    const p1 = { x: x1 + _t1 * _vx, y: y1 + _t1 * _vy }
+    const p2 = { x: x1 + _t2 * _vx, y: y1 + _t2 * _vy }
+    // return the points with the first closer to line start point
+    const d1 = Math.sqrt((p1.x - x1) ** 2 + (p1.y - y1) ** 2)
+    const d2 = Math.sqrt((p2.x - x1) ** 2 + (p2.y - y1) ** 2)
+    return d1 < d2 ? [p1, p2] : [p2, p1]
+  }
+}
+
+
+
+/**
+ * Find the intersection points of two circles, the first point returned is the one closer to the first circle start point
+ * http://math.stackexchange.com/a/1367732
+ * @param arc1
+ * @param arc2
+ * @returns  the first point is the one closer to the first circle start point
+ */
+function findArcIntersections(arc1: Arc, arc2: Arc): Point[] | undefined {
+  const x1 = arc1.xc
+  const y1 = arc1.yc
+  const r1 = Math.sqrt((arc1.xs - x1) ** 2 + (arc1.ys - y1) ** 2)
+  const x2 = arc2.xc
+  const y2 = arc2.yc
+  const r2 = Math.sqrt((arc2.xs - x2) ** 2 + (arc2.ys - y2) ** 2)
+
+  const centerdx = x1 - x2;
+  const centerdy = y1 - y2;
+  const R = Math.sqrt(centerdx * centerdx + centerdy * centerdy);
+  if (!(Math.abs(r1 - r2) <= R && R <= r1 + r2)) { // no intersection
+    return; // empty list of results
+  }
+
+  // intersection(s) should exist
+
+  const R2 = R * R;
+  const R4 = R2 * R2;
+  const a = (r1 * r1 - r2 * r2) / (2 * R2);
+  const r2r2 = (r1 * r1 - r2 * r2);
+  const c = Math.sqrt(2 * (r1 * r1 + r2 * r2) / R2 - (r2r2 * r2r2) / R4 - 1);
+
+  const fx = (x1 + x2) / 2 + a * (x2 - x1);
+  const gx = c * (y2 - y1) / 2;
+  const ix1 = fx + gx;
+  const ix2 = fx - gx;
+
+  const fy = (y1 + y2) / 2 + a * (y2 - y1);
+  const gy = c * (x1 - x2) / 2;
+  const iy1 = fy + gy;
+  const iy2 = fy - gy;
+
+  // note if gy == 0 and gx == 0 then the circles are tangent and there is only one solution
+  // but that one solution will just be duplicated as the code is currently written
+  // return the points with the first closer to circle 1 start
+  const d1 = Math.sqrt((ix1 - arc1.xs) ** 2 + (iy1 - arc1.ys) ** 2)
+  const d2 = Math.sqrt((ix2 - arc1.xs) ** 2 + (iy2 - arc1.ys) ** 2)
+  return d1 < d2 ? [{ x: ix1, y: iy1 }, { x: ix2, y: iy2 }] : [{ x: ix2, y: iy2 }, { x: ix1, y: iy1 }]
+}
 
 // TODO: add support for more excellon Canned Cycle Commands
