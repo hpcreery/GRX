@@ -1,5 +1,5 @@
 import REGL from 'regl'
-import { mat3, vec2, vec3 } from 'gl-matrix'
+import { mat3, vec2, vec3, vec4 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
 import { initializeRenderers, ReglRenderers, ScreenRenderProps } from './collections'
 import * as Shapes from './shapes'
@@ -8,6 +8,7 @@ import plugins from './plugins'
 import type { Plugin, PluginsDefinition, AddLayerProps } from './plugins'
 import type { Units, BoundingBox } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
+import OriginFrag from '../shaders/src/Origin.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
 import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
 import { UID } from './utils'
@@ -71,7 +72,7 @@ export interface RenderSettings {
   MSPFRAME: number
   OUTLINE_MODE: boolean
   COLOR_BLEND: ColorBlends
-  BACKGROUND_COLOR: [number, number, number, number]
+  BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
   MIN_ZOOM: number
   ZOOM_TO_CURSOR: boolean
@@ -90,7 +91,7 @@ export interface RenderTransform {
 
 export interface GridRenderProps {
   enabled: boolean
-  color: [number, number, number, number]
+  color: vec4
   spacing_x: number
   spacing_y: number
   offset_x: number
@@ -103,7 +104,15 @@ interface GridRenderUniforms {
   u_Spacing: vec2
   u_Offset: vec2
   u_Type: number
-  u_Color: [number, number, number, number]
+  u_Color: vec4
+}
+
+interface OriginRenderProps {
+  enabled: boolean
+}
+
+interface OriginRenderUniforms {
+  u_Color: vec4
 }
 
 export interface LayerInfo {
@@ -216,6 +225,10 @@ export class RenderEngineBackend {
     }
   }
 
+  public origin: OriginRenderProps = {
+    enabled: true
+  }
+
   private dirty = true
 
   // public stats: Stats = {
@@ -244,7 +257,8 @@ export class RenderEngineBackend {
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   private blend: REGL.DrawCommand
   private overlay: REGL.DrawCommand
-  private renderGrid: REGL.DrawCommand<REGL.DefaultContext, GridRenderProps>
+  private renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridRenderProps>
+  private renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
 
   public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
@@ -337,7 +351,7 @@ export class RenderEngineBackend {
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
     this.measurements = new SimpleMeasurement(this.regl, this.ctx)
 
-    this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps>(
+    this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps, WorldContext>(
       {
         vert: FullScreenQuad,
         frag: GridFrag,
@@ -352,6 +366,21 @@ export class RenderEngineBackend {
             props.offset_y
           ],
           u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => props._type,
+        }
+      },
+    )
+
+    this.renderOrigin = this.regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, WorldContext>(
+      {
+        vert: FullScreenQuad,
+        frag: OriginFrag,
+        uniforms: {
+          u_Color: (context: REGL.DefaultContext & WorldContext) => {
+            const color = vec4.create()
+            vec4.subtract(color, [1,1,1,1], context.settings.BACKGROUND_COLOR)
+            color[3] = 1
+            return color
+            },
         }
       },
     )
@@ -827,6 +856,7 @@ export class RenderEngineBackend {
 
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
+      if (this.origin.enabled) this.renderOrigin()
       if (this.grid.enabled) this.renderGrid(this.grid)
       for (const layer of this.layers) {
         if (!layer.visible) continue

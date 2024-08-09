@@ -12,7 +12,9 @@ import {
   IconQuestionMark,
   IconX,
   IconPictureInPicture,
-  IconReplace
+  IconReplace,
+  IconArrowUpBar,
+  IconNorthStar
 } from '@tabler/icons-react'
 import { LayerInfo, QueryFeature } from '@src/renderer/engine';
 import classes from './FeatureSidebar.module.css';
@@ -20,7 +22,7 @@ import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 import { getUnitsConversion } from '@src/renderer/utils';
 import chroma from 'chroma-js';
 import { STANDARD_SYMBOLS, StandardSymbol } from '@src/renderer/symbols';
-import { AttributeCollection, Units } from '@src/renderer/types';
+import { AttributeCollection, FeatureTypeIdentifier, Units } from '@src/renderer/types';
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -65,12 +67,12 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       }
       if (key === 'attributes') {
         return <>
-        <Text key={index}>- {key}: <Code>{Object.keys(value).length}</Code></Text>
-        {Object.entries(value as AttributeCollection).map(([key, value]) =>
-          <>
-            <Text key={`${key}`} style={{whiteSpace: 'preserve'}}>  ~ {key}: <Code>{value}</Code></Text>
-          </>
-        )}</>
+          <Text key={index}>- {key}: <Code>{Object.keys(value).length}</Code></Text>
+          {Object.entries(value as AttributeCollection).map(([key, value]) =>
+            <>
+              <Text key={`${key}`} style={{ whiteSpace: 'preserve' }}>  ~ {key}: <Code>{value}</Code></Text>
+            </>
+          )}</>
       }
       return <Text key={index}>- {key}: <Code>{representedValue}</Code></Text>
     }
@@ -109,13 +111,14 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
       layerName = layer.name
     }
     switch (feature.type) {
-      case 'line':
+      case FeatureTypeIdentifier.LINE:
+      case FeatureTypeIdentifier.DATUM_LINE:
         return <>
           <CornerIcon>
-            <IconLine />
+            {feature.type == FeatureTypeIdentifier.LINE ? <IconLine /> : <IconArrowUpBar />}
           </CornerIcon>
           <Text size="lg" fw={700} c='white'>
-            Line
+            {feature.type == FeatureTypeIdentifier.LINE ? 'Line' : 'Datum Line'}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
@@ -143,18 +146,33 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             {getAttributes(feature.attributes)}
           </Text>
         </>
-      case 'pad':
+      case FeatureTypeIdentifier.PAD:
+      case FeatureTypeIdentifier.DATUM_POINT:
         return <>
-          {feature.symbol.type == 'symbol_defintion' ?
+          {feature.symbol.type == FeatureTypeIdentifier.SYMBOL_DEFINITION ?
             "" :
-              feature.symbol.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)
-            }
+            feature.symbol.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)
+          }
           <CornerIcon>
-          {feature.symbol.type == 'symbol_defintion' ? <IconCircle /> :
-            <IconPictureInPicture/> }
+            {feature.type == FeatureTypeIdentifier.DATUM_POINT
+              ?
+              <IconNorthStar />
+              :
+              feature.symbol.type == FeatureTypeIdentifier.SYMBOL_DEFINITION
+                ?
+                <IconCircle />
+                :
+                <IconPictureInPicture />}
           </CornerIcon>
           <Text size="lg" fw={700} c='white'>
-            {feature.symbol.type == 'macro_definition' ? <>Nested in<br/>Macro Pad</> : <>Pad</>}
+            {feature.type == FeatureTypeIdentifier.DATUM_POINT
+              ?
+              'Datum Point'
+              :
+              feature.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION
+                ? <>Nested in<br />Macro Pad</>
+                :
+                <>Pad</>}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
@@ -176,27 +194,28 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             Rotation (cw): <Code>{feature.rotation}&deg;</Code>
           </Text>
           <Text>
-            Symbol: <Code>{feature.symbol.type == 'symbol_defintion' ? STANDARD_SYMBOLS[feature.symbol.symbol] : feature.symbol.id}</Code>
+            Symbol: <Code>{feature.symbol.type == FeatureTypeIdentifier.SYMBOL_DEFINITION ? STANDARD_SYMBOLS[feature.symbol.symbol] : feature.symbol.id}</Code>
           </Text>
-          {feature.symbol.type == 'symbol_defintion' ?
+          {feature.symbol.type == FeatureTypeIdentifier.SYMBOL_DEFINITION ?
             <Text>
               {getSymbolInfo(feature.symbol, feature.units)}
             </Text> : ""
-            }
-            <Text>
+          }
+          <Text>
             Attributes: <Code>{Object.keys(feature.attributes).length}</Code>
           </Text>
           <Text>
             {getAttributes(feature.attributes)}
           </Text>
         </>
-      case 'arc':
+      case FeatureTypeIdentifier.ARC:
+      case FeatureTypeIdentifier.DATUM_ARC:
         return <>
           <CornerIcon>
-            <IconVectorSpline />
+            {feature.type == FeatureTypeIdentifier.ARC ? <IconVectorSpline /> : <IconArrowUpBar />}
           </CornerIcon>
           <Text size="lg" fw={700} c='white'>
-            Arc
+            {feature.type == FeatureTypeIdentifier.ARC ? 'Arc' : 'Datum Arc'}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
@@ -230,7 +249,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             {getAttributes(feature.attributes)}
           </Text>
         </>
-      case 'surface':
+      case FeatureTypeIdentifier.SURFACE:
         return <>
           <CornerIcon>
             <IconPolygon />
@@ -261,7 +280,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             {getAttributes(feature.attributes)}
           </Text>
         </>
-      case 'polyline':
+      case FeatureTypeIdentifier.POLYLINE:
         return <>
           <CornerIcon>
             <IconShape2 />
@@ -295,14 +314,14 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             {getAttributes(feature.attributes)}
           </Text>
         </>
-      case 'step_and_repeat':
+      case FeatureTypeIdentifier.STEP_AND_REPEAT:
         return <>
           {feature.shapes.map(shape => <>{getInfo(Object.assign(shape, { layer: feature.layer, units: feature.units }))}<Divider my="sm" /></>)}
           <CornerIcon>
             <IconReplace />
           </CornerIcon>
           <Text size="lg" fw={700} c='white'>
-            Nested in<br/>Step and Repeat
+            Nested in<br />Step and Repeat
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
           <Text>
@@ -391,7 +410,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
               setMounted(false)
               renderEngine.backend.then(async engine => {
                 await engine.clearSelection()
-                await engine.render({force: true})
+                await engine.render({ force: true })
               })
             }}>
               <IconX />

@@ -48,7 +48,7 @@ export default function App(): JSX.Element | null {
         colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
       )
         .alpha(0)
-        .rgba()
+        .gl()
     }
   }, [colors.colorScheme])
 

@@ -927,6 +927,24 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           let ys = startPoint.y
           let xe = endPoint.x
           let ye = endPoint.y
+          this.result.push(new Shapes.DatumArc({
+            xs,
+            ys,
+            xe,
+            ye,
+            xc: center.x,
+            yc: center.y,
+            clockwise,
+          }))
+          const datumLocation = {
+            x: (startPoint.x + endPoint.x) / 2,
+            y: (startPoint.y + endPoint.y) / 2,
+          }
+          this.result.push(new Shapes.DatumText({
+            x: datumLocation.x,
+            y: datumLocation.y,
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
+          }))
           if (this.state.cutterCompensationMode === Constants.LEFT) {
             xs -= (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
             ys -= (Math.sin(startAngle) * this.state.cutterCompensation / 2) * cwFlip
@@ -938,15 +956,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             xe += (Math.cos(endAngle) * this.state.cutterCompensation / 2) * cwFlip
             ye += (Math.sin(endAngle) * this.state.cutterCompensation / 2) * cwFlip
           }
-          const datumLocation = {
-            x: (startPoint.x + endPoint.x) / 2,
-            y: (startPoint.y + endPoint.y) / 2,
-          }
-          this.result.push(new Shapes.DatumText({
-            x: datumLocation.x,
-            y: datumLocation.y,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
-          }))
           if (lastPath) {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
               if (lastPath.type == FeatureTypeIdentifier.ARC) {

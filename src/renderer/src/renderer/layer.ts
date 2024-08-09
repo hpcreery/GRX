@@ -5,7 +5,7 @@ import * as Symbols from './symbols'
 import { Binary, Transform, Units, BoundingBox } from './types'
 import {
   ArcAttachments,
-  DatumCollection,
+  DatumCanvasCollection,
   FrameBufferRenderAttachments,
   LineAttachments,
   PadAttachments,
@@ -21,7 +21,7 @@ import {
 
 import { WorldContext } from './engine'
 import { getUnitsConversion, UID } from './utils'
-import { LineRenderer, PointRenderer, TextRenderer } from './datum'
+import { PointRenderer, TextRenderer } from './datum'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -120,6 +120,13 @@ interface ShapeRendererCommonContext {
   transformMatrix: mat3
 }
 
+interface DatumUniforms {
+  u_Color: vec3
+  u_Alpha: number
+}
+
+interface DatumAttributes { }
+
 export class ShapeRenderer {
   public regl: REGL.Regl
   public ctx: OffscreenCanvasRenderingContext2D
@@ -135,7 +142,7 @@ export class ShapeRenderer {
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
   public stepAndRepeatCollection: StepAndRepeatCollection
-  public datumCollection: DatumCollection
+  public datumCollection: DatumCanvasCollection
 
   public get qtyFeatures(): number {
     return this.image.length
@@ -143,11 +150,12 @@ export class ShapeRenderer {
 
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
-  protected drawDatumLines: LineRenderer
+  // protected drawDatumLines: LineRenderer
   protected drawDatumText: TextRenderer
   protected drawDatumPoints: PointRenderer
   protected flattenSurfaces: REGL.DrawCommand<
@@ -185,7 +193,7 @@ export class ShapeRenderer {
       ctx: this.ctx,
       image: this.image
     })
-    this.datumCollection = new DatumCollection({
+    this.datumCollection = new DatumCanvasCollection({
       image: this.image
     })
 
@@ -260,13 +268,37 @@ export class ShapeRenderer {
       }
     })
 
+    this.datumConfig = this.regl<
+      DatumUniforms,
+      DatumAttributes,
+      Record<string, never>,
+      WorldContext
+    >({
+      depth: {
+        enable: false,
+        mask: true,
+        func: 'greater',
+        range: [0, 1]
+      },
+      uniforms: {
+        u_Color: (context: WorldContext) => {
+          return [
+            1 - context.settings.BACKGROUND_COLOR[2],
+            1 - context.settings.BACKGROUND_COLOR[1],
+            1 - context.settings.BACKGROUND_COLOR[0]
+          ]
+        },
+        u_Alpha: () => 1
+      }
+    })
+
     this.drawPads = ReglRenderers.drawPads!
     this.drawLines = ReglRenderers.drawLines!
     this.drawArcs = ReglRenderers.drawArcs!
     this.drawSurfaces = ReglRenderers.drawSurfaces!
     this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
 
-    this.drawDatumLines = new LineRenderer(this.ctx, this.datumCollection.lines)
+    // this.drawDatumLines = new LineRenderer(this.ctx, this.datumCollection.lines)
     this.drawDatumText = new TextRenderer(this.ctx, this.datumCollection.texts)
     this.drawDatumPoints = new PointRenderer(this.ctx, this.datumCollection.points)
 
@@ -343,6 +375,7 @@ export class ShapeRenderer {
       this.commonConfig(() => {
         this.queryConfig({ pointer }, () => {
           this.drawPrimitives(context)
+          this.drawDatums(context)
         })
       })
     })
@@ -408,7 +441,11 @@ export class ShapeRenderer {
 
   private drawDatums(context: REGL.DefaultContext & WorldContext): void {
     if (context.settings.SHOW_DATUMS === false) return
-    this.drawDatumLines.render(context)
+    this.datumConfig(() => {
+      this.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
+      this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
+      this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
+    })
     this.drawDatumText.render(context)
     this.drawDatumPoints.render(context)
   }

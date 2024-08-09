@@ -456,15 +456,66 @@ export class StepAndRepeat implements IPlotRecord {
   }
 }
 
-export class DatumPoint {
-  public readonly type = FeatureTypeIdentifier.DATUM_POINT
-  public x = 0
-  public y = 0
-  public attributes: AttributeCollection = {}
-  public index = 0
+// export class DatumPoint {
+//   public readonly type = FeatureTypeIdentifier.DATUM_POINT
+//   public x = 0
+//   public y = 0
+//   public attributes: AttributeCollection = {}
+//   public index = 0
 
-  constructor(props: Partial<Omit<DatumPoint, 'type'>>) {
-    Object.assign(this, props)
+//   constructor(props: Partial<Omit<DatumPoint, 'type'>>) {
+//     Object.assign(this, props)
+//   }
+// }
+
+export class DatumPoint implements TPad_Record, IPlotRecord {
+  public readonly type = FeatureTypeIdentifier.DATUM_POINT
+  public attributes: AttributeCollection = {}
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   */
+  public index = 0
+  /**
+   * x coordinate ( center of pad )
+   */
+  public x = 0
+  /**
+   * y coordinate ( center of pad )
+   */
+  public y = 0
+  /**
+   * symbol to flash @see Symbols.Symbol
+   */
+  public symbol: Symbols.Symbol = new Symbols.NullSymbol({id: 'Datum Point'})
+  /**
+   * symbol number ( alias for symbol.sym_num.value )
+   */
+  public get sym_num(): number {
+    return this.symbol.sym_num.value
+  }
+  /**
+   * resize factor ( 1 is normal size )
+   */
+  public resize_factor = 1
+  /**
+   * rotation in degrees ( clockwise )
+   */
+  public rotation = 0
+  /**
+   * 1 == positive, 0 == negative
+   */
+  public polarity: Binary = 1
+  /**
+   * 0 == no mirror, 1 == mirror ( x = -x )
+   */
+  public mirror_x: Binary = 0
+  /**
+   * 0 == no mirror, 1 == mirror ( y = -y )
+   */
+  public mirror_y: Binary = 0
+
+  constructor(record: Partial<Omit<Pad, 'sym_num' | 'type'>>) {
+    Object.assign(this, record)
   }
 }
 
@@ -481,41 +532,145 @@ export class DatumText {
   }
 }
 
-export class DatumLine {
-  public readonly type = FeatureTypeIdentifier.DATUM_LINE
-  public xs = 0
-  public ys = 0
-  public xe = 0
-  public ye = 0
-  public attributes: AttributeCollection = {}
-  public index = 0
+// export class DatumLine {
+//   public readonly type = FeatureTypeIdentifier.DATUM_LINE
+//   public xs = 0
+//   public ys = 0
+//   public xe = 0
+//   public ye = 0
+//   public attributes: AttributeCollection = {}
+//   public index = 0
 
-  constructor(props: Partial<Omit<DatumLine, 'type'>>) {
-    Object.assign(this, props)
+//   constructor(props: Partial<Omit<DatumLine, 'type'>>) {
+//     Object.assign(this, props)
+//   }
+// }
+
+
+export class DatumLine implements TLine_Record, IPlotRecord {
+  public readonly type = FeatureTypeIdentifier.DATUM_LINE
+  public attributes: AttributeCollection = {}
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   */
+  public index = 0
+  /**
+   * start x
+   */
+  public xs = 0
+  /**
+   * start y
+   */
+  public ys = 0
+  /**
+   * end x
+   */
+  public xe = 0
+  /**
+   * end y
+   */
+  public ye = 0
+  /**
+   * symbol to flash @see Symbols.Symbol
+   */
+  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({id: 'Datum Line'})
+  /**
+   * symbol number ( alias for symbol.sym_num.value )
+   */
+  public get sym_num(): number {
+    return this.symbol.sym_num.value
+  }
+  /**
+   * 1 == positive, 0 == negative
+   */
+  public polarity: Binary = 1
+
+  constructor(
+    record: Partial<Omit<Line, 'sym_num' | 'type'>>
+  ) {
+    Object.assign(this, record)
   }
 }
 
-export class DatumArc {
-  public readonly type = FeatureTypeIdentifier.DATUM_ARC
-  public xs = 0
-  public ys = 0
-  public xe = 0
-  public ye = 0
-  public xc = 0
-  public yc = 0
-  public clockwise = 0
-  public attributes: AttributeCollection = {}
-  public index = 0
+// export class DatumArc {
+//   public readonly type = FeatureTypeIdentifier.DATUM_ARC
+//   public xs = 0
+//   public ys = 0
+//   public xe = 0
+//   public ye = 0
+//   public xc = 0
+//   public yc = 0
+//   public clockwise = 0
+//   public attributes: AttributeCollection = {}
+//   public index = 0
 
-  constructor(props: Partial<Omit<DatumArc, 'type'>>) {
-    Object.assign(this, props)
+//   constructor(props: Partial<Omit<DatumArc, 'type'>>) {
+//     Object.assign(this, props)
+//   }
+
+// }
+
+export class DatumArc implements TArc_Record, IPlotRecord {
+  public readonly type = FeatureTypeIdentifier.DATUM_ARC
+  public attributes: AttributeCollection = {}
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   */
+  public index = 0
+  /**
+   * start x
+   */
+  public xs = 0
+  /**
+   * start y
+   */
+  public ys = 0
+  /**
+   * end x
+   */
+  public xe = 0
+  /**
+   * end y
+   */
+  public ye = 0
+  /**
+   * center x
+   */
+  public xc = 0
+  /**
+   * center y
+   */
+  public yc = 0
+  /**
+   * symbol to flash @see Symbols.Symbol
+   */
+  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({id: 'Datum Arc'})
+  /**
+   * symbol number ( alias for symbol.sym_num.value )
+   */
+  public get sym_num(): number {
+    return this.symbol.sym_num.value
+  }
+  /**
+   * 1 == positive, 0 == negative
+   */
+  public polarity: Binary = 1
+  /**
+   * 0 == counter-clockwise, 1 == clockwise
+   */
+  public clockwise: Binary = 0
+
+  constructor(
+    record: Partial<Omit<Arc, 'sym_num' | 'type'>>
+  ) {
+    Object.assign(this, record)
   }
 
 }
 
 
 export type Primitive = Pad | Line | Arc
-export type Datum = DatumPoint | DatumText | DatumLine
+export type Datum = DatumPoint | DatumText | DatumLine | DatumArc
 export type Shape = Primitive | Surface | PolyLine | StepAndRepeat | Datum
 
 export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
@@ -609,9 +764,11 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
     case FeatureTypeIdentifier.DATUM_LINE:
     case FeatureTypeIdentifier.DATUM_POINT:
     case FeatureTypeIdentifier.DATUM_TEXT:
+    case FeatureTypeIdentifier.DATUM_ARC:
       break
     default:
-      throw new Error('Unknown record type')
+      console.warn('Unknown record type', record)
+      break
   }
   if (isNaN(min[0]) || isNaN(min[1]) || isNaN(max[0]) || isNaN(max[1])) {
     console.warn("Corrupt Feature Bounding Box", record, min, max)

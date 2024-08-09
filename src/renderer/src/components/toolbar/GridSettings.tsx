@@ -4,6 +4,7 @@ import { ConfigEditorProvider } from '../../contexts/ConfigEditor'
 import chroma from 'chroma-js'
 import {  Text, Switch, Divider, Group, Flex,  ColorPicker, SegmentedControl, NumberInput } from '@mantine/core'
 import { getUnitsConversion } from '@src/renderer/utils'
+import { vec4 } from 'gl-matrix'
 
 interface GridSettingsProps {
   renderEngine: RenderEngine
@@ -17,7 +18,7 @@ export default function GridSettings({ renderEngine }: GridSettingsProps): JSX.E
   const [offsetY, setOffsetY] = React.useState<number>(renderEngine.grid.offset_y)
   const [enabled, setEnabled] = React.useState<boolean>(renderEngine.grid.enabled)
   const [type, setType] = React.useState<'lines' | 'dots'>(renderEngine.grid.type)
-  const [color, setColor] = React.useState<[number, number, number, number]>(renderEngine.grid.color)
+  const [color, setColor] = React.useState<vec4>(renderEngine.grid.color)
 
   useEffect(() => {
     renderEngine.grid.spacing_x = spacingX
@@ -102,7 +103,7 @@ export default function GridSettings({ renderEngine }: GridSettingsProps): JSX.E
       <Flex align="center" style={{ width: '100%' }} justify="space-between">
         <Text>Color</Text>
         <ColorPicker format="rgba"
-          value={chroma.gl(...color).hex()}
+          value={chroma.gl(color[0], color[1], color[2], color[3]).hex()}
           onChange={(val): void => setColor(chroma(val).gl())} />
       </Flex>
     </>

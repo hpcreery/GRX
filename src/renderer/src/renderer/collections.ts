@@ -150,6 +150,9 @@ interface TShaderAttachment {
   arcs: ArcAttachments
   surfaces: SurfaceAttachments[]
   surfacesWithHoles: SurfaceWithHolesAttachments[]
+  datumPoints: PadAttachments
+  datumLines: LineAttachments
+  datumArcs: ArcAttachments
 }
 
 interface TReglRenderers {
@@ -576,6 +579,9 @@ interface ShapesList {
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
   surfaces: Shapes.Surface[]
+  datumPoints: Shapes.DatumPoint[]
+  datumLines: Shapes.DatumLine[]
+  datumArcs: Shapes.DatumArc[]
   clear: () => void
 }
 
@@ -608,11 +614,17 @@ export class ShapesShaderCollection {
       lines: [],
       arcs: [],
       surfaces: [],
+      datumPoints: [],
+      datumLines: [],
+      datumArcs: [],
       clear: function (): void {
         this.pads.length = 0
         this.lines.length = 0
         this.arcs.length = 0
         this.surfaces.length = 0
+        this.datumPoints.length = 0
+        this.datumLines.length = 0
+        this.datumArcs.length = 0
       }
     }
     this.shaderAttachment = {
@@ -625,6 +637,18 @@ export class ShapesShaderCollection {
         length: 0
       },
       arcs: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      datumPoints: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      datumLines: {
+        buffer: regl.buffer(0),
+        length: 0
+      },
+      datumArcs: {
         buffer: regl.buffer(0),
         length: 0
       },
@@ -645,6 +669,8 @@ export class ShapesShaderCollection {
 
 
   public refresh(): this {
+
+    // first order of business is to clear the shapes
     this.symbolsCollection.symbols.clear()
     this.shapes.clear()
 
@@ -683,7 +709,7 @@ export class ShapesShaderCollection {
       return !!Object.getOwnPropertyDescriptor(obj, prop)!['get']
     }
 
-    function fixSymbolGetter(record: Shapes.Pad | Shapes.Line | Shapes.Arc): void {
+    function fixSymbolGetter(record: Shapes.Pad | Shapes.Line | Shapes.Arc | Shapes.DatumArc | Shapes.DatumLine | Shapes.DatumPoint): void {
       if (!isGetter(record, 'sym_num')) {
         Object.defineProperty(record, 'sym_num', {
           get: function (): number {
@@ -692,6 +718,7 @@ export class ShapesShaderCollection {
         })
       }
     }
+
 
     this.image.forEach((record) => {
       if (record.type === FeatureTypeIdentifier.SURFACE) {
@@ -716,6 +743,18 @@ export class ShapesShaderCollection {
         this.shapes.arcs.push(record)
       } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
         drawPolyline(record, this.shapes)
+      } else if (record.type === FeatureTypeIdentifier.DATUM_LINE &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        fixSymbolGetter(record)
+        this.shapes.datumLines.push(record)
+      } else if (record.type === FeatureTypeIdentifier.DATUM_ARC &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        fixSymbolGetter(record)
+        this.shapes.datumArcs.push(record)
+      } else if (record.type === FeatureTypeIdentifier.DATUM_POINT &&
+        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        fixSymbolGetter(record)
+        this.shapes.datumPoints.push(record)
       }
     })
 
@@ -737,6 +776,24 @@ export class ShapesShaderCollection {
       }
       this.symbolsCollection.add(record.symbol)
     })
+    this.shapes.datumLines.forEach((record) => {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.datumArcs.forEach((record) => {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.datumPoints.forEach((record) => {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
 
     this.symbolsCollection.refresh()
 
@@ -744,21 +801,35 @@ export class ShapesShaderCollection {
     this.shapes.pads.sort((a, b) => b.index - a.index)
     this.shapes.lines.sort((a, b) => b.index - a.index)
     this.shapes.arcs.sort((a, b) => b.index - a.index)
+    this.shapes.datumPoints.sort((a, b) => b.index - a.index)
+    this.shapes.datumLines.sort((a, b) => b.index - a.index)
+    this.shapes.datumArcs.sort((a, b) => b.index - a.index)
     this.shapes.surfaces.sort((a, b) => b.index - a.index)
 
     this.shaderAttachment.pads.length = this.shapes.pads.length
     this.shaderAttachment.lines.length = this.shapes.lines.length
     this.shaderAttachment.arcs.length = this.shapes.arcs.length
+    this.shaderAttachment.datumPoints.length = this.shapes.datumPoints.length
+    this.shaderAttachment.datumLines.length = this.shapes.datumLines.length
+    this.shaderAttachment.datumArcs.length = this.shapes.datumArcs.length
 
     this.shaderAttachment.pads.buffer(
       this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key]))
     )
-
     this.shaderAttachment.lines.buffer(
       this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key]))
     )
     this.shaderAttachment.arcs.buffer(
       this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
+    )
+    this.shaderAttachment.datumPoints.buffer(
+      this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key]))
+    )
+    this.shaderAttachment.datumLines.buffer(
+      this.shapes.datumLines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key]))
+    )
+    this.shaderAttachment.datumArcs.buffer(
+      this.shapes.datumArcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
     )
 
     const surfacePolarities: number[] = []
@@ -840,34 +911,6 @@ export class ShapesShaderCollection {
         new Array<number>(length).fill(0).forEach(() => surfaceOffsets.push(surfaceOffset))
         surfaceOffset += vertices.length
         new Array<number>(length).fill(0).forEach(() => allContourQty.push(record.contours.length))
-
-
-        // OLD WAY ( SLOWER )
-        // const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
-        // const length = indicies.length / 3
-        // this.shaderAttachment.surfaces.push({
-        //   vertices: this.regl.texture({
-        //     width,
-        //     height,
-        //     type: 'float',
-        //     channels: 1,
-        //     wrap: 'clamp',
-        //     mag: 'nearest',
-        //     min: 'nearest',
-        //     data
-        //   }),
-        //   verticiesDimensions: [width, height],
-        //   contourPolarityBuffer: this.regl.buffer(contourPolarities),
-        //   contourOffsetBuffer: this.regl.buffer(contourOffsets),
-        //   contourIndexBuffer: this.regl.buffer(contourIndexes),
-        //   contourVertexQtyBuffer: this.regl.buffer(contourVertexQty),
-        //   indiciesBuffer: this.regl.buffer(indicies),
-        //   qtyContours: this.regl.buffer(new Array<number>(length).fill(record.contours.length)),
-        //   surfaceIndexBuffer: this.regl.buffer(new Array<number>(length).fill(record.index)),
-        //   surfacePolarityBuffer: this.regl.buffer(new Array<Binary>(length).fill(record.polarity)),
-        //   surfaceOffsetBuffer: this.regl.buffer(new Array<number>(length).fill(0)),
-        //   length: length,
-        // })
       }
     })
 
@@ -937,9 +980,9 @@ export class ShapesShaderCollection {
   }
 }
 
-export class DatumCollection {
+export class DatumCanvasCollection {
   private image: Shapes.Shape[] = []
-  public lines: Shapes.DatumLine[] = []
+  // public lines: Shapes.DatumLine[] = []
   public points: Shapes.DatumPoint[] = []
   public texts: Shapes.DatumText[] = []
 
@@ -953,9 +996,9 @@ export class DatumCollection {
   public refresh(): this {
     this.image.map((record) => {
       switch (record.type) {
-        case FeatureTypeIdentifier.DATUM_LINE:
-          this.lines.push(record)
-          break
+        // case FeatureTypeIdentifier.DATUM_LINE:
+        //   this.lines.push(record)
+        //   break
         case FeatureTypeIdentifier.DATUM_POINT:
           this.points.push(record)
           break

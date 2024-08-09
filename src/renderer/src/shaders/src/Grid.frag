@@ -24,11 +24,13 @@ void main() {
 
   vec2 NormalFragCoord = ((gl_FragCoord.xy / u_Resolution.xy) * 2.0) - 1.0;
   vec3 FragCoord = u_InverseTransform * vec3(NormalFragCoord, 1.0);
-  // origin
-  if ((abs(FragCoord.x) <= pixel_size * 0.5 && abs(FragCoord.y) <= pixel_size * 10.0) || (abs(FragCoord.y) <= pixel_size * 0.5 && abs(FragCoord.x) <= pixel_size * 10.0)) {
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    return;
-  }
+  // // origin
+  // if ((abs(FragCoord.x) <= pixel_size * 0.5 && abs(FragCoord.y) <= pixel_size * 10.0) || (abs(FragCoord.y) <= pixel_size * 0.5 && abs(FragCoord.x) <= pixel_size * 10.0)) {
+  //   // gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  //   // gl_FragColor = u_Color;
+  //   gl_FragColor = u_Color;
+  //   return;
+  // }
   // datum
   // vec2 movedFragCoord = (FragCoord.xy - u_Offset) * rotateCCW(PI / 4.0);
   // if ((abs(movedFragCoord.x) <= pixel_size * 0.4 && abs(movedFragCoord.y) <= pixel_size * 10.0) || (abs(movedFragCoord.y) <= pixel_size * 0.4 && abs(movedFragCoord.x) <= pixel_size * 10.0)) {
