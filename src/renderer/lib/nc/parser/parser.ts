@@ -607,7 +607,7 @@ const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
 
 interface NCState extends NCParams {
   chainIndex: number
-  chainSubIndex: number
+  pathIndex: number
   plunged: boolean
   mode: Mode
   interpolationMode: InterpolateModeType
@@ -641,7 +641,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   public stepRepeats: Shapes.StepAndRepeat[] = []
   public state: NCState = {
     chainIndex: 0,
-    chainSubIndex: 0,
+    pathIndex: 0,
     plunged: false,
     mode: Constants.DRILL,
     interpolationMode: Constants.LINE,
@@ -850,7 +850,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       }))
     } else {
       if (this.state.plunged) {
-        this.state.chainSubIndex++
+        this.state.pathIndex++
         const lastPath = this.result.findLast(shape => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC)
         if (this.state.interpolationMode === Constants.LINE) {
           const angle = Math.atan2(this.state.y - this.state.previousY, this.state.x - this.state.previousX)
@@ -861,7 +861,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           this.result.push(new Shapes.DatumText({
             x: (this.state.x + this.state.previousX) / 2,
             y: (this.state.y + this.state.previousY) / 2,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.chainSubIndex}`
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`
           }))
           this.result.push(new Shapes.DatumLine({
             xs,
@@ -910,10 +910,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             ye,
             symbol: this.state.currentTool,
             attributes: {
-              cutterCompensation: (this.state.cutterCompensation).toString(),
+              cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
               cutterCompensationMode: this.state.cutterCompensationMode,
               chainIndex: `${this.state.chainIndex}`,
-              chainSubIndex: `${this.state.chainSubIndex}`,
+              pathIndex: `${this.state.pathIndex}`,
             }
           }))
         } else {
@@ -945,7 +945,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           this.result.push(new Shapes.DatumText({
             x: datumLocation.x,
             y: datumLocation.y,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.chainSubIndex}`
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`
           }))
           if (this.state.cutterCompensationMode === Constants.LEFT) {
             xs -= (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
@@ -991,10 +991,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             clockwise,
             symbol: this.state.currentTool,
             attributes: {
-              cutterCompensation: (this.state.cutterCompensation).toString(),
+              cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
               cutterCompensationMode: this.state.cutterCompensationMode,
               chainIndex: `${this.state.chainIndex}`,
-              chainSubIndex: `${this.state.chainSubIndex}`,
+              pathIndex: `${this.state.pathIndex}`,
             }
           }))
         }
@@ -1085,12 +1085,21 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   zAxisRoutPositionWithDepthControlledCountoring(_ctx: Cst.ZAxisRoutPositionWithDepthControlledCountoringCstChildren): void {
     this.state.plunged = true
     this.state.chainIndex++
-    this.state.chainSubIndex = 0
+    this.state.pathIndex = 0
     this.result.push(new Shapes.DatumPoint({
       x: this.state.x,
       y: this.state.y,
       attributes: {
-        type: 'plunge',
+        type: 'plunge with depth control',
+        chainIndex: `${this.state.chainIndex}`,
+      }
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'Plunge with depth control',
+      attributes: {
+        type: 'plunge with depth control',
         chainIndex: `${this.state.chainIndex}`,
       }
     }))
@@ -1099,10 +1108,19 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   zAxisRoutPosition(_ctx: Cst.ZAxisRoutPositionCstChildren): void {
     this.state.plunged = true
     this.state.chainIndex++
-    this.state.chainSubIndex = 0
+    this.state.pathIndex = 0
     this.result.push(new Shapes.DatumPoint({
       x: this.state.x,
       y: this.state.y,
+      attributes: {
+        type: 'plunge',
+        chainIndex: `${this.state.chainIndex}`,
+      }
+    }))
+    this.result.push(new Shapes.DatumText({
+      x: this.state.x,
+      y: this.state.y,
+      text: 'Plunge',
       attributes: {
         type: 'plunge',
         chainIndex: `${this.state.chainIndex}`,
