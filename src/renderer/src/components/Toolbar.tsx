@@ -35,6 +35,7 @@ import type { PointerSettings } from '@src/renderer'
 import { useContextMenu } from 'mantine-contextmenu'
 import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
 import { actions } from '@src/contexts/Spotlight'
+import { menuItems } from '@src/contexts/EngineContext'
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -52,6 +53,14 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
   const theme = useMantineTheme()
 
   React.useEffect(() => {
+    menuItems.push({
+      key: 'clear measurements',
+      title: 'Clear Measurements',
+      onClick: async (): Promise<void> => {
+        const backend = await renderEngine.backend
+        backend.clearMeasurements()
+      },
+    })
     actions.push({
       id: 'outline mode off',
       label: 'Disable Outline Mode',

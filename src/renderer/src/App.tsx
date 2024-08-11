@@ -12,6 +12,8 @@ import { FeatureSidebar } from './components/FeatureSidebar'
 import { EngineEvents, MessageData } from './renderer/engine'
 import * as Comlink from 'comlink'
 import { notifications } from '@mantine/notifications'
+import { useContextMenu } from 'mantine-contextmenu'
+import { menuItems } from './contexts/EngineContext'
 
 export default function App(): JSX.Element | null {
   const { transparency } = useContext(ConfigEditorProvider)
@@ -20,6 +22,7 @@ export default function App(): JSX.Element | null {
   const elementRef = useRef<HTMLDivElement>(document.createElement('div'))
   const [renderEngine, setRenderEngine] = useState<RenderEngine>()
   const [ready, setReady] = useState<boolean>(false)
+  const { showContextMenu } = useContextMenu()
 
   // Load in the render engine
   useEffect(() => {
@@ -62,6 +65,7 @@ export default function App(): JSX.Element | null {
       message: e.message
     })
   }
+
 
   return (
     <>
@@ -112,6 +116,7 @@ export default function App(): JSX.Element | null {
             outline: 'none',
             // backgroundColor: colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
           }}
+          onContextMenu={showContextMenu(menuItems)}
           ref={elementRef}
         />
       </Skeleton>

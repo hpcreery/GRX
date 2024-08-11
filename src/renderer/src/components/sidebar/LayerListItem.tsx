@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Button, Popover, ColorPicker, useMantineTheme, Tooltip } from '@mantine/core'
+import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import chroma from 'chroma-js'
 import { useGesture } from '@use-gesture/react'
@@ -41,6 +41,7 @@ interface LayerListItemProps {
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
+  const colors = useMantineColorScheme()
   const { renderEngine, file, actions } = props
   const layer: Pick<Layer, 'name' | 'uid'> = {
     name: file.name,
@@ -281,7 +282,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                   paddingLeft: 10
                 }}
                 variant="subtle"
-                color="gray"
+                color={colors.colorScheme === 'dark' ? theme.colors.gray[1] : theme.colors.gray[9]}
                 radius='sm'
 
                 leftSection={
