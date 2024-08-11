@@ -1,7 +1,7 @@
 import REGL from 'regl'
 import { mat3, vec2, vec3, vec4 } from 'gl-matrix'
 import LayerRenderer, { LayerRendererProps } from './layer'
-import { initializeRenderers, ReglRenderers, ScreenRenderProps } from './collections'
+import { initializeGlyphRenderer, initializeRenderers, ReglRenderers, ScreenRenderProps } from './collections'
 import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
@@ -153,6 +153,8 @@ export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
+export interface MessageData { level: TMessageLevel, title: string, message: string }
+
 export class RenderEngineBackend {
 
   static defaultRenderProps = { force: false, updateLayers: true }
@@ -267,8 +269,6 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  public message: { level: TMessageLevel, title: string, message: string } = { level: MessageLevel.INFO, title: '', message: '' }
-
   constructor(
     offscreenCanvasGL: OffscreenCanvas,
     offscreenCanvas2D: OffscreenCanvas,
@@ -294,13 +294,15 @@ export class RenderEngineBackend {
         'angle_instanced_arrays',
         'OES_texture_float',
         'webgl_depth_texture',
-        'EXT_frag_depth'
+        'EXT_frag_depth',
+        'EXT_blend_minmax',
       ],
       profile: true
     })
     console.log('WEBGL LIMITS', this.regl.limits)
 
     initializeRenderers(this.regl)
+    // initializeGlyphRenderer(this.regl, new Uint8ClampedArray(0))
 
     this.regl.clear({
       depth: 0
@@ -431,6 +433,10 @@ export class RenderEngineBackend {
     this.render({
       force: true
     })
+  }
+
+  public initializeGlyphRenderer(glyphData: Uint8ClampedArray): void {
+    initializeGlyphRenderer(this.regl, glyphData)
   }
 
   public updateBlendCommand(): void {
@@ -565,9 +571,10 @@ export class RenderEngineBackend {
     return [mouse[0], mouse[1]]
   }
 
-  public async addMessage(params: { level: TMessageLevel, title: string, message: string }): Promise<void> {
-    this.message = params
-    this.eventTarget.dispatchEvent(new Event(EngineEvents.MESSAGE))
+  public async addMessage(data: MessageData): Promise<void> {
+    this.eventTarget.dispatchEvent(new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
+      data
+    }))
   }
 
   public async addLayer(params: AddLayerProps): Promise<void> {
@@ -685,9 +692,13 @@ export class RenderEngineBackend {
     })
   }
 
-  public addEventCallback(event: TEngineEvents, listener: () => void): void {
-    function runCallback(): void {
-      listener()
+  public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
+    function runCallback(e: Event | MessageEvent): void {
+      if (e instanceof MessageEvent) {
+        listener(e.data)
+      } else {
+        listener(null)
+      }
     }
     this.eventTarget.addEventListener(event, runCallback)
   }

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Flex, Textarea } from '@mantine/core'
 import { Shape } from '@src/renderer/shapes';
-import { parser, NCLexer, NCToShapesVisitor } from './parser/parser'
+import { parser, SHXLexer, SHXToShapesVisitor } from './parser'
 
 const drill = `T01`
 
@@ -9,23 +9,22 @@ export default function NCDemo(): JSX.Element {
   const [input, setInput] = React.useState<string>(drill)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [parsed, setParsed] = React.useState<any>({})
-  const [shapes, setShapes] = React.useState<Shape[]>([])
+  const [shapes, _setShapes] = React.useState<Shape[]>([])
   const [error, setError] = React.useState<string | undefined>(undefined)
 
   React.useEffect(() => {
     try {
       // reset()
       console.time('parse')
-      const lexingResult = NCLexer.tokenize(input);
+      const lexingResult = SHXLexer.tokenize(input);
       parser.input = lexingResult.tokens;
-      // @ts-ignore parser missing type for dynamically created methods
       const result = parser.program();
       setParsed(result)
       console.timeEnd('parse')
-      const visitor = new NCToShapesVisitor()
+      const visitor = new SHXToShapesVisitor()
       visitor.visit(result)
-      console.log('result', visitor.result)
-      setShapes(visitor.result)
+      // console.log('result', visitor.result)
+      // setShapes(visitor.result)
       console.log(lexingResult)
       if (lexingResult.errors.length > 0) {
         console.error('LEXER ERRORS', lexingResult.errors)

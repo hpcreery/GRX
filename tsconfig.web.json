@@ -19,7 +19,8 @@
       ],
     },
     "types": [
-      "vite-plugin-glsl/ext"
+      "vite-plugin-glsl/ext",
+      "vite-plugin-arraybuffer/types"
     ]
   }
 }

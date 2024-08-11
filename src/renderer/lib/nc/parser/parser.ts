@@ -109,9 +109,10 @@ const multiModeLexerDefinition = {
   defaultMode: "DefaultMode",
 };
 
-export const SelectLexer = new Lexer(multiModeLexerDefinition)
+export const NCLexer = new Lexer(multiModeLexerDefinition)
 
 class NCParser extends CstParser {
+  program!: ParserMethod<unknown[], CstNode>
   command!: ParserMethod<unknown[], CstNode>
   units!: ParserMethod<unknown[], CstNode>
   incrementalModeSwitch!: ParserMethod<unknown[], CstNode>
@@ -744,7 +745,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   toolDia(ctx: Cst.ToolDiaCstChildren): number {
-    const dia = parseFloat(ctx.Number[0].image)
+    const dia = Math.abs(parseFloat(ctx.Number[0].image))
     return dia
   }
 
@@ -849,6 +850,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       }))
     } else {
       if (this.state.plunged) {
+        this.state.chainSubIndex++
         const lastPath = this.result.findLast(shape => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC)
         if (this.state.interpolationMode === Constants.LINE) {
           const angle = Math.atan2(this.state.y - this.state.previousY, this.state.x - this.state.previousX)
@@ -859,7 +861,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           this.result.push(new Shapes.DatumText({
             x: (this.state.x + this.state.previousX) / 2,
             y: (this.state.y + this.state.previousY) / 2,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.chainSubIndex}`
           }))
           this.result.push(new Shapes.DatumLine({
             xs,
@@ -911,7 +913,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
               cutterCompensation: (this.state.cutterCompensation).toString(),
               cutterCompensationMode: this.state.cutterCompensationMode,
               chainIndex: `${this.state.chainIndex}`,
-              chainSubIndex: `${this.state.chainSubIndex++}`,
+              chainSubIndex: `${this.state.chainSubIndex}`,
             }
           }))
         } else {
@@ -943,7 +945,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           this.result.push(new Shapes.DatumText({
             x: datumLocation.x,
             y: datumLocation.y,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}.${this.state.chainSubIndex}`
+            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.chainSubIndex}`
           }))
           if (this.state.cutterCompensationMode === Constants.LEFT) {
             xs -= (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
@@ -992,7 +994,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
               cutterCompensation: (this.state.cutterCompensation).toString(),
               cutterCompensationMode: this.state.cutterCompensationMode,
               chainIndex: `${this.state.chainIndex}`,
-              chainSubIndex: `${this.state.chainSubIndex++}`,
+              chainSubIndex: `${this.state.chainSubIndex}`,
             }
           }))
         }

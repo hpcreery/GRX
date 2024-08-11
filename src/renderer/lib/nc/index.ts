@@ -1,6 +1,6 @@
 import * as Comlink from 'comlink'
 
-import { parser, SelectLexer, NCToShapesVisitor } from './parser/parser'
+import { parser, NCLexer, NCToShapesVisitor } from './parser/parser'
 import { AddLayerProps } from '@src/renderer/plugins'
 
 
@@ -11,9 +11,8 @@ export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>,
   const file = decoder.decode(buffer)
   console.timeEnd('decode')
   console.time('parse')
-  const lexingResult = SelectLexer.tokenize(file);
+  const lexingResult = NCLexer.tokenize(file);
   parser.input = lexingResult.tokens;
-  // @ts-ignore parser missing type for dynamically created methods
   const result = parser.program();
   console.timeEnd('parse')
   console.time('visit')

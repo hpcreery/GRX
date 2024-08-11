@@ -3,6 +3,9 @@ import EngineWorker from './engine?worker'
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from './engine'
 import { AddLayerProps } from './plugins'
 
+import font from './text/glyph/font.png?arraybuffer'
+import { fontInfo } from './text/glyph/font'
+
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
@@ -120,6 +123,7 @@ export class RenderEngine {
       width: this.canvasGL.width,
       height: this.canvasGL.height
     })
+    this.sendGlyphData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
     this.render({
@@ -350,6 +354,23 @@ export class RenderEngine {
   public async render(props: RenderProps): Promise<void> {
     const backend = await this.backend
     backend.render(props)
+  }
+
+  private sendGlyphData(): void {
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Could not get 2d context')
+    canvas.width = fontInfo.textureWidth
+    canvas.height = fontInfo.textureHeight
+    const image = new Image()
+    image.onload = (): void => {
+      context.drawImage(image, 0, 0)
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
+      this.backend.then((engine) => {
+        engine.initializeGlyphRenderer(imageData.data)
+      })
+    }
+    image.src = URL.createObjectURL(new Blob([font]))
   }
 
   public async destroy(): Promise<void> {

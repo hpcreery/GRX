@@ -13,11 +13,16 @@ import ArcFrag from '../shaders/src/Arc.frag'
 import ArcVert from '../shaders/src/Arc.vert'
 import SurfaceFrag from '../shaders/src/Surface.frag'
 import SurfaceVert from '../shaders/src/Surface.vert'
+import GlyphtextFrag from '../shaders/src/GlyphText.frag'
+import GlyphtextVert from '../shaders/src/GlyphText.vert'
+import DatumFrag from '../shaders/src/Datum.frag'
+import DatumVert from '../shaders/src/Datum.vert'
 
 import { WorldContext } from './engine'
 import { vec2 } from 'gl-matrix'
 
 import earcut from 'earcut'
+import { fontInfo } from './text/glyph/font'
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -32,11 +37,19 @@ type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
   buffer: REGL.DynamicVariable<REGL.Buffer>
 }
 
-interface PadUniforms {}
+interface PadUniforms { }
 
-interface LineUniforms {}
+interface LineUniforms { }
 
-interface ArcUniforms {}
+interface ArcUniforms { }
+
+interface DatumTextUniforms {
+  u_texture: REGL.Texture2D
+  u_TextureDimensions: vec2
+  u_LetterDimensions: vec2
+}
+
+interface DatumUniforms { }
 
 interface PadAttributes {
   a_SymNum: CustomAttributeConfig
@@ -67,6 +80,17 @@ interface ArcAttributes {
   a_Clockwise: CustomAttributeConfig
 }
 
+interface DatumTextAttributes {
+  a_position: CustomAttributeConfig
+  a_texcoord: CustomAttributeConfig
+  a_StringIndex: CustomAttributeConfig
+  a_Vertex_Position: number[][]
+}
+
+interface DatumAttributes {
+  a_Location: CustomAttributeConfig
+}
+
 export interface PadAttachments {
   buffer: REGL.Buffer
   length: number
@@ -79,6 +103,18 @@ export interface ArcAttachments {
 
 export interface LineAttachments {
   buffer: REGL.Buffer
+  length: number
+}
+
+export interface DatumTextAttachments {
+  positions: REGL.Buffer
+  texcoords: REGL.Buffer
+  stringIndexes: REGL.Buffer
+  length: number
+}
+
+export interface DatumAttachments {
+  positions: REGL.Buffer
   length: number
 }
 
@@ -126,7 +162,7 @@ interface FrameBufferRenderUniforms {
   u_Polarity: number
   u_RenderTexture: REGL.Framebuffer2D
 }
-interface FrameBufferRendeAttributes {}
+interface FrameBufferRendeAttributes { }
 
 export interface FrameBufferRenderAttachments {
   qtyFeatures: number
@@ -160,9 +196,11 @@ interface TReglRenderers {
   drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments> | undefined
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
   drawFrameBuffer:
-    | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
-    | undefined
+  | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
+  | undefined
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
 }
 
@@ -171,9 +209,77 @@ export const ReglRenderers: TReglRenderers = {
   drawArcs: undefined,
   drawLines: undefined,
   drawSurfaces: undefined,
+  drawDatums: undefined,
+  drawDatumText: undefined,
   drawFrameBuffer: undefined,
   renderToScreen: undefined
 }
+
+export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8ClampedArray): void {
+  const texture = regl.texture({
+    data: glyphData,
+    width: fontInfo.textureWidth,
+    height: fontInfo.textureHeight,
+    format: 'rgba',
+    type: 'uint8',
+    mag: 'nearest',
+    min: 'nearest'
+  })
+
+  ReglRenderers.drawDatumText = regl<
+  DatumTextUniforms,
+  DatumTextAttributes,
+  DatumTextAttachments,
+  Record<string, never>,
+  REGL.DefaultContext & WorldContext>(
+    {
+      frag: GlyphtextFrag,
+      vert: GlyphtextVert,
+
+      attributes: {
+        a_position: {
+          buffer: regl.prop<DatumTextAttachments, 'positions'>('positions'),
+          offset: 0,
+          stride: 2 * glFloatSize,
+          divisor: 1
+        },
+        a_texcoord: {
+          buffer: regl.prop<DatumTextAttachments, 'texcoords'>('texcoords'),
+          offset: 0,
+          stride: 2 * glFloatSize,
+          divisor: 1
+        },
+        a_StringIndex: {
+          buffer: regl.prop<DatumTextAttachments, 'stringIndexes'>('stringIndexes'),
+          offset: 0,
+          stride: 1 * glFloatSize,
+          divisor: 1
+        },
+        a_Vertex_Position: [
+          [0, 0],
+          [0, 1],
+          [1, 0],
+          [1, 0],
+          [0, 1],
+          [1, 1]
+        ]
+      },
+
+      uniforms: {
+        u_texture: texture,
+        u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
+        u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
+      },
+
+
+      instances: regl.prop<SurfaceAttachments, 'length'>('length'),
+      count: 6,
+      primitive: 'triangles',
+
+    }
+  )
+}
+
 
 export function initializeRenderers(regl: REGL.Regl): void {
   ReglRenderers.drawPads = regl<
@@ -570,6 +676,31 @@ export function initializeRenderers(regl: REGL.Regl): void {
       }
     }
   )
+
+  ReglRenderers.drawDatums = regl<
+    DatumUniforms,
+    DatumAttributes,
+    DatumAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & WorldContext
+  >({
+    frag: DatumFrag,
+
+    vert: DatumVert,
+
+    uniforms: {},
+
+    attributes: {
+      a_Location: {
+        buffer: regl.prop<DatumAttachments, 'positions'>('positions'),
+        stride: 2 * glFloatSize,
+        offset: 0,
+        divisor: 1
+      },
+    },
+
+    instances: regl.prop<DatumAttachments, 'length'>('length'),
+  })
 }
 
 const { SYMBOL_PARAMETERS } = Symbols
@@ -869,7 +1000,7 @@ export class ShapesShaderCollection {
       })
 
       if (hasHoles) {
-        const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
+        const { width, height, data } = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
         const length = indicies.length / 3
         this.shaderAttachment.surfacesWithHoles.push({
           vertices: this.regl.texture({
@@ -915,7 +1046,7 @@ export class ShapesShaderCollection {
     })
 
     if (allVertices.length != 0) {
-      const {width, height, data} = fixedTextureData(this.regl.limits.maxTextureSize, allVertices)
+      const { width, height, data } = fixedTextureData(this.regl.limits.maxTextureSize, allVertices)
       this.shaderAttachment.surfaces.push({
         vertices: this.regl.texture({
           width,
@@ -980,35 +1111,82 @@ export class ShapesShaderCollection {
   }
 }
 
-export class DatumCanvasCollection {
+export class DatumTextShaderCollection {
+  private regl: REGL.Regl
   private image: Shapes.Shape[] = []
-  // public lines: Shapes.DatumLine[] = []
-  public points: Shapes.DatumPoint[] = []
-  public texts: Shapes.DatumText[] = []
 
+  public attachment: DatumTextAttachments
 
-  constructor(props: { image: Shapes.Shape[] }) {
-    const { image } = props
+  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
+    const { regl, image } = props
+    this.regl = regl
     this.image = image
+    this.attachment = {
+      positions: this.regl.buffer(0),
+      texcoords: this.regl.buffer(0),
+      stringIndexes: this.regl.buffer(0),
+      length: 0
+    }
+    this.refresh()
+  }
+
+
+  refresh(): this {
+    const positions: number[] = [];
+    const texcoords: number[] = [];
+    const stringIndexes: number[] = [];
+    this.image.map((record) => {
+      if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
+      const string = record.text.toLowerCase()
+      const x = record.x
+      const y = record.y
+      for (let i = 0; i < string.length; ++i) {
+        const letter = string[i];
+        const glyphInfo = fontInfo.glyphInfos[letter];
+        if (glyphInfo !== undefined) {
+          positions.push(x, y);
+          texcoords.push(glyphInfo.x, glyphInfo.y);
+          stringIndexes.push(i);
+        }
+      }
+    })
+    this.attachment.positions(positions);
+    this.attachment.texcoords(texcoords);
+    this.attachment.stringIndexes(stringIndexes);
+    this.attachment.length = positions.length / 2;
+    return this;
+  }
+
+}
+
+
+export class DatumShaderCollection {
+  private regl: REGL.Regl
+  private image: Shapes.Shape[] = []
+
+  public attachment: DatumAttachments
+
+  constructor(props: { regl: REGL.Regl, image: Shapes.Shape[] }) {
+    const { image, regl } = props
+    this.regl = regl
+    this.image = image
+    this.attachment = {
+      positions: this.regl.buffer(0),
+      length: 0
+    }
     this.refresh()
   }
 
   public refresh(): this {
+    const positions: number[] = []
     this.image.map((record) => {
-      switch (record.type) {
-        // case FeatureTypeIdentifier.DATUM_LINE:
-        //   this.lines.push(record)
-        //   break
-        case FeatureTypeIdentifier.DATUM_POINT:
-          this.points.push(record)
-          break
-        case FeatureTypeIdentifier.DATUM_TEXT:
-          this.texts.push(record)
-          break
-      }})
+      if (record.type !== FeatureTypeIdentifier.DATUM_POINT) return
+      positions.push(record.x, record.y)
+    })
+    this.attachment.positions(positions)
+    this.attachment.length = positions.length / 2
     return this
   }
-
 }
 
 

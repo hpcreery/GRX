@@ -9,7 +9,7 @@ import LayerSidebar from './components/LayersSidebar'
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
 import { FeatureSidebar } from './components/FeatureSidebar'
-import { EngineEvents } from './renderer/engine'
+import { EngineEvents, MessageData } from './renderer/engine'
 import * as Comlink from 'comlink'
 import { notifications } from '@mantine/notifications'
 
@@ -21,18 +21,18 @@ export default function App(): JSX.Element | null {
   const [renderEngine, setRenderEngine] = useState<RenderEngine>()
   const [ready, setReady] = useState<boolean>(false)
 
-  // Load in the gerber application
+  // Load in the render engine
   useEffect(() => {
     const Engine = new RenderEngine({ container: elementRef.current })
     setRenderEngine(Engine)
+    setEngineBackgroundColor()
     Engine.onLoad(() => {
       console.log('Engine application loaded', Engine)
       setReady(true)
       Engine.backend.then((backend) => {
         backend.addEventCallback(
           EngineEvents.MESSAGE,
-          // pass the Engine here to ensure messages are displayed even before react is ready
-          Comlink.proxy(() => msg(Engine))
+          Comlink.proxy(e => msg(e as MessageData))
         )
       })
     })
@@ -41,27 +41,26 @@ export default function App(): JSX.Element | null {
     }
   }, [])
 
-  // Update the background color of the gerber application
-  useEffect(() => {
-    if (renderEngine) {
+  function setEngineBackgroundColor(): void {
+    if (renderEngine != undefined) {
+      console.log('setting background color', colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1])
       renderEngine.settings.BACKGROUND_COLOR = chroma(
         colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
-      )
-        .alpha(0)
-        .gl()
+      ).alpha(0).gl()
     }
-  }, [colors.colorScheme])
+  }
 
-  function msg(engine: RenderEngine): void {
-    console.log('Message from gerber backend')
-    engine.backend.then((backend) => {
-      backend.message.then((m) => {
-        notifications.show({
-          color: m.level,
-          title: m.title,
-          message: m.message
-        })
-      })
+  // Update the background color of the render engine
+  useEffect(() => {
+    setEngineBackgroundColor()
+    // removed this use effect deps to ensure background color was set in setup
+  })
+
+  function msg(e: MessageData): void {
+    notifications.show({
+      color: e.level,
+      title: e.title,
+      message: e.message
     })
   }
 

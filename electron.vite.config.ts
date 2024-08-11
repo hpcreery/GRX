@@ -2,6 +2,7 @@ import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { comlink } from 'vite-plugin-comlink'
+import arraybuffer from "vite-plugin-arraybuffer";
 import glslify from 'rollup-plugin-glslify'
 
 export default defineConfig({
@@ -24,6 +25,7 @@ export default defineConfig({
     plugins: [
       react(),
       comlink(),
+      arraybuffer(),
       glslify({
         compress: false,
         // @ts-ignore - glslify options are not typed
@@ -34,6 +36,7 @@ export default defineConfig({
       format: 'es',
       plugins: () => [
         comlink(),
+        arraybuffer(),
         glslify({
           compress: false,
           // @ts-ignore - glslify options are not typed

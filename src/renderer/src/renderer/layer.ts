@@ -5,8 +5,10 @@ import * as Symbols from './symbols'
 import { Binary, Transform, Units, BoundingBox } from './types'
 import {
   ArcAttachments,
-  DatumCanvasCollection,
+  DatumShaderCollection,
   FrameBufferRenderAttachments,
+  DatumTextAttachments,
+  DatumTextShaderCollection,
   LineAttachments,
   PadAttachments,
   ReglRenderers,
@@ -21,7 +23,6 @@ import {
 
 import { WorldContext } from './engine'
 import { getUnitsConversion, UID } from './utils'
-import { PointRenderer, TextRenderer } from './datum'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -107,10 +108,6 @@ export interface ShapeProps {
   transform?: Partial<ShapeTransform>
 }
 
-// export interface ShapeRendererProps extends RendererProps {
-//   image: Shapes.Shape[]
-//   transform?: Partial<ShapeTransform>
-// }
 
 export interface ShapeRendererProps extends RendererProps, ShapeProps { }
 
@@ -142,7 +139,8 @@ export class ShapeRenderer {
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
   public stepAndRepeatCollection: StepAndRepeatCollection
-  public datumCollection: DatumCanvasCollection
+  public datumCollection: DatumShaderCollection
+  public glyphTextCollection: DatumTextShaderCollection
 
   public get qtyFeatures(): number {
     return this.image.length
@@ -155,9 +153,8 @@ export class ShapeRenderer {
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
-  // protected drawDatumLines: LineRenderer
-  protected drawDatumText: TextRenderer
-  protected drawDatumPoints: PointRenderer
+  protected drawGlyphText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
+  protected drawDatumPoints: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttributes>
   protected flattenSurfaces: REGL.DrawCommand<
     REGL.DefaultContext & WorldContext,
     FrameBufferRenderAttachments
@@ -177,7 +174,6 @@ export class ShapeRenderer {
 
     this.image = props.image
     this.indexImage()
-    // this.drawBoundingBoxes()
 
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
@@ -193,7 +189,12 @@ export class ShapeRenderer {
       ctx: this.ctx,
       image: this.image
     })
-    this.datumCollection = new DatumCanvasCollection({
+    this.datumCollection = new DatumShaderCollection({
+      regl: this.regl,
+      image: this.image
+    })
+    this.glyphTextCollection = new DatumTextShaderCollection({
+      regl: this.regl,
       image: this.image
     })
 
@@ -280,6 +281,22 @@ export class ShapeRenderer {
         func: 'greater',
         range: [0, 1]
       },
+      blend: {
+        enable: true,
+
+        func: {
+          srcRGB: 'src alpha',
+          srcAlpha: 'src alpha',
+          dstRGB: 'one minus src alpha',
+          dstAlpha: 'one minus src alpha'
+        },
+
+        equation: {
+          rgb: 'add',
+          alpha: 'add'
+        },
+        color: [0, 0, 0, 0]
+      },
       uniforms: {
         u_Color: (context: WorldContext) => {
           return [
@@ -297,10 +314,9 @@ export class ShapeRenderer {
     this.drawArcs = ReglRenderers.drawArcs!
     this.drawSurfaces = ReglRenderers.drawSurfaces!
     this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
+    this.drawGlyphText = ReglRenderers.drawDatumText!
+    this.drawDatumPoints = ReglRenderers.drawDatums!
 
-    // this.drawDatumLines = new LineRenderer(this.ctx, this.datumCollection.lines)
-    this.drawDatumText = new TextRenderer(this.ctx, this.datumCollection.texts)
-    this.drawDatumPoints = new PointRenderer(this.ctx, this.datumCollection.points)
 
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true
@@ -428,6 +444,7 @@ export class ShapeRenderer {
       this.macroCollection.refresh()
       this.stepAndRepeatCollection.refresh()
       this.datumCollection.refresh()
+      this.glyphTextCollection.refresh()
       this.dirty = false
     }
     this.commonConfig(() => {
@@ -435,6 +452,7 @@ export class ShapeRenderer {
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
+
     })
     context.transformMatrix = origMatrix
   }
@@ -445,9 +463,9 @@ export class ShapeRenderer {
       this.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
       this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
       this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
+      this.drawGlyphText(this.glyphTextCollection.attachment)
+      this.drawDatumPoints(this.datumCollection.attachment)
     })
-    this.drawDatumText.render(context)
-    this.drawDatumPoints.render(context)
   }
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
@@ -668,7 +686,7 @@ export class MacroRenderer extends ShapeRenderer {
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
-      color: [0, 0, 0, 1],
+      color: [0, 0, 0, 0],
       stencil: 0,
       depth: 0
     })
