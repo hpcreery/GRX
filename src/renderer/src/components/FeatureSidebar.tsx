@@ -117,7 +117,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             {feature.type == FeatureTypeIdentifier.LINE ? <IconLine /> : <IconArrowUpBar />}
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             {feature.type == FeatureTypeIdentifier.LINE ? 'Line' : 'Datum Line'}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
@@ -164,7 +164,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
                 :
                 <IconPictureInPicture />}
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             {feature.type == FeatureTypeIdentifier.DATUM_POINT
               ?
               'Datum Point'
@@ -214,7 +214,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             {feature.type == FeatureTypeIdentifier.ARC ? <IconVectorSpline /> : <IconArrowUpBar />}
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             {feature.type == FeatureTypeIdentifier.ARC ? 'Arc' : 'Datum Arc'}
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
@@ -254,7 +254,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             <IconPolygon />
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             Surface
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
@@ -285,7 +285,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             <IconShape2 />
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             Polyline
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
@@ -320,7 +320,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           <CornerIcon>
             <IconReplace />
           </CornerIcon>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             Nested in<br />Step and Repeat
           </Text>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
@@ -343,7 +343,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             <IconQuestionMark />
           </CornerIcon>
           <Badge style={{ marginBottom: '4px' }} autoContrast fullWidth radius='sm' color={layerColor}>{layerName}</Badge>
-          <Text size="lg" fw={700} c='white'>
+          <Text size="lg" fw={700}>
             Unknown
           </Text>
         </>
@@ -398,7 +398,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
                 }}>
                 <ScrollArea
                   scrollbars="x" offsetScrollbars>
-                  <Text size="xs" c="dimmed" truncate="end">
+                  <Text size="xs" truncate="end">
                     {getInfo(feature)}
                   </Text>
                 </ScrollArea>

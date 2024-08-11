@@ -43,7 +43,6 @@ export default function App(): JSX.Element | null {
 
   function setEngineBackgroundColor(): void {
     if (renderEngine != undefined) {
-      console.log('setting background color', colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1])
       renderEngine.settings.BACKGROUND_COLOR = chroma(
         colors.colorScheme == 'dark' ? theme.colors.dark[8] : theme.colors.gray[1]
       ).alpha(0).gl()
