@@ -162,10 +162,11 @@ export class ShapeRenderer {
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
+      this.transform.update(mat3.create())
     }
 
     this.image = props.image
-    // breakRepeats(this.image)
+    // breakRepeats(this.image, this.transform.matrix)
     this.indexImage()
 
     this.shapeCollection = new ShapesShaderCollection({
@@ -741,7 +742,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 }
 
-function breakRepeats(shapes: Shapes.Shape[]): void {
+function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
   // mutate the shapes array to break the repeats
   for (let i = 0; i < shapes.length; i++) {
     const shape = shapes[i]
@@ -753,54 +754,58 @@ function breakRepeats(shapes: Shapes.Shape[]): void {
     for (const repeat of repeats) {
       const transform: ShapeTransform = new ShapeTransform()
       Object.assign(transform, repeat)
+      transform.update(inputTransform)
       for (const nested of nestedShapes) {
         const nestedShape = Object.assign({}, nested)
         switch (nestedShape.type) {
-          case FeatureTypeIdentifier.PAD:{
-            const position = vec2.fromValues(nestedShape.x, nestedShape.y)
-            vec2.transformMat3(position, position, transform.matrix)
-            nestedShape.x = position[0]
-            nestedShape.y = position[1]
-            nestedShape.resize_factor = nestedShape.resize_factor * transform.scale
-            nestedShape.rotation = nestedShape.rotation + transform.rotation
-            if (nestedShape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-              nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
-              nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-            } else {
-              breakable = false
-            }
-            newShapes.push(nestedShape)
-            break}
-          case FeatureTypeIdentifier.LINE:{
-            const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
-            const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
-            vec2.transformMat3(start, start, transform.matrix)
-            vec2.transformMat3(end, end, transform.matrix)
-            nestedShape.xs = start[0]
-            nestedShape.ys = start[1]
-            nestedShape.xe = end[0]
-            nestedShape.ye = end[1]
-            nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
-            nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-            newShapes.push(nestedShape)
-            break}
-          case FeatureTypeIdentifier.ARC:{
-            const center = vec2.fromValues(nestedShape.xc, nestedShape.yc)
-            const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
-            const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
-            vec2.transformMat3(center, center, transform.matrix)
-            vec2.transformMat3(start, start, transform.matrix)
-            vec2.transformMat3(end, end, transform.matrix)
-            nestedShape.xc = center[0]
-            nestedShape.yc = center[1]
-            nestedShape.xs = start[0]
-            nestedShape.ys = start[1]
-            nestedShape.xe = end[0]
-            nestedShape.ye = end[1]
-            nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-            newShapes.push(nestedShape)
-            break}
-          case FeatureTypeIdentifier.SURFACE:{
+          // case FeatureTypeIdentifier.PAD: {
+          //   const position = vec2.fromValues(nestedShape.x, nestedShape.y)
+          //   vec2.transformMat3(position, position, transform.matrix)
+          //   nestedShape.x = position[0]
+          //   nestedShape.y = position[1]
+          //   nestedShape.resize_factor = nestedShape.resize_factor * transform.scale
+          //   nestedShape.rotation = nestedShape.rotation + transform.rotation
+          //   if (nestedShape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+          //     nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
+          //     nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+          //   } else {
+          //     breakable = false
+          //   }
+          //   newShapes.push(nestedShape)
+          //   break
+          // }
+          // case FeatureTypeIdentifier.LINE: {
+          //   const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
+          //   const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
+          //   vec2.transformMat3(start, start, transform.matrix)
+          //   vec2.transformMat3(end, end, transform.matrix)
+          //   nestedShape.xs = start[0]
+          //   nestedShape.ys = start[1]
+          //   nestedShape.xe = end[0]
+          //   nestedShape.ye = end[1]
+          //   nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
+          //   nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+          //   newShapes.push(nestedShape)
+          //   break
+          // }
+          // case FeatureTypeIdentifier.ARC: {
+          //   const center = vec2.fromValues(nestedShape.xc, nestedShape.yc)
+          //   const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
+          //   const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
+          //   vec2.transformMat3(center, center, transform.matrix)
+          //   vec2.transformMat3(start, start, transform.matrix)
+          //   vec2.transformMat3(end, end, transform.matrix)
+          //   nestedShape.xc = center[0]
+          //   nestedShape.yc = center[1]
+          //   nestedShape.xs = start[0]
+          //   nestedShape.ys = start[1]
+          //   nestedShape.xe = end[0]
+          //   nestedShape.ye = end[1]
+          //   nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+          //   newShapes.push(nestedShape)
+          //   break
+          // }
+          case FeatureTypeIdentifier.SURFACE: {
             for (const contour of nestedShape.contours) {
               const position = vec2.fromValues(contour.xs, contour.ys)
               vec2.transformMat3(position, position, transform.matrix)
@@ -814,11 +819,31 @@ function breakRepeats(shapes: Shapes.Shape[]): void {
               }
             }
             newShapes.push(nestedShape)
-            break}
-          case FeatureTypeIdentifier.POLYLINE:
             break
-          case FeatureTypeIdentifier.STEP_AND_REPEAT:{
-            break}
+          }
+          case FeatureTypeIdentifier.POLYLINE: {
+            const startPoint = vec2.fromValues(nestedShape.xs, nestedShape.ys)
+            vec2.transformMat3(startPoint, startPoint, transform.matrix)
+            nestedShape.xs = startPoint[0]
+            nestedShape.ys = startPoint[1]
+            for (const segment of nestedShape.lines) {
+              const point = vec2.fromValues(segment.x, segment.y)
+              vec2.transformMat3(point, point, transform.matrix)
+              segment.x = point[0]
+              segment.y = point[1]
+            }
+            newShapes.push(nestedShape)
+            break
+          }
+          case FeatureTypeIdentifier.STEP_AND_REPEAT: {
+            breakRepeats(nestedShape.shapes, transform.matrix)
+            newShapes.push(...nestedShape.shapes)
+            break
+          }
+          default: {
+            breakable = false
+            break
+          }
         }
       }
     }
