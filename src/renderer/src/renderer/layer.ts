@@ -2,7 +2,7 @@ import REGL from 'regl'
 import { vec2, vec3, mat3 } from 'gl-matrix'
 import * as Shapes from './shapes'
 import * as Symbols from './symbols'
-import { Binary, Transform, Units, BoundingBox } from './types'
+import { Binary, Transform, Units, BoundingBox, FeatureTypeIdentifier } from './types'
 import {
   ArcAttachments,
   DatumShaderCollection,
@@ -54,14 +54,6 @@ export interface NestedFeature {
 interface QueryProps {
   pointer: vec2
 }
-
-// interface ShapeTransform extends Transform {
-//   index: number
-//   polarity: number
-//   matrix: mat3
-//   inverseMatrix: mat3
-//   update: (inputMatrix: mat3) => void
-// }
 
 class ShapeTransform implements Transform {
   public datum: vec2 = vec2.create()
@@ -140,7 +132,7 @@ export class ShapeRenderer {
   public macroCollection: MacroShaderCollection
   public stepAndRepeatCollection: StepAndRepeatCollection
   public datumCollection: DatumShaderCollection
-  public glyphTextCollection: DatumTextShaderCollection
+  public datumTextCollection: DatumTextShaderCollection
 
   public get qtyFeatures(): number {
     return this.image.length
@@ -153,7 +145,7 @@ export class ShapeRenderer {
   protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
-  protected drawGlyphText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
+  protected drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
   protected drawDatumPoints: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttributes>
   protected flattenSurfaces: REGL.DrawCommand<
     REGL.DefaultContext & WorldContext,
@@ -173,6 +165,7 @@ export class ShapeRenderer {
     }
 
     this.image = props.image
+    // breakRepeats(this.image)
     this.indexImage()
 
     this.shapeCollection = new ShapesShaderCollection({
@@ -193,7 +186,7 @@ export class ShapeRenderer {
       regl: this.regl,
       image: this.image
     })
-    this.glyphTextCollection = new DatumTextShaderCollection({
+    this.datumTextCollection = new DatumTextShaderCollection({
       regl: this.regl,
       image: this.image
     })
@@ -314,7 +307,7 @@ export class ShapeRenderer {
     this.drawArcs = ReglRenderers.drawArcs!
     this.drawSurfaces = ReglRenderers.drawSurfaces!
     this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
-    this.drawGlyphText = ReglRenderers.drawDatumText!
+    this.drawDatumText = ReglRenderers.drawDatumText!
     this.drawDatumPoints = ReglRenderers.drawDatums!
 
 
@@ -444,7 +437,7 @@ export class ShapeRenderer {
       this.macroCollection.refresh()
       this.stepAndRepeatCollection.refresh()
       this.datumCollection.refresh()
-      this.glyphTextCollection.refresh()
+      this.datumTextCollection.refresh()
       this.dirty = false
     }
     this.commonConfig(() => {
@@ -463,7 +456,7 @@ export class ShapeRenderer {
       this.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
       this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
       this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
-      this.drawGlyphText(this.glyphTextCollection.attachment)
+      this.drawDatumText(this.datumTextCollection.attachment)
       this.drawDatumPoints(this.datumCollection.attachment)
     })
   }
@@ -745,5 +738,92 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
       this.transform.index = 0
       super.render(context)
     })
+  }
+}
+
+function breakRepeats(shapes: Shapes.Shape[]): void {
+  // mutate the shapes array to break the repeats
+  for (let i = 0; i < shapes.length; i++) {
+    const shape = shapes[i]
+    if (shape.type !== FeatureTypeIdentifier.STEP_AND_REPEAT) continue
+    let breakable = true
+    const { repeats } = shape
+    const nestedShapes = shape.shapes
+    const newShapes: Shapes.Shape[] = []
+    for (const repeat of repeats) {
+      const transform: ShapeTransform = new ShapeTransform()
+      Object.assign(transform, repeat)
+      for (const nested of nestedShapes) {
+        const nestedShape = Object.assign({}, nested)
+        switch (nestedShape.type) {
+          case FeatureTypeIdentifier.PAD:{
+            const position = vec2.fromValues(nestedShape.x, nestedShape.y)
+            vec2.transformMat3(position, position, transform.matrix)
+            nestedShape.x = position[0]
+            nestedShape.y = position[1]
+            nestedShape.resize_factor = nestedShape.resize_factor * transform.scale
+            nestedShape.rotation = nestedShape.rotation + transform.rotation
+            if (nestedShape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+              nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
+              nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+            } else {
+              breakable = false
+            }
+            newShapes.push(nestedShape)
+            break}
+          case FeatureTypeIdentifier.LINE:{
+            const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
+            const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
+            vec2.transformMat3(start, start, transform.matrix)
+            vec2.transformMat3(end, end, transform.matrix)
+            nestedShape.xs = start[0]
+            nestedShape.ys = start[1]
+            nestedShape.xe = end[0]
+            nestedShape.ye = end[1]
+            nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
+            nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+            newShapes.push(nestedShape)
+            break}
+          case FeatureTypeIdentifier.ARC:{
+            const center = vec2.fromValues(nestedShape.xc, nestedShape.yc)
+            const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
+            const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
+            vec2.transformMat3(center, center, transform.matrix)
+            vec2.transformMat3(start, start, transform.matrix)
+            vec2.transformMat3(end, end, transform.matrix)
+            nestedShape.xc = center[0]
+            nestedShape.yc = center[1]
+            nestedShape.xs = start[0]
+            nestedShape.ys = start[1]
+            nestedShape.xe = end[0]
+            nestedShape.ye = end[1]
+            nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
+            newShapes.push(nestedShape)
+            break}
+          case FeatureTypeIdentifier.SURFACE:{
+            for (const contour of nestedShape.contours) {
+              const position = vec2.fromValues(contour.xs, contour.ys)
+              vec2.transformMat3(position, position, transform.matrix)
+              contour.xs = position[0]
+              contour.ys = position[1]
+              for (const segment of contour.segments) {
+                const position = vec2.fromValues(segment.x, segment.y)
+                vec2.transformMat3(position, position, transform.matrix)
+                segment.x = position[0]
+                segment.y = position[1]
+              }
+            }
+            newShapes.push(nestedShape)
+            break}
+          case FeatureTypeIdentifier.POLYLINE:
+            break
+          case FeatureTypeIdentifier.STEP_AND_REPEAT:{
+            break}
+        }
+      }
+    }
+    if (breakable) {
+      shapes.splice(i, 1, ...newShapes)
+    }
   }
 }
