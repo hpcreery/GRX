@@ -884,6 +884,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
               if (lastPath.type == FeatureTypeIdentifier.LINE) {
                 const insersectionPoint = findLineIntersection(lastPath, { xs, ys, xe, ye })
+                // for 2 lines, the only way they cant intersect is if they are parallel so this should always return a point
                 if (insersectionPoint != undefined) {
                   xs = insersectionPoint.x
                   ys = insersectionPoint.y
@@ -898,11 +899,29 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   ys = insersectionPoints[0].y
                   lastPath.xe = insersectionPoints[0].x
                   lastPath.ye = insersectionPoints[0].y
+                } else {
+                  // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
+                  // for those cases we can create the connecting arc tool path
+                  this.result.push(new Shapes.Arc({
+                    xs: lastPath.xe,
+                    ys: lastPath.ye,
+                    xe: xs,
+                    ye: ys,
+                    xc: this.state.previousX,
+                    yc: this.state.previousY,
+                    clockwise: lastPath.clockwise ? 0 : 1,
+                    symbol: this.state.currentTool,
+                    attributes: {
+                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
+                      cutterCompensationMode: this.state.cutterCompensationMode,
+                    }
+                  }))
                 }
 
               }
             }
           }
+          // create the tool path
           this.result.push(new Shapes.Line({
             xs,
             ys,
@@ -968,19 +987,54 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   ys = insersectionPoints[0].y
                   lastPath.xe = insersectionPoints[0].x
                   lastPath.ye = insersectionPoints[0].y
+                } else {
+                  // 2 arcs may not intersect due to the cutter compensation and the case where the arc is tangent to the other arc
+                  // for those cases we can create the connecting arc tool path
+                  this.result.push(new Shapes.Arc({
+                    xs: lastPath.xe,
+                    ys: lastPath.ye,
+                    xe: xs,
+                    ye: ys,
+                    xc: this.state.previousX,
+                    yc: this.state.previousY,
+                    clockwise: lastPath.clockwise ? 0 : 1,
+                    symbol: this.state.currentTool,
+                    attributes: {
+                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
+                      cutterCompensationMode: this.state.cutterCompensationMode,
+                    }
+                  }))
                 }
               } else {
-                const insersectionPoints = findArcLineIntersections({xs, ys, xe, ye, xc: center.x, yc: center.y}, lastPath)
+                const insersectionPoints = findArcLineIntersections({ xs, ys, xe, ye, xc: center.x, yc: center.y }, lastPath)
                 // the second point is the one closer to the line end point
                 if (insersectionPoints != undefined) {
                   xs = insersectionPoints[1].x
                   ys = insersectionPoints[1].y
                   lastPath.xe = insersectionPoints[1].x
                   lastPath.ye = insersectionPoints[1].y
+                } else {
+                  // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
+                  // for those cases we can create the connecting arc tool path
+                  this.result.push(new Shapes.Arc({
+                    xs: lastPath.xe,
+                    ys: lastPath.ye,
+                    xe: xs,
+                    ye: ys,
+                    xc: this.state.previousX,
+                    yc: this.state.previousY,
+                    clockwise: clockwise ? 0 : 1,
+                    symbol: this.state.currentTool,
+                    attributes: {
+                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
+                      cutterCompensationMode: this.state.cutterCompensationMode,
+                    }
+                  }))
                 }
               }
             }
           }
+          // create the tool path
           this.result.push(new Shapes.Arc({
             xs,
             ys,
