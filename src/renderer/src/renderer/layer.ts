@@ -21,7 +21,7 @@ import {
   StepAndRepeatCollection
 } from './collections'
 
-import { WorldContext } from './engine'
+import type { WorldContext } from './engine'
 import { getUnitsConversion, UID } from './utils'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
@@ -742,6 +742,17 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 }
 
+export function logMatrix(matrix: mat3): void {
+  console.log(
+    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${Math.round(matrix[2] * 100) / 100
+    },\n` +
+    `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${Math.round(matrix[5] * 100) / 100
+    },\n` +
+    `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
+    }`
+  )
+}
+
 function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
   // mutate the shapes array to break the repeats
   for (let i = 0; i < shapes.length; i++) {
@@ -754,10 +765,15 @@ function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
     for (const repeat of repeats) {
       const transform: ShapeTransform = new ShapeTransform()
       Object.assign(transform, repeat)
+      // console.log('transform', JSON.stringify(transform))
+      // console.log('in matrix')
+      logMatrix(inputTransform)
       transform.update(inputTransform)
-      for (const nested of nestedShapes) {
-        const nestedShape = Object.assign({}, nested)
-        switch (nestedShape.type) {
+      // console.log('out matrix')
+      logMatrix(transform.matrix)
+      for (const nestedShape of nestedShapes) {
+        const newShape = Object.assign({}, nestedShape)
+        switch (newShape.type) {
           // case FeatureTypeIdentifier.PAD: {
           //   const position = vec2.fromValues(nestedShape.x, nestedShape.y)
           //   vec2.transformMat3(position, position, transform.matrix)
@@ -806,38 +822,42 @@ function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
           //   break
           // }
           case FeatureTypeIdentifier.SURFACE: {
-            for (const contour of nestedShape.contours) {
-              const position = vec2.fromValues(contour.xs, contour.ys)
-              vec2.transformMat3(position, position, transform.matrix)
+            for (const contour of newShape.contours) {
+              const position = vec3.fromValues(contour.xs, contour.ys, 0)
+              // console.log('in position', position[0], position[1])
+              vec3.transformMat3(position, position, transform.matrix)
+              // console.log('out position', position[0], position[1])
               contour.xs = position[0]
               contour.ys = position[1]
               for (const segment of contour.segments) {
-                const position = vec2.fromValues(segment.x, segment.y)
-                vec2.transformMat3(position, position, transform.matrix)
+                const position = vec3.fromValues(segment.x, segment.y, 0)
+                // console.log('in position', position[0], position[1])
+                vec3.transformMat3(position, position, transform.matrix)
+                // console.log('out position', position[0], position[1])
                 segment.x = position[0]
                 segment.y = position[1]
               }
             }
-            newShapes.push(nestedShape)
+            newShapes.push(newShape)
             break
           }
           case FeatureTypeIdentifier.POLYLINE: {
-            const startPoint = vec2.fromValues(nestedShape.xs, nestedShape.ys)
-            vec2.transformMat3(startPoint, startPoint, transform.matrix)
-            nestedShape.xs = startPoint[0]
-            nestedShape.ys = startPoint[1]
-            for (const segment of nestedShape.lines) {
-              const point = vec2.fromValues(segment.x, segment.y)
-              vec2.transformMat3(point, point, transform.matrix)
+            const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 0)
+            vec3.transformMat3(startPoint, startPoint, transform.matrix)
+            newShape.xs = startPoint[0]
+            newShape.ys = startPoint[1]
+            for (const segment of newShape.lines) {
+              const point = vec3.fromValues(segment.x, segment.y, 0)
+              vec3.transformMat3(point, point, transform.matrix)
               segment.x = point[0]
               segment.y = point[1]
             }
-            newShapes.push(nestedShape)
+            newShapes.push(newShape)
             break
           }
           case FeatureTypeIdentifier.STEP_AND_REPEAT: {
-            breakRepeats(nestedShape.shapes, transform.matrix)
-            newShapes.push(...nestedShape.shapes)
+            breakRepeats(newShape.shapes, transform.matrix)
+            newShapes.push(...newShape.shapes)
             break
           }
           default: {
