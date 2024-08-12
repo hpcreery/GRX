@@ -753,6 +753,8 @@ export function logMatrix(matrix: mat3): void {
   )
 }
 
+// @ts-ignore -- this function is in development
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- this function is in development
 function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
   // mutate the shapes array to break the repeats
   for (let i = 0; i < shapes.length; i++) {
