@@ -900,22 +900,25 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   lastPath.xe = insersectionPoints[0].x
                   lastPath.ye = insersectionPoints[0].y
                 } else {
-                  // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
-                  // for those cases we can create the connecting arc tool path
-                  this.result.push(new Shapes.Arc({
-                    xs: lastPath.xe,
-                    ys: lastPath.ye,
-                    xe: xs,
-                    ye: ys,
-                    xc: this.state.previousX,
-                    yc: this.state.previousY,
-                    clockwise: lastPath.clockwise ? 0 : 1,
-                    symbol: this.state.currentTool,
-                    attributes: {
-                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-                      cutterCompensationMode: this.state.cutterCompensationMode,
-                    }
-                  }))
+                  if (Math.sqrt(((lastPath.xe - xs) ** 2) + ((lastPath.ye - ys) ** 2)) > this.state.cutterCompensation / 2) {
+                    // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
+                    // we can tell if the tangent line to the arc is a smooth transition or a sharp corner by checking if the distance between the arc end point and the line start point is greater than half the cutter compensation
+                    // for those cases we can create the connecting arc tool path
+                    this.result.push(new Shapes.Arc({
+                      xs: lastPath.xe,
+                      ys: lastPath.ye,
+                      xe: xs,
+                      ye: ys,
+                      xc: this.state.previousX,
+                      yc: this.state.previousY,
+                      clockwise: lastPath.clockwise ? 0 : 1,
+                      symbol: this.state.currentTool,
+                      attributes: {
+                        cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
+                        cutterCompensationMode: this.state.cutterCompensationMode,
+                      }
+                    }))
+                  }
                 }
 
               }
@@ -1014,22 +1017,25 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   lastPath.xe = insersectionPoints[1].x
                   lastPath.ye = insersectionPoints[1].y
                 } else {
-                  // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
-                  // for those cases we can create the connecting arc tool path
-                  this.result.push(new Shapes.Arc({
-                    xs: lastPath.xe,
-                    ys: lastPath.ye,
-                    xe: xs,
-                    ye: ys,
-                    xc: this.state.previousX,
-                    yc: this.state.previousY,
-                    clockwise: clockwise ? 0 : 1,
-                    symbol: this.state.currentTool,
-                    attributes: {
-                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-                      cutterCompensationMode: this.state.cutterCompensationMode,
-                    }
-                  }))
+                  if (Math.sqrt(((lastPath.xe - xs) ** 2) + ((lastPath.ye - ys) ** 2)) > this.state.cutterCompensation / 2) {
+                    // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
+                    // we can tell if the tangent line to the arc is a smooth transition or a sharp corner by checking if the distance between the arc end point and the line start point is greater than half the cutter compensation
+                    // for those cases we can create the connecting arc tool path
+                    this.result.push(new Shapes.Arc({
+                      xs: lastPath.xe,
+                      ys: lastPath.ye,
+                      xe: xs,
+                      ye: ys,
+                      xc: this.state.previousX,
+                      yc: this.state.previousY,
+                      clockwise: clockwise ? 0 : 1,
+                      symbol: this.state.currentTool,
+                      attributes: {
+                        cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
+                        cutterCompensationMode: this.state.cutterCompensationMode,
+                      }
+                    }))
+                  }
                 }
               }
             }
