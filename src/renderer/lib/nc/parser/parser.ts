@@ -844,12 +844,19 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.arcCenter) this.visit(ctx.arcCenter)
     if (ctx.arcRadius) this.visit(ctx.arcRadius)
     if (this.state.mode == Constants.DRILL) {
-      this.result.push(new Shapes.DatumLine({
-        xs: this.state.previousX,
-        ys: this.state.previousY,
-        xe: this.state.x,
-        ye: this.state.y,
-      }))
+      if (this.result.length > 0) {
+        this.result.push(new Shapes.DatumLine({
+          xs: this.state.previousX,
+          ys: this.state.previousY,
+          xe: this.state.x,
+          ye: this.state.y,
+        }))
+      } else {
+        this.result.push(new Shapes.DatumPoint({
+          x: this.state.x,
+          y: this.state.y,
+        }))
+      }
       this.result.push(new Shapes.DatumText({
         x: this.state.x,
         y: this.state.y,
