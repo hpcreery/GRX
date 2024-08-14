@@ -166,6 +166,14 @@ class NCParser extends CstParser {
   incrementalMode!: ParserMethod<unknown[], CstNode>
   zeroSet!: ParserMethod<unknown[], CstNode>
   headerEnd!: ParserMethod<unknown[], CstNode>
+  selectVisionTool!: ParserMethod<unknown[], CstNode>
+  singlePointVisionOffset!: ParserMethod<unknown[], CstNode>
+  multiPointVisionOffset!: ParserMethod<unknown[], CstNode>
+  cancelVisionOffset!: ParserMethod<unknown[], CstNode>
+  visionCorrectedSingleHole!: ParserMethod<unknown[], CstNode>
+  visionAutoCalibration!: ParserMethod<unknown[], CstNode>
+
+
 
   constructor() {
     super(multiModeLexerDefinition, {
@@ -220,6 +228,12 @@ class NCParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.incrementalMode) },
         { ALT: (): CstNode => this.SUBRULE(this.zeroSet) },
         { ALT: (): CstNode => this.SUBRULE(this.headerEnd) },
+        { ALT: (): CstNode => this.SUBRULE(this.selectVisionTool) },
+        { ALT: (): CstNode => this.SUBRULE(this.singlePointVisionOffset) },
+        { ALT: (): CstNode => this.SUBRULE(this.multiPointVisionOffset) },
+        { ALT: (): CstNode => this.SUBRULE(this.cancelVisionOffset) },
+        { ALT: (): CstNode => this.SUBRULE(this.visionCorrectedSingleHole) },
+        { ALT: (): CstNode => this.SUBRULE(this.visionAutoCalibration) },
 
       ])
     })
@@ -564,9 +578,7 @@ class NCParser extends CstParser {
 
     this.RULE("singlePointVisionOffset", () => {
       this.CONSUME(DefaultTokens.G35)
-      this.OPTION(() => {
-        this.SUBRULE(this.coordinate)
-      })
+      this.SUBRULE(this.coordinate)
     })
 
     this.RULE("multiPointVisionOffset", () => {
@@ -595,7 +607,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions();
 
-const GENERATEDTS = false
+const GENERATEDTS = true
 if (GENERATEDTS) {
   const dtsString = generateCstDts(productions);
   console.log(dtsString)
@@ -1325,7 +1337,17 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   singlePointVisionOffset(ctx: Cst.SinglePointVisionOffsetCstChildren): void {
-    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+
     this.result.push(new Shapes.DatumLine({
       xs: this.state.previousX,
       ys: this.state.previousY,
@@ -1344,6 +1366,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   multiPointVisionOffset(ctx: Cst.MultiPointVisionOffsetCstChildren): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
     if (ctx.coordinate) this.visit(ctx.coordinate)
     this.result.push(new Shapes.DatumLine({
       xs: this.state.previousX,
@@ -1367,7 +1399,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   visionCorrectedSingleHole(ctx: Cst.VisionCorrectedSingleHoleCstChildren): void {
-    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
     this.result.push(new Shapes.DatumLine({
       xs: this.state.previousX,
       ys: this.state.previousY,
@@ -1386,7 +1427,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   visionAutoCalibration(ctx: Cst.VisionAutoCalibrationCstChildren): void {
-    if (ctx.coordinate) this.visit(ctx.coordinate)
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
     this.result.push(new Shapes.DatumLine({
       xs: this.state.previousX,
       ys: this.state.previousY,

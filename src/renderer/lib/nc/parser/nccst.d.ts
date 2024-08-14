@@ -54,6 +54,12 @@ export type CommandCstChildren = {
   incrementalMode?: IncrementalModeCstNode[];
   zeroSet?: ZeroSetCstNode[];
   headerEnd?: HeaderEndCstNode[];
+  selectVisionTool?: SelectVisionToolCstNode[];
+  singlePointVisionOffset?: SinglePointVisionOffsetCstNode[];
+  multiPointVisionOffset?: MultiPointVisionOffsetCstNode[];
+  cancelVisionOffset?: CancelVisionOffsetCstNode[];
+  visionCorrectedSingleHole?: VisionCorrectedSingleHoleCstNode[];
+  visionAutoCalibration?: VisionAutoCalibrationCstNode[];
 };
 
 export interface UnitsCstNode extends CstNode {
@@ -598,7 +604,7 @@ export interface SinglePointVisionOffsetCstNode extends CstNode {
 
 export type SinglePointVisionOffsetCstChildren = {
   G35: IToken[];
-  coordinate?: CoordinateCstNode[];
+  coordinate: CoordinateCstNode[];
 };
 
 export interface MultiPointVisionOffsetCstNode extends CstNode {
