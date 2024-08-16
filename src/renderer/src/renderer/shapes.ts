@@ -450,6 +450,10 @@ export class StepAndRepeat implements IPlotRecord {
    * transforms to apply to the shapes, each record will copy the shapes and apply the transforms
    */
   public repeats: Transform[] = []
+  /**
+   * break the step and repeat ( default false, enable for better performance )
+   */
+  public break = false
 
   constructor(props: Partial<Omit<StepAndRepeat, 'type'>>) {
     Object.assign(this, props)

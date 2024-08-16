@@ -22,7 +22,7 @@ import {
 } from './collections'
 
 import type { WorldContext } from './engine'
-import { getUnitsConversion, UID } from './utils'
+import { getScaleMat3, getUnitsConversion, UID } from './utils'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -55,7 +55,7 @@ interface QueryProps {
   pointer: vec2
 }
 
-class ShapeTransform implements Transform {
+export class ShapeTransform implements Transform {
   public datum: vec2 = vec2.create()
   public rotation = 0
   public scale = 1
@@ -166,7 +166,7 @@ export class ShapeRenderer {
     }
 
     this.image = props.image
-    // breakRepeats(this.image, this.transform.matrix)
+    this.breakStepRepeats()
     this.indexImage()
 
     this.shapeCollection = new ShapesShaderCollection({
@@ -364,6 +364,18 @@ export class ShapeRenderer {
     return this
   }
 
+  public breakStepRepeats(): this {
+    for (let i = 0; i < this.image.length; i++) {
+      const record = this.image[i]
+      if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
+        if (record.break === false) continue
+        const brokenimage = breakStepRepeat(record, this.transform)
+        if (brokenimage !== undefined) this.image.splice(i, 1, ...brokenimage)
+      }
+    }
+    return this
+  }
+
   public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
@@ -434,11 +446,11 @@ export class ShapeRenderer {
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
     if (this.dirty) {
-      this.shapeCollection.refresh()
-      this.macroCollection.refresh()
-      this.stepAndRepeatCollection.refresh()
-      this.datumCollection.refresh()
-      this.datumTextCollection.refresh()
+      this.shapeCollection.refresh(this.image)
+      this.macroCollection.refresh(this.image)
+      this.stepAndRepeatCollection.refresh(this.image)
+      this.datumCollection.refresh(this.image)
+      this.datumTextCollection.refresh(this.image)
       this.dirty = false
     }
     this.commonConfig(() => {
@@ -705,7 +717,6 @@ interface StepAndRepeatRendererProps {
   regl: REGL.Regl
   ctx: OffscreenCanvasRenderingContext2D
   record: Shapes.StepAndRepeat
-
 }
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
@@ -714,7 +725,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     super({
       regl: props.regl,
       ctx: props.ctx,
-      image: props.record.shapes
+      image: props.record.shapes,
     })
     this.record = props.record
     this.transform.index = props.record.index
@@ -742,135 +753,66 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 }
 
-export function logMatrix(matrix: mat3): void {
-  console.log(
-    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${Math.round(matrix[2] * 100) / 100
-    },\n` +
-    `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${Math.round(matrix[5] * 100) / 100
-    },\n` +
-    `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
-    }`
-  )
-}
-
-// @ts-ignore -- this function is in development
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- this function is in development
-function breakRepeats(shapes: Shapes.Shape[], inputTransform: mat3): void {
-  // mutate the shapes array to break the repeats
-  for (let i = 0; i < shapes.length; i++) {
-    const shape = shapes[i]
-    if (shape.type !== FeatureTypeIdentifier.STEP_AND_REPEAT) continue
-    let breakable = true
-    const { repeats } = shape
-    const nestedShapes = shape.shapes
-    const newShapes: Shapes.Shape[] = []
-    for (const repeat of repeats) {
-      const transform: ShapeTransform = new ShapeTransform()
-      Object.assign(transform, repeat)
-      // console.log('transform', JSON.stringify(transform))
-      // console.log('in matrix')
-      logMatrix(inputTransform)
-      transform.update(inputTransform)
-      // console.log('out matrix')
-      logMatrix(transform.matrix)
-      for (const nestedShape of nestedShapes) {
-        const newShape = Object.assign({}, nestedShape)
-        switch (newShape.type) {
-          // case FeatureTypeIdentifier.PAD: {
-          //   const position = vec2.fromValues(nestedShape.x, nestedShape.y)
-          //   vec2.transformMat3(position, position, transform.matrix)
-          //   nestedShape.x = position[0]
-          //   nestedShape.y = position[1]
-          //   nestedShape.resize_factor = nestedShape.resize_factor * transform.scale
-          //   nestedShape.rotation = nestedShape.rotation + transform.rotation
-          //   if (nestedShape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-          //     nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
-          //     nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-          //   } else {
-          //     breakable = false
-          //   }
-          //   newShapes.push(nestedShape)
-          //   break
-          // }
-          // case FeatureTypeIdentifier.LINE: {
-          //   const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
-          //   const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
-          //   vec2.transformMat3(start, start, transform.matrix)
-          //   vec2.transformMat3(end, end, transform.matrix)
-          //   nestedShape.xs = start[0]
-          //   nestedShape.ys = start[1]
-          //   nestedShape.xe = end[0]
-          //   nestedShape.ye = end[1]
-          //   nestedShape.symbol.angle = nestedShape.symbol.angle + transform.rotation
-          //   nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-          //   newShapes.push(nestedShape)
-          //   break
-          // }
-          // case FeatureTypeIdentifier.ARC: {
-          //   const center = vec2.fromValues(nestedShape.xc, nestedShape.yc)
-          //   const start = vec2.fromValues(nestedShape.xs, nestedShape.ys)
-          //   const end = vec2.fromValues(nestedShape.xe, nestedShape.ye)
-          //   vec2.transformMat3(center, center, transform.matrix)
-          //   vec2.transformMat3(start, start, transform.matrix)
-          //   vec2.transformMat3(end, end, transform.matrix)
-          //   nestedShape.xc = center[0]
-          //   nestedShape.yc = center[1]
-          //   nestedShape.xs = start[0]
-          //   nestedShape.ys = start[1]
-          //   nestedShape.xe = end[0]
-          //   nestedShape.ye = end[1]
-          //   nestedShape.symbol.outer_dia = nestedShape.symbol.outer_dia * transform.scale
-          //   newShapes.push(nestedShape)
-          //   break
-          // }
-          case FeatureTypeIdentifier.SURFACE: {
-            for (const contour of newShape.contours) {
-              const position = vec3.fromValues(contour.xs, contour.ys, 0)
-              // console.log('in position', position[0], position[1])
-              vec3.transformMat3(position, position, transform.matrix)
-              // console.log('out position', position[0], position[1])
-              contour.xs = position[0]
-              contour.ys = position[1]
-              for (const segment of contour.segments) {
-                const position = vec3.fromValues(segment.x, segment.y, 0)
-                // console.log('in position', position[0], position[1])
-                vec3.transformMat3(position, position, transform.matrix)
-                // console.log('out position', position[0], position[1])
-                segment.x = position[0]
-                segment.y = position[1]
-              }
-            }
-            newShapes.push(newShape)
-            break
-          }
-          case FeatureTypeIdentifier.POLYLINE: {
-            const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 0)
-            vec3.transformMat3(startPoint, startPoint, transform.matrix)
-            newShape.xs = startPoint[0]
-            newShape.ys = startPoint[1]
-            for (const segment of newShape.lines) {
-              const point = vec3.fromValues(segment.x, segment.y, 0)
-              vec3.transformMat3(point, point, transform.matrix)
-              segment.x = point[0]
-              segment.y = point[1]
-            }
-            newShapes.push(newShape)
-            break
-          }
-          case FeatureTypeIdentifier.STEP_AND_REPEAT: {
-            breakRepeats(newShape.shapes, transform.matrix)
-            newShapes.push(...newShape.shapes)
-            break
-          }
-          default: {
-            breakable = false
-            break
+export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
+  const newImage: Shapes.Shape[] = []
+  for (const repeat of stepRepeat.repeats) {
+    const transform = new ShapeTransform()
+    Object.assign(transform, repeat)
+    transform.update(inputTransform.matrix)
+    for (let i = 0; i < stepRepeat.shapes.length; i++) {
+      const shape =  stepRepeat.shapes[i]
+      const newShape = JSON.parse(JSON.stringify(shape)) as Shapes.Shape
+      if (newShape.type === FeatureTypeIdentifier.SURFACE) {
+        for (const contour of newShape.contours) {
+          const position = vec3.fromValues(contour.xs, contour.ys, 1)
+          vec3.transformMat3(position, position, transform.matrix)
+          contour.xs = position[0]
+          contour.ys = position[1]
+          for (const segment of contour.segments) {
+            const position = vec3.fromValues(segment.x, segment.y, 1)
+            vec3.transformMat3(position, position, transform.matrix)
+            segment.x = position[0]
+            segment.y = position[1]
           }
         }
+        newImage.push(newShape)
+        continue
       }
+      if (newShape.type === FeatureTypeIdentifier.POLYLINE) {
+        newShape.width = newShape.width * getScaleMat3(transform.matrix)
+        const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 1)
+        vec3.transformMat3(startPoint, startPoint, transform.matrix)
+        newShape.xs = startPoint[0]
+        newShape.ys = startPoint[1]
+        for (const segment of newShape.lines) {
+          const point = vec3.fromValues(segment.x, segment.y, 1)
+          vec3.transformMat3(point, point, transform.matrix)
+          segment.x = point[0]
+          segment.y = point[1]
+        }
+        newImage.push(newShape)
+        continue
+      }
+      if (newShape.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
+        // this will disable breaking of nested step and repeats, not yet tested
+        // if (newShape.break === false) {
+        //   newImage.push(newShape)
+        //   continue
+        // }
+
+        // note, this is recursive
+        // breaking the top level step and repeat will break all nested step and repeats down to the primitive shapes
+        const newShapes = breakStepRepeat(newShape, transform)
+        if (newShapes === undefined) {
+          return
+        } else {
+          newImage.push(...newShapes)
+        }
+        continue
+      }
+      return
     }
-    if (breakable) {
-      shapes.splice(i, 1, ...newShapes)
-    }
+
   }
+  return newImage
 }

@@ -1,3 +1,4 @@
+import { mat3, vec2 } from 'gl-matrix';
 import { Units } from './types';
 
 export type immutable = boolean | number | bigint | string | symbol | null | undefined;
@@ -30,3 +31,18 @@ export function getUnitsConversion(units: Units): number {
 
 export const UID = (): string =>
   Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+
+// https://stackoverflow.com/questions/4361242/extract-rotation-scale-values-from-2d-transformation-matrix
+export function getScaleMat3(matrix: mat3): number {
+  return Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1])
+}
+
+// this has not been tested yet
+export function getRotationMat3(matrix: mat3): number {
+  return Math.atan2(matrix[1], matrix[0])
+}
+
+// this has not been tested yet
+export function getTranslationMat3(matrix: mat3): vec2 {
+  return vec2.fromValues(matrix[6], matrix[7])
+}

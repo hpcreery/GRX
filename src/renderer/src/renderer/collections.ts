@@ -725,7 +725,6 @@ interface ShapesListHistogram {
 
 export class ShapesShaderCollection {
   private regl: REGL.Regl
-  private image: Shapes.Shape[] = []
 
   public symbolsCollection: SymbolShaderCollection
 
@@ -736,7 +735,6 @@ export class ShapesShaderCollection {
   constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
     const { regl, image } = props
     this.regl = regl
-    this.image = image
     this.symbolsCollection = new SymbolShaderCollection({
       regl
     })
@@ -786,7 +784,7 @@ export class ShapesShaderCollection {
       surfaces: [],
       surfacesWithHoles: []
     }
-    this.refresh()
+    this.refresh(image)
   }
 
   public get histogram(): ShapesListHistogram {
@@ -799,7 +797,7 @@ export class ShapesShaderCollection {
   }
 
 
-  public refresh(): this {
+  public refresh(image: Shapes.Shape[]): this {
 
     // first order of business is to clear the shapes
     this.symbolsCollection.symbols.clear()
@@ -851,7 +849,7 @@ export class ShapesShaderCollection {
     }
 
 
-    this.image.forEach((record) => {
+    image.forEach((record) => {
       if (record.type === FeatureTypeIdentifier.SURFACE) {
         this.shapes.surfaces.push(record)
       } else if (
@@ -1113,29 +1111,27 @@ export class ShapesShaderCollection {
 
 export class DatumTextShaderCollection {
   private regl: REGL.Regl
-  private image: Shapes.Shape[] = []
 
   public attachment: DatumTextAttachments
 
   constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
     const { regl, image } = props
     this.regl = regl
-    this.image = image
     this.attachment = {
       positions: this.regl.buffer(0),
       texcoords: this.regl.buffer(0),
       stringIndexes: this.regl.buffer(0),
       length: 0
     }
-    this.refresh()
+    this.refresh(image)
   }
 
 
-  refresh(): this {
+  refresh(image: Shapes.Shape[]): this {
     const positions: number[] = [];
     const texcoords: number[] = [];
     const stringIndexes: number[] = [];
-    this.image.map((record) => {
+    image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
       const string = record.text.toLowerCase()
       const x = record.x
@@ -1162,24 +1158,22 @@ export class DatumTextShaderCollection {
 
 export class DatumShaderCollection {
   private regl: REGL.Regl
-  private image: Shapes.Shape[] = []
 
   public attachment: DatumAttachments
 
   constructor(props: { regl: REGL.Regl, image: Shapes.Shape[] }) {
     const { image, regl } = props
     this.regl = regl
-    this.image = image
     this.attachment = {
       positions: this.regl.buffer(0),
       length: 0
     }
-    this.refresh()
+    this.refresh(image)
   }
 
-  public refresh(): this {
+  public refresh(image: Shapes.Shape[]): this {
     const positions: number[] = []
-    this.image.map((record) => {
+    image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_POINT) return
       positions.push(record.x, record.y)
     })
@@ -1268,7 +1262,6 @@ export class SymbolShaderCollection {
 }
 
 export class MacroShaderCollection {
-  private image: Shapes.Shape[] = []
   public macros: Map<
     string,
     {
@@ -1290,8 +1283,7 @@ export class MacroShaderCollection {
     const { image, regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
-    this.image = image
-    this.refresh()
+    this.refresh(image)
   }
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
@@ -1315,9 +1307,9 @@ export class MacroShaderCollection {
     return symbol.id
   }
 
-  public refresh(): this {
+  public refresh(image: Shapes.Shape[]): this {
     this.macros.clear()
-    this.image.forEach((record) => {
+    image.forEach((record) => {
       if (record.type != FeatureTypeIdentifier.PAD) {
         return
       }
@@ -1349,7 +1341,6 @@ export class MacroShaderCollection {
 }
 
 export class StepAndRepeatCollection {
-  private image: Shapes.Shape[] = []
   public steps: StepAndRepeatRenderer[] = []
   private regl: REGL.Regl
   private ctx: OffscreenCanvasRenderingContext2D
@@ -1358,13 +1349,12 @@ export class StepAndRepeatCollection {
     const { image, regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
-    this.image = image
-    this.refresh()
+    this.refresh(image)
   }
 
-  public refresh(): this {
+  public refresh(image: Shapes.Shape[]): this {
     this.steps.length = 0
-    this.image.forEach((record) => {
+    image.forEach((record) => {
       if (record.type != FeatureTypeIdentifier.STEP_AND_REPEAT) {
         return
       }

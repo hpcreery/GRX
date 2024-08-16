@@ -104,6 +104,7 @@ export class Plotter {
     for (const [_idx, cell] of this.gdsiiHierarchy[srefName].entries()) {
       const srShape = new Shapes.StepAndRepeat({
         shapes: [cell.shape],
+        break: true,
         repeats: [
           {
             datum: vec2.fromValues(el.XY[0].x * this.scale, el.XY[0].y * this.scale),
@@ -154,7 +155,8 @@ export class Plotter {
 
       const srShape = new Shapes.StepAndRepeat({
         shapes: [cell.shape],
-        repeats: repeats
+        break: true,
+        repeats: repeats,
       })
       // gdsiiHierarchy[cellName].push({
       //   layer: cell.layer,
