@@ -61,6 +61,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   const { units } = useContext(ConfigEditorProvider)
   const [layerUnits, setLayerUnts] = useState<Units>(units)
+  const [layerName, setLayerName] = useState<string>('')
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -87,6 +88,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
       backend.getLayers().then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.uid === props.layersUID) {
+            setLayerName(layer.name)
             setLayerUnts(layer.units)
             setDatumX(layer.transform.datum[0])
             setDatumY(layer.transform.datum[1])
@@ -132,7 +134,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     <Modal
       opened={props.visible}
       onClose={props.onClose}
-      title={`Layer Transform`}
+      title={`Transform: ${layerName}`}
     >
       <Group justify="center" wrap='nowrap' grow>
         <NumberInput
