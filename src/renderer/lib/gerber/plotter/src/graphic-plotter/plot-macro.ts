@@ -163,7 +163,7 @@ function plotCenterLine(parameters: number[]): Shapes.Primitive {
 
   return new Shapes.Pad({
     polarity: exposure === 1 ? 1 : 0,
-    rotation: -degrees,
+    rotation: degrees,
     x: x,
     y: y,
     symbol: new Symbols.RectangleSymbol({
@@ -180,7 +180,7 @@ function plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
 
   return new Shapes.Pad({
     polarity: exposure === 1 ? 1 : 0,
-    rotation: -degrees,
+    rotation: degrees,
     x: xs + width / 2,
     y: ys + height / 2,
     symbol: new Symbols.RectangleSymbol({
@@ -229,7 +229,7 @@ function plotPolygon(parameters: number[]): Shapes.Primitive {
     polarity: exposure === 1 ? 1 : 0,
     x: x,
     y: y,
-    rotation: -degrees,
+    rotation: degrees,
     symbol: new Symbols.PolygonSymbol({
       outer_dia: diameter,
       corners: vertices,
@@ -248,7 +248,7 @@ function plotMoire(parameters: number[]): Shapes.Primitive {
     polarity: 1,
     x: cx,
     y: cy,
-    rotation: -degrees,
+    rotation: degrees,
     symbol: new Symbols.MoireGerberSymbol({
       outer_dia: d,
       ring_gap: ringGap,
@@ -269,7 +269,7 @@ function plotThermal(parameters: number[]): Shapes.Primitive {
     polarity: 1,
     x: x,
     y: y,
-    rotation: -degrees,
+    rotation: degrees,
     symbol: new Symbols.SquaredRoundThermalSymbol({
       outer_dia: od,
       inner_dia: id,

@@ -45,7 +45,7 @@ export interface Transform {
    */
   datum: vec2
   /**
-   * Rotation in degrees (clockwise)
+   * Rotation in degrees (counterclockwise)
    */
   rotation: number
   /**

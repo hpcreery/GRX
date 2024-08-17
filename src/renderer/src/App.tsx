@@ -3,12 +3,12 @@ import { useRef, useEffect, useState, useContext } from 'react'
 import { RenderEngine } from './renderer'
 import chroma from 'chroma-js'
 import InfoModal from './components/InfoModal'
-import Toolbar from './components/Toolbar'
+import Toolbar from './components/toolbar/Toolbar'
 import MousePosition from './components/MousePosition'
-import LayerSidebar from './components/LayersSidebar'
+import LayerSidebar from './components/layer-sidebar/LayersSidebar'
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from '@mantine/core'
 import { ConfigEditorProvider } from './contexts/ConfigEditor'
-import { FeatureSidebar } from './components/FeatureSidebar'
+import { FeatureSidebar } from './components/feature-sidebar/FeatureSidebar'
 import { EngineEvents, MessageData } from './renderer/engine'
 import * as Comlink from 'comlink'
 import { notifications } from '@mantine/notifications'
@@ -26,11 +26,12 @@ export default function App(): JSX.Element | null {
 
   // Load in the render engine
   useEffect(() => {
+    console.log('Loading Engine Application')
     const Engine = new RenderEngine({ container: elementRef.current })
     setRenderEngine(Engine)
     setEngineBackgroundColor()
     Engine.onLoad(() => {
-      console.log('Engine application loaded', Engine)
+      console.log('Engine Application Loaded', Engine)
       setReady(true)
       Engine.backend.then((backend) => {
         backend.addEventCallback(

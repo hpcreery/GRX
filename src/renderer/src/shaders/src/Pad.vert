@@ -96,7 +96,7 @@ void main() {
   Size += vec2(pixel_size, pixel_size);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
-  vec2 RotatedPostion = SizedPosition * rotateCCW(radians(a_Rotation));
+  vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
   if (a_Mirror_X == 1.0) {
     RotatedPostion.x = -RotatedPostion.x;
   }

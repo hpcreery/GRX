@@ -44,6 +44,7 @@ const TransformStorePrototype: TransformStore & TransformStoreState = {
       this._currentTransform.polarity = node.polarity
     }
     if (node.type === LOAD_ROTATION) {
+      // rotation is in degrees counterclockwise
       this._currentTransform.rotation = node.rotation
     }
     if (node.type === LOAD_SCALING) {

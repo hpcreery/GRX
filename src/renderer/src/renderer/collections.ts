@@ -732,8 +732,8 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
-  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
-    const { regl, image } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
     this.symbolsCollection = new SymbolShaderCollection({
       regl
@@ -784,7 +784,6 @@ export class ShapesShaderCollection {
       surfaces: [],
       surfacesWithHoles: []
     }
-    this.refresh(image)
   }
 
   public get histogram(): ShapesListHistogram {
@@ -1114,8 +1113,8 @@ export class DatumTextShaderCollection {
 
   public attachment: DatumTextAttachments
 
-  constructor(props: { regl: REGL.Regl; image: Shapes.Shape[] }) {
-    const { regl, image } = props
+  constructor(props: { regl: REGL.Regl}) {
+    const { regl } = props
     this.regl = regl
     this.attachment = {
       positions: this.regl.buffer(0),
@@ -1123,7 +1122,6 @@ export class DatumTextShaderCollection {
       stringIndexes: this.regl.buffer(0),
       length: 0
     }
-    this.refresh(image)
   }
 
 
@@ -1161,18 +1159,18 @@ export class DatumShaderCollection {
 
   public attachment: DatumAttachments
 
-  constructor(props: { regl: REGL.Regl, image: Shapes.Shape[] }) {
-    const { image, regl } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
     this.attachment = {
       positions: this.regl.buffer(0),
       length: 0
     }
-    this.refresh(image)
   }
 
   public refresh(image: Shapes.Shape[]): this {
     const positions: number[] = []
+    positions.push(0, 0)
     image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_POINT) return
       positions.push(record.x, record.y)
@@ -1279,11 +1277,10 @@ export class MacroShaderCollection {
   >()
   private regl: REGL.Regl
   private ctx: OffscreenCanvasRenderingContext2D
-  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D, image: Shapes.Shape[] }) {
-    const { image, regl, ctx } = props
+  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D }) {
+    const { regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
-    this.refresh(image)
   }
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
@@ -1345,11 +1342,10 @@ export class StepAndRepeatCollection {
   private regl: REGL.Regl
   private ctx: OffscreenCanvasRenderingContext2D
 
-  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D, image: Shapes.Shape[] }) {
-    const { image, regl, ctx } = props
+  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D}) {
+    const { regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
-    this.refresh(image)
   }
 
   public refresh(image: Shapes.Shape[]): this {
@@ -1406,7 +1402,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         new Shapes.Pad({
           x: prevx,
           y: prevy,
-          rotation: -prevAngleDeg,
+          rotation: prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
           index: record.index
@@ -1430,7 +1426,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         new Shapes.Pad({
           x: x,
           y: y,
-          rotation: -prevAngleDeg,
+          rotation: prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
           index: record.index
@@ -1467,7 +1463,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         const pad = new Shapes.Pad({
           x: x + offsetx,
           y: y + offsety,
-          rotation: -(angle * 180) / Math.PI,
+          rotation: (angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
           index: record.index
@@ -1492,7 +1488,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         const pad = new Shapes.Pad({
           x: x + offsetx,
           y: y + offsety,
-          rotation: -(angle * 180) / Math.PI,
+          rotation: (angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
           index: record.index
@@ -1509,7 +1505,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         const pad2 = new Shapes.Pad({
           x: x + offsetx2,
           y: y + offsety2,
-          rotation: -((angle + Math.PI) * 180) / Math.PI,
+          rotation: ((angle + Math.PI) * 180) / Math.PI,
           symbol: tringle2,
           polarity: record.polarity,
           index: record.index

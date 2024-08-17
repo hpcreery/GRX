@@ -8,12 +8,12 @@ import { animated, useSpring } from '@react-spring/web'
 import type Layer from '@src/renderer/layer'
 import { RenderEngine } from '@src/renderer'
 // import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
-import { UploadFile } from '../LayersSidebar'
+import { UploadFile } from './LayersSidebar'
 import {
   IconCircleFilled,
   IconCircleDotted,
   IconTrashX,
-  // IconChartHistogram,
+  IconPerspective,
   IconEye,
   IconEyeOff,
   IconColorPicker,
@@ -24,6 +24,7 @@ import {
 import { useContextMenu } from 'mantine-contextmenu'
 import type { LayerInfo } from '@src/renderer/engine'
 import { vec3 } from 'gl-matrix'
+import LayerTransform from './transform/LayerTransform'
 
 interface LayerListItemProps {
   file: UploadFile
@@ -52,6 +53,8 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [visible, setVisible] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
+  const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
+
   // const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
   function registerLayers(rendererLayers: LayerInfo[]): void {
@@ -199,6 +202,14 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         setTimeout(() => {
           setShowColorPicker(true)
         }, 100)
+      }
+    },
+    {
+      title: 'Transform',
+      key: '7',
+      icon: <IconPerspective stroke={1.5} size={18} />,
+      onClick: (): void => {
+        setLayerTransformVisible(true)
       }
     },
     {
@@ -376,6 +387,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           ]}
         />
       </Popover.Dropdown>
+      <LayerTransform renderEngine={renderEngine} layersUID={layer.uid} visible={layerTransformVisible} onClose={() => setLayerTransformVisible(false)} />
     </Popover>
   )
 }

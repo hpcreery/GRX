@@ -28,9 +28,9 @@ import {
   Kbd
 } from '@mantine/core'
 import { useDisclosure, useHotkeys } from '@mantine/hooks'
-import GeneralSettings from './toolbar/GeneralSettings'
-import GridSettings from './toolbar/GridSettings'
-import EngineSettings from './toolbar/EngineSettings'
+import GeneralSettings from './GeneralSettings'
+import GridSettings from './GridSettings'
+import EngineSettings from './EngineSettings'
 import type { PointerSettings } from '@src/renderer'
 import { useContextMenu } from 'mantine-contextmenu'
 import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';

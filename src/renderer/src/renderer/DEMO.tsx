@@ -7,7 +7,7 @@ import { Button, Switch, Box } from '@mantine/core'
 import { PointerEvent, PointerEvents } from '.'
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
-import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?url'
+import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
 
 // import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
 // import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
@@ -39,11 +39,20 @@ new Array<number>(100)
       // Start point.
       x: (i % 10) * 0.02,
       y: Math.floor(i / 10) * 0.02,
+      rotation: 10,
       // sym_num: Symbols.STANDARD_SYMBOLS_MAP.Round,
-      symbol: new Symbols.SquareSymbol({
-        width: 0.01,
-        height: 0.01,
-        inner_dia: 0
+      // symbol: new Symbols.SquareSymbol({
+      //   width: 0.01,
+      //   height: 0.01,
+      //   inner_dia: 0,
+
+      // }),
+      symbol: new Symbols.RoundedRoundThermalSymbol({
+        inner_dia: 0.005,
+        outer_dia: 0.01,
+        angle: 20,
+        gap: 0.001,
+        num_spokes: 2,
       }),
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
@@ -1176,6 +1185,7 @@ function REGLApp(): JSX.Element {
     })
 
     Engine.settings.OUTLINE_MODE = false
+    Engine.settings.SHOW_DATUMS = true
     // Engine.settings.FPS = 30
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
 
@@ -1212,16 +1222,17 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    // Engine.addLayer({
-    //   name: 'pads',
-    //   // transform: {
-    //   //   datum: [0.5, 0],
-    //   //   scale: 1,
-    //   //   rotation: 0,
-    //   //   mirror: 1,
-    //   // },
-    //   image: PAD_RECORDS_ARRAY
-    // })
+    Engine.addLayer({
+      name: 'pads',
+      // transform: {
+      //   datum: [0.5, 0],
+      //   scale: 1,
+      //   rotation: 0,
+      //   mirror: 1,
+      // },
+      image: SQUARE_GRID,
+      units: 'mm'
+    })
 
     // Engine.addLayer({
     //   name: '+/- lines',
@@ -1470,15 +1481,14 @@ function REGLApp(): JSX.Element {
     //   units: 'mm'
     // })
 
-    const enc = new TextEncoder()
-    Engine.addFile({
-      buffer: enc.encode(gdsiiFile),
-      format: 'gdsii',
-      props: {
-        name: 'gdsii',
-      },
-      // units: 'mm'
-    })
+    // Engine.addFile({
+    //   buffer: gdsiiFile,
+    //   format: 'gdsii',
+    //   props: {
+    //     name: 'gdsii',
+    //   },
+    //   // units: 'mm'
+    // })
 
     // find all shapes in engine and loop through the shapes
     // Engine.backend.then(backend => backend.getLayers().then(layers => {

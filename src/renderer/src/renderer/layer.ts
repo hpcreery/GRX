@@ -78,6 +78,7 @@ export class ShapeTransform implements Transform {
           mat3.translate(this.matrix, this.matrix, datum)
           break
         case 'rotate':
+          // rotation is counterclockwise
           mat3.rotate(this.matrix, this.matrix, rotation * (Math.PI / 180))
           break
         case 'mirror':
@@ -162,7 +163,6 @@ export class ShapeRenderer {
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
-      this.transform.update(mat3.create())
     }
 
     this.image = props.image
@@ -171,26 +171,26 @@ export class ShapeRenderer {
 
     this.shapeCollection = new ShapesShaderCollection({
       regl: this.regl,
-      image: this.image
     })
     this.macroCollection = new MacroShaderCollection({
       regl: this.regl,
       ctx: this.ctx,
-      image: this.image
     })
     this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
       ctx: this.ctx,
-      image: this.image
     })
     this.datumCollection = new DatumShaderCollection({
       regl: this.regl,
-      image: this.image
     })
     this.datumTextCollection = new DatumTextShaderCollection({
       regl: this.regl,
-      image: this.image
     })
+    this.shapeCollection.refresh(this.image)
+    this.macroCollection.refresh(this.image)
+    this.stepAndRepeatCollection.refresh(this.image)
+    this.datumCollection.refresh(this.image)
+    this.datumTextCollection.refresh(this.image)
 
     this.commonConfig = this.regl<
       CommonUniforms,
@@ -469,7 +469,8 @@ export class ShapeRenderer {
       this.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
       this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
       this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
-      this.drawDatumText(this.datumTextCollection.attachment)
+      // draw datum text function is not always ready immediatly as it requires a font to be loaded
+      if (typeof this.drawDatumText === 'function') this.drawDatumText(this.datumTextCollection.attachment)
       this.drawDatumPoints(this.datumCollection.attachment)
     })
   }
@@ -753,6 +754,10 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 }
 
+
+/**
+ * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
+ */
 export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
   const newImage: Shapes.Shape[] = []
   for (const repeat of stepRepeat.repeats) {

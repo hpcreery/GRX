@@ -88,7 +88,7 @@ vec2 transfromLocation(vec2 pixel_coord) {
   if (v_Mirror_Y == 1.0) {
     offset_position.y = -offset_position.y;
   }
-  vec2 true_coord = offset_position * rotateCW(radians(v_Rotation)) / v_ResizeFactor;
+  vec2 true_coord = offset_position * rotateCCW(radians(v_Rotation)) / v_ResizeFactor;
   return true_coord;
 }
 

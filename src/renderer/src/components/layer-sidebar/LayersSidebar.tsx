@@ -20,7 +20,7 @@ import {
   IconContrastOff,
   IconClearAll
 } from '@tabler/icons-react'
-import LayerListItem from './sidebar/LayerListItem'
+import LayerListItem from './LayerListItem'
 import type { LayerInfo } from '@src/renderer/engine'
 import * as Comlink from 'comlink'
 

@@ -6,7 +6,7 @@ import * as Shapes from './shapes'
 import * as Comlink from 'comlink'
 import plugins from './plugins'
 import type { Plugin, PluginsDefinition, AddLayerProps } from './plugins'
-import type { Units, BoundingBox } from './types'
+import type { Units, BoundingBox, Transform } from './types'
 import GridFrag from '../shaders/src/Grid.frag'
 import OriginFrag from '../shaders/src/Origin.frag'
 import LoadingFrag from '../shaders/src/Loading/Winding.frag'
@@ -123,7 +123,8 @@ export interface LayerInfo {
   type: string,
   units: Units,
   visible: boolean,
-  format: string
+  format: string,
+  transform: Transform
 }
 
 export const EngineEvents = {
@@ -302,7 +303,6 @@ export class RenderEngineBackend {
     console.log('WEBGL LIMITS', this.regl.limits)
 
     initializeRenderers(this.regl)
-    // initializeGlyphRenderer(this.regl, new Uint8ClampedArray(0))
 
     this.regl.clear({
       depth: 0
@@ -571,7 +571,7 @@ export class RenderEngineBackend {
     return [mouse[0], mouse[1]]
   }
 
-  public async addMessage(data: MessageData): Promise<void> {
+  public async sendMessage(data: MessageData): Promise<void> {
     this.eventTarget.dispatchEvent(new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
       data
     }))
@@ -599,7 +599,7 @@ export class RenderEngineBackend {
     }
     if (!Object.keys(plugins).includes(params.format)) {
       console.error('No parser found for format: ' + params.format)
-      this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
+      this.sendMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
       return
     }
 
@@ -610,7 +610,7 @@ export class RenderEngineBackend {
       const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const addMessageCallback = async (level: TMessageLevel, title: string, message: string): Promise<void> => {
         // await notifications.show({title, message})
-        this.addMessage({ level, title, message })
+        this.sendMessage({ level, title, message })
       }
       const instance = new pluginWorker()
       const parser = Comlink.wrap<Plugin>(instance)
@@ -627,11 +627,11 @@ export class RenderEngineBackend {
           this.layersQueue.splice(index, 1)
         }
         this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
-        this.addMessage({ level: MessageLevel.INFO, title: 'File Loaded', message: 'File loaded successfully' })
+        this.sendMessage({ level: MessageLevel.INFO, title: 'File Loaded', message: 'File loaded successfully' })
       }
     } else {
       console.error('No parser found for format: ' + params.format)
-      this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
+      this.sendMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
     }
   }
 
@@ -645,7 +645,8 @@ export class RenderEngineBackend {
         type: layer.type,
         units: layer.units,
         visible: layer.visible,
-        format: layer.format
+        format: layer.format,
+        transform: layer.transform
       }
     })
   }
@@ -687,6 +688,15 @@ export class RenderEngineBackend {
     const layer = this.layers.find((layer) => layer.uid === uid)
     if (!layer) return
     Object.assign(layer, props)
+    this.render({
+      force: true,
+    })
+  }
+
+  public setLayerTransform(uid: string, transform: Partial<Transform>): void {
+    const layer = this.layers.find((layer) => layer.uid === uid)
+    if (!layer) return
+    Object.assign(layer.transform, transform)
     this.render({
       force: true,
     })
