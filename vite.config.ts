@@ -1,24 +1,24 @@
-import { resolve } from 'path'
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { comlink } from 'vite-plugin-comlink'
-import glslify from 'rollup-plugin-glslify'
-import arraybuffer from "vite-plugin-arraybuffer";
+import { resolve } from "path"
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import { comlink } from "vite-plugin-comlink"
+import glslify from "rollup-plugin-glslify"
+import arraybuffer from "vite-plugin-arraybuffer"
 
 export default defineConfig({
-  base: './',
+  base: "./",
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version)
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
-  root: resolve('src/renderer'),
+  root: resolve("src/renderer"),
   resolve: {
     alias: {
-      '@src': resolve('src/renderer/src'),
-      '@lib': resolve('src/renderer/lib'),
-    }
+      "@src": resolve("src/renderer/src"),
+      "@lib": resolve("src/renderer/lib"),
+    },
   },
   build: {
-    outDir: resolve('out/web')
+    outDir: resolve("out/web"),
   },
   plugins: [
     react(),
@@ -27,19 +27,19 @@ export default defineConfig({
     glslify({
       compress: false,
       // @ts-ignore - glslify options are not typed
-      transform: ['glslify-import']
+      transform: ["glslify-import"],
     }),
   ],
   worker: {
-    format: 'es',
+    format: "es",
     plugins: () => [
       comlink(),
       arraybuffer(),
       glslify({
         compress: false,
         // @ts-ignore - glslify options are not typed
-        transform: ['glslify-import']
+        transform: ["glslify-import"],
       }),
-    ]
-  }
+    ],
+  },
 })

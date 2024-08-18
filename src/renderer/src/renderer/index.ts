@@ -1,10 +1,10 @@
-import * as Comlink from 'comlink'
-import EngineWorker from './engine?worker'
-import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from './engine'
-import { AddLayerProps } from './plugins'
+import * as Comlink from "comlink"
+import EngineWorker from "./engine?worker"
+import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from "./engine"
+import { AddLayerProps } from "./plugins"
 
-import font from './text/glyph/font.png?arraybuffer'
-import { fontInfo } from './text/glyph/font'
+import font from "./text/glyph/font.png?arraybuffer"
+import { fontInfo } from "./text/glyph/font"
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -20,15 +20,15 @@ interface PointerCoordinates {
 }
 
 export interface PointerSettings {
-  mode: 'move' | 'select' | 'measure'
+  mode: "move" | "select" | "measure"
 }
 
 export const PointerEvents = {
-  POINTER_DOWN: 'pointerdown',
-  POINTER_UP: 'pointerup',
-  POINTER_MOVE: 'pointermove',
-  POINTER_HOVER: 'pointerhover',
-  POINTER_SELECT: 'pointerselect'
+  POINTER_DOWN: "pointerdown",
+  POINTER_UP: "pointerup",
+  POINTER_MOVE: "pointermove",
+  POINTER_HOVER: "pointerhover",
+  POINTER_SELECT: "pointerselect",
 } as const
 
 export type PointerEvent = CustomEvent<PointerCoordinates>
@@ -44,26 +44,26 @@ export class RenderEngine {
         this.MSPFRAME = 1000 / value
       },
       OUTLINE_MODE: false,
-      COLOR_BLEND: 'Contrast',
+      COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 100,
       MIN_ZOOM: 0.01,
       ZOOM_TO_CURSOR: true,
-      SHOW_DATUMS: false
+      SHOW_DATUMS: false,
     },
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
           engine.settings[name] = value
           engine.render({
-            force: true
+            force: true,
           })
         })
-        if (name == 'COLOR_BLEND') this.updateBlendCommand()
+        if (name == "COLOR_BLEND") this.updateBlendCommand()
         target[name] = value
         return true
-      }
-    }
+      },
+    },
   )
   public grid: GridRenderProps = new Proxy(
     {
@@ -74,36 +74,36 @@ export class RenderEngine {
       offset_x: 0,
       offset_y: 0,
       _type: 0,
-      type: 'dots'
+      type: "dots",
     },
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
           engine.grid[name] = value
           engine.render({
-            force: true
+            force: true,
           })
         })
         target[name] = value
         return true
-      }
-    }
+      },
+    },
   )
   public pointerSettings: PointerSettings = new Proxy(
     {
-      mode: 'move'
+      mode: "move",
     },
     {
       set: (target, name, value): boolean => {
-        if (name === 'mode') {
-          if (value === 'move') this.CONTAINER.style.cursor = 'grab'
-          if (value === 'select') this.CONTAINER.style.cursor = 'crosshair'
-          if (value === 'measure') this.CONTAINER.style.cursor = 'crosshair'
+        if (name === "mode") {
+          if (value === "move") this.CONTAINER.style.cursor = "grab"
+          if (value === "select") this.CONTAINER.style.cursor = "crosshair"
+          if (value === "measure") this.CONTAINER.style.cursor = "crosshair"
         }
         target[name] = value
         return true
-      }
-    }
+      },
+    },
   )
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
@@ -113,7 +113,7 @@ export class RenderEngine {
   public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
-    this.CONTAINER.style.cursor = 'grab'
+    this.CONTAINER.style.cursor = "grab"
     this.canvasGL = this.createCanvas()
     this.canvas2D = this.createCanvas()
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
@@ -121,13 +121,13 @@ export class RenderEngine {
     this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
       width: this.canvasGL.width,
-      height: this.canvasGL.height
+      height: this.canvasGL.height,
     })
     this.sendGlyphData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
     this.render({
-      force: true
+      force: true,
     })
   }
 
@@ -137,12 +137,12 @@ export class RenderEngine {
   }
 
   private createCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas')
+    const canvas = document.createElement("canvas")
     canvas.width = this.CONTAINER.clientWidth
     canvas.height = this.CONTAINER.clientHeight
     // canvas.style.width = String(this.CONTAINER.clientWidth)
     // canvas.style.height = String(this.CONTAINER.clientHeight)
-    canvas.style.position = 'absolute'
+    canvas.style.position = "absolute"
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
@@ -169,10 +169,7 @@ export class RenderEngine {
     const mouse_element_pos = this.getMouseCanvasCoordinates(e)
 
     // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [
-      number,
-      number
-    ]
+    const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
     // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
@@ -191,15 +188,12 @@ export class RenderEngine {
 
   private async addControls(): Promise<void> {
     const backend = await this.backend
-    const sendPointerEvent = async (
-      mouse: MouseEvent,
-      event_type: (typeof PointerEvents)[keyof typeof PointerEvents]
-    ): Promise<void> => {
+    const sendPointerEvent = async (mouse: MouseEvent, event_type: (typeof PointerEvents)[keyof typeof PointerEvents]): Promise<void> => {
       const [x, y] = await this.getMouseWorldCoordinates(mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
-          detail: { x, y }
-        })
+          detail: { x, y },
+        }),
       )
     }
 
@@ -221,45 +215,44 @@ export class RenderEngine {
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
       this.pointerCache.push(e)
-      if (this.pointerSettings.mode === 'move') {
-        this.CONTAINER.style.cursor = 'grabbing'
+      if (this.pointerSettings.mode === "move") {
+        this.CONTAINER.style.cursor = "grabbing"
         await backend.grabViewport()
-      } else if (this.pointerSettings.mode === 'select') {
-        this.CONTAINER.style.cursor = 'wait'
+      } else if (this.pointerSettings.mode === "select") {
+        this.CONTAINER.style.cursor = "wait"
         const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.select([x, y])
-        console.log('features', features)
+        console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QueryFeature[]>(PointerEvents.POINTER_SELECT, {
-            detail: features
-          })
+            detail: features,
+          }),
         )
-        this.CONTAINER.style.cursor = 'crosshair'
-      } else if (this.pointerSettings.mode === 'measure') {
-        this.CONTAINER.style.cursor = 'crosshair'
+        this.CONTAINER.style.cursor = "crosshair"
+      } else if (this.pointerSettings.mode === "measure") {
+        this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
         backend.addMeasurement([x1, y1])
       }
-
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === 'move') {
-        this.CONTAINER.style.cursor = 'grab'
+      if (this.pointerSettings.mode === "move") {
+        this.CONTAINER.style.cursor = "grab"
         await backend.releaseViewport()
       }
       removePointerCache(e)
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === 'move') {
+      if (this.pointerSettings.mode === "move") {
         await backend.releaseViewport()
       }
       removePointerCache(e)
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === 'move') {
+      if (this.pointerSettings.mode === "move") {
         await backend.releaseViewport()
       }
       removePointerCache(e)
@@ -269,8 +262,8 @@ export class RenderEngine {
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
-      if (this.pointerSettings.mode === 'measure') {
-        this.CONTAINER.style.cursor = 'crosshair'
+      if (this.pointerSettings.mode === "measure") {
+        this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
         backend.updateMeasurement([x1, y1])
       }
@@ -280,14 +273,17 @@ export class RenderEngine {
         return
       }
 
-      if (this.pointerSettings.mode === 'move') {
+      if (this.pointerSettings.mode === "move") {
         // If more than 2 pointers are down, check for pinch gestures
         if (this.pointerCache.length >= 2) {
           const p1 = this.pointerCache[0]
           const p2 = this.pointerCache[1]
-          const startDistance = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
-          const endDistance = Math.hypot((p1.clientX + p1.movementX) - (p2.clientX + p2.movementX), (p1.clientY + p1.movementY) - (p2.clientY + p2.movementY));
-          const zoomFactor = (startDistance - endDistance) / this.pointerCache.length;
+          const startDistance = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY)
+          const endDistance = Math.hypot(
+            p1.clientX + p1.movementX - (p2.clientX + p2.movementX),
+            p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
+          )
+          const zoomFactor = (startDistance - endDistance) / this.pointerCache.length
           const settings = await backend.settings
           const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
@@ -307,22 +303,22 @@ export class RenderEngine {
       //   this.pointerSettings.mode = 'move'
       //   this.CONTAINER.style.cursor = 'grab'
       // }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         const isDragging = await backend.isDragging()
         if (isDragging) return
         this.backend.then((engine) => {
           engine.grabViewport()
           switch (e.key) {
-            case 'ArrowUp':
+            case "ArrowUp":
               engine.moveViewport(0, 10)
               break
-            case 'ArrowDown':
+            case "ArrowDown":
               engine.moveViewport(0, -10)
               break
-            case 'ArrowLeft':
+            case "ArrowLeft":
               engine.moveViewport(10, 0)
               break
-            case 'ArrowRight':
+            case "ArrowRight":
               engine.moveViewport(-10, 0)
               break
           }
@@ -337,11 +333,7 @@ export class RenderEngine {
     backend.addLayer(params)
   }
 
-  public async addFile(params: {
-    buffer: ArrayBuffer
-    format: string
-    props: Partial<Omit<AddLayerProps, 'image'>>
-  }): Promise<void> {
+  public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
   }
@@ -357,9 +349,9 @@ export class RenderEngine {
   }
 
   private sendGlyphData(): void {
-    const canvas = document.createElement('canvas')
-    const context = canvas.getContext('2d')
-    if (!context) throw new Error('Could not get 2d context')
+    const canvas = document.createElement("canvas")
+    const context = canvas.getContext("2d")
+    if (!context) throw new Error("Could not get 2d context")
     canvas.width = fontInfo.textureWidth
     canvas.height = fontInfo.textureHeight
     const image = new Image()
@@ -379,7 +371,7 @@ export class RenderEngine {
     ComWorker[Comlink.releaseProxy]()
     Worker.terminate()
 
-    this.CONTAINER.innerHTML = ''
+    this.CONTAINER.innerHTML = ""
     this.CONTAINER.onwheel = null
     this.CONTAINER.onmousedown = null
     this.CONTAINER.onmouseup = null

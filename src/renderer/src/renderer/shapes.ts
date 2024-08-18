@@ -1,47 +1,12 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from './types'
-import * as Symbols from './symbols'
-import { vec2 } from 'gl-matrix'
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "./types"
+import * as Symbols from "./symbols"
+import { vec2 } from "gl-matrix"
 
+export const PAD_RECORD_PARAMETERS = ["index", "x", "y", "sym_num", "resize_factor", "polarity", "rotation", "mirror_x", "mirror_y"] as const
+export const LINE_RECORD_PARAMETERS = ["index", "xs", "ys", "xe", "ye", "sym_num", "polarity"] as const
+export const ARC_RECORD_PARAMETERS = ["index", "xs", "ys", "xe", "ye", "xc", "yc", "clockwise", "sym_num", "polarity"] as const
 
-export const PAD_RECORD_PARAMETERS = [
-  'index',
-  'x',
-  'y',
-  'sym_num',
-  'resize_factor',
-  'polarity',
-  'rotation',
-  'mirror_x',
-  'mirror_y',
-] as const
-export const LINE_RECORD_PARAMETERS = [
-  'index',
-  'xs',
-  'ys',
-  'xe',
-  'ye',
-  'sym_num',
-  'polarity'
-] as const
-export const ARC_RECORD_PARAMETERS = [
-  'index',
-  'xs',
-  'ys',
-  'xe',
-  'ye',
-  'xc',
-  'yc',
-  'clockwise',
-  'sym_num',
-  'polarity',
-] as const
-
-export const SURFACE_RECORD_PARAMETERS = [
-  'index',
-  'polarity',
-  'indicies',
-  'offset'
-] as const
+export const SURFACE_RECORD_PARAMETERS = ["index", "polarity", "indicies", "offset"] as const
 
 // =================
 
@@ -100,7 +65,7 @@ export class Pad implements TPad_Record, IPlotRecord {
    */
   public mirror_y: Binary = 0
 
-  constructor(record: Partial<Omit<Pad, 'sym_num' | 'type'>>) {
+  constructor(record: Partial<Omit<Pad, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
 }
@@ -147,9 +112,7 @@ export class Line implements TLine_Record, IPlotRecord {
    */
   public polarity: Binary = 1
 
-  constructor(
-    record: Partial<Omit<Line, 'sym_num' | 'type'>>
-  ) {
+  constructor(record: Partial<Omit<Line, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
 }
@@ -208,37 +171,34 @@ export class Arc implements TArc_Record, IPlotRecord {
    */
   public clockwise: Binary = 0
 
-  constructor(
-    record: Partial<Omit<Arc, 'sym_num' | 'type'>>
-  ) {
+  constructor(record: Partial<Omit<Arc, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
-
 }
 
 // =================
 
 type TSurface = {
-  index: number;
-  polarity: number;
-  contours: Contour[];
+  index: number
+  polarity: number
+  contours: Contour[]
 }
 type TContour = {
-  xs: number;
-  ys: number;
-  poly_type: number;
-  segments: (Contour_Arc_Segment | Contour_Line_Segment)[];
+  xs: number
+  ys: number
+  poly_type: number
+  segments: (Contour_Arc_Segment | Contour_Line_Segment)[]
 }
 type TContourLineSegment = {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 type TContourArcSegment = {
-  x: number;
-  y: number;
-  xc: number;
-  yc: number;
-  clockwise: number;
+  x: number
+  y: number
+  xc: number
+  yc: number
+  clockwise: number
 }
 
 export class Contour_Arc_Segment implements TContourArcSegment {
@@ -264,7 +224,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
    */
   public clockwise: Binary = 0
 
-  constructor(segment: Omit<TContourArcSegment, 'id' | 'type'>) {
+  constructor(segment: Omit<TContourArcSegment, "id" | "type">) {
     Object.assign(this, segment)
   }
 }
@@ -280,7 +240,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
    */
   public y = 0
 
-  constructor(segment: Omit<TContourLineSegment, 'id' | 'type'>) {
+  constructor(segment: Omit<TContourLineSegment, "id" | "type">) {
     Object.assign(this, segment)
   }
 }
@@ -386,11 +346,11 @@ export class PolyLine implements IPlotRecord {
   /**
    * line end style: 'round' | 'square' | 'none' ( default 'round' )
    */
-  public pathtype: 'round' | 'square' | 'none' = 'round'
+  public pathtype: "round" | "square" | "none" = "round"
   /**
    * line corner style: 'chamfer' | 'round' | 'miter' ( default 'chamfer' )
    */
-  public cornertype: 'chamfer' | 'round' | 'miter' = 'chamfer'
+  public cornertype: "chamfer" | "round" | "miter" = "chamfer"
   /**
    * start x
    */
@@ -404,7 +364,7 @@ export class PolyLine implements IPlotRecord {
    */
   public lines: { x: number; y: number }[] = []
 
-  constructor(props: Partial<Omit<PolyLine, 'type'>>) {
+  constructor(props: Partial<Omit<PolyLine, "type">>) {
     Object.assign(this, props)
   }
 
@@ -441,7 +401,7 @@ export class StepAndRepeat implements IPlotRecord {
   /**
    * id of the step and repeat
    */
-  public id = ''
+  public id = ""
   /**
    * shapes to repeat
    */
@@ -455,7 +415,7 @@ export class StepAndRepeat implements IPlotRecord {
    */
   public break = false
 
-  constructor(props: Partial<Omit<StepAndRepeat, 'type'>>) {
+  constructor(props: Partial<Omit<StepAndRepeat, "type">>) {
     Object.assign(this, props)
   }
 }
@@ -478,7 +438,7 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.Symbol = new Symbols.NullSymbol({id: 'Datum Point'})
+  public symbol: Symbols.Symbol = new Symbols.NullSymbol({ id: "Datum Point" })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -506,7 +466,7 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
    */
   public mirror_y: Binary = 0
 
-  constructor(record: Partial<Omit<Pad, 'sym_num' | 'type'>>) {
+  constructor(record: Partial<Omit<Pad, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
 }
@@ -515,15 +475,14 @@ export class DatumText {
   public readonly type = FeatureTypeIdentifier.DATUM_TEXT
   public x = 0
   public y = 0
-  public text = ''
+  public text = ""
   public attributes: AttributeCollection = {}
   public index = 0
 
-  constructor(props: Partial<Omit<DatumText, 'type'>>) {
+  constructor(props: Partial<Omit<DatumText, "type">>) {
     Object.assign(this, props)
   }
 }
-
 
 export class DatumLine implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_LINE
@@ -551,7 +510,7 @@ export class DatumLine implements TLine_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({id: 'Datum Line'})
+  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({ id: "Datum Line" })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -563,9 +522,7 @@ export class DatumLine implements TLine_Record, IPlotRecord {
    */
   public polarity: Binary = 1
 
-  constructor(
-    record: Partial<Omit<Line, 'sym_num' | 'type'>>
-  ) {
+  constructor(record: Partial<Omit<Line, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
 }
@@ -604,7 +561,7 @@ export class DatumArc implements TArc_Record, IPlotRecord {
   /**
    * symbol to flash @see Symbols.Symbol
    */
-  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({id: 'Datum Arc'})
+  public symbol: Symbols.StandardSymbol = new Symbols.NullSymbol({ id: "Datum Arc" })
   /**
    * symbol number ( alias for symbol.sym_num.value )
    */
@@ -620,14 +577,10 @@ export class DatumArc implements TArc_Record, IPlotRecord {
    */
   public clockwise: Binary = 0
 
-  constructor(
-    record: Partial<Omit<Arc, 'sym_num' | 'type'>>
-  ) {
+  constructor(record: Partial<Omit<Arc, "sym_num" | "type">>) {
     Object.assign(this, record)
   }
-
 }
-
 
 export type Primitive = Pad | Line | Arc
 export type Datum = DatumPoint | DatumText | DatumLine | DatumArc
@@ -715,11 +668,12 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
       break
     }
     // } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
-    case FeatureTypeIdentifier.ARCSEGMENT: {
-      // TODO: better arc segment bounding box
-      min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))
-      max = vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
-    }
+    case FeatureTypeIdentifier.ARCSEGMENT:
+      {
+        // TODO: better arc segment bounding box
+        min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))
+        max = vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
+      }
       break
     case FeatureTypeIdentifier.DATUM_LINE:
     case FeatureTypeIdentifier.DATUM_POINT:
@@ -727,12 +681,11 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
     case FeatureTypeIdentifier.DATUM_ARC:
       break
     default:
-      console.warn('Unknown record type', record)
+      console.warn("Unknown record type", record)
       break
   }
   if (isNaN(min[0]) || isNaN(min[1]) || isNaN(max[0]) || isNaN(max[1])) {
     console.warn("Corrupt Feature Bounding Box", record, min, max)
   }
   return { min, max }
-
 }

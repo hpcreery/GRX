@@ -1,6 +1,6 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule } from "chevrotain"
-import { generateCstDts } from 'chevrotain'
-import standardFont from './standard?raw'
+import { generateCstDts } from "chevrotain"
+import standardFont from "./standard?raw"
 
 const SHXTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),
@@ -31,7 +31,6 @@ class SHXParser extends CstParser {
   ySize!: ParserMethod<unknown[], CstNode>
   offset!: ParserMethod<unknown[], CstNode>
   line!: ParserMethod<unknown[], CstNode>
-
 
   constructor() {
     super(SHXTokensList, {
@@ -88,47 +87,37 @@ class SHXParser extends CstParser {
       this.CONSUME(SHXTokens.Number)
       this.CONSUME(SHXTokens.Number)
       this.CONSUME(SHXTokens.Number)
-      this.OR([
-        { ALT: (): IToken => this.CONSUME(SHXTokens.Positive) },
-        { ALT: (): IToken => this.CONSUME(SHXTokens.Negative) },
-      ])
-      this.OR([
-        { ALT: (): IToken => this.CONSUME(SHXTokens.Round) },
-        { ALT: (): IToken => this.CONSUME(SHXTokens.Square) },
-      ])
+      this.OR([{ ALT: (): IToken => this.CONSUME(SHXTokens.Positive) }, { ALT: (): IToken => this.CONSUME(SHXTokens.Negative) }])
+      this.OR([{ ALT: (): IToken => this.CONSUME(SHXTokens.Round) }, { ALT: (): IToken => this.CONSUME(SHXTokens.Square) }])
       this.CONSUME(SHXTokens.Number)
       this.CONSUME(SHXTokens.NewLine)
     })
-
-
-
 
     this.performSelfAnalysis()
   }
 }
 
 export const parser = new SHXParser()
-export const productions: Record<string, Rule> = parser.getGAstProductions();
+export const productions: Record<string, Rule> = parser.getGAstProductions()
 
 const GENERATEDTS = false
 if (GENERATEDTS) {
-  const dtsString = generateCstDts(productions);
+  const dtsString = generateCstDts(productions)
   console.log(dtsString)
 }
 
-const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
+const BaseCstVisitor = parser.getBaseCstVisitorConstructor()
 // const BaseCstVisitor = parser.getBaseCstVisitorConstructorWithDefaults();
 
 export class SHXToShapesVisitor extends BaseCstVisitor {
   constructor() {
-    super();
-    this.validateVisitor();
+    super()
+    this.validateVisitor()
   }
-
 }
 
-const lexingResult = SHXLexer.tokenize(standardFont);
-parser.input = lexingResult.tokens;
-const result = parser.program();
+const lexingResult = SHXLexer.tokenize(standardFont)
+parser.input = lexingResult.tokens
+const result = parser.program()
 const visitor = new SHXToShapesVisitor()
 visitor.visit(result)

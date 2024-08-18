@@ -81,7 +81,7 @@ class Vector4 {
         this.w = value
         break
       default:
-        throw new Error('index is out of range: ' + index)
+        throw new Error("index is out of range: " + index)
     }
 
     return this
@@ -98,7 +98,7 @@ class Vector4 {
       case 3:
         return this.w
       default:
-        throw new Error('index is out of range: ' + index)
+        throw new Error("index is out of range: " + index)
     }
   }
 
@@ -256,11 +256,7 @@ class Vector4 {
       m32 = te[6],
       m33 = te[10]
 
-    if (
-      Math.abs(m12 - m21) < epsilon &&
-      Math.abs(m13 - m31) < epsilon &&
-      Math.abs(m23 - m32) < epsilon
-    ) {
+    if (Math.abs(m12 - m21) < epsilon && Math.abs(m13 - m31) < epsilon && Math.abs(m23 - m32) < epsilon) {
       // singularity found
       // first check for identity matrix which must have +1 for all terms
       // in leading diagonal and zero in other terms
@@ -334,9 +330,7 @@ class Vector4 {
 
     // as we have reached here there are no singularities so we can handle normally
 
-    let s = Math.sqrt(
-      (m32 - m23) * (m32 - m23) + (m13 - m31) * (m13 - m31) + (m21 - m12) * (m21 - m12)
-    ) // used to normalize
+    let s = Math.sqrt((m32 - m23) * (m32 - m23) + (m13 - m31) * (m13 - m31) + (m21 - m12) * (m21 - m12)) // used to normalize
 
     if (Math.abs(s) < 0.001) s = 1
 

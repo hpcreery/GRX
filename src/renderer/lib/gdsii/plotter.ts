@@ -1,7 +1,7 @@
-import { vec2 } from 'gl-matrix'
-import * as TREE from './gdsii_tree'
-import * as Shapes from '../../src/renderer/shapes'
-import { GDSIIHierarchy } from './types'
+import { vec2 } from "gl-matrix"
+import * as TREE from "./gdsii_tree"
+import * as Shapes from "../../src/renderer/shapes"
+import { GDSIIHierarchy } from "./types"
 
 export class Plotter {
   scale: number
@@ -11,14 +11,13 @@ export class Plotter {
 
   currentCellName: string
 
-
   constructor(scale: number) {
     this.scale = scale
 
     this.availableCells = new Set<string>()
     this.referencedCells = new Set<string>()
     this.gdsiiHierarchy = {}
-    this.currentCellName = ''
+    this.currentCellName = ""
   }
 
   public withCell(cell: TREE.structure): void {
@@ -30,7 +29,7 @@ export class Plotter {
   private pushShape(layer: number, shape: Shapes.Shape): void {
     this.gdsiiHierarchy[this.currentCellName].push({
       layer: layer,
-      shape: shape
+      shape: shape,
     })
   }
 
@@ -39,7 +38,7 @@ export class Plotter {
     for (const xy of el.XY) {
       const contour_line_segment = new Shapes.Contour_Line_Segment({
         x: xy.x * this.scale,
-        y: xy.y * this.scale
+        y: xy.y * this.scale,
       })
       contour_line_segments.push(contour_line_segment)
     }
@@ -47,11 +46,11 @@ export class Plotter {
     const contour = new Shapes.Contour({
       poly_type: 1,
       xs: el.XY[0].x * this.scale,
-      ys: el.XY[0].y * this.scale
+      ys: el.XY[0].y * this.scale,
     }).addSegments(contour_line_segments)
 
     const shape = new Shapes.Surface({
-      polarity: 1
+      polarity: 1,
     }).addContour(contour)
 
     this.pushShape(el.LAYER.layer, shape)
@@ -67,7 +66,7 @@ export class Plotter {
       if (i == 0) continue
       const line = {
         x: xy.x * this.scale,
-        y: xy.y * this.scale
+        y: xy.y * this.scale,
       }
       lines.push(line)
     }
@@ -77,15 +76,11 @@ export class Plotter {
       ys: el.XY[0].y * this.scale,
       // GDSII spec. 0=Flush, 1=Half Round Extension, 2=Half Width Extension, 4=Custom Extension
       // See Records 0x30 and 0x31
-      cornertype: ['miter', 'round', 'miter', undefined][
-        el.PATHTYPE ? el.PATHTYPE.pathtype : 0
-      ] as 'miter' | 'round' | undefined,
-      pathtype: ['none', 'round', 'square', 'none'][
-        el.PATHTYPE ? el.PATHTYPE.pathtype : 0
-      ] as 'none' | 'round' | 'square',
+      cornertype: ["miter", "round", "miter", undefined][el.PATHTYPE ? el.PATHTYPE.pathtype : 0] as "miter" | "round" | undefined,
+      pathtype: ["none", "round", "square", "none"][el.PATHTYPE ? el.PATHTYPE.pathtype : 0] as "none" | "round" | "square",
       // Polarity. 0 = negative, 1 = positive
       polarity: 1,
-      width: width
+      width: width,
     }).addLines(lines)
 
     this.pushShape(el.LAYER.layer, polyline)
@@ -108,13 +103,13 @@ export class Plotter {
         repeats: [
           {
             datum: vec2.fromValues(el.XY[0].x * this.scale, el.XY[0].y * this.scale),
-            rotation: (el.strans?.ANGLE?.angle || 0),
+            rotation: el.strans?.ANGLE?.angle || 0,
             scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
             mirror_x: 0, // 0 = no mirror, 1 = mirror
             mirror_y: el.strans?.STRANS.reflectAboutX ? 1 : 0,
-            order: ['translate', 'rotate', 'mirror', 'scale']
-          }
-        ]
+            order: ["translate", "rotate", "mirror", "scale"],
+          },
+        ],
       })
       this.pushShape(cell.layer, srShape)
     }
@@ -139,16 +134,20 @@ export class Plotter {
     const ySpacing = vec2.divide(vec2.create(), vec2.sub(vec2.create(), yDisplace, origin), [rows, rows])
 
     for (const [_idx, cell] of this.gdsiiHierarchy[arefName].entries()) {
-      const repeats: Shapes.StepAndRepeat['repeats'] = []
+      const repeats: Shapes.StepAndRepeat["repeats"] = []
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
           repeats.push({
-            datum: vec2.add(vec2.create(), origin, vec2.add(vec2.create(), vec2.scale(vec2.create(), xSpacing, i), vec2.scale(vec2.create(), ySpacing, j))),
-            rotation: (el.strans?.ANGLE?.angle || 0),
+            datum: vec2.add(
+              vec2.create(),
+              origin,
+              vec2.add(vec2.create(), vec2.scale(vec2.create(), xSpacing, i), vec2.scale(vec2.create(), ySpacing, j)),
+            ),
+            rotation: el.strans?.ANGLE?.angle || 0,
             scale: el.strans?.MAG?.mag || 1, // Resize factor. 1 = normal size
             mirror_x: 0,
             mirror_y: 0,
-            order: ['mirror', 'translate', 'rotate', 'scale']
+            order: ["mirror", "translate", "rotate", "scale"],
           })
         }
       }
@@ -165,5 +164,4 @@ export class Plotter {
       this.pushShape(cell.layer, srShape)
     }
   }
-
 }

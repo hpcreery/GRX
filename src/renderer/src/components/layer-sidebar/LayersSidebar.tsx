@@ -1,35 +1,17 @@
-import { useEffect, useState } from 'react'
-import { RenderEngine } from '@src/renderer'
-import {
-  Card,
-  Group,
-  Text,
-  Button,
-  FileButton,
-  Stack,
-  ScrollArea,
-  Modal,
-  Select,
-  useMantineTheme
-} from '@mantine/core'
-import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from '@mantine/dropzone'
-import {
-  IconFileX,
-  IconFileVector,
-  IconContrast,
-  IconContrastOff,
-  IconClearAll
-} from '@tabler/icons-react'
-import LayerListItem from './LayerListItem'
-import type { LayerInfo } from '@src/renderer/engine'
-import * as Comlink from 'comlink'
+import { useEffect, useState } from "react"
+import { RenderEngine } from "@src/renderer"
+import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select, useMantineTheme } from "@mantine/core"
+import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from "@mantine/dropzone"
+import { IconFileX, IconFileVector, IconContrast, IconContrastOff, IconClearAll } from "@tabler/icons-react"
+import LayerListItem from "./LayerListItem"
+import type { LayerInfo } from "@src/renderer/engine"
+import * as Comlink from "comlink"
 
-import { pluginList, plugins } from '@src/renderer/plugins'
-import { EngineEvents } from '@src/renderer/engine'
-import { useContextMenu } from 'mantine-contextmenu'
+import { pluginList, plugins } from "@src/renderer/plugins"
+import { EngineEvents } from "@src/renderer/engine"
+import { useContextMenu } from "mantine-contextmenu"
 
-const UID = (): string =>
-  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {
   renderEngine: RenderEngine
@@ -48,10 +30,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
 
-  function registerLayers(
-    rendererLayers: LayerInfo[],
-    loadingLayers: { name: string; uid: string }[]
-  ): void {
+  function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string; uid: string }[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
@@ -60,7 +39,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     })
     loadingLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: '' })
+      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: "" })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -69,7 +48,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
   function identifyFileType(file: FileWithPath): string {
     const defaultFormat = pluginList[0]
 
-    const extension = file.name.split('.').pop()?.toLowerCase()
+    const extension = file.name.split(".").pop()?.toLowerCase()
     if (!extension) return defaultFormat
     for (const plugin in plugins) {
       if (plugins[plugin].matchFile(extension)) return plugin
@@ -77,9 +56,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     return defaultFormat
   }
   async function uploadFiles(files: FileWithFormat[]): Promise<void> {
-    setFiles(
-      files.map((file) => Object.assign(file, { format: identifyFileType(file), uid: UID() }))
-    )
+    setFiles(files.map((file) => Object.assign(file, { format: identifyFileType(file), uid: UID() })))
   }
 
   async function confirmFiles(files: UploadFile[]): Promise<void> {
@@ -142,45 +119,41 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         setRenderID(renderID + 1)
       })
     },
-    deleteAll: openDeleteConfirmModal
+    deleteAll: openDeleteConfirmModal,
   }
 
   const contextItems = [
     {
-      title: 'Hide All Layers',
-      key: '1',
+      title: "Hide All Layers",
+      key: "1",
       icon: <IconContrastOff stroke={1.5} size={18} />,
-      onClick: actions.hideAll
+      onClick: actions.hideAll,
     },
     {
-      title: 'Show All Layers',
-      key: '2',
+      title: "Show All Layers",
+      key: "2",
       icon: <IconContrast stroke={1.5} size={18} />,
-      onClick: actions.showAll
+      onClick: actions.showAll,
     },
     {
-      title: 'Delete All Layers',
-      key: '3',
+      title: "Delete All Layers",
+      key: "3",
       icon: <IconClearAll stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
-      onClick: actions.deleteAll
-    }
+      onClick: actions.deleteAll,
+    },
   ]
 
   return (
     <div
       style={{
-        width: '100vw',
-        height: '100vh',
-        position: 'fixed',
-        pointerEvents: 'none',
-        zIndex: 10
+        width: "100vw",
+        height: "100vh",
+        position: "fixed",
+        pointerEvents: "none",
+        zIndex: 10,
       }}
     >
-      <Modal
-        opened={files.length > 0}
-        onClose={(): void => setFiles([])}
-        title="Layer Identification"
-      >
+      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Identification">
         <Stack>
           {files.map((file) => (
             <Select
@@ -189,23 +162,17 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
               placeholder="Pick value"
               data={pluginList}
               defaultValue={file.format}
-              comboboxProps={{ shadow: 'md' }}
+              comboboxProps={{ shadow: "md" }}
               onChange={(value): void => {
                 if (!value) return
                 files.find((f) => f.uid === file.uid)!.format = value
               }}
             />
           ))}
-          {files.length > 0 && (
-            <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>
-          )}
+          {files.length > 0 && <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>}
         </Stack>
       </Modal>
-      <Modal
-        opened={deleteConfirmModalOpen}
-        onClose={closeDeleteConfirmModal}
-        title="Confirm Delete All"
-      >
+      <Modal opened={deleteConfirmModalOpen} onClose={closeDeleteConfirmModal} title="Confirm Delete All">
         <Text>Are you sure you want to delete all layers?</Text>
         <Group mt={10}>
           {/* <Button onClick={closeDeleteConfirmModal} variant="default" fullWidth>
@@ -251,22 +218,16 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
         withBorder
         style={{
           width: 220,
-          height: '-webkit-fill-available',
+          height: "-webkit-fill-available",
           margin: 10,
-          pointerEvents: 'all',
-          overflowY: 'auto',
-          overflowX: 'hidden'
+          pointerEvents: "all",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
-        mod={['transparent']}
+        mod={["transparent"]}
         padding={4}
       >
-        <ScrollArea
-          className="scroll-area-sidebar"
-          type="scroll"
-          scrollbars="y"
-          h={'100%'}
-          w={'100%'}
-        >
+        <ScrollArea className="scroll-area-sidebar" type="scroll" scrollbars="y" h={"100%"} w={"100%"}>
           <Group grow pb={5}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
@@ -279,16 +240,11 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
           <Stack
             justify="flex-start"
             style={{
-              '--stack-gap': '2px'
+              "--stack-gap": "2px",
             }}
           >
             {layers.map((layer) => (
-              <LayerListItem
-                key={layer.uid + renderID}
-                file={layer}
-                renderEngine={renderEngine}
-                actions={actions}
-              />
+              <LayerListItem key={layer.uid + renderID} file={layer} renderEngine={renderEngine} actions={actions} />
             ))}
           </Stack>
 

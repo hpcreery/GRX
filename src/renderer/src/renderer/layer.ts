@@ -1,8 +1,8 @@
-import REGL from 'regl'
-import { vec2, vec3, mat3 } from 'gl-matrix'
-import * as Shapes from './shapes'
-import * as Symbols from './symbols'
-import { Binary, Transform, Units, BoundingBox, FeatureTypeIdentifier } from './types'
+import REGL from "regl"
+import { vec2, vec3, mat3 } from "gl-matrix"
+import * as Shapes from "./shapes"
+import * as Symbols from "./symbols"
+import { Binary, Transform, Units, BoundingBox, FeatureTypeIdentifier } from "./types"
 import {
   ArcAttachments,
   DatumShaderCollection,
@@ -12,21 +12,17 @@ import {
   LineAttachments,
   PadAttachments,
   ReglRenderers,
-  SurfaceAttachments
-} from './collections'
+  SurfaceAttachments,
+} from "./collections"
 
-import {
-  ShapesShaderCollection,
-  MacroShaderCollection,
-  StepAndRepeatCollection
-} from './collections'
+import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
-import type { WorldContext } from './engine'
-import { getScaleMat3, getUnitsConversion, UID } from './utils'
+import type { WorldContext } from "./engine"
+import { getScaleMat3, getUnitsConversion, UID } from "./utils"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
-interface CommonAttributes { }
+interface CommonAttributes {}
 
 interface CommonUniforms {
   u_Transform: mat3
@@ -44,7 +40,7 @@ interface QueryUniforms {
   u_Alpha: number
   u_PointerPosition: vec2
 }
-interface QueryAttributes { }
+interface QueryAttributes {}
 
 export interface NestedFeature {
   ref: Shapes.Shape
@@ -61,7 +57,7 @@ export class ShapeTransform implements Transform {
   public scale = 1
   public mirror_x: Binary = 0
   public mirror_y: Binary = 0
-  public order: ("scale" | "mirror" | "rotate" | "translate")[] = ['translate', 'rotate', 'mirror', 'scale']
+  public order: ("scale" | "mirror" | "rotate" | "translate")[] = ["translate", "rotate", "mirror", "scale"]
   public index = 0
   public polarity = 1
   public matrix = mat3.create()
@@ -71,24 +67,23 @@ export class ShapeTransform implements Transform {
     this.matrix = mat3.clone(inputMatrix)
     for (const transform of this.order) {
       switch (transform) {
-        case 'scale':
+        case "scale":
           mat3.scale(this.matrix, this.matrix, [scale, scale])
           break
-        case 'translate':
+        case "translate":
           mat3.translate(this.matrix, this.matrix, datum)
           break
-        case 'rotate':
+        case "rotate":
           // rotation is counterclockwise
           mat3.rotate(this.matrix, this.matrix, rotation * (Math.PI / 180))
           break
-        case 'mirror':
+        case "mirror":
           mat3.scale(this.matrix, this.matrix, [this.mirror_x ? -1 : 1, this.mirror_y ? -1 : 1])
           break
       }
     }
     mat3.invert(this.inverseMatrix, this.matrix)
   }
-
 }
 
 export interface RendererProps {
@@ -101,8 +96,7 @@ export interface ShapeProps {
   transform?: Partial<ShapeTransform>
 }
 
-
-export interface ShapeRendererProps extends RendererProps, ShapeProps { }
+export interface ShapeRendererProps extends RendererProps, ShapeProps {}
 
 interface ShapeRendererCommonContext {
   qtyFeaturesRef: number
@@ -115,7 +109,7 @@ interface DatumUniforms {
   u_Alpha: number
 }
 
-interface DatumAttributes { }
+interface DatumAttributes {}
 
 export class ShapeRenderer {
   public regl: REGL.Regl
@@ -148,10 +142,7 @@ export class ShapeRenderer {
   protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
   protected drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
   protected drawDatumPoints: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttributes>
-  protected flattenSurfaces: REGL.DrawCommand<
-    REGL.DefaultContext & WorldContext,
-    FrameBufferRenderAttachments
-  >
+  protected flattenSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
   public surfaceFrameBuffer: REGL.Framebuffer2D
   public queryFrameBuffer: REGL.Framebuffer2D
 
@@ -202,21 +193,18 @@ export class ShapeRenderer {
       depth: {
         enable: true,
         mask: true,
-        func: 'greater',
-        range: [0, 1]
+        func: "greater",
+        range: [0, 1],
       },
       cull: {
         enable: false,
-        face: 'back'
+        face: "back",
       },
       context: {
         transformMatrix: () => this.transform.matrix,
-        prevQtyFeaturesRef: (
-          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => context.qtyFeaturesRef ?? 1,
-        qtyFeaturesRef: (
-          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1)
+        prevQtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
+        qtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) =>
+          this.qtyFeatures * (context.qtyFeaturesRef ?? 1),
       },
       uniforms: {
         u_Transform: () => this.transform.matrix,
@@ -224,83 +212,58 @@ export class ShapeRenderer {
         u_SymbolsTexture: () => this.shapeCollection.symbolsCollection.texture,
         u_SymbolsTextureDimensions: () => [
           this.shapeCollection.symbolsCollection.texture.width,
-          this.shapeCollection.symbolsCollection.texture.height
+          this.shapeCollection.symbolsCollection.texture.height,
         ],
-        u_IndexOffset: (
-          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => {
+        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => {
           return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
-        u_QtyFeatures: (
-          context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-        ) => {
+        u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => {
           return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
-        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }),
-          {}
-        ),
-        ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce(
-          (acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }),
-          {}
-        ),
-      }
+        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
+        ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}),
+      },
     })
 
-    this.queryConfig = this.regl<
-      QueryUniforms,
-      QueryAttributes,
-      QueryProps,
-      ShapeRendererCommonContext,
-      REGL.DefaultContext & WorldContext
-    >({
+    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext, REGL.DefaultContext & WorldContext>({
       uniforms: {
         u_QueryMode: true,
         u_Color: [1, 1, 1],
         u_Alpha: 1,
-        u_PointerPosition: this.regl.prop<QueryProps, 'pointer'>('pointer')
-      }
+        u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
+      },
     })
 
-    this.datumConfig = this.regl<
-      DatumUniforms,
-      DatumAttributes,
-      Record<string, never>,
-      WorldContext
-    >({
+    this.datumConfig = this.regl<DatumUniforms, DatumAttributes, Record<string, never>, WorldContext>({
       depth: {
         enable: false,
         mask: true,
-        func: 'greater',
-        range: [0, 1]
+        func: "greater",
+        range: [0, 1],
       },
       blend: {
         enable: true,
 
         func: {
-          srcRGB: 'src alpha',
-          srcAlpha: 'src alpha',
-          dstRGB: 'one minus src alpha',
-          dstAlpha: 'one minus src alpha'
+          srcRGB: "src alpha",
+          srcAlpha: "src alpha",
+          dstRGB: "one minus src alpha",
+          dstAlpha: "one minus src alpha",
         },
 
         equation: {
-          rgb: 'add',
-          alpha: 'add'
+          rgb: "add",
+          alpha: "add",
         },
-        color: [0, 0, 0, 0]
+        color: [0, 0, 0, 0],
       },
       uniforms: {
         u_Color: (context: WorldContext) => {
-          return [
-            1 - context.settings.BACKGROUND_COLOR[2],
-            1 - context.settings.BACKGROUND_COLOR[1],
-            1 - context.settings.BACKGROUND_COLOR[0]
-          ]
+          return [1 - context.settings.BACKGROUND_COLOR[2], 1 - context.settings.BACKGROUND_COLOR[1], 1 - context.settings.BACKGROUND_COLOR[0]]
         },
-        u_Alpha: () => 1
-      }
+        u_Alpha: () => 1,
+      },
     })
 
     this.drawPads = ReglRenderers.drawPads!
@@ -311,12 +274,11 @@ export class ShapeRenderer {
     this.drawDatumText = ReglRenderers.drawDatumText!
     this.drawDatumPoints = ReglRenderers.drawDatums!
 
-
     this.queryFrameBuffer = this.regl.framebuffer({
-      depth: true
+      depth: true,
     })
     this.surfaceFrameBuffer = this.regl.framebuffer({
-      depth: true
+      depth: true,
     })
   }
 
@@ -344,7 +306,7 @@ export class ShapeRenderer {
       this.regl.clear({
         framebuffer: this.surfaceFrameBuffer,
         color: [0, 0, 0, 1],
-        depth: 0
+        depth: 0,
       })
       this.surfaceFrameBuffer.use(() => {
         this.drawSurfaces(attachment)
@@ -353,7 +315,7 @@ export class ShapeRenderer {
         renderTexture: this.surfaceFrameBuffer,
         qtyFeatures: this.qtyFeatures,
         index: attachment.surfaceIndex,
-        polarity: attachment.surfacePolarity
+        polarity: attachment.surfacePolarity,
       })
     })
     return this
@@ -381,7 +343,7 @@ export class ShapeRenderer {
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
-      console.error('Too many features to query')
+      console.error("Too many features to query")
       // TODO! for too many features, make multiple render passes in order to query all features
       return []
     }
@@ -391,7 +353,7 @@ export class ShapeRenderer {
     this.regl.clear({
       framebuffer: this.queryFrameBuffer,
       color: [0, 0, 0, 0],
-      depth: 0
+      depth: 0,
     })
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
@@ -406,7 +368,7 @@ export class ShapeRenderer {
       x: 0,
       y: 0,
       width: width,
-      height: height
+      height: height,
     })
     const features: Shapes.Shape[] = []
     for (let i = 0; i < data.length; i += 4) {
@@ -458,7 +420,6 @@ export class ShapeRenderer {
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
-
     })
     context.transformMatrix = origMatrix
   }
@@ -470,27 +431,23 @@ export class ShapeRenderer {
       this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
       this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      if (typeof this.drawDatumText === 'function') this.drawDatumText(this.datumTextCollection.attachment)
+      if (typeof this.drawDatumText === "function") this.drawDatumText(this.datumTextCollection.attachment)
       this.drawDatumPoints(this.datumCollection.attachment)
     })
   }
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
-    if (this.shapeCollection.shaderAttachment.pads.length != 0)
-      this.drawPads(this.shapeCollection.shaderAttachment.pads)
-    if (this.shapeCollection.shaderAttachment.arcs.length != 0)
-      this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
-    if (this.shapeCollection.shaderAttachment.lines.length != 0)
-      this.drawLines(this.shapeCollection.shaderAttachment.lines)
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0)
-      this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawPads(this.shapeCollection.shaderAttachment.pads)
+    if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
+    if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawLines(this.shapeCollection.shaderAttachment.lines)
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
     this.drawSurfaceWithHoles(context)
   }
 
   public getBoundingBox(): BoundingBox {
     const contextBoundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
-      max: vec2.fromValues(-Infinity, -Infinity)
+      max: vec2.fromValues(-Infinity, -Infinity),
     }
     for (const record of this.image) {
       const feature_bb = Shapes.getBoundingBoxOfShape(record)
@@ -533,19 +490,16 @@ export interface LayerProps {
   context?: string
   type?: string
   format?: string
-
 }
 
-export interface LayerRendererProps extends ShapeRendererProps, LayerProps { }
-
+export interface LayerRendererProps extends ShapeRendererProps, LayerProps {}
 
 interface LayerUniforms {
   u_Color: vec3
   u_Alpha: number
 }
 
-interface LayerAttributes { }
-
+interface LayerAttributes {}
 
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
@@ -553,13 +507,13 @@ export default class LayerRenderer extends ShapeRenderer {
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
-  public context = 'misc'
-  public type = 'document'
-  public format = 'raw'
+  public context = "misc"
+  public type = "document"
+  public format = "raw"
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
-  public units: 'mm' | 'inch' | 'mil' | 'cm' | number = 'mm'
+  public units: "mm" | "inch" | "mil" | "cm" | number = "mm"
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
@@ -569,7 +523,6 @@ export default class LayerRenderer extends ShapeRenderer {
     super(props)
 
     this.units = props.units
-
 
     this.name = props.name
     if (props.color !== undefined) {
@@ -596,17 +549,12 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.layerConfig = this.regl<
-      LayerUniforms,
-      LayerAttributes,
-      Record<string, never>,
-      WorldContext
-    >({
+    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
       depth: {
         enable: true,
         mask: true,
-        func: 'greater',
-        range: [0, 1]
+        func: "greater",
+        range: [0, 1],
       },
       // cull: {
       //   enable: true,
@@ -614,8 +562,8 @@ export default class LayerRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: () => this.color,
-        u_Alpha: () => this.alpha
-      }
+        u_Alpha: () => this.alpha,
+      },
     })
   }
 
@@ -627,7 +575,7 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 
   public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
-    this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
+    this.transform.scale = (this.transform.scale * 1) / getUnitsConversion(this.units)
     const features = super.select(pointer, context)
     this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
     return features
@@ -638,11 +586,11 @@ export default class LayerRenderer extends ShapeRenderer {
     this.regl.clear({
       framebuffer: this.framebuffer,
       color: [0, 0, 0, 0],
-      depth: 0
+      depth: 0,
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        this.transform.scale = this.transform.scale * 1 / getUnitsConversion(this.units)
+        this.transform.scale = (this.transform.scale * 1) / getUnitsConversion(this.units)
         super.render(context)
         this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
       })
@@ -650,24 +598,21 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
-interface MacroRendererProps extends Omit<ShapeRendererProps, 'transform'> {
+interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
   flatten: boolean
 }
 
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
-  private drawFrameBuffer: REGL.DrawCommand<
-    REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
-    FrameBufferRenderAttachments
-  >
+  private drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>, FrameBufferRenderAttachments>
   constructor(props: MacroRendererProps) {
     super(props)
 
     this.flatten = props.flatten
 
     this.framebuffer = this.regl.framebuffer({
-      depth: true
+      depth: true,
     })
 
     this.drawFrameBuffer = ReglRenderers.drawFrameBuffer!
@@ -683,9 +628,7 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.mirror_y = pad.mirror_y
   }
 
-  public render(
-    context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>
-  ): void {
+  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     if (this.flatten === false) {
       super.render(context)
       return
@@ -695,7 +638,7 @@ export class MacroRenderer extends ShapeRenderer {
       framebuffer: this.framebuffer,
       color: [0, 0, 0, 0],
       stencil: 0,
-      depth: 0
+      depth: 0,
     })
     const tempPol = this.transform.polarity
     this.transform.polarity = 1
@@ -708,7 +651,7 @@ export class MacroRenderer extends ShapeRenderer {
         renderTexture: this.framebuffer,
         index: this.transform.index,
         qtyFeatures: context.prevQtyFeaturesRef ?? 1,
-        polarity: this.transform.polarity
+        polarity: this.transform.polarity,
       })
     })
   }
@@ -754,7 +697,6 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 }
 
-
 /**
  * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
  */
@@ -765,7 +707,7 @@ export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform
     Object.assign(transform, repeat)
     transform.update(inputTransform.matrix)
     for (let i = 0; i < stepRepeat.shapes.length; i++) {
-      const shape =  stepRepeat.shapes[i]
+      const shape = stepRepeat.shapes[i]
       const newShape = JSON.parse(JSON.stringify(shape)) as Shapes.Shape
       if (newShape.type === FeatureTypeIdentifier.SURFACE) {
         for (const contour of newShape.contours) {
@@ -817,7 +759,6 @@ export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform
       }
       return
     }
-
   }
   return newImage
 }

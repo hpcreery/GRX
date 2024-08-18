@@ -1,11 +1,10 @@
-import type { Polarity, Mirroring, Rotation, Scaling} from '@hpcreery/tracespace-parser'
-import type { GerberNode } from '@hpcreery/tracespace-parser'
-import { LOAD_MIRRORING, LOAD_POLARITY, LOAD_ROTATION, LOAD_SCALING} from '@hpcreery/tracespace-parser'
+import type { Polarity, Mirroring, Rotation, Scaling } from "@hpcreery/tracespace-parser"
+import type { GerberNode } from "@hpcreery/tracespace-parser"
+import { LOAD_MIRRORING, LOAD_POLARITY, LOAD_ROTATION, LOAD_SCALING } from "@hpcreery/tracespace-parser"
 import {
   DARK,
   // CLEAR
-  } from '@hpcreery/tracespace-parser'
-
+} from "@hpcreery/tracespace-parser"
 
 export interface ApertureTransform {
   polarity: Polarity
@@ -18,11 +17,9 @@ export interface TransformStore {
   use: (node: GerberNode) => ApertureTransform
 }
 
-
 export function createTransformStore(): TransformStore {
   return Object.create(TransformStorePrototype)
 }
-
 
 interface TransformStoreState {
   _currentTransform: ApertureTransform
@@ -33,7 +30,7 @@ const TransformStorePrototype: TransformStore & TransformStoreState = {
     polarity: DARK,
     mirror: "noMirror",
     rotation: 0,
-    scale: 1
+    scale: 1,
   },
 
   use(node: GerberNode): ApertureTransform {
@@ -51,5 +48,5 @@ const TransformStorePrototype: TransformStore & TransformStoreState = {
       this._currentTransform.scale = node.scaling
     }
     return this._currentTransform
-  }
+  },
 }

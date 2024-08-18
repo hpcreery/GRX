@@ -1,6 +1,6 @@
 // import { ColorScheme } from '@mantine/core'
-import React from 'react'
-import { Units } from '@src/renderer/types'
+import React from "react"
+import { Units } from "@src/renderer/types"
 
 export interface ThemeContext {
   transparency: boolean
@@ -14,8 +14,8 @@ export interface ThemeContext {
 export const ConfigEditorProvider = React.createContext<ThemeContext>({
   transparency: true,
   setTransparency: () => {},
-  primaryColor: 'teal',
+  primaryColor: "teal",
   setPrimaryColor: () => {},
-  units: 'mm',
-  setUnits: () => {}
+  units: "mm",
+  setUnits: () => {},
 })

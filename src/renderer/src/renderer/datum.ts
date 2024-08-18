@@ -1,8 +1,7 @@
-import REGL from 'regl'
-import { WorldContext } from './engine'
-import { DatumPoint, DatumText } from './shapes'
-import { vec2, vec3 } from 'gl-matrix'
-
+import REGL from "regl"
+import { WorldContext } from "./engine"
+import { DatumPoint, DatumText } from "./shapes"
+import { vec2, vec3 } from "gl-matrix"
 
 export class TextRenderer {
   private ctx: OffscreenCanvasRenderingContext2D
@@ -22,15 +21,15 @@ export class TextRenderer {
 
   private drawStroked(text: string, position: vec2): void {
     const [x, y] = position
-    this.ctx.strokeStyle = 'black';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeText(text, x, y);
-    this.ctx.fillStyle = 'white';
-    this.ctx.fillText(text, x, y);
+    this.ctx.strokeStyle = "black"
+    this.ctx.lineWidth = 2
+    this.ctx.strokeText(text, x, y)
+    this.ctx.fillStyle = "white"
+    this.ctx.fillText(text, x, y)
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    this.texts.forEach(text => {
+    this.texts.forEach((text) => {
       this.resetFontStyle()
       const transform = vec3.create()
       vec3.transformMat3(transform, vec3.fromValues(text.x, text.y, 1), context.transform.matrix)
@@ -38,8 +37,8 @@ export class TextRenderer {
       vec2.multiply(position, position, [0.5, -0.5])
       vec2.add(position, position, [0.5, 0.5])
       vec2.multiply(position, position, vec2.fromValues(context.viewportWidth, context.viewportHeight))
-      const lineHeight = this.ctx.measureText("M").width * 1.2;
-      const lines = text.text.split('\n');
+      const lineHeight = this.ctx.measureText("M").width * 1.2
+      const lines = text.text.split("\n")
       for (let i = 0; i < lines.length; i++) {
         vec2.add(position, position, [0, i * lineHeight])
         this.drawStroked(lines[i], position)
@@ -58,26 +57,26 @@ export class PointRenderer {
 
   private drawStroked(position: vec2): void {
     const [x, y] = position
-    this.ctx.strokeStyle = 'black';
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    this.ctx.moveTo(x - 5, y - 5);
-    this.ctx.lineTo(x + 5, y + 5);
-    this.ctx.moveTo(x + 5, y - 5);
-    this.ctx.lineTo(x - 5, y + 5);
-    this.ctx.stroke();
-    this.ctx.strokeStyle = 'white';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(x - 5, y - 5);
-    this.ctx.lineTo(x + 5, y + 5);
-    this.ctx.moveTo(x + 5, y - 5);
-    this.ctx.lineTo(x - 5, y + 5);
-    this.ctx.stroke();
+    this.ctx.strokeStyle = "black"
+    this.ctx.lineWidth = 2
+    this.ctx.beginPath()
+    this.ctx.moveTo(x - 5, y - 5)
+    this.ctx.lineTo(x + 5, y + 5)
+    this.ctx.moveTo(x + 5, y - 5)
+    this.ctx.lineTo(x - 5, y + 5)
+    this.ctx.stroke()
+    this.ctx.strokeStyle = "white"
+    this.ctx.lineWidth = 1
+    this.ctx.beginPath()
+    this.ctx.moveTo(x - 5, y - 5)
+    this.ctx.lineTo(x + 5, y + 5)
+    this.ctx.moveTo(x + 5, y - 5)
+    this.ctx.lineTo(x - 5, y + 5)
+    this.ctx.stroke()
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    this.texts.forEach(text => {
+    this.texts.forEach((text) => {
       const transform = vec3.create()
       vec3.transformMat3(transform, vec3.fromValues(text.x, text.y, 1), context.transform.matrix)
       const position = vec2.fromValues(transform[0], transform[1])

@@ -3,7 +3,7 @@ name: Build and Publish
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   executables:
@@ -18,7 +18,7 @@ jobs:
       - name: Install Dependencies
         run: npm ci
       # - name: Build
-        # run: npm run build:all
+      # run: npm run build:all
       - name: Build macOS
         run: npm run build:mac
       - name: Build Windows
@@ -57,7 +57,7 @@ jobs:
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './out/web/'
+          path: "./out/web/"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

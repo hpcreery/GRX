@@ -1,9 +1,9 @@
-import React from 'react'
-import { PointerEvent } from '@src/renderer'
-import { PointerEvents, RenderEngine } from '@src/renderer'
-import { Card, Group, Text, Tooltip } from '@mantine/core'
-import { ConfigEditorProvider } from '@src/contexts/ConfigEditor'
-import { getUnitsConversion } from '@src/renderer/utils'
+import React from "react"
+import { PointerEvent } from "@src/renderer"
+import { PointerEvents, RenderEngine } from "@src/renderer"
+import { Card, Group, Text, Tooltip } from "@mantine/core"
+import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
+import { getUnitsConversion } from "@src/renderer/utils"
 
 interface MousePositionProps {
   renderEngine: RenderEngine
@@ -33,26 +33,28 @@ export default function MousePosition(props: MousePositionProps): JSX.Element | 
   return (
     <Tooltip label={`Units: ${units}`} position="left" withArrow>
       <Card
-        mod={['transparent']}
+        mod={["transparent"]}
         withBorder
         style={{
-          position: 'absolute',
+          position: "absolute",
           bottom: 10,
           right: 60,
-          pointerEvents: 'all',
+          pointerEvents: "all",
           width: 275,
-          height: 40
+          height: 40,
         }}
         padding={6.5}
       >
-        <Group grow ml="xs" mr="xs" wrap='nowrap'>
-          <Group wrap='nowrap'>
+        <Group grow ml="xs" mr="xs" wrap="nowrap">
+          <Group wrap="nowrap">
             <Text c="dimmed">X: </Text>
-            {(x * getUnitsConversion(units)).toFixed(3)}{units}
+            {(x * getUnitsConversion(units)).toFixed(3)}
+            {units}
           </Group>
-          <Group wrap='nowrap'>
+          <Group wrap="nowrap">
             <Text c="dimmed">Y: </Text>
-            {(y * getUnitsConversion(units)).toFixed(3)}{units}
+            {(y * getUnitsConversion(units)).toFixed(3)}
+            {units}
           </Group>
         </Group>
       </Card>

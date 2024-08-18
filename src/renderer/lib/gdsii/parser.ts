@@ -1,7 +1,7 @@
-import * as GDSII from './gdsii_records'
-import * as TREE from './gdsii_tree'
+import * as GDSII from "./gdsii_records"
+import * as TREE from "./gdsii_tree"
 
-import { RecordToken } from './types'
+import { RecordToken } from "./types"
 
 export interface ParserState {
   bnf: Partial<TREE.GDSIIBNF>
@@ -19,16 +19,14 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
     element: {},
     el: {},
     strans: {},
-    property: {}
+    property: {},
   }
 
   // console.log('gdsii tokens', tokens)
   for (const [_index, token] of tokens.entries()) {
     const recordDefinition = GDSII.RecordDefinitions[token.recordType]
-    if (!recordDefinition || !recordDefinition.parse && typeof recordDefinition.parse !== 'function') {
-      console.warn(
-        `RecordDefinition ${recordDefinition} (${token.recordType}) does not have a parse function`
-      )
+    if (!recordDefinition || (!recordDefinition.parse && typeof recordDefinition.parse !== "function")) {
+      console.warn(`RecordDefinition ${recordDefinition} (${token.recordType}) does not have a parse function`)
       continue
     }
     recordDefinition.parse(parserState, token.data as number[])

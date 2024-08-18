@@ -1,36 +1,49 @@
-import { mat3, vec2 } from 'gl-matrix';
-import { Units } from './types';
+import { mat3, vec2 } from "gl-matrix"
+import { Units } from "./types"
 
-export type immutable = boolean | number | bigint | string | symbol | null | undefined;
+export type immutable = boolean | number | bigint | string | symbol | null | undefined
 
-export type ptr<T extends immutable> = { value: T; }
+export type ptr<T extends immutable> = { value: T }
 
 export function ptr<T extends immutable>(read: () => T, write: (v: T) => void): ptr<T> {
-  return { get value(): T { return read(); }, set value(v) { write(v); } };
+  return {
+    get value(): T {
+      return read()
+    },
+    set value(v) {
+      write(v)
+    },
+  }
 }
 
 export function malloc<T extends immutable>(value: T): ptr<T> {
-  let i: T = value;
-  return ptr(function () { return i; }, function (v) { i = v; });
+  let i: T = value
+  return ptr(
+    function () {
+      return i
+    },
+    function (v) {
+      i = v
+    },
+  )
 }
 
 export function getUnitsConversion(units: Units): number {
   switch (units) {
-    case 'mm':
-      return 1;
-    case 'inch':
-      return 1 / 25.4;
-    case 'cm':
-      return 1 / 10;
-    case 'mil':
-      return 1000 / 25.4;
+    case "mm":
+      return 1
+    case "inch":
+      return 1 / 25.4
+    case "cm":
+      return 1 / 10
+    case "mil":
+      return 1000 / 25.4
     default:
-      return units;
+      return units
   }
 }
 
-export const UID = (): string =>
-  Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+export const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 // https://stackoverflow.com/questions/4361242/extract-rotation-scale-values-from-2d-transformation-matrix
 export function getScaleMat3(matrix: mat3): number {

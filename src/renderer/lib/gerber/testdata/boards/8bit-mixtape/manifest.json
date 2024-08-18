@@ -63,7 +63,7 @@
       "format": "drill",
       "side": "all",
       "type": "drill",
-      "options": {"zero": "L"}
+      "options": { "zero": "L" }
     }
   ]
 }

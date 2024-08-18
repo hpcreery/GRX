@@ -1,8 +1,8 @@
 // Track the location of the plotter and parse coordinate strings
-import type {GerberNode} from '@hpcreery/tracespace-parser'
-import {GRAPHIC, STEP_REPEAT_OPEN, TRAILING} from '@hpcreery/tracespace-parser'
+import type { GerberNode } from "@hpcreery/tracespace-parser"
+import { GRAPHIC, STEP_REPEAT_OPEN, TRAILING } from "@hpcreery/tracespace-parser"
 
-import type {PlotOptions} from './options'
+import type { PlotOptions } from "./options"
 
 export interface Point {
   x: number
@@ -20,7 +20,6 @@ export interface StepRepeatOffsets {
   y: number
   i: number
   j: number
-
 }
 
 export interface Location {
@@ -45,9 +44,9 @@ interface LocationStoreState {
 }
 
 const LocationStorePrototype: LocationStore & LocationStoreState = {
-  _DEFAULT_ARC_OFFSETS: {i: 0, j: 0, a: 0},
-  _DEFAULT_STEP_REPEATS: {x: 0, y: 0, i: 1, j: 1},
-  _previousPoint: {x: 0, y: 0},
+  _DEFAULT_ARC_OFFSETS: { i: 0, j: 0, a: 0 },
+  _DEFAULT_STEP_REPEATS: { x: 0, y: 0, i: 1, j: 1 },
+  _previousPoint: { x: 0, y: 0 },
 
   use(node: GerberNode, options: PlotOptions): Location {
     let arcOffsets = this._DEFAULT_ARC_OFFSETS
@@ -56,7 +55,7 @@ const LocationStorePrototype: LocationStore & LocationStoreState = {
     let stepRepeats = this._DEFAULT_STEP_REPEATS
 
     if (node.type === GRAPHIC) {
-      const {coordinates} = node
+      const { coordinates } = node
       const x0 = parseCoordinate(coordinates.x0, startPoint.x, options)
       const y0 = parseCoordinate(coordinates.y0, startPoint.y, options)
       const x = parseCoordinate(coordinates.x, x0, options)
@@ -66,59 +65,50 @@ const LocationStorePrototype: LocationStore & LocationStoreState = {
       const a = parseCoordinate(coordinates.a, 0, options)
 
       if (startPoint.x !== x0 || startPoint.y !== y0) {
-        startPoint = {x: x0, y: y0}
+        startPoint = { x: x0, y: y0 }
       }
 
       if (endPoint.x !== x || endPoint.y !== y) {
-        endPoint = {x, y}
+        endPoint = { x, y }
       }
 
       if (arcCenterXOffset !== 0 || arcCenterYOffset !== 0 || a !== 0) {
-        arcOffsets = {i: arcCenterXOffset, j: arcCenterYOffset, a}
+        arcOffsets = { i: arcCenterXOffset, j: arcCenterYOffset, a }
       }
     }
 
     if (node.type === STEP_REPEAT_OPEN) {
-      const {stepRepeat} = node
+      const { stepRepeat } = node
       const x = Number(stepRepeat.x)
       const y = Number(stepRepeat.y)
       const i = Number(stepRepeat.i)
       const j = Number(stepRepeat.j)
 
-      stepRepeats = {x, y, i, j}
+      stepRepeats = { x, y, i, j }
     }
 
     this._previousPoint = endPoint
-    return {startPoint, endPoint, arcOffsets, stepRepeat: stepRepeats}
+    return { startPoint, endPoint, arcOffsets, stepRepeat: stepRepeats }
   },
 }
 
-function parseCoordinate(
-  coordinate: string | undefined,
-  defaultValue: number,
-  options: PlotOptions
-): number {
-  if (typeof coordinate !== 'string') {
+function parseCoordinate(coordinate: string | undefined, defaultValue: number, options: PlotOptions): number {
+  if (typeof coordinate !== "string") {
     return defaultValue
   }
 
-  if (coordinate.includes('.') || coordinate === '0') {
+  if (coordinate.includes(".") || coordinate === "0") {
     return Number(coordinate)
   }
 
-  const {coordinateFormat, zeroSuppression} = options
+  const { coordinateFormat, zeroSuppression } = options
   const [integerPlaces, decimalPlaces] = coordinateFormat
 
   const [sign, signlessCoordinate] =
-    coordinate.startsWith('+') || coordinate.startsWith('-')
-      ? [coordinate[0], coordinate.slice(1)]
-      : ['+', coordinate]
+    coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
 
   const digits = integerPlaces + decimalPlaces
-  const paddedCoordinate =
-    zeroSuppression === TRAILING
-      ? signlessCoordinate.padEnd(digits, '0')
-      : signlessCoordinate.padStart(digits, '0')
+  const paddedCoordinate = zeroSuppression === TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
 
   const leading = paddedCoordinate.slice(0, paddedCoordinate.length - decimalPlaces)
   const trailing = paddedCoordinate.slice(paddedCoordinate.length - decimalPlaces)

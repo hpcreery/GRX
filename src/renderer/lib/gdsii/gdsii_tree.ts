@@ -143,9 +143,7 @@ export type PROPVALUE = {
 
 export type BOX = never
 
-export type BOXTYPE = [
-  boxtype: number
-]
+export type BOXTYPE = [boxtype: number]
 
 export type PLEX = {
   plex: number
@@ -212,7 +210,7 @@ export type element = {
   el?: boundary | path | sref | aref | text | node | box
   property?: property[]
   ENDEL: ENDEL
-  type: 'boundary' | 'path' | 'sref' | 'aref' | 'text' | 'node' | 'box'
+  type: "boundary" | "path" | "sref" | "aref" | "text" | "node" | "box"
 }
 
 export type boundary = {

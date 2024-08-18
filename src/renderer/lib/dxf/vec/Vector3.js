@@ -58,7 +58,7 @@ class Vector3 {
         this.z = value
         break
       default:
-        throw new Error('index is out of range: ' + index)
+        throw new Error("index is out of range: " + index)
     }
 
     return this
@@ -73,7 +73,7 @@ class Vector3 {
       case 2:
         return this.z
       default:
-        throw new Error('index is out of range: ' + index)
+        throw new Error("index is out of range: " + index)
     }
   }
 

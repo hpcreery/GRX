@@ -6,9 +6,9 @@
 import {
   // Curve,
   Vector3,
-  Vector4
-} from '../vec'
-import * as NURBSUtils from './NURBSUtils.js'
+  Vector4,
+} from "../vec"
+import * as NURBSUtils from "./NURBSUtils.js"
 
 /**
  * NURBS curve object
@@ -31,7 +31,7 @@ export class NURBSCurve {
     knots /* array of reals */,
     controlPoints /* array of Vector(2|3|4) */,
     startKnot? /* index in knots */,
-    endKnot? /* index in knots */
+    endKnot? /* index in knots */,
   ) {
     // super();
 
@@ -53,8 +53,7 @@ export class NURBSCurve {
   getPoint(t: Vector3, optionalTarget: Vector3 = new Vector3()): Vector3 {
     const point = optionalTarget
 
-    const u =
-      this.knots[this.startKnot] + t * (this.knots[this.endKnot] - this.knots[this.startKnot]) // linear mapping t->u
+    const u = this.knots[this.startKnot] + t * (this.knots[this.endKnot] - this.knots[this.startKnot]) // linear mapping t->u
 
     // following results in (wx, wy, wz, w) homogeneous point
     const hpoint = NURBSUtils.calcBSplinePoint(this.degree, this.knots, this.controlPoints, u)

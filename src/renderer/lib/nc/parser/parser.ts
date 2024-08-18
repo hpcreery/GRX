@@ -1,13 +1,24 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule } from "chevrotain"
-import { generateCstDts } from 'chevrotain'
-import * as Cst from './nccst';
-import * as Shapes from '@src/renderer/shapes'
-import * as Symbols from '@src/renderer/symbols'
+import { generateCstDts } from "chevrotain"
+import * as Cst from "./nccst"
+import * as Shapes from "@src/renderer/shapes"
+import * as Symbols from "@src/renderer/symbols"
 
-import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from '@src/renderer/types'
-import { Format, ZeroSuppression, Position, ArcPosition, Point, InterpolateModeType, Mode, ArcDirection, CoordinateMode, CutterCompensation, PossiblePoints } from './types';
-import * as Constants from './constants';
-
+import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from "@src/renderer/types"
+import {
+  Format,
+  ZeroSuppression,
+  Position,
+  ArcPosition,
+  Point,
+  InterpolateModeType,
+  Mode,
+  ArcDirection,
+  CoordinateMode,
+  CutterCompensation,
+  PossiblePoints,
+} from "./types"
+import * as Constants from "./constants"
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),
@@ -98,7 +109,6 @@ const TextTokens = {
   EndText: createToken({ name: "EndText", pattern: /\r?\n/, pop_mode: true, line_breaks: true }),
 }
 
-
 const multiModeLexerDefinition = {
   modes: {
     DefaultMode: Object.values(DefaultTokens),
@@ -107,7 +117,7 @@ const multiModeLexerDefinition = {
   },
 
   defaultMode: "DefaultMode",
-};
+}
 
 export const NCLexer = new Lexer(multiModeLexerDefinition)
 
@@ -173,8 +183,6 @@ class NCParser extends CstParser {
   visionCorrectedSingleHole!: ParserMethod<unknown[], CstNode>
   visionAutoCalibration!: ParserMethod<unknown[], CstNode>
 
-
-
   constructor() {
     super(multiModeLexerDefinition, {
       recoveryEnabled: true,
@@ -234,7 +242,6 @@ class NCParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.cancelVisionOffset) },
         { ALT: (): CstNode => this.SUBRULE(this.visionCorrectedSingleHole) },
         { ALT: (): CstNode => this.SUBRULE(this.visionAutoCalibration) },
-
       ])
     })
 
@@ -242,10 +249,7 @@ class NCParser extends CstParser {
       this.CONSUME(DefaultTokens.Units)
       this.OPTION(() => {
         this.CONSUME(DefaultTokens.Comma)
-        this.OR([
-          { ALT: (): IToken => this.CONSUME(DefaultTokens.TrailingZeros) },
-          { ALT: (): IToken => this.CONSUME(DefaultTokens.LeadingZeros) },
-        ])
+        this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.TrailingZeros) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.LeadingZeros) }])
       })
       this.OPTION2(() => {
         this.CONSUME2(DefaultTokens.Comma)
@@ -256,10 +260,7 @@ class NCParser extends CstParser {
     this.RULE("incrementalModeSwitch", () => {
       this.CONSUME(DefaultTokens.IncrementalMode)
       this.CONSUME(DefaultTokens.Comma)
-      this.OR([
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.On) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.Off) },
-      ])
+      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.On) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.Off) }])
     })
 
     this.RULE("headerEnd", () => {
@@ -267,10 +268,7 @@ class NCParser extends CstParser {
     })
 
     this.RULE("comment", () => {
-      this.OR([
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.LParen) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.Semicolon) },
-      ])
+      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.LParen) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.Semicolon) }])
       this.OPTION(() => {
         this.CONSUME(CommentTokens.Attribute)
       })
@@ -278,10 +276,7 @@ class NCParser extends CstParser {
         this.CONSUME(CommentTokens.Text)
       })
       this.OPTION3(() => {
-        this.OR2([
-          { ALT: (): IToken => this.CONSUME(CommentTokens.NewLine) },
-          { ALT: (): IToken => this.CONSUME(CommentTokens.RParen) },
-        ])
+        this.OR2([{ ALT: (): IToken => this.CONSUME(CommentTokens.NewLine) }, { ALT: (): IToken => this.CONSUME(CommentTokens.RParen) }])
       })
     })
 
@@ -372,10 +367,7 @@ class NCParser extends CstParser {
     })
 
     this.RULE("xory", () => {
-      this.OR([
-        { ALT: (): CstNode => this.SUBRULE(this.x) },
-        { ALT: (): CstNode => this.SUBRULE(this.y) },
-      ])
+      this.OR([{ ALT: (): CstNode => this.SUBRULE(this.x) }, { ALT: (): CstNode => this.SUBRULE(this.y) }])
     })
 
     this.RULE("arcRadius", () => {
@@ -393,10 +385,7 @@ class NCParser extends CstParser {
     this.RULE("move", () => {
       this.SUBRULE(this.coordinate)
       this.OPTION(() => {
-        this.OR([
-          { ALT: (): CstNode => this.SUBRULE(this.arcRadius) },
-          { ALT: (): CstNode => this.SUBRULE(this.arcCenter) },
-        ])
+        this.OR([{ ALT: (): CstNode => this.SUBRULE(this.arcRadius) }, { ALT: (): CstNode => this.SUBRULE(this.arcCenter) }])
       })
     })
 
@@ -605,17 +594,16 @@ class NCParser extends CstParser {
 }
 
 export const parser = new NCParser()
-export const productions: Record<string, Rule> = parser.getGAstProductions();
+export const productions: Record<string, Rule> = parser.getGAstProductions()
 
 const GENERATEDTS = true
 if (GENERATEDTS) {
-  const dtsString = generateCstDts(productions);
+  const dtsString = generateCstDts(productions)
   console.log(dtsString)
 }
 
-const BaseCstVisitor = parser.getBaseCstVisitorConstructor();
+const BaseCstVisitor = parser.getBaseCstVisitorConstructor()
 // const BaseCstVisitor = parser.getBaseCstVisitorConstructorWithDefaults();
-
 
 interface NCState extends NCParams {
   chainIndex: number
@@ -633,7 +621,7 @@ interface NCState extends NCParams {
   patternOffsetX: number
   patternOffsetY: number
   arcRadius?: number
-  arcCenterOffset?: { i: number, j: number }
+  arcCenterOffset?: { i: number; j: number }
 }
 
 export interface NCParams {
@@ -644,7 +632,7 @@ export interface NCParams {
 }
 
 const defaultTool: Symbols.StandardSymbol = new Symbols.NullSymbol({
-  id: 'T00',
+  id: "T00",
 })
 
 export class NCToShapesVisitor extends BaseCstVisitor {
@@ -657,7 +645,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     plunged: false,
     mode: Constants.DRILL,
     interpolationMode: Constants.LINE,
-    units: 'inch',
+    units: "inch",
     currentTool: defaultTool,
     cutterCompensation: 0,
     cutterCompensationMode: Constants.OFF,
@@ -670,15 +658,15 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     arcRadius: 0,
     coordinateMode: Constants.ABSOLUTE,
     coordinateFormat: [2, 4],
-    zeroSuppression: 'trailing',
+    zeroSuppression: "trailing",
   }
   public toolStore: Partial<Record<string, Symbols.StandardSymbol>> = {}
   public compensationStore: Partial<Record<string, number>> = {}
   constructor(params: Partial<NCParams> = {}) {
-    super();
+    super()
     Object.assign(this.state, params)
     // This helper will detect any missing or redundant methods on this visitor
-    this.validateVisitor();
+    this.validateVisitor()
   }
 
   program(ctx: Cst.ProgramCstChildren): void {
@@ -690,7 +678,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   units(ctx: Cst.UnitsCstChildren): void {
-    if (ctx.Units[0].image === 'METRIC') {
+    if (ctx.Units[0].image === "METRIC") {
       this.state.units = Constants.MM
     } else {
       this.state.units = Constants.IN
@@ -702,7 +690,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       this.state.zeroSuppression = Constants.TRAILING
     }
     if (ctx.Number) {
-      const [int, decimal] = ctx.Number[0].image.split('.')
+      const [int, decimal] = ctx.Number[0].image.split(".")
       this.state.coordinateFormat = [int.length, decimal.length]
     }
   }
@@ -712,11 +700,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   headerEnd(ctx: Cst.HeaderCstChildren): void {
-    console.log('headerEnd', ctx)
+    console.log("headerEnd", ctx)
   }
 
   comment(ctx: Cst.CommentCstChildren): void {
-    console.log('comment', ctx)
+    console.log("comment", ctx)
   }
 
   compensationIndex(ctx: Cst.CompensationIndexCstChildren): void {
@@ -728,7 +716,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     const tool = str.slice(0, 3)
     const compensationIndex = str.slice(3)
     this.state.currentTool = this.toolStore[tool] ?? defaultTool
-    if (compensationIndex !== '') {
+    if (compensationIndex !== "") {
       this.state.cutterCompensation = this.compensationStore[compensationIndex] ?? 0
     } else {
       this.state.cutterCompensation = this.state.currentTool.outer_dia
@@ -750,7 +738,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       id: ctx.T[0].image,
       outer_dia: dia,
       inner_dia: 0,
-      attributes
+      attributes,
     })
     this.state.currentTool = tool
     this.toolStore[tool.id] = tool
@@ -763,27 +751,27 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   feed(ctx: Cst.FeedCstChildren): string {
     if (ctx.Number) return ctx.Number[0].image
-    return ''
+    return ""
   }
 
   speed(ctx: Cst.SpeedCstChildren): string {
     if (ctx.Number) return ctx.Number[0].image
-    return ''
+    return ""
   }
 
   retractRate(ctx: Cst.RetractRateCstChildren): string {
     if (ctx.Number) ctx.Number[0].image
-    return ''
+    return ""
   }
 
   hitCount(ctx: Cst.HitCountCstChildren): string {
     if (ctx.Number) return ctx.Number[0].image
-    return ''
+    return ""
   }
 
   depthOffset(ctx: Cst.DepthOffsetCstChildren): string {
     if (ctx.Number) return ctx.Number[0].image
-    return ''
+    return ""
   }
 
   x(ctx: Cst.XCstChildren): number | undefined {
@@ -845,59 +833,71 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.arcRadius) this.visit(ctx.arcRadius)
     if (this.state.mode == Constants.DRILL) {
       if (this.result.length > 0) {
-        this.result.push(new Shapes.DatumLine({
-          xs: this.state.previousX,
-          ys: this.state.previousY,
-          xe: this.state.x,
-          ye: this.state.y,
-        }))
+        this.result.push(
+          new Shapes.DatumLine({
+            xs: this.state.previousX,
+            ys: this.state.previousY,
+            xe: this.state.x,
+            ye: this.state.y,
+          }),
+        )
       } else {
-        this.result.push(new Shapes.DatumPoint({
+        this.result.push(
+          new Shapes.DatumPoint({
+            x: this.state.x,
+            y: this.state.y,
+          }),
+        )
+      }
+      this.result.push(
+        new Shapes.DatumText({
           x: this.state.x,
           y: this.state.y,
-        }))
-      }
-      this.result.push(new Shapes.DatumText({
-        x: this.state.x,
-        y: this.state.y,
-        text: this.state.currentTool.id
-      }))
-      this.result.push(new Shapes.Pad({
-        x: this.state.x,
-        y: this.state.y,
-        symbol: this.state.currentTool,
-      }))
+          text: this.state.currentTool.id,
+        }),
+      )
+      this.result.push(
+        new Shapes.Pad({
+          x: this.state.x,
+          y: this.state.y,
+          symbol: this.state.currentTool,
+        }),
+      )
     } else {
       if (this.state.plunged) {
         this.state.pathIndex++
-        const lastPath = this.result.findLast(shape => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC)
+        const lastPath = this.result.findLast((shape) => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC)
         if (this.state.interpolationMode === Constants.LINE) {
           const angle = Math.atan2(this.state.y - this.state.previousY, this.state.x - this.state.previousX)
           let xs = this.state.previousX
           let ys = this.state.previousY
           let xe = this.state.x
           let ye = this.state.y
-          this.result.push(new Shapes.DatumText({
-            x: (this.state.x + this.state.previousX) / 2,
-            y: (this.state.y + this.state.previousY) / 2,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`
-          }))
-          this.result.push(new Shapes.DatumLine({
-            xs,
-            ys,
-            xe,
-            ye,
-          }))
+          this.result.push(
+            new Shapes.DatumText({
+              x: (this.state.x + this.state.previousX) / 2,
+              y: (this.state.y + this.state.previousY) / 2,
+              text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`,
+            }),
+          )
+          this.result.push(
+            new Shapes.DatumLine({
+              xs,
+              ys,
+              xe,
+              ye,
+            }),
+          )
           if (this.state.cutterCompensationMode === Constants.LEFT) {
-            xs += Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation / 2
-            ys += Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation / 2
-            xe += Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation / 2
-            ye += Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation / 2
+            xs += (Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation) / 2
+            ys += (Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation) / 2
+            xe += (Math.cos(angle + Math.PI / 2) * this.state.cutterCompensation) / 2
+            ye += (Math.sin(angle + Math.PI / 2) * this.state.cutterCompensation) / 2
           } else if (this.state.cutterCompensationMode === Constants.RIGHT) {
-            xs += Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation / 2
-            ys += Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation / 2
-            xe += Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation / 2
-            ye += Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation / 2
+            xs += (Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation) / 2
+            ys += (Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation) / 2
+            xe += (Math.cos(angle - Math.PI / 2) * this.state.cutterCompensation) / 2
+            ye += (Math.sin(angle - Math.PI / 2) * this.state.cutterCompensation) / 2
           }
           if (lastPath) {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
@@ -919,49 +919,58 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   lastPath.xe = insersectionPoints[0].x
                   lastPath.ye = insersectionPoints[0].y
                 } else {
-                  if (Math.sqrt(((lastPath.xe - xs) ** 2) + ((lastPath.ye - ys) ** 2)) > this.state.cutterCompensation / 2) {
+                  if (Math.sqrt((lastPath.xe - xs) ** 2 + (lastPath.ye - ys) ** 2) > this.state.cutterCompensation / 2) {
                     // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
                     // we can tell if the tangent line to the arc is a smooth transition or a sharp corner by checking if the distance between the arc end point and the line start point is greater than half the cutter compensation
                     // for those cases we can create the connecting arc tool path
-                    this.result.push(new Shapes.Arc({
-                      xs: lastPath.xe,
-                      ys: lastPath.ye,
-                      xe: xs,
-                      ye: ys,
-                      xc: this.state.previousX,
-                      yc: this.state.previousY,
-                      clockwise: lastPath.clockwise ? 0 : 1,
-                      symbol: this.state.currentTool,
-                      attributes: {
-                        cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-                        cutterCompensationMode: this.state.cutterCompensationMode,
-                      }
-                    }))
+                    this.result.push(
+                      new Shapes.Arc({
+                        xs: lastPath.xe,
+                        ys: lastPath.ye,
+                        xe: xs,
+                        ye: ys,
+                        xc: this.state.previousX,
+                        yc: this.state.previousY,
+                        clockwise: lastPath.clockwise ? 0 : 1,
+                        symbol: this.state.currentTool,
+                        attributes: {
+                          cutterCompensation: `${this.state.cutterCompensation.toString()}${this.state.units}`,
+                          cutterCompensationMode: this.state.cutterCompensationMode,
+                        },
+                      }),
+                    )
                   }
                 }
-
               }
             }
           }
           // create the tool path
-          this.result.push(new Shapes.Line({
-            xs,
-            ys,
-            xe,
-            ye,
-            symbol: this.state.currentTool,
-            attributes: {
-              cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-              cutterCompensationMode: this.state.cutterCompensationMode,
-              chainIndex: `${this.state.chainIndex}`,
-              pathIndex: `${this.state.pathIndex}`,
-            }
-          }))
+          this.result.push(
+            new Shapes.Line({
+              xs,
+              ys,
+              xe,
+              ye,
+              symbol: this.state.currentTool,
+              attributes: {
+                cutterCompensation: `${this.state.cutterCompensation.toString()}${this.state.units}`,
+                cutterCompensationMode: this.state.cutterCompensationMode,
+                chainIndex: `${this.state.chainIndex}`,
+                pathIndex: `${this.state.pathIndex}`,
+              },
+            }),
+          )
         } else {
           const startPoint = { x: this.state.previousX, y: this.state.previousY }
           const endPoint = { x: this.state.x, y: this.state.y }
-          const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
-          const center = getAmbiguousArcCenter(startPoint, endPoint, radius, this.state.interpolationMode == Constants.CW_ARC ? Constants.CW_ARC : Constants.CCW_ARC)
+          const radius =
+            this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
+          const center = getAmbiguousArcCenter(
+            startPoint,
+            endPoint,
+            radius,
+            this.state.interpolationMode == Constants.CW_ARC ? Constants.CW_ARC : Constants.CCW_ARC,
+          )
           const startAngle = Math.atan2(startPoint.y - center.y, startPoint.x - center.x)
           const endAngle = Math.atan2(endPoint.y - center.y, endPoint.x - center.x)
           const clockwise = this.state.interpolationMode == Constants.CW_ARC ? 1 : 0
@@ -970,34 +979,38 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           let ys = startPoint.y
           let xe = endPoint.x
           let ye = endPoint.y
-          this.result.push(new Shapes.DatumArc({
-            xs,
-            ys,
-            xe,
-            ye,
-            xc: center.x,
-            yc: center.y,
-            clockwise,
-          }))
+          this.result.push(
+            new Shapes.DatumArc({
+              xs,
+              ys,
+              xe,
+              ye,
+              xc: center.x,
+              yc: center.y,
+              clockwise,
+            }),
+          )
           const datumLocation = {
             x: (startPoint.x + endPoint.x) / 2,
             y: (startPoint.y + endPoint.y) / 2,
           }
-          this.result.push(new Shapes.DatumText({
-            x: datumLocation.x,
-            y: datumLocation.y,
-            text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`
-          }))
+          this.result.push(
+            new Shapes.DatumText({
+              x: datumLocation.x,
+              y: datumLocation.y,
+              text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`,
+            }),
+          )
           if (this.state.cutterCompensationMode === Constants.LEFT) {
-            xs -= (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
-            ys -= (Math.sin(startAngle) * this.state.cutterCompensation / 2) * cwFlip
-            xe -= (Math.cos(endAngle) * this.state.cutterCompensation / 2) * cwFlip
-            ye -= (Math.sin(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+            xs -= ((Math.cos(startAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            ys -= ((Math.sin(startAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            xe -= ((Math.cos(endAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            ye -= ((Math.sin(endAngle) * this.state.cutterCompensation) / 2) * cwFlip
           } else if (this.state.cutterCompensationMode === Constants.RIGHT) {
-            xs += (Math.cos(startAngle) * this.state.cutterCompensation / 2) * cwFlip
-            ys += (Math.sin(startAngle) * this.state.cutterCompensation / 2) * cwFlip
-            xe += (Math.cos(endAngle) * this.state.cutterCompensation / 2) * cwFlip
-            ye += (Math.sin(endAngle) * this.state.cutterCompensation / 2) * cwFlip
+            xs += ((Math.cos(startAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            ys += ((Math.sin(startAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            xe += ((Math.cos(endAngle) * this.state.cutterCompensation) / 2) * cwFlip
+            ye += ((Math.sin(endAngle) * this.state.cutterCompensation) / 2) * cwFlip
           }
           if (lastPath) {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
@@ -1012,20 +1025,22 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                 } else {
                   // 2 arcs may not intersect due to the cutter compensation and the case where the arc is tangent to the other arc
                   // for those cases we can create the connecting arc tool path
-                  this.result.push(new Shapes.Arc({
-                    xs: lastPath.xe,
-                    ys: lastPath.ye,
-                    xe: xs,
-                    ye: ys,
-                    xc: this.state.previousX,
-                    yc: this.state.previousY,
-                    clockwise: lastPath.clockwise ? 0 : 1,
-                    symbol: this.state.currentTool,
-                    attributes: {
-                      cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-                      cutterCompensationMode: this.state.cutterCompensationMode,
-                    }
-                  }))
+                  this.result.push(
+                    new Shapes.Arc({
+                      xs: lastPath.xe,
+                      ys: lastPath.ye,
+                      xe: xs,
+                      ye: ys,
+                      xc: this.state.previousX,
+                      yc: this.state.previousY,
+                      clockwise: lastPath.clockwise ? 0 : 1,
+                      symbol: this.state.currentTool,
+                      attributes: {
+                        cutterCompensation: `${this.state.cutterCompensation.toString()}${this.state.units}`,
+                        cutterCompensationMode: this.state.cutterCompensationMode,
+                      },
+                    }),
+                  )
                 }
               } else {
                 const insersectionPoints = findArcLineIntersections({ xs, ys, xe, ye, xc: center.x, yc: center.y }, lastPath)
@@ -1036,81 +1051,88 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   lastPath.xe = insersectionPoints[1].x
                   lastPath.ye = insersectionPoints[1].y
                 } else {
-                  if (Math.sqrt(((lastPath.xe - xs) ** 2) + ((lastPath.ye - ys) ** 2)) > this.state.cutterCompensation / 2) {
+                  if (Math.sqrt((lastPath.xe - xs) ** 2 + (lastPath.ye - ys) ** 2) > this.state.cutterCompensation / 2) {
                     // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
                     // we can tell if the tangent line to the arc is a smooth transition or a sharp corner by checking if the distance between the arc end point and the line start point is greater than half the cutter compensation
                     // for those cases we can create the connecting arc tool path
-                    this.result.push(new Shapes.Arc({
-                      xs: lastPath.xe,
-                      ys: lastPath.ye,
-                      xe: xs,
-                      ye: ys,
-                      xc: this.state.previousX,
-                      yc: this.state.previousY,
-                      clockwise: clockwise ? 0 : 1,
-                      symbol: this.state.currentTool,
-                      attributes: {
-                        cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-                        cutterCompensationMode: this.state.cutterCompensationMode,
-                      }
-                    }))
+                    this.result.push(
+                      new Shapes.Arc({
+                        xs: lastPath.xe,
+                        ys: lastPath.ye,
+                        xe: xs,
+                        ye: ys,
+                        xc: this.state.previousX,
+                        yc: this.state.previousY,
+                        clockwise: clockwise ? 0 : 1,
+                        symbol: this.state.currentTool,
+                        attributes: {
+                          cutterCompensation: `${this.state.cutterCompensation.toString()}${this.state.units}`,
+                          cutterCompensationMode: this.state.cutterCompensationMode,
+                        },
+                      }),
+                    )
                   }
                 }
               }
             }
           }
           // create the tool path
-          this.result.push(new Shapes.Arc({
-            xs,
-            ys,
-            xe,
-            ye,
-            xc: center.x,
-            yc: center.y,
-            clockwise,
-            symbol: this.state.currentTool,
-            attributes: {
-              cutterCompensation: `${(this.state.cutterCompensation).toString()}${this.state.units}`,
-              cutterCompensationMode: this.state.cutterCompensationMode,
-              chainIndex: `${this.state.chainIndex}`,
-              pathIndex: `${this.state.pathIndex}`,
-            }
-          }))
+          this.result.push(
+            new Shapes.Arc({
+              xs,
+              ys,
+              xe,
+              ye,
+              xc: center.x,
+              yc: center.y,
+              clockwise,
+              symbol: this.state.currentTool,
+              attributes: {
+                cutterCompensation: `${this.state.cutterCompensation.toString()}${this.state.units}`,
+                cutterCompensationMode: this.state.cutterCompensationMode,
+                chainIndex: `${this.state.chainIndex}`,
+                pathIndex: `${this.state.pathIndex}`,
+              },
+            }),
+          )
         }
       } else {
-        this.result.push(new Shapes.DatumLine({
-          xs: this.state.previousX,
-          ys: this.state.previousY,
-          xe: this.state.x,
-          ye: this.state.y,
-        }))
+        this.result.push(
+          new Shapes.DatumLine({
+            xs: this.state.previousX,
+            ys: this.state.previousY,
+            xe: this.state.x,
+            ye: this.state.y,
+          }),
+        )
       }
     }
   }
 
   endOfProgramNoRewind(ctx: Cst.EndOfProgramNoRewindCstChildren): void {
-    console.log('endOfProgramNoRewind', ctx)
+    console.log("endOfProgramNoRewind", ctx)
   }
 
   beginPattern(_ctx: Cst.BeginPatternCstChildren): void {
     this.stepRepeatShapes.push(this.result)
     this.result = []
-
   }
 
   endOfPattern(_ctx: Cst.EndOfPatternCstChildren): void {
-    this.stepRepeats.push(new Shapes.StepAndRepeat({
-      shapes: this.result,
-      repeats: [
-        {
-          datum: [0, 0],
-          rotation: 0,
-          scale: 1,
-          mirror_x: 0,
-          mirror_y: 0,
-        }
-      ],
-    }))
+    this.stepRepeats.push(
+      new Shapes.StepAndRepeat({
+        shapes: this.result,
+        repeats: [
+          {
+            datum: [0, 0],
+            rotation: 0,
+            scale: 1,
+            mirror_x: 0,
+            mirror_y: 0,
+          },
+        ],
+      }),
+    )
     this.result = this.stepRepeatShapes.pop() ?? []
 
     this.state.patternOffsetX = 0
@@ -1154,57 +1176,65 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   optionalStop(ctx: Cst.OptionalStopCstChildren): void {
-    console.log('optionalStop', ctx)
+    console.log("optionalStop", ctx)
   }
 
   stopForInspect(ctx: Cst.StopForInspectCstChildren): void {
-    console.log('stopForInspect', ctx)
+    console.log("stopForInspect", ctx)
   }
 
   zAxisRoutPositionWithDepthControlledCountoring(_ctx: Cst.ZAxisRoutPositionWithDepthControlledCountoringCstChildren): void {
     this.state.plunged = true
     this.state.chainIndex++
     this.state.pathIndex = 0
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-      attributes: {
-        type: 'plunge with depth control',
-        chainIndex: `${this.state.chainIndex}`,
-      }
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'Plunge with depth control',
-      attributes: {
-        type: 'plunge with depth control',
-        chainIndex: `${this.state.chainIndex}`,
-      }
-    }))
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+        attributes: {
+          type: "plunge with depth control",
+          chainIndex: `${this.state.chainIndex}`,
+        },
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "Plunge with depth control",
+        attributes: {
+          type: "plunge with depth control",
+          chainIndex: `${this.state.chainIndex}`,
+        },
+      }),
+    )
   }
 
   zAxisRoutPosition(_ctx: Cst.ZAxisRoutPositionCstChildren): void {
     this.state.plunged = true
     this.state.chainIndex++
     this.state.pathIndex = 0
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-      attributes: {
-        type: 'plunge',
-        chainIndex: `${this.state.chainIndex}`,
-      }
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'Plunge',
-      attributes: {
-        type: 'plunge',
-        chainIndex: `${this.state.chainIndex}`,
-      }
-    }))
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+        attributes: {
+          type: "plunge",
+          chainIndex: `${this.state.chainIndex}`,
+        },
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "Plunge",
+        attributes: {
+          type: "plunge",
+          chainIndex: `${this.state.chainIndex}`,
+        },
+      }),
+    )
   }
 
   retractWithClamping(_ctx: Cst.RetractWithClampingCstChildren): void {
@@ -1216,19 +1246,19 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   endOfProgramRewind(ctx: Cst.EndOfProgramRewindCstChildren): void {
-    console.log('endOfProgramRewind', ctx)
+    console.log("endOfProgramRewind", ctx)
   }
 
   longOperatorMessage(ctx: Cst.LongOperatorMessageCstChildren): void {
-    console.log('longOperatorMessage', ctx)
+    console.log("longOperatorMessage", ctx)
   }
 
   operatorMessage(ctx: Cst.OperatorMessageCstChildren): void {
-    console.log('operatorMessage', ctx)
+    console.log("operatorMessage", ctx)
   }
 
   header(ctx: Cst.HeaderCstChildren): void {
-    console.log('header', ctx)
+    console.log("header", ctx)
   }
 
   metricMode(_ctx: Cst.MetricModeCstChildren): void {
@@ -1268,7 +1298,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   dwell(ctx: Cst.DwellCstChildren): void {
-    console.log('dwell', ctx)
+    console.log("dwell", ctx)
   }
 
   drillMode(_ctx: Cst.DrillModeCstChildren): void {
@@ -1280,18 +1310,21 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
-    const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
+    const radius =
+      this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
     const sweepRadius = radius - this.state.currentTool.outer_dia / 2
-    this.result.push(new Shapes.Arc({
-      xs: this.state.x + sweepRadius,
-      ys: this.state.y,
-      xe: this.state.x + sweepRadius,
-      ye: this.state.y,
-      xc: this.state.x,
-      yc: this.state.y,
-      clockwise: 1,
-      symbol: this.state.currentTool,
-    }))
+    this.result.push(
+      new Shapes.Arc({
+        xs: this.state.x + sweepRadius,
+        ys: this.state.y,
+        xe: this.state.x + sweepRadius,
+        ye: this.state.y,
+        xc: this.state.x,
+        yc: this.state.y,
+        clockwise: 1,
+        symbol: this.state.currentTool,
+      }),
+    )
     this.state.mode = prevMode
   }
 
@@ -1300,18 +1333,21 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.mode = Constants.ROUT
     this.state.plunged = false
     this.visit(ctx.move)
-    const radius = this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
+    const radius =
+      this.state.arcRadius ?? (this.state.arcCenterOffset ? (this.state.arcCenterOffset.i ** 2 + this.state.arcCenterOffset.j ** 2) ** 0.5 : 0)
     const sweepRadius = radius - this.state.currentTool.outer_dia / 2
-    this.result.push(new Shapes.Arc({
-      xs: this.state.x + sweepRadius,
-      ys: this.state.y,
-      xe: this.state.x + sweepRadius,
-      ye: this.state.y,
-      xc: this.state.x,
-      yc: this.state.y,
-      clockwise: 0,
-      symbol: this.state.currentTool,
-    }))
+    this.result.push(
+      new Shapes.Arc({
+        xs: this.state.x + sweepRadius,
+        ys: this.state.y,
+        xe: this.state.x + sweepRadius,
+        ye: this.state.y,
+        xc: this.state.x,
+        yc: this.state.y,
+        clockwise: 0,
+        symbol: this.state.currentTool,
+      }),
+    )
     this.state.mode = prevMode
   }
 
@@ -1336,11 +1372,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   zeroSet(ctx: Cst.ZeroSetCstChildren): void {
-    console.log('zeroSet', ctx)
+    console.log("zeroSet", ctx)
   }
 
   selectVisionTool(ctx: Cst.SelectVisionToolCstChildren): void {
-    console.log('selectVisionTool', ctx)
+    console.log("selectVisionTool", ctx)
   }
 
   singlePointVisionOffset(ctx: Cst.SinglePointVisionOffsetCstChildren): void {
@@ -1355,21 +1391,27 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (y !== undefined) this.state.y += y
     }
 
-    this.result.push(new Shapes.DatumLine({
-      xs: this.state.previousX,
-      ys: this.state.previousY,
-      xe: this.state.x,
-      ye: this.state.y,
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'AlignmentPoint'
-    }))
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-    }))
+    this.result.push(
+      new Shapes.DatumLine({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "AlignmentPoint",
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
   }
 
   multiPointVisionOffset(ctx: Cst.MultiPointVisionOffsetCstChildren): void {
@@ -1384,25 +1426,31 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (y !== undefined) this.state.y += y
     }
     if (ctx.coordinate) this.visit(ctx.coordinate)
-    this.result.push(new Shapes.DatumLine({
-      xs: this.state.previousX,
-      ys: this.state.previousY,
-      xe: this.state.x,
-      ye: this.state.y,
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'AlignmentPoint'
-    }))
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-    }))
+    this.result.push(
+      new Shapes.DatumLine({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "AlignmentPoint",
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
   }
 
   cancelVisionOffset(ctx: Cst.CancelVisionOffsetCstChildren): void {
-    console.log('cancelVisionOffset', ctx)
+    console.log("cancelVisionOffset", ctx)
   }
 
   visionCorrectedSingleHole(ctx: Cst.VisionCorrectedSingleHoleCstChildren): void {
@@ -1416,21 +1464,27 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (x !== undefined) this.state.x += x
       if (y !== undefined) this.state.y += y
     }
-    this.result.push(new Shapes.DatumLine({
-      xs: this.state.previousX,
-      ys: this.state.previousY,
-      xe: this.state.x,
-      ye: this.state.y,
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'VisionCorrection'
-    }))
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-    }))
+    this.result.push(
+      new Shapes.DatumLine({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "VisionCorrection",
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
   }
 
   visionAutoCalibration(ctx: Cst.VisionAutoCalibrationCstChildren): void {
@@ -1444,62 +1498,58 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (x !== undefined) this.state.x += x
       if (y !== undefined) this.state.y += y
     }
-    this.result.push(new Shapes.DatumLine({
-      xs: this.state.previousX,
-      ys: this.state.previousY,
-      xe: this.state.x,
-      ye: this.state.y,
-    }))
-    this.result.push(new Shapes.DatumText({
-      x: this.state.x,
-      y: this.state.y,
-      text: 'VisionCorrection'
-    }))
-    this.result.push(new Shapes.DatumPoint({
-      x: this.state.x,
-      y: this.state.y,
-    }))
+    this.result.push(
+      new Shapes.DatumLine({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumText({
+        x: this.state.x,
+        y: this.state.y,
+        text: "VisionCorrection",
+      }),
+    )
+    this.result.push(
+      new Shapes.DatumPoint({
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
   }
 
-  parseCoordinate(
-    coordinate: string,
-  ): number {
-    if (coordinate.includes('.') || coordinate === '0') {
+  parseCoordinate(coordinate: string): number {
+    if (coordinate.includes(".") || coordinate === "0") {
       return Number(coordinate)
     }
 
     const { coordinateFormat, zeroSuppression } = this.state
     let [integerPlaces, decimalPlaces] = coordinateFormat
     const [sign, signlessCoordinate] =
-      coordinate.startsWith('+') || coordinate.startsWith('-')
-        ? [coordinate[0], coordinate.slice(1)]
-        : ['+', coordinate]
+      coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
 
     if (signlessCoordinate.length > integerPlaces + decimalPlaces) {
       this.state.coordinateFormat = [coordinate.length - decimalPlaces, decimalPlaces]
     }
-    [integerPlaces, decimalPlaces] = this.state.coordinateFormat
+    ;[integerPlaces, decimalPlaces] = this.state.coordinateFormat
     const digits = integerPlaces + decimalPlaces
     const paddedCoordinate =
-      zeroSuppression === Constants.TRAILING
-        ? signlessCoordinate.padEnd(digits, '0')
-        : signlessCoordinate.padStart(digits, '0')
+      zeroSuppression === Constants.TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
 
     const leading = paddedCoordinate.slice(0, paddedCoordinate.length - decimalPlaces)
     const trailing = paddedCoordinate.slice(paddedCoordinate.length - decimalPlaces)
 
     return Number(`${sign}${leading}.${trailing}`)
   }
-
-
 }
-
-
 
 export function getAmbiguousArcCenter(startPoint: Point, endPoint: Point, radius: number, arcDirection: ArcDirection): Point {
   // Get the center candidates and select the candidate with the smallest arc
   const [_start, _end, center] = findCircleIntersections(startPoint, endPoint, radius)
-    .map(centerPoint => {
+    .map((centerPoint) => {
       return getArcPositions(startPoint, endPoint, centerPoint, arcDirection)
     })
     .sort(([startA, endA], [startB, endB]) => {
@@ -1514,27 +1564,20 @@ export function getAmbiguousArcCenter(startPoint: Point, endPoint: Point, radius
   }
 }
 
-
 export function getArcPositions(
   startPoint: Point,
   endPoint: Point,
   centerPoint: Point,
-  arcDirection: ArcDirection
+  arcDirection: ArcDirection,
 ): [start: ArcPosition, end: ArcPosition, center: Position] {
-  let startAngle = Math.atan2(
-    startPoint.y - centerPoint.y,
-    startPoint.x - centerPoint.x
-  )
-  let endAngle = Math.atan2(
-    endPoint.y - centerPoint.y,
-    endPoint.x - centerPoint.x
-  )
+  let startAngle = Math.atan2(startPoint.y - centerPoint.y, startPoint.x - centerPoint.x)
+  let endAngle = Math.atan2(endPoint.y - centerPoint.y, endPoint.x - centerPoint.x)
 
   // If counter-clockwise, end angle should be greater than start angle
   if (arcDirection === Constants.CCW_ARC) {
-    endAngle = endAngle > startAngle ? endAngle : endAngle + (Math.PI * 2)
+    endAngle = endAngle > startAngle ? endAngle : endAngle + Math.PI * 2
   } else {
-    startAngle = startAngle > endAngle ? startAngle : startAngle + (Math.PI * 2)
+    startAngle = startAngle > endAngle ? startAngle : startAngle + Math.PI * 2
   }
 
   return [
@@ -1592,7 +1635,6 @@ interface Line {
  * @returns point of intersection or undefined if the lines are parallel
  */
 function findLineIntersection(line1: Line, line2: Line): Point | undefined {
-
   const [x1, y1] = [line1.xs, line1.ys]
   const [x2, y2] = [line1.xe, line1.ye]
   const [x3, y3] = [line2.xs, line2.ys]
@@ -1603,7 +1645,7 @@ function findLineIntersection(line1: Line, line2: Line): Point | undefined {
     return
   }
 
-  const denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
+  const denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
 
   // Lines are parallel
   if (denominator === 0) {
@@ -1626,7 +1668,6 @@ interface Arc {
   ye: number
   xc: number
   yc: number
-
 }
 
 /**
@@ -1649,31 +1690,29 @@ function findArcLineIntersections(arc: Arc, line: Line): Point[] | undefined {
   // Circle origin [cx, cy] with radius radius
   // Line of [x1, y1] to [x2, y2]
 
-  const _cx = x1 - cx;
-  const _cy = y1 - cy;
+  const _cx = x1 - cx
+  const _cy = y1 - cy
 
   const _vx = x2 - x1,
     _vy = y2 - y1,
     _a = _vx * _vx + _vy * _vy,
     _b = 2 * (_vx * _cx + _vy * _cy),
     _c = _cx * _cx + _cy * _cy - radius * radius
-  let determinant = _b * _b - 4 * _a * _c;
+  let determinant = _b * _b - 4 * _a * _c
 
   if (_a <= 0.000001 || determinant < 0) {
     // No real solutions.
-    return;
-  }
-  else if (determinant == 0) {
+    return
+  } else if (determinant == 0) {
     // Line is tangent to the circle
-    const _t = -_b / (2 * _a);
-    const point = { x: x1 + _t * _vx, y: y1 + _t * _vy };
-    return [point, point];
-  }
-  else {
+    const _t = -_b / (2 * _a)
+    const point = { x: x1 + _t * _vx, y: y1 + _t * _vy }
+    return [point, point]
+  } else {
     // Line intersects circle
-    determinant = Math.sqrt(determinant);
-    const _t1 = (-_b - determinant) / (2 * _a);
-    const _t2 = (-_b + determinant) / (2 * _a);
+    determinant = Math.sqrt(determinant)
+    const _t1 = (-_b - determinant) / (2 * _a)
+    const _t2 = (-_b + determinant) / (2 * _a)
 
     // First point is closest to [x1, y1]
     const p1 = { x: x1 + _t1 * _vx, y: y1 + _t1 * _vy }
@@ -1684,8 +1723,6 @@ function findArcLineIntersections(arc: Arc, line: Line): Point[] | undefined {
     return d1 < d2 ? [p1, p2] : [p2, p1]
   }
 }
-
-
 
 /**
  * Find the intersection points of two circles, the first point returned is the one closer to the first circle start point
@@ -1702,37 +1739,46 @@ function findArcIntersections(arc1: Arc, arc2: Arc): Point[] | undefined {
   const y2 = arc2.yc
   const r2 = Math.sqrt((arc2.xs - x2) ** 2 + (arc2.ys - y2) ** 2)
 
-  const centerdx = x1 - x2;
-  const centerdy = y1 - y2;
-  const R = Math.sqrt(centerdx * centerdx + centerdy * centerdy);
-  if (!(Math.abs(r1 - r2) <= R && R <= r1 + r2)) { // no intersection
-    return; // empty list of results
+  const centerdx = x1 - x2
+  const centerdy = y1 - y2
+  const R = Math.sqrt(centerdx * centerdx + centerdy * centerdy)
+  if (!(Math.abs(r1 - r2) <= R && R <= r1 + r2)) {
+    // no intersection
+    return // empty list of results
   }
 
   // intersection(s) should exist
 
-  const R2 = R * R;
-  const R4 = R2 * R2;
-  const a = (r1 * r1 - r2 * r2) / (2 * R2);
-  const r2r2 = (r1 * r1 - r2 * r2);
-  const c = Math.sqrt(2 * (r1 * r1 + r2 * r2) / R2 - (r2r2 * r2r2) / R4 - 1);
+  const R2 = R * R
+  const R4 = R2 * R2
+  const a = (r1 * r1 - r2 * r2) / (2 * R2)
+  const r2r2 = r1 * r1 - r2 * r2
+  const c = Math.sqrt((2 * (r1 * r1 + r2 * r2)) / R2 - (r2r2 * r2r2) / R4 - 1)
 
-  const fx = (x1 + x2) / 2 + a * (x2 - x1);
-  const gx = c * (y2 - y1) / 2;
-  const ix1 = fx + gx;
-  const ix2 = fx - gx;
+  const fx = (x1 + x2) / 2 + a * (x2 - x1)
+  const gx = (c * (y2 - y1)) / 2
+  const ix1 = fx + gx
+  const ix2 = fx - gx
 
-  const fy = (y1 + y2) / 2 + a * (y2 - y1);
-  const gy = c * (x1 - x2) / 2;
-  const iy1 = fy + gy;
-  const iy2 = fy - gy;
+  const fy = (y1 + y2) / 2 + a * (y2 - y1)
+  const gy = (c * (x1 - x2)) / 2
+  const iy1 = fy + gy
+  const iy2 = fy - gy
 
   // note if gy == 0 and gx == 0 then the circles are tangent and there is only one solution
   // but that one solution will just be duplicated as the code is currently written
   // return the points with the first closer to circle 1 start
   const d1 = Math.sqrt((ix1 - arc1.xs) ** 2 + (iy1 - arc1.ys) ** 2)
   const d2 = Math.sqrt((ix2 - arc1.xs) ** 2 + (iy2 - arc1.ys) ** 2)
-  return d1 < d2 ? [{ x: ix1, y: iy1 }, { x: ix2, y: iy2 }] : [{ x: ix2, y: iy2 }, { x: ix1, y: iy1 }]
+  return d1 < d2
+    ? [
+        { x: ix1, y: iy1 },
+        { x: ix2, y: iy2 },
+      ]
+    : [
+        { x: ix2, y: iy2 },
+        { x: ix1, y: iy1 },
+      ]
 }
 
 // TODO: add support for more excellon Canned Cycle Commands

@@ -1,30 +1,18 @@
-import { useState, useEffect, useContext } from 'react'
-import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from '@mantine/core'
-import { Binary, TransformOrder, Units } from '@src/renderer/types'
-import { RenderEngine } from '@src/renderer'
-import type { LayerInfo } from '@src/renderer/engine'
-import { vec2 } from 'gl-matrix'
-import { ConfigEditorProvider } from '@src/contexts/ConfigEditor';
+import { useState, useEffect, useContext } from "react"
+import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
+import { Binary, TransformOrder, Units } from "@src/renderer/types"
+import { RenderEngine } from "@src/renderer"
+import type { LayerInfo } from "@src/renderer/engine"
+import { vec2 } from "gl-matrix"
+import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
 
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { IconGripHorizontal } from '@tabler/icons-react'
-import { getUnitsConversion } from '@src/renderer/utils'
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { IconGripHorizontal } from "@tabler/icons-react"
+import { getUnitsConversion } from "@src/renderer/utils"
 
 export interface LayerTransformProps {
   renderEngine: RenderEngine
@@ -56,30 +44,29 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
    */
   const [mirror_y, setMirrorY] = useState<Binary>(0)
 
-  const [transformOrder, setTransformOrder] = useState<TransformOrder>(['translate', 'rotate', 'mirror', 'scale'])
-
+  const [transformOrder, setTransformOrder] = useState<TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
   const { units } = useContext(ConfigEditorProvider)
   const [layerUnits, setLayerUnts] = useState<Units>(units)
-  const [layerName, setLayerName] = useState<string>('')
+  const [layerName, setLayerName] = useState<string>("")
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+    }),
+  )
 
   function handleDragEnd(event): void {
-    const { active, over } = event;
+    const { active, over } = event
 
     if (active.id !== over.id) {
       setTransformOrder((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
+        const oldIndex = items.indexOf(active.id)
+        const newIndex = items.indexOf(over.id)
 
-        return arrayMove(items, oldIndex, newIndex);
-      });
+        return arrayMove(items, oldIndex, newIndex)
+      })
     }
   }
 
@@ -99,14 +86,14 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
             if (layer.transform.order != undefined) {
               setTransformOrder(layer.transform.order)
             } else {
-              setTransformOrder(['translate', 'rotate', 'mirror', 'scale'])
+              setTransformOrder(["translate", "rotate", "mirror", "scale"])
             }
           }
         })
       })
     })
     return (): void => {
-      console.log('LayerTransform Unloaded')
+      console.log("LayerTransform Unloaded")
     }
   }, [])
 
@@ -121,7 +108,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
               scale: scale,
               mirror_x: mirror_x,
               mirror_y: mirror_y,
-              order: transformOrder
+              order: transformOrder,
             })
           }
         })
@@ -129,29 +116,24 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     })
   })
 
-
   return (
-    <Modal
-      opened={props.visible}
-      onClose={props.onClose}
-      title={`Transform: ${layerName}`}
-    >
-      <Group justify="center" wrap='nowrap' grow>
+    <Modal opened={props.visible} onClose={props.onClose} title={`Transform: ${layerName}`}>
+      <Group justify="center" wrap="nowrap" grow>
         <NumberInput
           label={`Datum X (${units})`}
           description="Layer X translation"
           placeholder="Input number"
-          value={Number((datumX * getUnitsConversion(units) / getUnitsConversion(layerUnits)).toFixed(2))}
+          value={Number(((datumX * getUnitsConversion(units)) / getUnitsConversion(layerUnits)).toFixed(2))}
           step={getUnitsConversion(layerUnits)}
-          onChange={x => setDatumX(Number((Number(x) * getUnitsConversion(layerUnits) / getUnitsConversion(units)).toFixed(2)))}
+          onChange={(x) => setDatumX(Number(((Number(x) * getUnitsConversion(layerUnits)) / getUnitsConversion(units)).toFixed(2)))}
         />
         <NumberInput
           label={`Datum Y (${units})`}
           description="Layer Y translation"
           placeholder="Input number"
-          value={Number((datumY * getUnitsConversion(units) / getUnitsConversion(layerUnits)).toFixed(2))}
+          value={Number(((datumY * getUnitsConversion(units)) / getUnitsConversion(layerUnits)).toFixed(2))}
           step={getUnitsConversion(layerUnits)}
-          onChange={y => setDatumY(Number((Number(y) * getUnitsConversion(layerUnits) / getUnitsConversion(units)).toFixed(2)))}
+          onChange={(y) => setDatumY(Number(((Number(y) * getUnitsConversion(layerUnits)) / getUnitsConversion(units)).toFixed(2)))}
         />
       </Group>
       <Space h="md" />
@@ -160,7 +142,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
         description="Layer rotation in degrees, counterclockwise"
         placeholder="Input number"
         value={rotation}
-        onChange={r => setRotation(Number(r))}
+        onChange={(r) => setRotation(Number(r))}
       />
       <Space h="md" />
       <NumberInput
@@ -168,10 +150,10 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
         description="Layer scale factor, 1 = 100% (no scaling)"
         placeholder="Input number"
         value={scale}
-        onChange={s => setScale(Number(s))}
+        onChange={(s) => setScale(Number(s))}
       />
       <Space h="md" />
-      <Group mt={10} justify="center" wrap='nowrap' grow>
+      <Group mt={10} justify="center" wrap="nowrap" grow>
         <Switch
           label="Mirror X"
           description="Mirror X cooriinate values => x = -x"
@@ -189,21 +171,12 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
       <Input.Wrapper label="Order of Transormations" description="Drag and drop operations. Performed in order from top to bottom.">
         <Space h="xs" />
         <Paper shadow="md" radius="lg" p="xs" withBorder>
-          <Stack
-            align="stretch"
-            justify="center"
-            gap="xs"
-          >
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={transformOrder}
-                strategy={verticalListSortingStrategy}
-              >
-                {transformOrder.map(id => <SortableItem key={id} id={id} />)}
+          <Stack align="stretch" justify="center" gap="xs">
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={transformOrder} strategy={verticalListSortingStrategy}>
+                {transformOrder.map((id) => (
+                  <SortableItem key={id} id={id} />
+                ))}
               </SortableContext>
             </DndContext>
           </Stack>
@@ -214,26 +187,29 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 }
 
 interface SortableItemProps {
-  id: string;
+  id: string
 }
 
 export function SortableItem(props: SortableItemProps): JSX.Element {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({ id: props.id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
+  }
 
   return (
-    <Button justify="space-between" rightSection={<IconGripHorizontal size={14} />} fullWidth variant="default" ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <Button
+      justify="space-between"
+      rightSection={<IconGripHorizontal size={14} />}
+      fullWidth
+      variant="default"
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+    >
       {props.id.toUpperCase()}
     </Button>
-  );
+  )
 }

@@ -1,28 +1,28 @@
-import REGL from 'regl'
-import * as Shapes from './shapes'
-import * as Symbols from './symbols'
-import { glFloatSize } from './constants'
-import { FeatureTypeIdentifier, Binary } from './types'
-import { MacroRenderer, StepAndRepeatRenderer } from './layer'
+import REGL from "regl"
+import * as Shapes from "./shapes"
+import * as Symbols from "./symbols"
+import { glFloatSize } from "./constants"
+import { FeatureTypeIdentifier, Binary } from "./types"
+import { MacroRenderer, StepAndRepeatRenderer } from "./layer"
 
-import PadFrag from '../shaders/src/Pad.frag'
-import PadVert from '../shaders/src/Pad.vert'
-import LineFrag from '../shaders/src/Line.frag'
-import LineVert from '../shaders/src/Line.vert'
-import ArcFrag from '../shaders/src/Arc.frag'
-import ArcVert from '../shaders/src/Arc.vert'
-import SurfaceFrag from '../shaders/src/Surface.frag'
-import SurfaceVert from '../shaders/src/Surface.vert'
-import GlyphtextFrag from '../shaders/src/GlyphText.frag'
-import GlyphtextVert from '../shaders/src/GlyphText.vert'
-import DatumFrag from '../shaders/src/Datum.frag'
-import DatumVert from '../shaders/src/Datum.vert'
+import PadFrag from "../shaders/src/Pad.frag"
+import PadVert from "../shaders/src/Pad.vert"
+import LineFrag from "../shaders/src/Line.frag"
+import LineVert from "../shaders/src/Line.vert"
+import ArcFrag from "../shaders/src/Arc.frag"
+import ArcVert from "../shaders/src/Arc.vert"
+import SurfaceFrag from "../shaders/src/Surface.frag"
+import SurfaceVert from "../shaders/src/Surface.vert"
+import GlyphtextFrag from "../shaders/src/GlyphText.frag"
+import GlyphtextVert from "../shaders/src/GlyphText.vert"
+import DatumFrag from "../shaders/src/Datum.frag"
+import DatumVert from "../shaders/src/Datum.vert"
 
-import { WorldContext } from './engine'
-import { vec2 } from 'gl-matrix'
+import { WorldContext } from "./engine"
+import { vec2 } from "gl-matrix"
 
-import earcut from 'earcut'
-import { fontInfo } from './text/glyph/font'
+import earcut from "earcut"
+import { fontInfo } from "./text/glyph/font"
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -30,18 +30,18 @@ const {
   ARC_RECORD_PARAMETERS,
   LINE_RECORD_PARAMETERS_MAP,
   PAD_RECORD_PARAMETERS_MAP,
-  ARC_RECORD_PARAMETERS_MAP
+  ARC_RECORD_PARAMETERS_MAP,
 } = Shapes
 
-type CustomAttributeConfig = Omit<REGL.AttributeConfig, 'buffer'> & {
+type CustomAttributeConfig = Omit<REGL.AttributeConfig, "buffer"> & {
   buffer: REGL.DynamicVariable<REGL.Buffer>
 }
 
-interface PadUniforms { }
+interface PadUniforms {}
 
-interface LineUniforms { }
+interface LineUniforms {}
 
-interface ArcUniforms { }
+interface ArcUniforms {}
 
 interface DatumTextUniforms {
   u_texture: REGL.Texture2D
@@ -49,7 +49,7 @@ interface DatumTextUniforms {
   u_LetterDimensions: vec2
 }
 
-interface DatumUniforms { }
+interface DatumUniforms {}
 
 interface PadAttributes {
   a_SymNum: CustomAttributeConfig
@@ -162,7 +162,7 @@ interface FrameBufferRenderUniforms {
   u_Polarity: number
   u_RenderTexture: REGL.Framebuffer2D
 }
-interface FrameBufferRendeAttributes { }
+interface FrameBufferRendeAttributes {}
 
 export interface FrameBufferRenderAttachments {
   qtyFeatures: number
@@ -198,9 +198,7 @@ interface TReglRenderers {
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
   drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments> | undefined
   drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
-  drawFrameBuffer:
-  | REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
-  | undefined
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
 }
 
@@ -212,7 +210,7 @@ export const ReglRenderers: TReglRenderers = {
   drawDatums: undefined,
   drawDatumText: undefined,
   drawFrameBuffer: undefined,
-  renderToScreen: undefined
+  renderToScreen: undefined,
 }
 
 export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8ClampedArray): void {
@@ -220,75 +218,65 @@ export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8Clamped
     data: glyphData,
     width: fontInfo.textureWidth,
     height: fontInfo.textureHeight,
-    format: 'rgba',
-    type: 'uint8',
-    mag: 'nearest',
-    min: 'nearest'
+    format: "rgba",
+    type: "uint8",
+    mag: "nearest",
+    min: "nearest",
   })
 
   ReglRenderers.drawDatumText = regl<
-  DatumTextUniforms,
-  DatumTextAttributes,
-  DatumTextAttachments,
-  Record<string, never>,
-  REGL.DefaultContext & WorldContext>(
-    {
-      frag: GlyphtextFrag,
-      vert: GlyphtextVert,
-
-      attributes: {
-        a_position: {
-          buffer: regl.prop<DatumTextAttachments, 'positions'>('positions'),
-          offset: 0,
-          stride: 2 * glFloatSize,
-          divisor: 1
-        },
-        a_texcoord: {
-          buffer: regl.prop<DatumTextAttachments, 'texcoords'>('texcoords'),
-          offset: 0,
-          stride: 2 * glFloatSize,
-          divisor: 1
-        },
-        a_StringIndex: {
-          buffer: regl.prop<DatumTextAttachments, 'stringIndexes'>('stringIndexes'),
-          offset: 0,
-          stride: 1 * glFloatSize,
-          divisor: 1
-        },
-        a_Vertex_Position: [
-          [0, 0],
-          [0, 1],
-          [1, 0],
-          [1, 0],
-          [0, 1],
-          [1, 1]
-        ]
-      },
-
-      uniforms: {
-        u_texture: texture,
-        u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
-        u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
-      },
-
-
-      instances: regl.prop<SurfaceAttachments, 'length'>('length'),
-      count: 6,
-      primitive: 'triangles',
-
-    }
-  )
-}
-
-
-export function initializeRenderers(regl: REGL.Regl): void {
-  ReglRenderers.drawPads = regl<
-    PadUniforms,
-    PadAttributes,
-    PadAttachments,
+    DatumTextUniforms,
+    DatumTextAttributes,
+    DatumTextAttachments,
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
+    frag: GlyphtextFrag,
+    vert: GlyphtextVert,
+
+    attributes: {
+      a_position: {
+        buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
+        offset: 0,
+        stride: 2 * glFloatSize,
+        divisor: 1,
+      },
+      a_texcoord: {
+        buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
+        offset: 0,
+        stride: 2 * glFloatSize,
+        divisor: 1,
+      },
+      a_StringIndex: {
+        buffer: regl.prop<DatumTextAttachments, "stringIndexes">("stringIndexes"),
+        offset: 0,
+        stride: 1 * glFloatSize,
+        divisor: 1,
+      },
+      a_Vertex_Position: [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ],
+    },
+
+    uniforms: {
+      u_texture: texture,
+      u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
+      u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
+    },
+
+    instances: regl.prop<SurfaceAttachments, "length">("length"),
+    count: 6,
+    primitive: "triangles",
+  })
+}
+
+export function initializeRenderers(regl: REGL.Regl): void {
+  ReglRenderers.drawPads = regl<PadUniforms, PadAttributes, PadAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: PadFrag,
     vert: PadVert,
 
@@ -296,72 +284,66 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     attributes: {
       a_Index: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Location: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SymNum: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_ResizeFactor: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Polarity: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Rotation: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Mirror_X: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Mirror_Y: {
-        buffer: regl.prop<PadAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
         stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
         offset: PAD_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
-        divisor: 1
-      }
+        divisor: 1,
+      },
     },
 
-    instances: regl.prop<PadAttachments, 'length'>('length')
+    instances: regl.prop<PadAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawArcs = regl<
-    ArcUniforms,
-    ArcAttributes,
-    ArcAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawArcs = regl<ArcUniforms, ArcAttributes, ArcAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: ArcFrag,
 
     vert: ArcVert,
@@ -370,65 +352,59 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     attributes: {
       a_Index: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Start_Location: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_End_Location: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Center_Location: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SymNum: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Polarity: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Clockwise: {
-        buffer: regl.prop<ArcAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
         stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
         offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
-        divisor: 1
-      }
+        divisor: 1,
+      },
     },
 
-    instances: regl.prop<ArcAttachments, 'length'>('length')
+    instances: regl.prop<ArcAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawLines = regl<
-    LineUniforms,
-    LineAttributes,
-    LineAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawLines = regl<LineUniforms, LineAttributes, LineAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: LineFrag,
 
     vert: LineVert,
@@ -437,42 +413,42 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     attributes: {
       a_Index: {
-        buffer: regl.prop<LineAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<LineAttachments, "buffer">("buffer"),
         stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
         offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Start_Location: {
-        buffer: regl.prop<LineAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<LineAttachments, "buffer">("buffer"),
         stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
         offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_End_Location: {
-        buffer: regl.prop<LineAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<LineAttachments, "buffer">("buffer"),
         stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
         offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SymNum: {
-        buffer: regl.prop<LineAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<LineAttachments, "buffer">("buffer"),
         stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
         offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Polarity: {
-        buffer: regl.prop<LineAttachments, 'buffer'>('buffer'),
+        buffer: regl.prop<LineAttachments, "buffer">("buffer"),
         stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
         offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
-        divisor: 1
-      }
+        divisor: 1,
+      },
     },
 
-    instances: regl.prop<LineAttachments, 'length'>('length')
+    instances: regl.prop<LineAttachments, "length">("length"),
   })
 
   ReglRenderers.drawSurfaces = regl<
@@ -487,80 +463,77 @@ export function initializeRenderers(regl: REGL.Regl): void {
     vert: SurfaceVert,
 
     uniforms: {
-      u_Vertices: regl.prop<SurfaceAttachments, 'vertices'>('vertices'),
-      u_VerticesDimensions: regl.prop<SurfaceAttachments, 'verticiesDimensions'>(
-        'verticiesDimensions'
-      ),
+      u_Vertices: regl.prop<SurfaceAttachments, "vertices">("vertices"),
+      u_VerticesDimensions: regl.prop<SurfaceAttachments, "verticiesDimensions">("verticiesDimensions"),
     },
 
     attributes: {
       a_ContourIndex: {
-        buffer: regl.prop<SurfaceAttachments, 'contourIndexBuffer'>('contourIndexBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "contourIndexBuffer">("contourIndexBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_ContourPolarity: {
-        buffer: regl.prop<SurfaceAttachments, 'contourPolarityBuffer'>('contourPolarityBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "contourPolarityBuffer">("contourPolarityBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_ContourOffset: {
-        buffer: regl.prop<SurfaceAttachments, 'contourOffsetBuffer'>('contourOffsetBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "contourOffsetBuffer">("contourOffsetBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_Indicies: {
-        buffer: regl.prop<SurfaceAttachments, 'indiciesBuffer'>('indiciesBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "indiciesBuffer">("indiciesBuffer"),
         stride: 3 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_QtyVerts: {
-        buffer: regl.prop<SurfaceAttachments, 'contourVertexQtyBuffer'>('contourVertexQtyBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "contourVertexQtyBuffer">("contourVertexQtyBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_QtyContours: {
-        buffer: regl.prop<SurfaceAttachments, 'qtyContours'>('qtyContours'),
+        buffer: regl.prop<SurfaceAttachments, "qtyContours">("qtyContours"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SurfaceIndex: {
-        buffer: regl.prop<SurfaceAttachments, 'surfaceIndexBuffer'>('surfaceIndexBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "surfaceIndexBuffer">("surfaceIndexBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SurfacePolarity: {
-        buffer: regl.prop<SurfaceAttachments, 'surfacePolarityBuffer'>('surfacePolarityBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "surfacePolarityBuffer">("surfacePolarityBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
 
       a_SurfaceOffset: {
-        buffer: regl.prop<SurfaceAttachments, 'surfaceOffsetBuffer'>('surfaceOffsetBuffer'),
+        buffer: regl.prop<SurfaceAttachments, "surfaceOffsetBuffer">("surfaceOffsetBuffer"),
         stride: 1 * glFloatSize,
-        divisor: 1
+        divisor: 1,
       },
-
 
       a_Vertex_Position: [
         [0, 0],
         [1, 1],
-        [2, 2]
-      ]
+        [2, 2],
+      ],
     },
 
     cull: {
-      enable: false
+      enable: false,
     },
 
-    instances: regl.prop<SurfaceAttachments, 'length'>('length'),
+    instances: regl.prop<SurfaceAttachments, "length">("length"),
     count: 3,
     // primitive: 'line loop'
   })
@@ -616,20 +589,19 @@ export function initializeRenderers(regl: REGL.Regl): void {
     depth: {
       enable: true,
       mask: true,
-      func: 'greater',
-      range: [0, 1]
+      func: "greater",
+      range: [0, 1],
     },
     uniforms: {
-      u_QtyFeatures: regl.prop<FrameBufferRenderAttachments, 'qtyFeatures'>('qtyFeatures'),
-      u_RenderTexture: regl.prop<FrameBufferRenderAttachments, 'renderTexture'>('renderTexture'),
-      u_Index: regl.prop<FrameBufferRenderAttachments, 'index'>('index'),
-      u_Polarity: regl.prop<FrameBufferRenderAttachments, 'polarity'>('polarity')
-    }
+      u_QtyFeatures: regl.prop<FrameBufferRenderAttachments, "qtyFeatures">("qtyFeatures"),
+      u_RenderTexture: regl.prop<FrameBufferRenderAttachments, "renderTexture">("renderTexture"),
+      u_Index: regl.prop<FrameBufferRenderAttachments, "index">("index"),
+      u_Polarity: regl.prop<FrameBufferRenderAttachments, "polarity">("polarity"),
+    },
   })
 
-  ReglRenderers.renderToScreen = regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>(
-    {
-      vert: `
+  ReglRenderers.renderToScreen = regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>({
+    vert: `
       precision highp float;
       attribute vec2 a_Vertex_Position;
       varying vec2 v_UV;
@@ -638,7 +610,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
         gl_Position = vec4(a_Vertex_Position, 1, 1);
       }
     `,
-      frag: `
+    frag: `
       precision highp float;
       uniform sampler2D u_RenderTexture;
       varying vec2 v_UV;
@@ -647,43 +619,36 @@ export function initializeRenderers(regl: REGL.Regl): void {
       }
     `,
 
-      // blend: {
-      //   enable: true,
+    // blend: {
+    //   enable: true,
 
-      //   func: {
-      //     srcRGB: 'one minus dst color',
-      //     srcAlpha: 'one',
-      //     dstRGB: 'one minus src color',
-      //     dstAlpha: 'one'
-      //   },
+    //   func: {
+    //     srcRGB: 'one minus dst color',
+    //     srcAlpha: 'one',
+    //     dstRGB: 'one minus src color',
+    //     dstAlpha: 'one'
+    //   },
 
-      //   equation: {
-      //     rgb: 'add',
-      //     alpha: 'add'
-      //   },
-      //   color: [0, 0, 0, 0.1]
-      // },
+    //   equation: {
+    //     rgb: 'add',
+    //     alpha: 'add'
+    //   },
+    //   color: [0, 0, 0, 0.1]
+    // },
 
-      depth: {
-        enable: false,
-        mask: false,
-        func: 'greater',
-        range: [0, 1]
-      },
+    depth: {
+      enable: false,
+      mask: false,
+      func: "greater",
+      range: [0, 1],
+    },
 
-      uniforms: {
-        u_RenderTexture: regl.prop<ScreenRenderProps, 'renderTexture'>('renderTexture'),
-      }
-    }
-  )
+    uniforms: {
+      u_RenderTexture: regl.prop<ScreenRenderProps, "renderTexture">("renderTexture"),
+    },
+  })
 
-  ReglRenderers.drawDatums = regl<
-    DatumUniforms,
-    DatumAttributes,
-    DatumAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawDatums = regl<DatumUniforms, DatumAttributes, DatumAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: DatumFrag,
 
     vert: DatumVert,
@@ -692,14 +657,14 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     attributes: {
       a_Location: {
-        buffer: regl.prop<DatumAttachments, 'positions'>('positions'),
+        buffer: regl.prop<DatumAttachments, "positions">("positions"),
         stride: 2 * glFloatSize,
         offset: 0,
-        divisor: 1
+        divisor: 1,
       },
     },
 
-    instances: regl.prop<DatumAttachments, 'length'>('length'),
+    instances: regl.prop<DatumAttachments, "length">("length"),
   })
 }
 
@@ -736,7 +701,7 @@ export class ShapesShaderCollection {
     const { regl } = props
     this.regl = regl
     this.symbolsCollection = new SymbolShaderCollection({
-      regl
+      regl,
     })
     this.shapes = {
       pads: [],
@@ -754,35 +719,35 @@ export class ShapesShaderCollection {
         this.datumPoints.length = 0
         this.datumLines.length = 0
         this.datumArcs.length = 0
-      }
+      },
     }
     this.shaderAttachment = {
       pads: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       lines: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       arcs: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       datumPoints: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       datumLines: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       datumArcs: {
         buffer: regl.buffer(0),
-        length: 0
+        length: 0,
       },
       surfaces: [],
-      surfacesWithHoles: []
+      surfacesWithHoles: [],
     }
   }
 
@@ -791,13 +756,11 @@ export class ShapesShaderCollection {
       pads: this.shapes.pads.length,
       lines: this.shapes.lines.length,
       arcs: this.shapes.arcs.length,
-      surfaces: this.shapes.surfaces.length
+      surfaces: this.shapes.surfaces.length,
     }
   }
 
-
   public refresh(image: Shapes.Shape[]): this {
-
     // first order of business is to clear the shapes
     this.symbolsCollection.symbols.clear()
     this.shapes.clear()
@@ -834,53 +797,40 @@ export class ShapesShaderCollection {
       if (descriptor === undefined) {
         return false
       }
-      return !!Object.getOwnPropertyDescriptor(obj, prop)!['get']
+      return !!Object.getOwnPropertyDescriptor(obj, prop)!["get"]
     }
 
     function fixSymbolGetter(record: Shapes.Pad | Shapes.Line | Shapes.Arc | Shapes.DatumArc | Shapes.DatumLine | Shapes.DatumPoint): void {
-      if (!isGetter(record, 'sym_num')) {
-        Object.defineProperty(record, 'sym_num', {
+      if (!isGetter(record, "sym_num")) {
+        Object.defineProperty(record, "sym_num", {
           get: function (): number {
             return this.symbol.sym_num.value
-          }
+          },
         })
       }
     }
 
-
     image.forEach((record) => {
       if (record.type === FeatureTypeIdentifier.SURFACE) {
         this.shapes.surfaces.push(record)
-      } else if (
-        record.type === FeatureTypeIdentifier.PAD &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
-      ) {
+      } else if (record.type === FeatureTypeIdentifier.PAD && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.pads.push(record)
-      } else if (
-        record.type === FeatureTypeIdentifier.LINE &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
-      ) {
+      } else if (record.type === FeatureTypeIdentifier.LINE && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.lines.push(record)
-      } else if (
-        record.type === FeatureTypeIdentifier.ARC &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION
-      ) {
+      } else if (record.type === FeatureTypeIdentifier.ARC && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.arcs.push(record)
       } else if (record.type === FeatureTypeIdentifier.POLYLINE) {
         drawPolyline(record, this.shapes)
-      } else if (record.type === FeatureTypeIdentifier.DATUM_LINE &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+      } else if (record.type === FeatureTypeIdentifier.DATUM_LINE && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.datumLines.push(record)
-      } else if (record.type === FeatureTypeIdentifier.DATUM_ARC &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+      } else if (record.type === FeatureTypeIdentifier.DATUM_ARC && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.datumArcs.push(record)
-      } else if (record.type === FeatureTypeIdentifier.DATUM_POINT &&
-        record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+      } else if (record.type === FeatureTypeIdentifier.DATUM_POINT && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.datumPoints.push(record)
       }
@@ -941,24 +891,12 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumLines.length = this.shapes.datumLines.length
     this.shaderAttachment.datumArcs.length = this.shapes.datumArcs.length
 
-    this.shaderAttachment.pads.buffer(
-      this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key]))
-    )
-    this.shaderAttachment.lines.buffer(
-      this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key]))
-    )
-    this.shaderAttachment.arcs.buffer(
-      this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
-    )
-    this.shaderAttachment.datumPoints.buffer(
-      this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key]))
-    )
-    this.shaderAttachment.datumLines.buffer(
-      this.shapes.datumLines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key]))
-    )
-    this.shaderAttachment.datumArcs.buffer(
-      this.shapes.datumArcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key]))
-    )
+    this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.datumPoints.buffer(this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.datumLines.buffer(this.shapes.datumLines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.datumArcs.buffer(this.shapes.datumArcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
 
     const surfacePolarities: number[] = []
     const surfaceOffsets: number[] = []
@@ -1003,11 +941,11 @@ export class ShapesShaderCollection {
           vertices: this.regl.texture({
             width,
             height,
-            type: 'float',
+            type: "float",
             channels: 1,
-            wrap: 'clamp',
-            mag: 'nearest',
-            min: 'nearest',
+            wrap: "clamp",
+            mag: "nearest",
+            min: "nearest",
             data,
           }),
           verticiesDimensions: [width, height],
@@ -1048,12 +986,12 @@ export class ShapesShaderCollection {
         vertices: this.regl.texture({
           width,
           height,
-          type: 'float',
+          type: "float",
           channels: 1,
-          wrap: 'clamp',
-          mag: 'nearest',
-          min: 'nearest',
-          data
+          wrap: "clamp",
+          mag: "nearest",
+          min: "nearest",
+          data,
         }),
         verticiesDimensions: [width, height],
         contourPolarityBuffer: this.regl.buffer(allContourPolarities),
@@ -1113,46 +1051,43 @@ export class DatumTextShaderCollection {
 
   public attachment: DatumTextAttachments
 
-  constructor(props: { regl: REGL.Regl}) {
+  constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
     this.regl = regl
     this.attachment = {
       positions: this.regl.buffer(0),
       texcoords: this.regl.buffer(0),
       stringIndexes: this.regl.buffer(0),
-      length: 0
+      length: 0,
     }
   }
 
-
   refresh(image: Shapes.Shape[]): this {
-    const positions: number[] = [];
-    const texcoords: number[] = [];
-    const stringIndexes: number[] = [];
+    const positions: number[] = []
+    const texcoords: number[] = []
+    const stringIndexes: number[] = []
     image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
       const string = record.text.toLowerCase()
       const x = record.x
       const y = record.y
       for (let i = 0; i < string.length; ++i) {
-        const letter = string[i];
-        const glyphInfo = fontInfo.glyphInfos[letter];
+        const letter = string[i]
+        const glyphInfo = fontInfo.glyphInfos[letter]
         if (glyphInfo !== undefined) {
-          positions.push(x, y);
-          texcoords.push(glyphInfo.x, glyphInfo.y);
-          stringIndexes.push(i);
+          positions.push(x, y)
+          texcoords.push(glyphInfo.x, glyphInfo.y)
+          stringIndexes.push(i)
         }
       }
     })
-    this.attachment.positions(positions);
-    this.attachment.texcoords(texcoords);
-    this.attachment.stringIndexes(stringIndexes);
-    this.attachment.length = positions.length / 2;
-    return this;
+    this.attachment.positions(positions)
+    this.attachment.texcoords(texcoords)
+    this.attachment.stringIndexes(stringIndexes)
+    this.attachment.length = positions.length / 2
+    return this
   }
-
 }
-
 
 export class DatumShaderCollection {
   private regl: REGL.Regl
@@ -1164,7 +1099,7 @@ export class DatumShaderCollection {
     this.regl = regl
     this.attachment = {
       positions: this.regl.buffer(0),
-      length: 0
+      length: 0,
     }
   }
 
@@ -1181,7 +1116,6 @@ export class DatumShaderCollection {
   }
 }
 
-
 export class SymbolShaderCollection {
   public texture: REGL.Texture2D
   public symbols: Map<string, Symbols.StandardSymbol> = new Map<string, Symbols.StandardSymbol>()
@@ -1197,17 +1131,14 @@ export class SymbolShaderCollection {
 
   protected makeUnique(symbol: Symbols.StandardSymbol): string {
     if (this.symbols.has(symbol.id)) {
-      if (
-        this.getSymbolParameters(symbol).toString() ==
-        this.getSymbolParameters(this.symbols.get(symbol.id)!).toString()
-      ) {
+      if (this.getSymbolParameters(symbol).toString() == this.getSymbolParameters(this.symbols.get(symbol.id)!).toString()) {
         // console.log(`Identical Symbol with id ${symbol.id} already exists`)
         symbol.sym_num = this.symbols.get(symbol.id)!.sym_num
         return symbol.id
       }
       // console.log(`Unsimilar Symbol with id ${symbol.id} already exists`)
       if (symbol.id.match(/\+\d+$/)) {
-        const [base, count] = symbol.id.split('+')
+        const [base, count] = symbol.id.split("+")
         symbol.id = `${base}+${Number(count) + 1}`
         return this.makeUnique(symbol)
       }
@@ -1237,9 +1168,9 @@ export class SymbolShaderCollection {
       this.texture({
         width: 1,
         height: 1,
-        type: 'float',
-        format: 'luminance',
-        data: [0]
+        type: "float",
+        format: "luminance",
+        data: [0],
       })
       return this
     }
@@ -1251,9 +1182,9 @@ export class SymbolShaderCollection {
     this.texture({
       width: SYMBOL_PARAMETERS.length,
       height: symbols.length,
-      type: 'float',
-      format: 'luminance',
-      data: symbols
+      type: "float",
+      format: "luminance",
+      data: symbols,
     })
     return this
   }
@@ -1277,7 +1208,7 @@ export class MacroShaderCollection {
   >()
   private regl: REGL.Regl
   private ctx: OffscreenCanvasRenderingContext2D
-  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D }) {
+  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
     const { regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
@@ -1294,7 +1225,7 @@ export class MacroShaderCollection {
       // }
       // console.log(`Unsimilar Macro with id ${symbol.id} already exists`)
       if (symbol.id.match(/\+\d+$/)) {
-        const [base, count] = symbol.id.split('+')
+        const [base, count] = symbol.id.split("+")
         symbol.id = `${base}+${Number(count) + 1}`
         return this.makeUnique(symbol)
       }
@@ -1318,10 +1249,10 @@ export class MacroShaderCollection {
               regl: this.regl,
               ctx: this.ctx,
               image: record.symbol.shapes,
-              flatten: record.symbol.flatten
+              flatten: record.symbol.flatten,
             }),
             records: [],
-            macro: record.symbol
+            macro: record.symbol,
           })
         }
         this.macros.get(record.symbol.id)!.records.push(record as Shapes.Pad)
@@ -1342,7 +1273,7 @@ export class StepAndRepeatCollection {
   private regl: REGL.Regl
   private ctx: OffscreenCanvasRenderingContext2D
 
-  constructor(props: { regl: REGL.Regl, ctx: OffscreenCanvasRenderingContext2D}) {
+  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
     const { regl, ctx } = props
     this.regl = regl
     this.ctx = ctx
@@ -1359,7 +1290,7 @@ export class StepAndRepeatCollection {
           regl: this.regl,
           ctx: this.ctx,
           record: record,
-        })
+        }),
       )
     })
     return this
@@ -1368,26 +1299,26 @@ export class StepAndRepeatCollection {
 
 function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
   let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
-  if (record.pathtype == 'round') {
+  if (record.pathtype == "round") {
     endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Round
-  } else if (record.pathtype == 'square') {
+  } else if (record.pathtype == "square") {
     endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Square
   }
 
   const endSymbol = new Symbols.StandardSymbol({
-    id: 'polyline-cap',
+    id: "polyline-cap",
     symbol: endSymbolType,
     width: record.width,
     height: record.width,
-    outer_dia: record.width
+    outer_dia: record.width,
   })
 
   const lineSymbol = new Symbols.StandardSymbol({
-    id: 'polyline-line',
+    id: "polyline-line",
     symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
     width: record.width,
     height: record.width,
-    outer_dia: record.width
+    outer_dia: record.width,
   })
 
   let prevx = record.xs
@@ -1405,8 +1336,8 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
           rotation: prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
-          index: record.index
-        })
+          index: record.index,
+        }),
       )
     }
 
@@ -1417,7 +1348,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
       ye: y,
       symbol: lineSymbol,
       polarity: record.polarity,
-      index: record.index
+      index: record.index,
     })
     shapes.lines.push(line)
 
@@ -1429,22 +1360,22 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
           rotation: prevAngleDeg,
           symbol: endSymbol,
           polarity: record.polarity,
-          index: record.index
-        })
+          index: record.index,
+        }),
       )
     } else {
       const nextAngle = Math.atan2(record.lines[i + 1].y - y, record.lines[i + 1].x - x)
-      if (record.cornertype == 'round') {
+      if (record.cornertype == "round") {
         shapes.pads.push(
           new Shapes.Pad({
             x: x,
             y: y,
             symbol: endSymbol,
             polarity: record.polarity,
-            index: record.index
-          })
+            index: record.index,
+          }),
         )
-      } else if (record.cornertype == 'chamfer') {
+      } else if (record.cornertype == "chamfer") {
         const deltaAngle = Math.abs(nextAngle - prevAngle)
         const base = Math.abs(record.width * Math.sin(deltaAngle / 2))
         const height = Math.abs(record.width * Math.cos(deltaAngle / 2)) / 2
@@ -1456,9 +1387,9 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         const offsetx = Math.cos(angle2) * -(height / 2)
         const offsety = Math.sin(angle2) * -(height / 2)
         const tringle = new Symbols.TriangleSymbol({
-          id: 'polyline-chamfer',
+          id: "polyline-chamfer",
           width: base,
-          height: height
+          height: height,
         })
         const pad = new Shapes.Pad({
           x: x + offsetx,
@@ -1466,10 +1397,10 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
           rotation: (angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
-          index: record.index
+          index: record.index,
         })
         shapes.pads.push(pad)
-      } else if (record.cornertype == 'miter') {
+      } else if (record.cornertype == "miter") {
         const deltaAngle = Math.abs(nextAngle - prevAngle)
         const base = Math.abs(record.width * Math.sin(deltaAngle / 2))
         const height = Math.abs(record.width * Math.cos(deltaAngle / 2)) / 2
@@ -1481,9 +1412,9 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
         const offsetx = Math.cos(angle2) * -(height / 2)
         const offsety = Math.sin(angle2) * -(height / 2)
         const tringle = new Symbols.TriangleSymbol({
-          id: 'polyline-chamfer',
+          id: "polyline-chamfer",
           width: base,
-          height: height
+          height: height,
         })
         const pad = new Shapes.Pad({
           x: x + offsetx,
@@ -1491,16 +1422,16 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
           rotation: (angle * 180) / Math.PI,
           symbol: tringle,
           polarity: record.polarity,
-          index: record.index
+          index: record.index,
         })
         shapes.pads.push(pad)
         const height2 = Math.abs((base / 2) * Math.tan(deltaAngle / 2))
         const offsetx2 = Math.cos(angle2) * -(height + height2 / 2)
         const offsety2 = Math.sin(angle2) * -(height + height2 / 2)
         const tringle2 = new Symbols.TriangleSymbol({
-          id: 'polyline-chamfer',
+          id: "polyline-chamfer",
           width: base,
-          height: height2
+          height: height2,
         })
         const pad2 = new Shapes.Pad({
           x: x + offsetx2,
@@ -1508,7 +1439,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
           rotation: ((angle + Math.PI) * 180) / Math.PI,
           symbol: tringle2,
           polarity: record.polarity,
-          index: record.index
+          index: record.index,
         })
         shapes.pads.push(pad2)
       }
@@ -1518,13 +1449,16 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
   }
 }
 
-export function fixedTextureData(maxTextureSize: number, inputData: number[]): {
+export function fixedTextureData(
+  maxTextureSize: number,
+  inputData: number[],
+): {
   width: number
   height: number
   data: number[]
 } {
   if (inputData.length > Math.pow(maxTextureSize, 2)) {
-    throw new Error('Cannot fit data into size')
+    throw new Error("Cannot fit data into size")
   }
   const width = inputData.length < maxTextureSize ? inputData.length % maxTextureSize : maxTextureSize
   const height = Math.ceil(inputData.length / maxTextureSize)

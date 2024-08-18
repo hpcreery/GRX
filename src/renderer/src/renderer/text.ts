@@ -1,6 +1,6 @@
-import REGL from 'regl'
-import { WorldContext } from './engine'
-import { vec2, vec3 } from 'gl-matrix'
+import REGL from "regl"
+import { WorldContext } from "./engine"
+import { vec2, vec3 } from "gl-matrix"
 
 interface TextUnit {
   text: string
@@ -33,15 +33,15 @@ export class TextRenderer {
 
   private drawStroked(text: string, position: vec2): void {
     const [x, y] = position
-    this.ctx.strokeStyle = 'black';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeText(text, x, y);
-    this.ctx.fillStyle = 'white';
-    this.ctx.fillText(text, x, y);
+    this.ctx.strokeStyle = "black"
+    this.ctx.lineWidth = 2
+    this.ctx.strokeText(text, x, y)
+    this.ctx.fillStyle = "white"
+    this.ctx.fillText(text, x, y)
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    this.texts.forEach(text => {
+    this.texts.forEach((text) => {
       this.resetFontStyle()
       if (text.font) this.ctx.font = text.font
       if (text.fontKerning) this.ctx.fontKerning = text.fontKerning
@@ -59,8 +59,8 @@ export class TextRenderer {
       vec2.add(position, position, [0.5, 0.5])
       vec2.multiply(position, position, vec2.fromValues(context.viewportWidth, context.viewportHeight))
       // this.drawStroked(text.text, position)
-      const lineHeight = this.ctx.measureText("M").width * 1.2;
-      const lines = text.text.split('\n');
+      const lineHeight = this.ctx.measureText("M").width * 1.2
+      const lines = text.text.split("\n")
       for (let i = 0; i < lines.length; i++) {
         vec2.add(position, position, [0, i * lineHeight])
         this.drawStroked(lines[i], position)

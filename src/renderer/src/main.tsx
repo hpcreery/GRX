@@ -1,59 +1,48 @@
-import ReactDOM from 'react-dom/client'
-import { ConfigEditorProvider } from './contexts/ConfigEditor'
-import { MantineProvider, createTheme } from '@mantine/core'
-import { Notifications } from '@mantine/notifications'
-import { useLocalStorage } from '@mantine/hooks'
-import { ContextMenuProvider } from 'mantine-contextmenu'
-import App from './App'
+import ReactDOM from "react-dom/client"
+import { ConfigEditorProvider } from "./contexts/ConfigEditor"
+import { MantineProvider, createTheme } from "@mantine/core"
+import { Notifications } from "@mantine/notifications"
+import { useLocalStorage } from "@mantine/hooks"
+import { ContextMenuProvider } from "mantine-contextmenu"
+import App from "./App"
 // import REGLApp from './renderer/DEMO'
 // import NCDemo from '@lib/nc/DEMO'
-import { Units } from './renderer/types'
+import { Units } from "./renderer/types"
 
-import { Spotlight } from '@mantine/spotlight'
-import { spotlightStore, actions } from './contexts/Spotlight'
+import { Spotlight } from "@mantine/spotlight"
+import { spotlightStore, actions } from "./contexts/Spotlight"
 
 // STYLES
-import '@mantine/core/styles.css'
-import 'mantine-contextmenu/styles.css'
-import '@mantine/dropzone/styles.css'
-import '@mantine/notifications/styles.css'
-import '@mantine/spotlight/styles.css'
-import '@mantine/code-highlight/styles.css'
+import "@mantine/core/styles.css"
+import "mantine-contextmenu/styles.css"
+import "@mantine/dropzone/styles.css"
+import "@mantine/notifications/styles.css"
+import "@mantine/spotlight/styles.css"
+import "@mantine/code-highlight/styles.css"
 
 function Main(): JSX.Element | null {
   const [transparency, setTransparency] = useLocalStorage<boolean>({
-    key: 'transparency',
-    defaultValue: false
+    key: "transparency",
+    defaultValue: false,
   })
 
   const [primaryColor, setPrimaryColor] = useLocalStorage<string>({
-    key: 'primaryColor',
-    defaultValue: 'teal'
+    key: "primaryColor",
+    defaultValue: "teal",
   })
 
   const [units, setUnits] = useLocalStorage<Units>({
-    key: 'units',
-    defaultValue: 'mm'
+    key: "units",
+    defaultValue: "mm",
   })
 
   const theme = createTheme({
     primaryColor: primaryColor,
-    defaultRadius: 'md',
+    defaultRadius: "md",
     colors: {
-      dark: [
-        '#C2C2C2',
-        '#A7A7A7',
-        '#919191',
-        '#5E5E5E',
-        '#393939',
-        '#2D2D2D',
-        '#262626',
-        '#1B1B1B',
-        '#141414',
-        '#101010'
-      ]
+      dark: ["#C2C2C2", "#A7A7A7", "#919191", "#5E5E5E", "#393939", "#2D2D2D", "#262626", "#1B1B1B", "#141414", "#101010"],
     },
-    other: {}
+    other: {},
   })
 
   return (
@@ -64,12 +53,12 @@ function Main(): JSX.Element | null {
         primaryColor: primaryColor,
         setPrimaryColor: setPrimaryColor,
         units: units,
-        setUnits: setUnits
+        setUnits: setUnits,
       }}
     >
       <MantineProvider defaultColorScheme="dark" theme={theme}>
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
-          <Spotlight store={spotlightStore} actions={actions} shortcut={['/']} />
+          <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
           <App />
           {/* <NCDemo/> */}
@@ -80,5 +69,5 @@ function Main(): JSX.Element | null {
   )
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(<Main />)

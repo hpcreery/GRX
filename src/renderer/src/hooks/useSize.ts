@@ -1,13 +1,11 @@
-import useResizeObserver from '@react-hook/resize-observer'
-import { useState, useLayoutEffect } from 'react'
+import useResizeObserver from "@react-hook/resize-observer"
+import { useState, useLayoutEffect } from "react"
 
 interface Size {
   width: number
   height: number
 }
-export default function useSize<T extends HTMLElement>(
-  target: React.MutableRefObject<T>
-): Size | undefined {
+export default function useSize<T extends HTMLElement>(target: React.MutableRefObject<T>): Size | undefined {
   const [size, setSize] = useState<Size>()
 
   useLayoutEffect(() => {

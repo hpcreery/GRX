@@ -1,20 +1,20 @@
-import REGL from 'regl'
-import { mat3, vec2, vec3, vec4 } from 'gl-matrix'
-import LayerRenderer, { LayerRendererProps } from './layer'
-import { initializeGlyphRenderer, initializeRenderers, ReglRenderers, ScreenRenderProps } from './collections'
-import * as Shapes from './shapes'
-import * as Comlink from 'comlink'
-import plugins from './plugins'
-import type { Plugin, PluginsDefinition, AddLayerProps } from './plugins'
-import type { Units, BoundingBox, Transform } from './types'
-import GridFrag from '../shaders/src/Grid.frag'
-import OriginFrag from '../shaders/src/Origin.frag'
-import LoadingFrag from '../shaders/src/Loading/Winding.frag'
-import FullScreenQuad from '../shaders/src/FullScreenQuad.vert'
-import { UID } from './utils'
-import { SimpleMeasurement } from './measurements'
+import REGL from "regl"
+import { mat3, vec2, vec3, vec4 } from "gl-matrix"
+import LayerRenderer, { LayerRendererProps } from "./layer"
+import { initializeGlyphRenderer, initializeRenderers, ReglRenderers, ScreenRenderProps } from "./collections"
+import * as Shapes from "./shapes"
+import * as Comlink from "comlink"
+import plugins from "./plugins"
+import type { Plugin, PluginsDefinition, AddLayerProps } from "./plugins"
+import type { Units, BoundingBox, Transform } from "./types"
+import GridFrag from "../shaders/src/Grid.frag"
+import OriginFrag from "../shaders/src/Origin.frag"
+import LoadingFrag from "../shaders/src/Loading/Winding.frag"
+import FullScreenQuad from "../shaders/src/FullScreenQuad.vert"
+import { UID } from "./utils"
+import { SimpleMeasurement } from "./measurements"
 
-export interface WorldProps { }
+export interface WorldProps {}
 
 interface WorldUniforms {
   u_Transform: mat3
@@ -61,11 +61,10 @@ export interface RenderEngineBackendConfig {
 
 // export type ColorBlend = 'Contrast' | 'Overlay'
 export const ColorBlend = {
-  CONTRAST: 'Contrast',
-  OVERLAY: 'Overlay'
+  CONTRAST: "Contrast",
+  OVERLAY: "Overlay",
 } as const
-export type ColorBlends = typeof ColorBlend[keyof typeof ColorBlend]
-
+export type ColorBlends = (typeof ColorBlend)[keyof typeof ColorBlend]
 
 export interface RenderSettings {
   FPS: number
@@ -97,7 +96,7 @@ export interface GridRenderProps {
   offset_x: number
   offset_y: number
   _type: number
-  type: 'dots' | 'lines'
+  type: "dots" | "lines"
 }
 
 interface GridRenderUniforms {
@@ -116,33 +115,32 @@ interface OriginRenderUniforms {
 }
 
 export interface LayerInfo {
-  name: string,
+  name: string
   uid: string
-  color: vec3,
-  context: string,
-  type: string,
-  units: Units,
-  visible: boolean,
-  format: string,
+  color: vec3
+  context: string
+  type: string
+  units: Units
+  visible: boolean
+  format: string
   transform: Transform
 }
 
 export const EngineEvents = {
-  RENDER: 'RENDER',
-  LAYERS_CHANGED: 'LAYERS_CHANGED',
-  MESSAGE: 'MESSAGE',
+  RENDER: "RENDER",
+  LAYERS_CHANGED: "LAYERS_CHANGED",
+  MESSAGE: "MESSAGE",
 } as const
 
-
-export type TEngineEvents = typeof EngineEvents[keyof typeof EngineEvents]
+export type TEngineEvents = (typeof EngineEvents)[keyof typeof EngineEvents]
 
 export const MessageLevel = {
-  INFO: 'blue',
-  WARN: 'yellow',
-  ERROR: 'red',
+  INFO: "blue",
+  WARN: "yellow",
+  ERROR: "red",
 } as const
 
-export type TMessageLevel = typeof MessageLevel[keyof typeof MessageLevel]
+export type TMessageLevel = (typeof MessageLevel)[keyof typeof MessageLevel]
 
 export interface Pointer {
   x: number
@@ -150,14 +148,17 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { layer: string, units: Units }
+export type QueryFeature = Shapes.Shape & { layer: string; units: Units }
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
-export interface MessageData { level: TMessageLevel, title: string, message: string }
+export interface MessageData {
+  level: TMessageLevel
+  title: string
+  message: string
+}
 
 export class RenderEngineBackend {
-
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public settings: RenderSettings = {
@@ -169,12 +170,12 @@ export class RenderEngineBackend {
       this.MSPFRAME = 1000 / value
     },
     OUTLINE_MODE: false,
-    COLOR_BLEND: 'Contrast',
+    COLOR_BLEND: "Contrast",
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 100,
     MIN_ZOOM: 0.001,
     ZOOM_TO_CURSOR: true,
-    SHOW_DATUMS: false
+    SHOW_DATUMS: false,
   }
 
   public offscreenCanvasGL: OffscreenCanvas
@@ -188,7 +189,7 @@ export class RenderEngineBackend {
   public pointer: Pointer = {
     x: 0,
     y: 0,
-    down: false
+    down: false,
   }
 
   public transform: RenderTransform = {
@@ -200,7 +201,7 @@ export class RenderEngineBackend {
     matrixInverse: mat3.create(),
     update: (): void => {
       this.updateTransform()
-    }
+    },
   }
 
   public grid: GridRenderProps = {
@@ -211,25 +212,25 @@ export class RenderEngineBackend {
     offset_x: 0,
     offset_y: 0,
     _type: 0,
-    get type(): 'dots' | 'lines' {
-      return this._type === 0 ? 'dots' : 'lines'
+    get type(): "dots" | "lines" {
+      return this._type === 0 ? "dots" : "lines"
     },
-    set type(value: 'dots' | 'lines') {
+    set type(value: "dots" | "lines") {
       switch (value) {
-        case 'dots':
+        case "dots":
           this._type = 0
           break
-        case 'lines':
+        case "lines":
           this._type = 1
           break
         default:
           this._type = 0
       }
-    }
+    },
   }
 
   public origin: OriginRenderProps = {
-    enabled: true
+    enabled: true,
   }
 
   private dirty = true
@@ -251,7 +252,7 @@ export class RenderEngineBackend {
 
   public layers: LayerRenderer[] = []
   public selections: LayerRenderer[] = []
-  public layersQueue: { name: string, uid: string }[] = []
+  public layersQueue: { name: string; uid: string }[] = []
 
   public ctx: OffscreenCanvasRenderingContext2D
   public regl: REGL.Regl
@@ -270,42 +271,32 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  constructor(
-    offscreenCanvasGL: OffscreenCanvas,
-    offscreenCanvas2D: OffscreenCanvas,
-    { attributes, width, height }: RenderEngineBackendConfig
-  ) {
+  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, width, height }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.offscreenCanvas2D = offscreenCanvas2D
     this.viewBox = {
       width,
-      height
+      height,
     }
 
     // const ctx = offscreenCanvas.getContext('2d')
 
-    const gl = offscreenCanvasGL.getContext('webgl', attributes)!
-    this.ctx = offscreenCanvas2D.getContext('2d')!
-    console.log('WEBGL VERSION', gl.getParameter(gl.VERSION))
+    const gl = offscreenCanvasGL.getContext("webgl", attributes)!
+    this.ctx = offscreenCanvas2D.getContext("2d")!
+    console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
     // console.log(gl)
 
     this.regl = REGL({
       gl,
-      extensions: [
-        'angle_instanced_arrays',
-        'OES_texture_float',
-        'webgl_depth_texture',
-        'EXT_frag_depth',
-        'EXT_blend_minmax',
-      ],
-      profile: true
+      extensions: ["angle_instanced_arrays", "OES_texture_float", "webgl_depth_texture", "EXT_frag_depth", "EXT_blend_minmax"],
+      profile: true,
     })
-    console.log('WEBGL LIMITS', this.regl.limits)
+    console.log("WEBGL LIMITS", this.regl.limits)
 
     initializeRenderers(this.regl)
 
     this.regl.clear({
-      depth: 0
+      depth: 0,
     })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
@@ -313,7 +304,7 @@ export class RenderEngineBackend {
         settings: this.settings,
         transformMatrix: () => this.transform.matrix,
         transform: this.transform,
-        resolution: () => [this.viewBox.width, this.viewBox.height]
+        resolution: () => [this.viewBox.width, this.viewBox.height],
       },
 
       uniforms: {
@@ -326,7 +317,7 @@ export class RenderEngineBackend {
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
-        u_Time: (context: REGL.DefaultContext) => context.time
+        u_Time: (context: REGL.DefaultContext) => context.time,
       },
 
       attributes: {
@@ -336,75 +327,68 @@ export class RenderEngineBackend {
           [-1, +1],
           [+1, +1],
           [-1, +1],
-          [+1, -1]
-        ]
+          [+1, -1],
+        ],
       },
 
       cull: {
         enable: false,
-        face: 'front'
+        face: "front",
       },
 
-      primitive: 'triangles',
+      primitive: "triangles",
       count: 6,
-      offset: 0
+      offset: 0,
     })
 
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
     this.measurements = new SimpleMeasurement(this.regl, this.ctx)
 
-    this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps, WorldContext>(
-      {
-        vert: FullScreenQuad,
-        frag: GridFrag,
-        uniforms: {
-          u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
-          u_Spacing: (_context: REGL.DefaultContext, props: GridRenderProps) => [
-            props.spacing_x,
-            props.spacing_y
-          ],
-          u_Offset: (_context: REGL.DefaultContext, props: GridRenderProps) => [
-            props.offset_x,
-            props.offset_y
-          ],
-          u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => props._type,
-        }
+    this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps, WorldContext>({
+      vert: FullScreenQuad,
+      frag: GridFrag,
+      uniforms: {
+        u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
+        u_Spacing: (_context: REGL.DefaultContext, props: GridRenderProps) => [props.spacing_x, props.spacing_y],
+        u_Offset: (_context: REGL.DefaultContext, props: GridRenderProps) => [props.offset_x, props.offset_y],
+        u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => props._type,
       },
-    )
+    })
 
-    this.renderOrigin = this.regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, WorldContext>(
-      {
-        vert: FullScreenQuad,
-        frag: OriginFrag,
-        uniforms: {
-          u_Color: (context: REGL.DefaultContext & WorldContext) => {
-            const color = vec4.create()
-            vec4.subtract(color, [1,1,1,1], context.settings.BACKGROUND_COLOR)
-            color[3] = 1
-            return color
-            },
-        }
+    this.renderOrigin = this.regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, WorldContext>({
+      vert: FullScreenQuad,
+      frag: OriginFrag,
+      uniforms: {
+        u_Color: (context: REGL.DefaultContext & WorldContext) => {
+          const color = vec4.create()
+          vec4.subtract(color, [1, 1, 1, 1], context.settings.BACKGROUND_COLOR)
+          color[3] = 1
+          return color
+        },
       },
-    )
+    })
 
     this.blend = this.regl({
       blend: {
         enable: true,
 
         func: {
-          srcRGB: this.settings.COLOR_BLEND === ColorBlend.OVERLAY ? 'src color'
-            : this.settings.COLOR_BLEND === ColorBlend.CONTRAST ? 'one minus dst color' :
-              'one minus dst color',
-          srcAlpha: 'one',
-          dstRGB: 'one minus src color',
-          dstAlpha: 'one'
+          srcRGB:
+            this.settings.COLOR_BLEND === ColorBlend.OVERLAY
+              ? "src color"
+              : this.settings.COLOR_BLEND === ColorBlend.CONTRAST
+                ? "one minus dst color"
+                : "one minus dst color",
+          srcAlpha: "one",
+          dstRGB: "one minus src color",
+          dstAlpha: "one",
         },
 
         equation: {
-          rgb: 'add',
-          alpha: 'add'
+          rgb: "add",
+          alpha: "add",
         },
-        color: [0, 0, 0, 0.1]
+        color: [0, 0, 0, 0.1],
       },
     })
 
@@ -413,17 +397,17 @@ export class RenderEngineBackend {
         enable: true,
 
         func: {
-          srcRGB: 'src alpha',
-          srcAlpha: 'src alpha',
-          dstRGB: 'one minus src alpha',
-          dstAlpha: 'one minus src alpha'
+          srcRGB: "src alpha",
+          srcAlpha: "src alpha",
+          dstRGB: "one minus src alpha",
+          dstAlpha: "one minus src alpha",
         },
 
         equation: {
-          rgb: 'add',
-          alpha: 'add'
+          rgb: "add",
+          alpha: "add",
         },
-        color: [0, 0, 0, 0.1]
+        color: [0, 0, 0, 0.1],
       },
     })
 
@@ -431,7 +415,7 @@ export class RenderEngineBackend {
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.render({
-      force: true
+      force: true,
     })
   }
 
@@ -445,19 +429,22 @@ export class RenderEngineBackend {
         enable: true,
 
         func: {
-          srcRGB: this.settings.COLOR_BLEND === ColorBlend.OVERLAY ? 'src color'
-            : this.settings.COLOR_BLEND === ColorBlend.CONTRAST ? 'one minus dst color' :
-              'one minus dst color',
-          srcAlpha: 'one',
-          dstRGB: 'one minus src color',
-          dstAlpha: 'one'
+          srcRGB:
+            this.settings.COLOR_BLEND === ColorBlend.OVERLAY
+              ? "src color"
+              : this.settings.COLOR_BLEND === ColorBlend.CONTRAST
+                ? "one minus dst color"
+                : "one minus dst color",
+          srcAlpha: "one",
+          dstRGB: "one minus src color",
+          dstAlpha: "one",
         },
 
         equation: {
-          rgb: 'add',
-          alpha: 'add'
+          rgb: "add",
+          alpha: "add",
         },
-        color: [0, 0, 0, 0.1]
+        color: [0, 0, 0, 0.1],
       },
     })
   }
@@ -472,7 +459,7 @@ export class RenderEngineBackend {
     this.regl.poll()
     this.updateTransform()
     this.render({
-      force: true
+      force: true,
     })
   }
 
@@ -484,10 +471,7 @@ export class RenderEngineBackend {
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
     this.transform.update()
-    if (
-      Math.abs(this.transform.velocity[0]) < 0.05 &&
-      Math.abs(this.transform.velocity[1]) < 0.05
-    ) {
+    if (Math.abs(this.transform.velocity[0]) < 0.05 && Math.abs(this.transform.velocity[1]) < 0.05) {
       this.transform.velocity[0] = 0
       this.transform.velocity[1] = 0
     } else {
@@ -572,9 +556,11 @@ export class RenderEngineBackend {
   }
 
   public async sendMessage(data: MessageData): Promise<void> {
-    this.eventTarget.dispatchEvent(new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
-      data
-    }))
+    this.eventTarget.dispatchEvent(
+      new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
+        data,
+      }),
+    )
   }
 
   public async addLayer(params: AddLayerProps): Promise<void> {
@@ -585,28 +571,28 @@ export class RenderEngineBackend {
     })
     this.layers.push(layer)
     this.render({
-      force: true
+      force: true,
     })
     this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
   }
 
-  public async addFile(params: { buffer: ArrayBuffer, format: string, props: Partial<Omit<AddLayerProps, 'image'>> }): Promise<void> {
+  public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     console.log(params.format)
-    if (params.format == '') {
-      console.error('No format provided')
+    if (params.format == "") {
+      console.error("No format provided")
       // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
       return
     }
     if (!Object.keys(plugins).includes(params.format)) {
-      console.error('No parser found for format: ' + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
+      console.error("No parser found for format: " + params.format)
+      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
       return
     }
 
     const pluginWorker = plugins[params.format].plugin
     if (pluginWorker) {
       const tempUID = UID()
-      this.layersQueue.push({ name: params.props.name || '', uid: tempUID })
+      this.layersQueue.push({ name: params.props.name || "", uid: tempUID })
       const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const addMessageCallback = async (level: TMessageLevel, title: string, message: string): Promise<void> => {
         // await notifications.show({title, message})
@@ -627,11 +613,11 @@ export class RenderEngineBackend {
           this.layersQueue.splice(index, 1)
         }
         this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
-        this.sendMessage({ level: MessageLevel.INFO, title: 'File Loaded', message: 'File loaded successfully' })
+        this.sendMessage({ level: MessageLevel.INFO, title: "File Loaded", message: "File loaded successfully" })
       }
     } else {
-      console.error('No parser found for format: ' + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No parser found for format: ' + params.format })
+      console.error("No parser found for format: " + params.format)
+      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
     }
   }
 
@@ -646,7 +632,7 @@ export class RenderEngineBackend {
         units: layer.units,
         visible: layer.visible,
         format: layer.format,
-        transform: layer.transform
+        transform: layer.transform,
       }
     })
   }
@@ -680,11 +666,11 @@ export class RenderEngineBackend {
     if (index === -1) return
     this.layers.splice(index, 1)
     this.render({
-      force: true
+      force: true,
     })
   }
 
-  public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, 'regl'>>): void {
+  public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
     const layer = this.layers.find((layer) => layer.uid === uid)
     if (!layer) return
     Object.assign(layer, props)
@@ -721,7 +707,7 @@ export class RenderEngineBackend {
         x,
         y,
         width: 1,
-        height: 1
+        height: 1,
       })
       if (data.reduce((acc, val) => acc + val, 0) > 0) {
         console.log(layer.name)
@@ -729,8 +715,8 @@ export class RenderEngineBackend {
     }
   }
 
-  public select(pointer: vec2): (QueryFeature)[] {
-    const features: (QueryFeature)[] = []
+  public select(pointer: vec2): QueryFeature[] {
+    const features: QueryFeature[] = []
     this.selections.length = 0
     this.world((context) => {
       for (const layer of this.layers) {
@@ -745,7 +731,7 @@ export class RenderEngineBackend {
           color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,
-          name: 'selection',
+          name: "selection",
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
           image: JSON.parse(JSON.stringify(layerFeatures)),
           // image: layerFeatures
@@ -776,7 +762,7 @@ export class RenderEngineBackend {
   public async zoomFit(): Promise<void> {
     const boundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
-      max: vec2.fromValues(-Infinity, -Infinity)
+      max: vec2.fromValues(-Infinity, -Infinity),
     }
     this.transform.velocity = vec2.fromValues(0, 0)
     for (const layer of this.layers) {
@@ -789,7 +775,7 @@ export class RenderEngineBackend {
     const screenWidthPx = this.viewBox.width
     const screenHeightPx = this.viewBox.height
     const screenAR = screenWidthPx / screenHeightPx
-    const unitToPx = (screenHeightPx / 2) / 1 // px per unit
+    const unitToPx = screenHeightPx / 2 / 1 // px per unit
     const bbWidthPx = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
     const bbHeightPx = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
     const bbAR = bbWidthPx / bbHeightPx
@@ -804,7 +790,8 @@ export class RenderEngineBackend {
     const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
 
     // boundingBox logic validation
-    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) return
+    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity)
+      return
     if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
     if (isNaN(boundingBox.min[0]) || isNaN(boundingBox.min[1]) || isNaN(boundingBox.max[0]) || isNaN(boundingBox.max[1])) return
 
@@ -812,12 +799,12 @@ export class RenderEngineBackend {
       const zoom = screenWidthPx / bbWidthPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
       const offsetX = bbTopLeftToOriginScaled[0]
-      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx / 2 - bbHeightPx * zoom / 2
+      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx / 2 - (bbHeightPx * zoom) / 2
       this.setTransform({ position: [offsetX, offsetY], zoom })
     } else {
       const zoom = screenHeightPx / bbHeightPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
-      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx / 2 - bbWidthPx * zoom / 2
+      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx / 2 - (bbWidthPx * zoom) / 2
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom })
     }
@@ -843,7 +830,7 @@ export class RenderEngineBackend {
     this.measurements.updateMeasurement(point)
     this.render({
       force: true,
-      updateLayers: false
+      updateLayers: false,
     })
   }
 
@@ -851,7 +838,7 @@ export class RenderEngineBackend {
     this.measurements.clearMeasurements()
     this.render({
       force: true,
-      updateLayers: false
+      updateLayers: false,
     })
   }
 
@@ -859,10 +846,9 @@ export class RenderEngineBackend {
     this.measurements.setMeasurementUnits(units)
     this.render({
       force: true,
-      updateLayers: false
+      updateLayers: false,
     })
   }
-
 
   public render(props: RenderProps = RenderEngineBackend.defaultRenderProps): void {
     const { force, updateLayers } = { ...RenderEngineBackend.defaultRenderProps, ...props }
@@ -871,9 +857,9 @@ export class RenderEngineBackend {
     this.dirty = false
     this.regl.clear({
       color: [0, 0, 0, 0],
-      depth: 1
+      depth: 1,
     })
-    this.ctx.clearRect(0, 0, this.viewBox.width, this.viewBox.height);
+    this.ctx.clearRect(0, 0, this.viewBox.width, this.viewBox.height)
 
     setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     this.world((context) => {
@@ -920,25 +906,20 @@ Comlink.expose(RenderEngineBackend)
 
 export function logMatrix(matrix: mat3): void {
   console.log(
-    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${Math.round(matrix[2] * 100) / 100
-    },\n` +
-    `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${Math.round(matrix[5] * 100) / 100
-    },\n` +
-    `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100
-    }`
+    `${Math.round(matrix[0] * 100) / 100}, ${Math.round(matrix[1] * 100) / 100}, ${Math.round(matrix[2] * 100) / 100},\n` +
+      `${Math.round(matrix[3] * 100) / 100}, ${Math.round(matrix[4] * 100) / 100}, ${Math.round(matrix[5] * 100) / 100},\n` +
+      `${Math.round(matrix[6] * 100) / 100}, ${Math.round(matrix[7] * 100) / 100}, ${Math.round(matrix[8] * 100) / 100}`,
   )
 }
 
-export interface LoadingRenderProps {
-}
+export interface LoadingRenderProps {}
 
-interface LoadingRenderUniforms {
-}
+interface LoadingRenderUniforms {}
 
 class LoadingAnimation {
   private regl: REGL.Regl
   private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
-  private tick: REGL.Cancellable = { cancel: () => { } }
+  private tick: REGL.Cancellable = { cancel: () => {} }
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
   private _enabled = false
@@ -950,12 +931,10 @@ class LoadingAnimation {
   constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
     this.regl = regl
     this.world = world
-    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>(
-      {
-        vert: FullScreenQuad,
-        frag: LoadingFrag,
-      },
-    )
+    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>({
+      vert: FullScreenQuad,
+      frag: LoadingFrag,
+    })
     // this.start()
   }
 

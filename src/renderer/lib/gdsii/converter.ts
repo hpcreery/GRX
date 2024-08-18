@@ -1,6 +1,6 @@
-import * as TREE from './gdsii_tree'
-import { Plotter } from './plotter'
-import { LayerHierarchy } from './types'
+import * as TREE from "./gdsii_tree"
+import { Plotter } from "./plotter"
+import { LayerHierarchy } from "./types"
 
 // CELL structure and DATATYPE information is lost in the conversion.
 // Each cell maps to a Shape
@@ -18,16 +18,16 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
     for (const element of cell.element) {
       // console.log(`${cellName} = ${element.type}`)
       if (!element.el) continue
-      if (element.type === 'boundary' || element.type === 'box') {
+      if (element.type === "boundary" || element.type === "box") {
         plotter.addPolygon(element.el as TREE.boundary | TREE.box)
-      } else if (element.type === 'path') {
+      } else if (element.type === "path") {
         plotter.addPolyLine(element.el as TREE.path)
-      } else if (element.type === 'sref') {
+      } else if (element.type === "sref") {
         plotter.addReference(element.el as TREE.sref)
-      } else if (element.type === 'aref') {
+      } else if (element.type === "aref") {
         plotter.addArrayReference(element.el as TREE.aref)
       } else {
-        console.warn('unhandled element', element, JSON.stringify(element))
+        console.warn("unhandled element", element, JSON.stringify(element))
       }
     }
   }
@@ -44,7 +44,7 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
       const layer = el.layer
       if (!layerHierarchy[layer]) {
         layerHierarchy[layer] = {
-          shapes: []
+          shapes: [],
         }
       }
       layerHierarchy[layer].shapes.push(el.shape)

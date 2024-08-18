@@ -1,6 +1,6 @@
 // Graphic plotter
 // Takes nodes and turns them into graphics to be added to the image
-import * as Tree from '../tree'
+import * as Tree from "../tree"
 import {
   GerberNode,
   GraphicType,
@@ -20,29 +20,24 @@ import {
   REGION_MODE,
   STEP_REPEAT_OPEN,
   STEP_REPEAT_CLOSE,
-} from '@hpcreery/tracespace-parser'
+} from "@hpcreery/tracespace-parser"
 
-import type { Tool } from '../tool-store'
-import type { Location, Point } from '../location-store'
+import type { Tool } from "../tool-store"
+import type { Location, Point } from "../location-store"
 
-import { FeatureTypeIdentifier } from '@src/renderer/types'
+import { FeatureTypeIdentifier } from "@src/renderer/types"
 
-export const CW = 'cw'
-export const CCW = 'ccw'
+export const CW = "cw"
+export const CCW = "ccw"
 
 export type ArcDirection = typeof CW | typeof CCW
 
-import * as Shapes from '@src/renderer/shapes'
-import { ApertureTransform } from '../aperture-transform-store'
-import { vec2 } from 'gl-matrix'
+import * as Shapes from "@src/renderer/shapes"
+import { ApertureTransform } from "../aperture-transform-store"
+import { vec2 } from "gl-matrix"
 
 export interface GraphicPlotter {
-  plot: (
-    node: GerberNode,
-    tool: Tool,
-    location: Location,
-    transform: ApertureTransform
-  ) => Shapes.Shape[]
+  plot: (node: GerberNode, tool: Tool, location: Location, transform: ApertureTransform) => Shapes.Shape[]
 }
 
 export function createGraphicPlotter(): GraphicPlotter {
@@ -63,9 +58,7 @@ interface GraphicPlotterImpl extends GraphicPlotter {
   _stepRepeats: Shapes.StepAndRepeat[]
 
   _setGraphicState: (node: GerberNode) => void
-
 }
-
 
 const GraphicPlotterPrototype: GraphicPlotterImpl = {
   _currentSurface: undefined,
@@ -75,12 +68,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
   _defaultGraphic: undefined,
   _stepRepeats: [],
 
-  plot(
-    node: GerberNode,
-    tool: Tool,
-    location: Location,
-    transform: ApertureTransform
-  ): Shapes.Shape[] {
+  plot(node: GerberNode, tool: Tool, location: Location, transform: ApertureTransform): Shapes.Shape[] {
     const graphics: Shapes.Shape[] = []
 
     let nextGraphicType: GraphicType | undefined
@@ -94,20 +82,20 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
     this._setGraphicState(node)
 
-
-
     // ** PAD
     if (nextGraphicType === SHAPE) {
-      graphics.push(new Shapes.Pad({
-        symbol: tool,
-        x: location.endPoint.x,
-        y: location.endPoint.y,
-        rotation: transform.rotation,
-        mirror_x: transform.mirror == 'x' || transform.mirror == 'xy' ? 1 : 0,
-        mirror_y: transform.mirror == 'y' || transform.mirror == 'xy' ? 1 : 0,
-        resize_factor: transform.scale,
-        polarity: transform.polarity === DARK ? 1 : 0,
-      }))
+      graphics.push(
+        new Shapes.Pad({
+          symbol: tool,
+          x: location.endPoint.x,
+          y: location.endPoint.y,
+          rotation: transform.rotation,
+          mirror_x: transform.mirror == "x" || transform.mirror == "xy" ? 1 : 0,
+          mirror_y: transform.mirror == "y" || transform.mirror == "xy" ? 1 : 0,
+          resize_factor: transform.scale,
+          polarity: transform.polarity === DARK ? 1 : 0,
+        }),
+      )
     }
 
     // ** SURFACE
@@ -116,16 +104,20 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         this._currentSurface = new Shapes.Surface({
           polarity: transform.polarity === DARK ? 1 : 0,
         })
-        this._currentSurface.addContour(new Shapes.Contour({
-          xs: location.startPoint.x,
-          ys: location.startPoint.y,
-        }))
+        this._currentSurface.addContour(
+          new Shapes.Contour({
+            xs: location.startPoint.x,
+            ys: location.startPoint.y,
+          }),
+        )
       }
       if (this._arcDirection === undefined) {
-        this._currentSurface.contours[0].addSegment(new Shapes.Contour_Line_Segment({
-          x: location.endPoint.x,
-          y: location.endPoint.y,
-        }))
+        this._currentSurface.contours[0].addSegment(
+          new Shapes.Contour_Line_Segment({
+            x: location.endPoint.x,
+            y: location.endPoint.y,
+          }),
+        )
       } else {
         let center: Point = {
           x: location.startPoint.x + location.arcOffsets.i,
@@ -134,13 +126,15 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         if (this._ambiguousArcCenter) {
           center = getAmbiguousArcCenter(location, this._arcDirection as ArcDirection)
         }
-        this._currentSurface.contours[0].addSegment(new Shapes.Contour_Arc_Segment({
-          x: location.endPoint.x,
-          y: location.endPoint.y,
-          xc: center.x,
-          yc: center.y,
-          clockwise: this._arcDirection === CW ? 1 : 0,
-        }))
+        this._currentSurface.contours[0].addSegment(
+          new Shapes.Contour_Arc_Segment({
+            x: location.endPoint.x,
+            y: location.endPoint.y,
+            xc: center.x,
+            yc: center.y,
+            clockwise: this._arcDirection === CW ? 1 : 0,
+          }),
+        )
       }
     }
 
@@ -163,14 +157,16 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
     if (nextGraphicType === SEGMENT && !this._regionMode) {
       if (tool?.type !== FeatureTypeIdentifier.MACRO_DEFINITION) {
         if (this._arcDirection === undefined) {
-          graphics.push(new Shapes.Line({
-            symbol: tool,
-            polarity: transform.polarity === DARK ? 1 : 0,
-            xs: location.startPoint.x,
-            ys: location.startPoint.y,
-            xe: location.endPoint.x,
-            ye: location.endPoint.y,
-          }))
+          graphics.push(
+            new Shapes.Line({
+              symbol: tool,
+              polarity: transform.polarity === DARK ? 1 : 0,
+              xs: location.startPoint.x,
+              ys: location.startPoint.y,
+              xe: location.endPoint.x,
+              ye: location.endPoint.y,
+            }),
+          )
         } else {
           let center: Point = {
             x: location.startPoint.x + location.arcOffsets.i,
@@ -179,17 +175,19 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
           if (this._ambiguousArcCenter) {
             center = getAmbiguousArcCenter(location, this._arcDirection as ArcDirection)
           }
-          graphics.push(new Shapes.Arc({
-            symbol: tool,
-            polarity: transform.polarity === DARK ? 1 : 0,
-            xs: location.startPoint.x,
-            ys: location.startPoint.y,
-            xe: location.endPoint.x,
-            ye: location.endPoint.y,
-            xc: center.x,
-            yc: center.y,
-            clockwise: this._arcDirection === CW ? 1 : 0,
-          }))
+          graphics.push(
+            new Shapes.Arc({
+              symbol: tool,
+              polarity: transform.polarity === DARK ? 1 : 0,
+              xs: location.startPoint.x,
+              ys: location.startPoint.y,
+              xe: location.endPoint.x,
+              ye: location.endPoint.y,
+              xc: center.x,
+              yc: center.y,
+              clockwise: this._arcDirection === CW ? 1 : 0,
+            }),
+          )
         }
       }
     }
@@ -208,18 +206,23 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
         graphics.push(this._stepRepeats.shift()!)
       }
       if (location.stepRepeat.x > 1 || location.stepRepeat.y > 1 || location.stepRepeat.i != 0 || location.stepRepeat.j != 0) {
-        this._stepRepeats.unshift(new Shapes.StepAndRepeat({
-          shapes: [],
-          repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
-            return {
-              datum: vec2.fromValues(location.stepRepeat.i * Math.floor(i / location.stepRepeat.y), location.stepRepeat.j * (i % location.stepRepeat.y)),
-              rotation: 0,
-              mirror_x: 0,
-              mirror_y: 0,
-              scale: 1,
-            }
+        this._stepRepeats.unshift(
+          new Shapes.StepAndRepeat({
+            shapes: [],
+            repeats: new Array(location.stepRepeat.x * location.stepRepeat.y).fill(0).map((_, i) => {
+              return {
+                datum: vec2.fromValues(
+                  location.stepRepeat.i * Math.floor(i / location.stepRepeat.y),
+                  location.stepRepeat.j * (i % location.stepRepeat.y),
+                ),
+                rotation: 0,
+                mirror_x: 0,
+                mirror_y: 0,
+                scale: 1,
+              }
+            }),
           }),
-        }))
+        )
       }
     }
 
@@ -262,18 +265,14 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
       }
     }
   },
-
 }
 
 export function getAmbiguousArcCenter(location: Location, arcDirection: ArcDirection): Point {
   const { startPoint, endPoint, arcOffsets } = location
-  const radius =
-    arcOffsets.a > 0
-      ? arcOffsets.a
-      : (arcOffsets.i ** 2 + arcOffsets.j ** 2) ** 0.5
+  const radius = arcOffsets.a > 0 ? arcOffsets.a : (arcOffsets.i ** 2 + arcOffsets.j ** 2) ** 0.5
   // Get the center candidates and select the candidate with the smallest arc
   const [_start, _end, center] = findCenterCandidates(location, radius)
-    .map(centerPoint => {
+    .map((centerPoint) => {
       return getArcPositions(startPoint, endPoint, centerPoint, arcDirection)
     })
     .sort(([startA, endA], [startB, endB]) => {
@@ -288,28 +287,20 @@ export function getAmbiguousArcCenter(location: Location, arcDirection: ArcDirec
   }
 }
 
-
-
 export function getArcPositions(
   startPoint: Point,
   endPoint: Point,
   centerPoint: Point,
-  arcDirection: ArcDirection
+  arcDirection: ArcDirection,
 ): [start: Tree.ArcPosition, end: Tree.ArcPosition, center: Tree.Position] {
-  let startAngle = Math.atan2(
-    startPoint.y - centerPoint.y,
-    startPoint.x - centerPoint.x
-  )
-  let endAngle = Math.atan2(
-    endPoint.y - centerPoint.y,
-    endPoint.x - centerPoint.x
-  )
+  let startAngle = Math.atan2(startPoint.y - centerPoint.y, startPoint.x - centerPoint.x)
+  let endAngle = Math.atan2(endPoint.y - centerPoint.y, endPoint.x - centerPoint.x)
 
   // If counter-clockwise, end angle should be greater than start angle
   if (arcDirection === CCW) {
-    endAngle = endAngle > startAngle ? endAngle : endAngle + (Math.PI * 2)
+    endAngle = endAngle > startAngle ? endAngle : endAngle + Math.PI * 2
   } else {
-    startAngle = startAngle > endAngle ? startAngle : startAngle + (Math.PI * 2)
+    startAngle = startAngle > endAngle ? startAngle : startAngle + Math.PI * 2
   }
 
   return [
@@ -350,4 +341,3 @@ function findCenterCandidates(location: Location, radius: number): Point[] {
     { x: xBase - xAddend, y: yBase + yAddend },
   ]
 }
-

@@ -1,5 +1,5 @@
 // Plot a tool macro as shapes
-import type { MacroPrimitiveCode, MacroValue } from '@hpcreery/tracespace-parser'
+import type { MacroPrimitiveCode, MacroValue } from "@hpcreery/tracespace-parser"
 import {
   MACRO_VARIABLE,
   MACRO_PRIMITIVE,
@@ -11,25 +11,22 @@ import {
   MACRO_OUTLINE,
   MACRO_POLYGON,
   MACRO_MOIRE_DEPRECATED,
-  MACRO_THERMAL
-} from '@hpcreery/tracespace-parser'
+  MACRO_THERMAL,
+} from "@hpcreery/tracespace-parser"
 
-import { rotateAndShift } from '../coordinate-math'
+import { rotateAndShift } from "../coordinate-math"
 
-import * as Tree from '../tree'
-import type { MacroTool } from '../tool-store'
+import * as Tree from "../tree"
+import type { MacroTool } from "../tool-store"
 
-
-import * as Symbols from '@src/renderer/symbols'
-import * as Shapes from '@src/renderer/shapes'
+import * as Symbols from "@src/renderer/symbols"
+import * as Shapes from "@src/renderer/shapes"
 
 type VariableValues = Record<string, number>
 
 export function createMacro(tool: MacroTool): Symbols.MacroSymbol {
   const shapes: Shapes.Shape[] = []
-  const variableValues: VariableValues = Object.fromEntries(
-    tool.variableValues.map((value, index) => [`$${index + 1}`, value])
-  )
+  const variableValues: VariableValues = Object.fromEntries(tool.variableValues.map((value, index) => [`$${index + 1}`, value]))
 
   for (const block of tool.macro) {
     if (block.type === MACRO_VARIABLE) {
@@ -47,40 +44,40 @@ export function createMacro(tool: MacroTool): Symbols.MacroSymbol {
 
   // micro optimization
   let flatten = true
-  if (shapes.every((s) => 'polarity' in s && s.polarity == 1)) {
+  if (shapes.every((s) => "polarity" in s && s.polarity == 1)) {
     flatten = false
   }
 
   return new Symbols.MacroSymbol({
     id: `${tool.name}-D${tool.dcode}`,
     shapes,
-    flatten
+    flatten,
   })
 }
 
 const rotate = (p: Tree.Position, angle: number): Tree.Position => rotateAndShift(p, [0, 0], angle)
 
 function solveExpression(expression: MacroValue, variables: VariableValues): number {
-  if (typeof expression === 'number') return expression
-  if (typeof expression === 'string') return variables[expression]
+  if (typeof expression === "number") return expression
+  if (typeof expression === "string") return variables[expression]
 
   const left = solveExpression(expression.left, variables)
   const right = solveExpression(expression.right, variables)
 
   switch (expression.operator) {
-    case '+': {
+    case "+": {
       return left + right
     }
 
-    case '-': {
+    case "-": {
       return left - right
     }
 
-    case 'x': {
+    case "x": {
       return left * right
     }
 
-    case '/': {
+    case "/": {
       return left / right
     }
   }
@@ -133,8 +130,8 @@ function plotCircle(parameters: number[]): Shapes.Primitive {
     y: cy,
     symbol: new Symbols.RoundSymbol({
       outer_dia: diameter,
-      inner_dia: 0
-    })
+      inner_dia: 0,
+    }),
   })
 }
 
@@ -152,8 +149,8 @@ function plotVectorLine(parameters: number[]): Shapes.Primitive {
     symbol: new Symbols.SquareSymbol({
       width: width,
       height: 0,
-      inner_dia: 0
-    })
+      inner_dia: 0,
+    }),
   })
 }
 
@@ -169,8 +166,8 @@ function plotCenterLine(parameters: number[]): Shapes.Primitive {
     symbol: new Symbols.RectangleSymbol({
       width: width,
       height: height,
-      inner_dia: 0
-    })
+      inner_dia: 0,
+    }),
   })
 }
 
@@ -186,8 +183,8 @@ function plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
     symbol: new Symbols.RectangleSymbol({
       width: width,
       height: height,
-      inner_dia: 0
-    })
+      inner_dia: 0,
+    }),
   })
 }
 
@@ -202,21 +199,21 @@ function plotOutline(parameters: number[]): Shapes.Surface {
         const [x, y] = rotate([p, coords[i + 1]], degrees)
         return new Shapes.Contour_Line_Segment({
           x: x,
-          y: y
+          y: y,
         })
       }
       return undefined
     })
     .filter((s): s is Shapes.Contour_Line_Segment => s !== undefined)
   return new Shapes.Surface({
-    polarity: exposure === 1 ? 1 : 0
+    polarity: exposure === 1 ? 1 : 0,
   }).addContour(
     new Shapes.Contour({
       poly_type: 1,
       xs: xs,
       ys: ys,
-      segments: segments
-    })
+      segments: segments,
+    }),
   )
 }
 
@@ -235,8 +232,8 @@ function plotPolygon(parameters: number[]): Shapes.Primitive {
       corners: vertices,
       inner_dia: 0,
       line_width: 0,
-      angle: 0
-    })
+      angle: 0,
+    }),
   })
 }
 
@@ -256,8 +253,8 @@ function plotMoire(parameters: number[]): Shapes.Primitive {
       num_rings: ringN,
       line_width: lineThx,
       line_length: lineLength,
-      angle: 0
-    })
+      angle: 0,
+    }),
   })
 }
 
@@ -275,7 +272,7 @@ function plotThermal(parameters: number[]): Shapes.Primitive {
       inner_dia: id,
       gap: gap,
       num_spokes: 4,
-      angle: 0
-    })
+      angle: 0,
+    }),
   })
 }

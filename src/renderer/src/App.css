@@ -4,7 +4,8 @@ body {
   overflow: hidden;
 }
 
-html, body {
+html,
+body {
   overscroll-behavior-x: none;
 }
 
@@ -14,10 +15,9 @@ html, body {
   /* overflow: auto; */
 }
 
-
 .scroll-area-sidebar > div > div {
-  table-layout:fixed;
-  width:100%;
+  table-layout: fixed;
+  width: 100%;
 }
 
 [data-transparency] [data-transparent] {
@@ -31,12 +31,17 @@ html, body {
 }
 
 .fade-out-scroll {
-  --mask: linear-gradient(to bottom, 
-      rgba(0,0,0, 0) 0%, rgba(0,0,0, 0) 0%,
-      rgba(0,0,0, 1) 1%,   rgba(0,0,0, 1) 99%, 
-      rgba(0,0,0, 0) 100%, rgba(0,0,0, 0) 100%
-  ) 100% 50% / 100% 100% repeat-x;
-  -webkit-mask: var(--mask); 
+  --mask: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 1) 1%,
+      rgba(0, 0, 0, 1) 99%,
+      rgba(0, 0, 0, 0) 100%,
+      rgba(0, 0, 0, 0) 100%
+    )
+    100% 50% / 100% 100% repeat-x;
+  -webkit-mask: var(--mask);
   mask: var(--mask);
   backdrop-filter: blur(30px) !important;
 }

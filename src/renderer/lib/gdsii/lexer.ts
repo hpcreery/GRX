@@ -1,6 +1,6 @@
-import * as GDSII from './gdsii_records'
-import struct from './struct'
-import { RecordToken } from './types'
+import * as GDSII from "./gdsii_records"
+import struct from "./struct"
+import { RecordToken } from "./types"
 // LEXER
 
 // Generator for complete records from a GDSII stream file.
@@ -12,7 +12,7 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
     if (recordHeader.byteLength < 4) {
       throw new Error(`recordHeader.byteLength < 4, recordHeader: ${recordHeader}`)
     }
-    const [word1, word2] = struct('>HH').unpack(recordHeader)
+    const [word1, word2] = struct(">HH").unpack(recordHeader)
     const recordLength = word1
     if (recordLength < 4) {
       throw new Error(`GDSII recordLength/word1 < 4, word1: ${word1}, word2: ${word2}`)
@@ -39,9 +39,9 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
       // data = String.fromCharCode.apply(null, new Uint8Array(word3))
       data = new TextDecoder().decode(word3)
       // remove null characters
-      data = data.replace(/\u0000/g, '')
+      data = data.replace(/\u0000/g, "")
     } else {
-      console.warn('unknown dataType', dataType)
+      console.warn("unknown dataType", dataType)
     }
     // console.log(
     //   `[RECORD] ${GDSII.RecordDefinitions[recordType].name}(${word3Length}bytes of ${dataType} at ${i} (${stream.byteLength})) =`,
@@ -49,7 +49,7 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
     // )
     tokens.push({
       recordType,
-      data
+      data,
     })
     if (recordType === GDSII.RecordTypes.ENDLIB) {
       break

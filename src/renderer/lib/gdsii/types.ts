@@ -1,4 +1,4 @@
-import * as Shapes from '../../src/renderer/shapes'
+import * as Shapes from "../../src/renderer/shapes"
 
 export type RecordToken = {
   recordType: number
