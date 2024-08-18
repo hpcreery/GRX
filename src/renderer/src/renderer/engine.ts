@@ -767,7 +767,7 @@ export class RenderEngineBackend {
     this.transform.velocity = vec2.fromValues(0, 0)
     for (const layer of this.layers) {
       // TODO: make for loop parallel
-      const layerBoundingBox = await layer.getBoundingBox()
+      const layerBoundingBox = layer.getBoundingBox()
       boundingBox.min = vec2.min(boundingBox.min, boundingBox.min, layerBoundingBox.min)
       boundingBox.max = vec2.max(boundingBox.max, boundingBox.max, layerBoundingBox.max)
     }
@@ -854,7 +854,7 @@ export class RenderEngineBackend {
     const { force, updateLayers } = { ...RenderEngineBackend.defaultRenderProps, ...props }
     if (!this.dirty && !force) return
     if (this.loadingFrame.enabled) return
-    this.dirty = false
+    if (updateLayers) this.dirty = false
     this.regl.clear({
       color: [0, 0, 0, 0],
       depth: 1,

@@ -24,6 +24,7 @@ module.exports = {
     // 'plugin:prettier/recommended'
   ],
   rules: {
+    "no-extra-semi": 0,
     "@typescript-eslint/ban-ts-comment": ["error", { "ts-ignore": "allow-with-description" }],
     "@typescript-eslint/explicit-function-return-type": "error",
     "@typescript-eslint/explicit-module-boundary-types": "off",

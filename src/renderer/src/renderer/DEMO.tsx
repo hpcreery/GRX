@@ -1573,11 +1573,7 @@ function REGLApp(): JSX.Element {
           >
             Zoom Fit
           </Button>
-          <Button
-            onClick={async (): Promise<void> => {
-              ;(await engine.backend).setTransform({ position: [0, 0], zoom: 16 })
-            }}
-          >
+          <Button onClick={async (): Promise<void> => engine.backend.then((engine) => engine.setTransform({ position: [0, 0], zoom: 16 }))}>
             (0,0)
           </Button>
           <br />
