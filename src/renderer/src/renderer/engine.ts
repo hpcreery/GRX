@@ -734,6 +734,7 @@ export class RenderEngineBackend {
           name: "selection",
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
           image: JSON.parse(JSON.stringify(layerFeatures)),
+          transform: layer.transform,
           // image: layerFeatures
         })
         newSelectionLayer.dirty = true
