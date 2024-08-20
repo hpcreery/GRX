@@ -10,11 +10,19 @@ import * as LEXER from "./lexer"
 import * as PARSER from "./parser"
 import * as CONVERTER from "./converter"
 
+import messages from "./messages"
+
 import * as Comlink from "comlink"
 import { AddLayerProps } from "@src/renderer/plugins"
 
-export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
-  console.log("GDSII plugin")
+export async function plugin(
+  buffer: ArrayBuffer,
+  props: Partial<AddLayerProps>,
+  addLayer: (params: AddLayerProps) => void,
+  addMessage: (title: string, message: string) => Promise<void>,
+): Promise<void> {
+  messages.setSender(addMessage, "GDSII")
+  messages.clear()
   const tokens = LEXER.record_reader(buffer)
   const bnf = PARSER.parse(tokens)
   const layerHierarchy = CONVERTER.convert(bnf)

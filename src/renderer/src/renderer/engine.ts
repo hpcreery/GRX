@@ -594,9 +594,9 @@ export class RenderEngineBackend {
       const tempUID = UID()
       this.layersQueue.push({ name: params.props.name || "", uid: tempUID })
       const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
-      const addMessageCallback = async (level: TMessageLevel, title: string, message: string): Promise<void> => {
+      const addMessageCallback = async (title: string, message: string): Promise<void> => {
         // await notifications.show({title, message})
-        this.sendMessage({ level, title, message })
+        this.sendMessage({ level: MessageLevel.WARN, title, message })
       }
       const instance = new pluginWorker()
       const parser = Comlink.wrap<Plugin>(instance)

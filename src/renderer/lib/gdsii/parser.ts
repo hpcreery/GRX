@@ -1,5 +1,6 @@
 import * as GDSII from "./gdsii_records"
 import * as TREE from "./gdsii_tree"
+import messages from "./messages"
 
 import { RecordToken } from "./types"
 
@@ -21,12 +22,10 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
     strans: {},
     property: {},
   }
-
-  // console.log('gdsii tokens', tokens)
   for (const [_index, token] of tokens.entries()) {
     const recordDefinition = GDSII.RecordDefinitions[token.recordType]
     if (!recordDefinition || (!recordDefinition.parse && typeof recordDefinition.parse !== "function")) {
-      console.warn(`RecordDefinition ${recordDefinition} (${token.recordType}) does not have a parse function`)
+      messages.warn(`Parser: RecordDefinition ${recordDefinition} (${token.recordType}) does not have a parse function`)
       continue
     }
     recordDefinition.parse(parserState, token.data as number[])

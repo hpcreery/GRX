@@ -1,6 +1,7 @@
 import * as GDSII from "./gdsii_records"
 import struct from "./struct"
 import { RecordToken } from "./types"
+import messages from "./messages"
 // LEXER
 
 // Generator for complete records from a GDSII stream file.
@@ -10,20 +11,22 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
   while (i < stream.byteLength) {
     const recordHeader = stream.slice(i, i + 4)
     if (recordHeader.byteLength < 4) {
-      throw new Error(`recordHeader.byteLength < 4, recordHeader: ${recordHeader}`)
+      messages.error(`recordHeader.byteLength < 4, recordHeader: ${recordHeader}`)
+      break
     }
     const [word1, word2] = struct(">HH").unpack(recordHeader)
     const recordLength = word1
     if (recordLength < 4) {
-      throw new Error(`GDSII recordLength/word1 < 4, word1: ${word1}, word2: ${word2}`)
+      messages.error(`GDSII recordLength/word1 < 4, word1: ${word1}, word2: ${word2}`)
+      break
     }
     const recordType = Math.floor(word2 / 256)
     const dataType = word2 & 0x00ff
     const word3 = stream.slice(i + 4, i + recordLength)
     const word3Length = recordLength - 4
-    let data: any
+    let data: ArrayBuffer | number[] | string
     if (dataType === GDSII.DataType.NoData) {
-      data = null
+      data = []
     } else if (dataType === GDSII.DataType.BitArray) {
       data = struct(`>${Math.floor(word3Length / 2)}H`).unpack(word3)
     } else if (dataType === GDSII.DataType.TwoByteSignedInteger) {
@@ -36,12 +39,13 @@ export function record_reader(stream: ArrayBuffer): RecordToken[] {
         data.push(eightByteRealToFloat(word3.slice(j, j + 8)))
       }
     } else if (dataType === GDSII.DataType.ASCIIString) {
-      // data = String.fromCharCode.apply(null, new Uint8Array(word3))
       data = new TextDecoder().decode(word3)
       // remove null characters
+      // eslint-disable-next-line no-control-regex
       data = data.replace(/\u0000/g, "")
     } else {
-      console.warn("unknown dataType", dataType)
+      messages.warn(`Lexer: Unknown dataType ${dataType}`)
+      data = []
     }
     // console.log(
     //   `[RECORD] ${GDSII.RecordDefinitions[recordType].name}(${word3Length}bytes of ${dataType} at ${i} (${stream.byteLength})) =`,
