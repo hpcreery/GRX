@@ -48,6 +48,7 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
     menuItems.push({
       key: "clear measurements",
       title: "Clear Measurements",
+      icon: <IconTrashX  stroke={1.5} size={18} color={theme.colors.red[7]}/>,
       onClick: async (): Promise<void> => {
         const backend = await renderEngine.backend
         backend.clearMeasurements()

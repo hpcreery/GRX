@@ -1,4 +1,4 @@
-import { ActionIcon, Affix, Badge, Code, Divider, ScrollArea, ThemeIcon, Transition } from "@mantine/core"
+import { ActionIcon, Affix, Badge, Code, Divider, ScrollArea, ThemeIcon, Transition, useMantineTheme } from "@mantine/core"
 import { Card, Text } from "@mantine/core"
 import { RenderEngine } from "@src/renderer"
 import { useEffect, useState, useContext } from "react"
@@ -23,6 +23,7 @@ import { getUnitsConversion } from "@src/renderer/utils"
 import chroma from "chroma-js"
 import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/symbols"
 import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/types"
+import { menuItems } from "@src/contexts/EngineContext"
 
 interface ToolbarProps {
   renderEngine: RenderEngine
@@ -49,6 +50,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
   const [mounted, setMounted] = useState<boolean>(false)
   const { units } = useContext(ConfigEditorProvider)
   const [layers, setLayers] = useState<LayerInfo[]>([])
+  const theme = useMantineTheme()
 
   function getSymbolInfo(symbol: StandardSymbol, shapeUnits: Units): (JSX.Element | null)[] {
     return Object.entries(symbol).map(([key, value], index) => {
@@ -94,6 +96,21 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
           - {key}: <Code>{representedValue}</Code>
         </Text>
       )
+    })
+  }
+
+  menuItems.push({
+    key: "clear selection",
+    icon: <IconX stroke={1.5} size={18} color={theme.colors.red[7]} />,
+    title: "Clear Selection",
+    onClick: clearSelection,
+  })
+
+  function clearSelection(): void {
+    setMounted(false)
+    renderEngine.backend.then(async (engine) => {
+      await engine.clearSelection()
+      await engine.render({ force: true })
     })
   }
 
@@ -481,17 +498,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             ))}
           </ScrollArea>
           <Affix withinPortal={false} position={{ bottom: 5, right: 10 }}>
-            <ActionIcon
-              radius="sm"
-              variant="subtle"
-              onClick={() => {
-                setMounted(false)
-                renderEngine.backend.then(async (engine) => {
-                  await engine.clearSelection()
-                  await engine.render({ force: true })
-                })
-              }}
-            >
+            <ActionIcon radius="sm" variant="subtle" onClick={() => {}}>
               <IconX />
             </ActionIcon>
           </Affix>

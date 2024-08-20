@@ -138,7 +138,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
     {
       title: "Delete All Layers",
       key: "3",
-      icon: <IconClearAll stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
+      icon: <IconClearAll stroke={1.5} size={18} color={theme.colors.red[7]} />,
       onClick: actions.deleteAll,
     },
   ]
