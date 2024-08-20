@@ -60,6 +60,8 @@ export type CommandCstChildren = {
   cancelVisionOffset?: CancelVisionOffsetCstNode[]
   visionCorrectedSingleHole?: VisionCorrectedSingleHoleCstNode[]
   visionAutoCalibration?: VisionAutoCalibrationCstNode[]
+  cannedSlot?: CannedSlotCstNode[]
+  cannedCircle?: CannedCircleCstNode[]
 }
 
 export interface UnitsCstNode extends CstNode {
@@ -646,6 +648,26 @@ export type VisionAutoCalibrationCstChildren = {
   coordinate: CoordinateCstNode[]
 }
 
+export interface CannedSlotCstNode extends CstNode {
+  name: "cannedSlot"
+  children: CannedSlotCstChildren
+}
+
+export type CannedSlotCstChildren = {
+  G85: IToken[]
+  coordinate: CoordinateCstNode[]
+}
+
+export interface CannedCircleCstNode extends CstNode {
+  name: "cannedCircle"
+  children: CannedCircleCstChildren
+}
+
+export type CannedCircleCstChildren = {
+  G84: IToken[]
+  x: XCstNode[]
+}
+
 export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT
   command(children: CommandCstChildren, param?: IN): OUT
@@ -707,4 +729,6 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   cancelVisionOffset(children: CancelVisionOffsetCstChildren, param?: IN): OUT
   visionCorrectedSingleHole(children: VisionCorrectedSingleHoleCstChildren, param?: IN): OUT
   visionAutoCalibration(children: VisionAutoCalibrationCstChildren, param?: IN): OUT
+  cannedSlot(children: CannedSlotCstChildren, param?: IN): OUT
+  cannedCircle(children: CannedCircleCstChildren, param?: IN): OUT
 }

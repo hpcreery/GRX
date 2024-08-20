@@ -19,6 +19,7 @@ import {
   PossiblePoints,
 } from "./types"
 import * as Constants from "./constants"
+import { getUnitsConversion } from '@src/renderer/utils'
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),
@@ -84,6 +85,11 @@ const DefaultTokens = {
   G40: createToken({ name: "G40", pattern: /G40/ }),
   G41: createToken({ name: "G41", pattern: /G41/ }),
   G42: createToken({ name: "G42", pattern: /G42/ }),
+  // Canned Cycle Commands
+  // G82: createToken({ name: "G82", pattern: /G82/ }),
+  // G83: createToken({ name: "G83", pattern: /G83/ }),
+  G84: createToken({ name: "G84", pattern: /G84/ }),
+  G85: createToken({ name: "G85", pattern: /G85/ }),
   G90: createToken({ name: "G90", pattern: /G90/ }),
   G91: createToken({ name: "G91", pattern: /G91/ }),
   G93: createToken({ name: "G93", pattern: /G93/ }),
@@ -182,6 +188,8 @@ class NCParser extends CstParser {
   cancelVisionOffset!: ParserMethod<unknown[], CstNode>
   visionCorrectedSingleHole!: ParserMethod<unknown[], CstNode>
   visionAutoCalibration!: ParserMethod<unknown[], CstNode>
+  cannedSlot!: ParserMethod<unknown[], CstNode>
+  cannedCircle!: ParserMethod<unknown[], CstNode>
 
   constructor() {
     super(multiModeLexerDefinition, {
@@ -242,6 +250,8 @@ class NCParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.cancelVisionOffset) },
         { ALT: (): CstNode => this.SUBRULE(this.visionCorrectedSingleHole) },
         { ALT: (): CstNode => this.SUBRULE(this.visionAutoCalibration) },
+        { ALT: (): CstNode => this.SUBRULE(this.cannedSlot) },
+        { ALT: (): CstNode => this.SUBRULE(this.cannedCircle) },
       ])
     })
 
@@ -588,6 +598,19 @@ class NCParser extends CstParser {
       this.CONSUME(DefaultTokens.G39)
       this.SUBRULE(this.coordinate)
     })
+
+    // Canned Cycle Commands
+    this.RULE("cannedSlot", () => {
+      this.CONSUME(DefaultTokens.G85)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("cannedCircle", () => {
+      this.CONSUME(DefaultTokens.G84)
+      this.SUBRULE(this.x)
+    })
+
+
 
     this.performSelfAnalysis()
   }
@@ -1372,7 +1395,20 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   zeroSet(ctx: Cst.ZeroSetCstChildren): void {
-    console.log("zeroSet", ctx)
+    const { x, y } = this.visit(ctx.xy) as PossiblePoints
+    if (x !== undefined) {
+      this.result.push(
+        new Shapes.DatumPoint({
+          x: x || 0,
+          y: y || 0,
+        }),
+        new Shapes.DatumText({
+          text: "Zero Set",
+          x: x || 0,
+          y: y || 0,
+        }),
+      )
+    }
   }
 
   selectVisionTool(ctx: Cst.SelectVisionToolCstChildren): void {
@@ -1517,6 +1553,67 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       new Shapes.DatumPoint({
         x: this.state.x,
         y: this.state.y,
+      }),
+    )
+  }
+
+  // Canned cycles
+
+  cannedSlot(ctx: Cst.CannedSlotCstChildren): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+    this.result.push(
+      new Shapes.Line({
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+        symbol: this.state.currentTool,
+        attributes: {
+          type: "canned slot",
+        },
+      }),
+      new Shapes.DatumText({
+        x: (this.state.x + this.state.previousX) / 2,
+        y: (this.state.y + this.state.previousY) / 2,
+        text: "Canned Slot",
+      }),
+      new Shapes.DatumLine({
+        xs: this.state.x,
+        ys: this.state.y,
+        xe: this.state.previousX,
+        ye: this.state.previousY,
+      }),
+      new Shapes.Pad({
+        x: this.state.x,
+        y: this.state.y,
+        symbol: this.state.currentTool,
+      }),
+    )
+  }
+
+  cannedCircle(ctx: Cst.CannedCircleCstChildren): void {
+    this.state.previousX = this.state.x
+    const dia = this.visit(ctx.x) as number | undefined
+    this.result.push(
+      new Shapes.Pad({
+        x: this.state.previousX,
+        y: this.state.y,
+        attributes: {
+          type: "canned circle",
+        },
+        symbol: new Symbols.RoundSymbol({
+          outer_dia: dia || 3.175 * getUnitsConversion(this.state.units),
+          inner_dia: 0,
+        }),
       }),
     )
   }
