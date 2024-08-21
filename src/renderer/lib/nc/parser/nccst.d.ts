@@ -595,8 +595,8 @@ export interface SelectVisionToolCstNode extends CstNode {
 
 export type SelectVisionToolCstChildren = {
   G34: IToken[]
-  Comma: IToken[]
-  Number: IToken[]
+  Text?: IToken[]
+  EndText?: IToken[]
 }
 
 export interface SinglePointVisionOffsetCstNode extends CstNode {
@@ -645,7 +645,8 @@ export interface VisionAutoCalibrationCstNode extends CstNode {
 
 export type VisionAutoCalibrationCstChildren = {
   G39: IToken[]
-  coordinate: CoordinateCstNode[]
+  Text?: IToken[]
+  EndText?: IToken[]
 }
 
 export interface CannedSlotCstNode extends CstNode {

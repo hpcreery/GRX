@@ -567,11 +567,17 @@ class NCParser extends CstParser {
 
     this.RULE("selectVisionTool", () => {
       this.CONSUME(DefaultTokens.G34)
-      this.CONSUME(DefaultTokens.Comma)
-      this.CONSUME(DefaultTokens.Number)
+      // this.CONSUME(DefaultTokens.Comma)
+      // this.CONSUME(DefaultTokens.Number)
+      // this.OPTION(() => {
+      //   this.CONSUME2(DefaultTokens.Comma)
+      //   this.CONSUME2(DefaultTokens.Number)
+      // })
       this.OPTION(() => {
-        this.CONSUME2(DefaultTokens.Comma)
-        this.CONSUME2(DefaultTokens.Number)
+        this.CONSUME(TextTokens.Text)
+      })
+      this.OPTION2(() => {
+        this.CONSUME(TextTokens.EndText)
       })
     })
 
@@ -596,7 +602,13 @@ class NCParser extends CstParser {
 
     this.RULE("visionAutoCalibration", () => {
       this.CONSUME(DefaultTokens.G39)
-      this.SUBRULE(this.coordinate)
+      // this.SUBRULE(this.coordinate)
+      this.OPTION(() => {
+        this.CONSUME(TextTokens.Text)
+      })
+      this.OPTION2(() => {
+        this.CONSUME(TextTokens.EndText)
+      })
     })
 
     // Canned Cycle Commands
@@ -1449,7 +1461,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       new Shapes.DatumText({
         x: this.state.x,
         y: this.state.y,
-        text: "AlignmentPoint",
+        text: "Alignment Point",
       }),
     )
     this.result.push(
@@ -1484,7 +1496,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       new Shapes.DatumText({
         x: this.state.x,
         y: this.state.y,
-        text: "AlignmentPoint",
+        text: "Alignment Point",
       }),
     )
     this.result.push(
@@ -1522,7 +1534,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       new Shapes.DatumText({
         x: this.state.x,
         y: this.state.y,
-        text: "VisionCorrection",
+        text: "Vision Correction",
       }),
     )
     this.result.push(
@@ -1534,37 +1546,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   visionAutoCalibration(ctx: Cst.VisionAutoCalibrationCstChildren): void {
-    this.state.previousX = this.state.x
-    this.state.previousY = this.state.y
-    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
-    if (this.state.coordinateMode === Constants.ABSOLUTE) {
-      if (x !== undefined) this.state.x = x
-      if (y !== undefined) this.state.y = y
-    } else {
-      if (x !== undefined) this.state.x += x
-      if (y !== undefined) this.state.y += y
-    }
-    this.result.push(
-      new Shapes.DatumLine({
-        xs: this.state.previousX,
-        ys: this.state.previousY,
-        xe: this.state.x,
-        ye: this.state.y,
-      }),
-    )
-    this.result.push(
-      new Shapes.DatumText({
-        x: this.state.x,
-        y: this.state.y,
-        text: "VisionCorrection",
-      }),
-    )
-    this.result.push(
-      new Shapes.DatumPoint({
-        x: this.state.x,
-        y: this.state.y,
-      }),
-    )
+    console.log("visionAutoCalibration", ctx)
   }
 
   // Canned cycles
