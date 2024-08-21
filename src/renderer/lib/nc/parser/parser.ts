@@ -854,8 +854,9 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
     if (ctx.arcCenter) this.visit(ctx.arcCenter)
     if (ctx.arcRadius) this.visit(ctx.arcRadius)
+    const lastFeature = this.result.findLast((shape) => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC || shape.type == FeatureTypeIdentifier.PAD)
     if (this.state.mode == Constants.DRILL) {
-      if (this.result.length > 0) {
+      if (lastFeature != undefined) {
         this.result.push(
           new Shapes.DatumLine({
             xs: this.state.previousX,
@@ -1120,14 +1121,23 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           )
         }
       } else {
-        this.result.push(
-          new Shapes.DatumLine({
-            xs: this.state.previousX,
-            ys: this.state.previousY,
-            xe: this.state.x,
-            ye: this.state.y,
-          }),
-        )
+        if (lastFeature != undefined) {
+          this.result.push(
+            new Shapes.DatumLine({
+              xs: this.state.previousX,
+              ys: this.state.previousY,
+              xe: this.state.x,
+              ye: this.state.y,
+            }),
+          )
+        } else {
+          this.result.push(
+            new Shapes.DatumPoint({
+              x: this.state.x,
+              y: this.state.y,
+            }),
+          )
+        }
       }
     }
   }
