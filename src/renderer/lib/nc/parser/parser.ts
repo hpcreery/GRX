@@ -695,8 +695,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     coordinateFormat: [2, 4],
     zeroSuppression: "trailing",
   }
-  public toolStore: Partial<Record<string, Symbols.StandardSymbol>> = {}
-  public compensationStore: Partial<Record<string, number>> = {}
+  public toolStore: Partial<Record<number, Symbols.StandardSymbol>> = {}
+  public compensationStore: Partial<Record<number, number>> = {}
   constructor(params: Partial<NCParams> = {}) {
     super()
     Object.assign(this.state, params)
@@ -743,16 +743,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   compensationIndex(ctx: Cst.CompensationIndexCstChildren): void {
-    this.compensationStore[ctx.Number[0].image] = parseFloat(ctx.Number[1].image)
+    this.compensationStore[Number(ctx.Number[0].image)] = parseFloat(ctx.Number[1].image)
   }
 
   toolChange(ctx: Cst.ToolChangeCstChildren): void {
     const str = ctx.T[0].image
     const tool = str.slice(0, 3)
     const compensationIndex = str.slice(3)
-    this.state.currentTool = this.toolStore[tool] ?? defaultTool
+    this.state.currentTool = this.toolStore[Number(tool)] ?? defaultTool
     if (compensationIndex !== "") {
-      this.state.cutterCompensation = this.compensationStore[compensationIndex] ?? 0
+      this.state.cutterCompensation = this.compensationStore[Number(compensationIndex)] ?? 0
     } else {
       this.state.cutterCompensation = this.state.currentTool.outer_dia
     }
@@ -776,7 +776,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       attributes,
     })
     this.state.currentTool = tool
-    this.toolStore[tool.id] = tool
+    this.toolStore[Number(tool.id)] = tool
   }
 
   toolDia(ctx: Cst.ToolDiaCstChildren): number {
