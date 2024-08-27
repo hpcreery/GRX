@@ -695,8 +695,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     coordinateFormat: [2, 4],
     zeroSuppression: "trailing",
   }
-  public toolStore: Partial<Record<number, Symbols.StandardSymbol>> = {}
-  public compensationStore: Partial<Record<number, number>> = {}
+  public toolStore: Partial<Record<string, Symbols.StandardSymbol>> = {}
+  public compensationStore: Partial<Record<string, number>> = {}
   constructor(params: Partial<NCParams> = {}) {
     super()
     Object.assign(this.state, params)
@@ -743,16 +743,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   }
 
   compensationIndex(ctx: Cst.CompensationIndexCstChildren): void {
-    this.compensationStore[Number(ctx.Number[0].image)] = parseFloat(ctx.Number[1].image)
+    this.compensationStore[String(Number(ctx.Number[0].image))] = parseFloat(ctx.Number[1].image)
   }
 
   toolChange(ctx: Cst.ToolChangeCstChildren): void {
     const str = ctx.T[0].image
     const tool = str.slice(0, 3)
     const compensationIndex = str.slice(3)
-    this.state.currentTool = this.toolStore[Number(tool)] ?? defaultTool
+    this.state.currentTool = this.toolStore[String(Number(tool.slice(1,3)))] ?? defaultTool
     if (compensationIndex !== "") {
-      this.state.cutterCompensation = this.compensationStore[Number(compensationIndex)] ?? 0
+      this.state.cutterCompensation = this.compensationStore[String(Number(compensationIndex.slice(1,3)))] ?? 0
     } else {
       this.state.cutterCompensation = this.state.currentTool.outer_dia
     }
@@ -776,7 +776,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       attributes,
     })
     this.state.currentTool = tool
-    this.toolStore[Number(tool.id)] = tool
+    this.toolStore[String(Number(ctx.T[0].image.slice(1,3)))] = tool
   }
 
   toolDia(ctx: Cst.ToolDiaCstChildren): number {
@@ -938,6 +938,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           if (lastPath) {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
               if (lastPath.type == FeatureTypeIdentifier.LINE) {
+                // -- LAST PATH IS A LINE AND NEW PATH IS A LINE --
                 const insersectionPoint = findLineIntersection(lastPath, { xs, ys, xe, ye })
                 // for 2 lines, the only way they cant intersect is if they are parallel so this should always return a point
                 if (insersectionPoint != undefined) {
@@ -947,13 +948,18 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   lastPath.ye = insersectionPoint.y
                 }
               } else {
+                // -- LAST PATH IS A ARC AND NEW PATH IS A LINE --
                 const insersectionPoints = findArcLineIntersections(lastPath, { xs, ys, xe, ye })
-                // the first point is the one closer to the line start point
                 if (insersectionPoints != undefined) {
-                  xs = insersectionPoints[0].x
-                  ys = insersectionPoints[0].y
-                  lastPath.xe = insersectionPoints[0].x
-                  lastPath.ye = insersectionPoints[0].y
+                  const [p1, p2] = insersectionPoints
+                  const d1 = Math.sqrt((p1.x - xs) ** 2 + (p1.y - ys) ** 2)
+                  const d2 = Math.sqrt((p2.x - xs) ** 2 + (p2.y - ys) ** 2)
+                  const x = d1 < d2 ? p1.x : p2.x
+                  const y = d1 < d2 ? p1.y : p2.y
+                  xs = x
+                  ys = y
+                  lastPath.xe = x
+                  lastPath.ye = y
                 } else {
                   if (Math.sqrt((lastPath.xe - xs) ** 2 + (lastPath.ye - ys) ** 2) > this.state.cutterCompensation / 2) {
                     // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
@@ -1051,6 +1057,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           if (lastPath) {
             if (Number(lastPath.attributes.chainIndex) == this.state.chainIndex) {
               if (lastPath.type == FeatureTypeIdentifier.ARC) {
+                // -- LAST PATH IS A ARC AND NEW PATH IS A ARC --
                 const insersectionPoints = findArcIntersections({ xs, ys, xe, ye, xc: center.x, yc: center.y }, lastPath)
                 // the first point is the one closer to the first circle start point
                 if (insersectionPoints != undefined) {
@@ -1079,13 +1086,18 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   )
                 }
               } else {
+                // -- LAST PATH IS A LINE AND NEW PATH IS A ARC --
                 const insersectionPoints = findArcLineIntersections({ xs, ys, xe, ye, xc: center.x, yc: center.y }, lastPath)
-                // the second point is the one closer to the line end point
                 if (insersectionPoints != undefined) {
-                  xs = insersectionPoints[1].x
-                  ys = insersectionPoints[1].y
-                  lastPath.xe = insersectionPoints[1].x
-                  lastPath.ye = insersectionPoints[1].y
+                  const [p1, p2] = insersectionPoints
+                  const d1 = Math.sqrt((p1.x - xs) ** 2 + (p1.y - ys) ** 2)
+                  const d2 = Math.sqrt((p2.x - xs) ** 2 + (p2.y - ys) ** 2)
+                  const x = d1 < d2 ? p1.x : p2.x
+                  const y = d1 < d2 ? p1.y : p2.y
+                  xs = x
+                  ys = y
+                  lastPath.xe = x
+                  lastPath.ye = y
                 } else {
                   if (Math.sqrt((lastPath.xe - xs) ** 2 + (lastPath.ye - ys) ** 2) > this.state.cutterCompensation / 2) {
                     // arcs and lines may not intersect due to the cutter compensation and the case where the arc is tangent to the line
@@ -1450,14 +1462,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
 
     this.result.push(
-      new Shapes.DatumLine({
-        xs: this.state.previousX,
-        ys: this.state.previousY,
-        xe: this.state.x,
-        ye: this.state.y,
-      }),
-    )
-    this.result.push(
       new Shapes.DatumText({
         x: this.state.x,
         y: this.state.y,
@@ -1484,14 +1488,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (y !== undefined) this.state.y += y
     }
     if (ctx.coordinate) this.visit(ctx.coordinate)
-    this.result.push(
-      new Shapes.DatumLine({
-        xs: this.state.previousX,
-        ys: this.state.previousY,
-        xe: this.state.x,
-        ye: this.state.y,
-      }),
-    )
     this.result.push(
       new Shapes.DatumText({
         x: this.state.x,
@@ -1522,14 +1518,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (x !== undefined) this.state.x += x
       if (y !== undefined) this.state.y += y
     }
-    this.result.push(
-      new Shapes.DatumLine({
-        xs: this.state.previousX,
-        ys: this.state.previousY,
-        xe: this.state.x,
-        ye: this.state.y,
-      }),
-    )
     this.result.push(
       new Shapes.DatumText({
         x: this.state.x,
@@ -1760,11 +1748,11 @@ interface Arc {
 }
 
 /**
- * Find the intersection points of a circle and a line, the first point returned is the one closer to the line start point
+ * Find the intersection points of a circle and a line
  * https://www.reddit.com/r/gamemaker/comments/m38s5j/line_circle_intersect_function_to_share/
  * @param arc
  * @param line
- * @returns  the first point is the one closer to the line start point
+ * @returns
  */
 function findArcLineIntersections(arc: Arc, line: Line): Point[] | undefined {
   const cx = arc.xc
@@ -1803,13 +1791,9 @@ function findArcLineIntersections(arc: Arc, line: Line): Point[] | undefined {
     const _t1 = (-_b - determinant) / (2 * _a)
     const _t2 = (-_b + determinant) / (2 * _a)
 
-    // First point is closest to [x1, y1]
     const p1 = { x: x1 + _t1 * _vx, y: y1 + _t1 * _vy }
     const p2 = { x: x1 + _t2 * _vx, y: y1 + _t2 * _vy }
-    // return the points with the first closer to line start point
-    const d1 = Math.sqrt((p1.x - x1) ** 2 + (p1.y - y1) ** 2)
-    const d2 = Math.sqrt((p2.x - x1) ** 2 + (p2.y - y1) ** 2)
-    return d1 < d2 ? [p1, p2] : [p2, p1]
+    return [p1, p2]
   }
 }
 
