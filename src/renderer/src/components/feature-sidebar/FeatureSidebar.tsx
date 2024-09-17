@@ -498,7 +498,7 @@ export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
             ))}
           </ScrollArea>
           <Affix withinPortal={false} position={{ bottom: 5, right: 10 }}>
-            <ActionIcon radius="sm" variant="subtle" onClick={() => {}}>
+            <ActionIcon radius="sm" variant="subtle" onClick={clearSelection}>
               <IconX />
             </ActionIcon>
           </Affix>
