@@ -7,16 +7,19 @@ import Toolbar from "./components/toolbar/Toolbar"
 import MousePosition from "./components/MousePosition"
 import LayerSidebar from "./components/layer-sidebar/LayersSidebar"
 import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from "@mantine/core"
-import { ConfigEditorProvider } from "./contexts/ConfigEditor"
+import { EditorConfigProvider } from "./contexts/EditorContext"
+import { ThemeConfigProvider } from "./contexts/ThemeContext"
 import { FeatureSidebar } from "./components/feature-sidebar/FeatureSidebar"
 import { EngineEvents, MessageData } from "./renderer/engine"
 import * as Comlink from "comlink"
 import { notifications } from "@mantine/notifications"
 import { useContextMenu } from "mantine-contextmenu"
-import { menuItems } from "./contexts/EngineContext"
+import { menuItems } from "./contexts/EditorContext"
+import { useLocalStorage } from "@mantine/hooks"
+import { Units } from "./renderer/types"
 
 export default function App(): JSX.Element | null {
-  const { transparency } = useContext(EditorConfigProvider)
+  const { transparency } = useContext(ThemeConfigProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement("div"))
@@ -67,25 +70,38 @@ export default function App(): JSX.Element | null {
     })
   }
 
+  const [units, setUnits] = useLocalStorage<Units>({
+    key: "units",
+    defaultValue: "mm",
+  })
+
   return (
     <>
       {ready && renderEngine ? (
-        <Box
-          mod={{ transparency }}
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "fixed",
-            pointerEvents: "none",
-            zIndex: 10,
+        <EditorConfigProvider.Provider
+          value={{
+            renderEngine: renderEngine,
+            units: units,
+            setUnits: setUnits,
           }}
         >
-          <LayerSidebar renderEngine={renderEngine} />
-          <Toolbar renderEngine={renderEngine} />
-          <InfoModal />
-          <MousePosition renderEngine={renderEngine} />
-          <FeatureSidebar renderEngine={renderEngine} />
-        </Box>
+          <Box
+            mod={{ transparency }}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "fixed",
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            <LayerSidebar />
+            <Toolbar />
+            <InfoModal />
+            <MousePosition />
+            <FeatureSidebar />
+          </Box>
+        </EditorConfigProvider.Provider>
       ) : (
         <>
           <Center w={"100%"} h={"100%"} mx="auto">

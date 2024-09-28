@@ -1,15 +1,14 @@
 import React from "react"
-import { RenderEngine } from "@src/renderer"
-import { EditorConfigProvider, ThemeConfigProvider } from "@src/contexts/ConfigEditor"
+import { ThemeConfigProvider } from "@src/contexts/ThemeContext"
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, useMantineTheme, useMantineColorScheme, ColorPicker, Radio } from "@mantine/core"
 
 interface SettingsModalProps {
-  renderEngine: RenderEngine
 }
 
-export default function GeneralSettingsModal({ renderEngine }: SettingsModalProps): JSX.Element | null {
-  const { units, setUnits } = React.useContext(EditorConfigProvider)
+export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.Element | null {
+  const { units, setUnits, renderEngine } = React.useContext(EditorConfigProvider)
   const { transparency, setTransparency, setPrimaryColor } = React.useContext(ThemeConfigProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()

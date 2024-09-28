@@ -1,5 +1,4 @@
-import { useEffect } from "react"
-import { RenderEngine } from "@src/renderer"
+import { useEffect, useContext } from "react"
 import { Text, Flex, Select, Switch, Divider, Kbd } from "@mantine/core"
 import {
   IconZoom,
@@ -10,12 +9,13 @@ import {
 import { ColorBlend, ColorBlends } from "@src/renderer/engine"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
+import { EditorConfigProvider } from '@src/contexts/EditorContext'
 
 interface EngineSettingsProps {
-  renderEngine: RenderEngine
 }
 
-export default function EngineSettings({ renderEngine }: EngineSettingsProps): JSX.Element | null {
+export default function EngineSettings(_props: EngineSettingsProps): JSX.Element | null {
+  const { renderEngine } = useContext(EditorConfigProvider)
   const [colorBlend, setColorBlend] = useLocalStorage<ColorBlends>({
     key: "engine:COLOR_BLEND",
     defaultValue: renderEngine.settings.COLOR_BLEND,

@@ -1,5 +1,4 @@
 import React from "react"
-import { RenderEngine } from "@src/renderer"
 import {
   IconArrowsMove,
   IconRulerMeasure,
@@ -25,16 +24,16 @@ import GridSettings from "./GridSettings"
 import EngineSettings from "./EngineSettings"
 import type { PointerSettings } from "@src/renderer"
 import { useContextMenu } from "mantine-contextmenu"
-import { EditorConfigProvider } from "@src/contexts/ConfigEditor"
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { actions } from "@src/contexts/Spotlight"
-import { menuItems } from "@src/contexts/EngineContext"
+import { menuItems } from "@src/contexts/EditorContext"
+
 
 interface ToolbarProps {
-  renderEngine: RenderEngine
 }
 
-export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
-  const { units } = React.useContext(EditorConfigProvider)
+export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
+  const { units, renderEngine } = React.useContext(EditorConfigProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
@@ -304,13 +303,13 @@ export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | n
         </Group>
       </Card>
       <Modal title="Settings" keepMounted opened={settingsModalOpen} onClose={close}>
-        <GeneralSettings renderEngine={renderEngine} />
+        <GeneralSettings />
       </Modal>
       <Modal title="Grid Settings" keepMounted opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
-        <GridSettings renderEngine={renderEngine} />
+        <GridSettings />
       </Modal>
       <Modal title="Engine Settings" keepMounted opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
-        <EngineSettings renderEngine={renderEngine} />
+        <EngineSettings />
       </Modal>
     </>
   )

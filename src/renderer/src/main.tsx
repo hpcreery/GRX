@@ -1,5 +1,5 @@
 import ReactDOM from "react-dom/client"
-import { ConfigEditorProvider } from "./contexts/ConfigEditor"
+import { ThemeConfigProvider } from "./contexts/ThemeContext"
 import { MantineProvider, createTheme } from "@mantine/core"
 import { Notifications } from "@mantine/notifications"
 import { useLocalStorage } from "@mantine/hooks"
@@ -7,7 +7,6 @@ import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
 // import REGLApp from './renderer/DEMO'
 // import NCDemo from '@lib/nc/DEMO'
-import { Units } from "./renderer/types"
 
 import { Spotlight } from "@mantine/spotlight"
 import { spotlightStore, actions } from "./contexts/Spotlight"
@@ -31,10 +30,7 @@ function Main(): JSX.Element | null {
     defaultValue: "teal",
   })
 
-  const [units, setUnits] = useLocalStorage<Units>({
-    key: "units",
-    defaultValue: "mm",
-  })
+
 
   const theme = createTheme({
     primaryColor: primaryColor,
@@ -46,14 +42,12 @@ function Main(): JSX.Element | null {
   })
 
   return (
-    <ConfigEditorProvider.Provider
+    <ThemeConfigProvider.Provider
       value={{
         transparency,
         setTransparency,
         primaryColor: primaryColor,
         setPrimaryColor: setPrimaryColor,
-        units: units,
-        setUnits: setUnits,
       }}
     >
       <MantineProvider defaultColorScheme="dark" theme={theme}>
@@ -65,7 +59,7 @@ function Main(): JSX.Element | null {
           {/* <REGLApp /> */}
         </ContextMenuProvider>
       </MantineProvider>
-    </ConfigEditorProvider.Provider>
+    </ThemeConfigProvider.Provider>
   )
 }
 

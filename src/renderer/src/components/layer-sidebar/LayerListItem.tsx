@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useContext } from "react"
 import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme } from "@mantine/core"
 import { notifications } from "@mantine/notifications"
 import chroma from "chroma-js"
@@ -6,7 +6,6 @@ import { useGesture } from "@use-gesture/react"
 import { animated, useSpring } from "@react-spring/web"
 // import { TRendererLayer } from '../../old-renderer/types'
 import type Layer from "@src/renderer/layer"
-import { RenderEngine } from "@src/renderer"
 // import FeatureHistogramModal, { FeatureHistogramModalRef } from '../histogram/FeatureHistogramModal'
 import { UploadFile } from "./LayersSidebar"
 import {
@@ -25,10 +24,10 @@ import { useContextMenu } from "mantine-contextmenu"
 import type { LayerInfo } from "@src/renderer/engine"
 import { vec3 } from "gl-matrix"
 import LayerTransform from "./transform/LayerTransform"
+import { EditorConfigProvider } from '@src/contexts/EditorContext'
 
 interface LayerListItemProps {
   file: UploadFile
-  renderEngine: RenderEngine
   actions: {
     download: () => void
     preview: () => void
@@ -40,10 +39,11 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
+  const { renderEngine } = useContext(EditorConfigProvider)
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
-  const { renderEngine, file, actions } = props
+  const { file, actions } = props
   const layer: Pick<Layer, "name" | "uid"> = {
     name: file.name,
     uid: file.uid,
@@ -335,7 +335,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           {/* <FeatureHistogramModal
             ref={featureHistogramModalRef}
             uid={layer.uid}
-            renderEngine={renderEngine}
           /> */}
         </div>
       </Popover.Target>
@@ -373,7 +372,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         />
       </Popover.Dropdown>
       <LayerTransform
-        renderEngine={renderEngine}
         layersUID={layer.uid}
         visible={layerTransformVisible}
         onClose={() => setLayerTransformVisible(false)}
