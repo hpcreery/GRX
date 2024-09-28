@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/github/license/hpcreery/grx">
 </div>
 
-![preview](/resources/screenshot.png)
+![preview](/resources/screenshot-v3.1-dark.png)
 
 ## About
 

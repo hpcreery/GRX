@@ -30,6 +30,19 @@ export default function GeneralSettingsModal({ renderEngine }: SettingsModalProp
       </Flex>
       <Divider my="sm" />
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
+        <Text>Color</Text>
+        <ColorPicker
+          withPicker={false}
+          onChange={(color): void => {
+            const colorName = Object.keys(theme.colors).find((key) => theme.colors[key][9] === color)
+            theme.primaryColor = colorName || "teal"
+            setPrimaryColor(colorName || "teal")
+          }}
+          swatches={[...Object.values(theme.colors).map((x) => x[9])]}
+        />
+      </Flex>
+      <Divider my="sm" />
+      <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Dark Mode</Text>
         <Switch
           defaultChecked={colors.colorScheme === "dark"}
@@ -42,19 +55,6 @@ export default function GeneralSettingsModal({ renderEngine }: SettingsModalProp
               renderEngine.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
             }
           }}
-        />
-      </Flex>
-      <Divider my="sm" />
-      <Flex align="center" style={{ width: "100%" }} justify="space-between">
-        <Text>Color</Text>
-        <ColorPicker
-          withPicker={false}
-          onChange={(color): void => {
-            const colorName = Object.keys(theme.colors).find((key) => theme.colors[key][9] === color)
-            theme.primaryColor = colorName || "teal"
-            setPrimaryColor(colorName || "teal")
-          }}
-          swatches={[...Object.values(theme.colors).map((x) => x[9])]}
         />
       </Flex>
       <Divider my="sm" />
