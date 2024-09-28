@@ -1,6 +1,5 @@
 import { ActionIcon, Affix, Badge, Code, Divider, ScrollArea, ThemeIcon, Transition, useMantineTheme } from "@mantine/core"
 import { Card, Text } from "@mantine/core"
-import { RenderEngine } from "@src/renderer"
 import { useEffect, useState, useContext } from "react"
 import { PointerEvents } from "@src/renderer"
 import {
@@ -18,15 +17,14 @@ import {
 } from "@tabler/icons-react"
 import { LayerInfo, QueryFeature } from "@src/renderer/engine"
 import classes from "./FeatureSidebar.module.css"
-import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { getUnitsConversion } from "@src/renderer/utils"
 import chroma from "chroma-js"
 import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/symbols"
 import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/types"
-import { menuItems } from "@src/contexts/EngineContext"
+import { menuItems } from "@src/contexts/EditorContext"
 
 interface ToolbarProps {
-  renderEngine: RenderEngine
 }
 
 function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
@@ -45,10 +43,10 @@ function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
   )
 }
 
-export function FeatureSidebar({ renderEngine }: ToolbarProps): JSX.Element {
+export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
   const [features, setFeatures] = useState<QueryFeature[]>([])
   const [mounted, setMounted] = useState<boolean>(false)
-  const { units } = useContext(ConfigEditorProvider)
+  const { units, renderEngine } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<LayerInfo[]>([])
   const theme = useMantineTheme()
 

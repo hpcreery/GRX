@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react"
-import { RenderEngine } from "@src/renderer"
+import { useEffect, useState, useContext } from "react"
 import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select, useMantineTheme } from "@mantine/core"
 import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from "@mantine/dropzone"
 import { IconFileX, IconFileVector, IconContrast, IconContrastOff, IconClearAll } from "@tabler/icons-react"
@@ -10,11 +9,11 @@ import * as Comlink from "comlink"
 import { pluginList, plugins } from "@src/renderer/plugins"
 import { EngineEvents } from "@src/renderer/engine"
 import { useContextMenu } from "mantine-contextmenu"
+import { EditorConfigProvider } from '@src/contexts/EditorContext'
 
 const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {
-  renderEngine: RenderEngine
 }
 
 export interface UploadFile extends FileWithFormat {
@@ -22,7 +21,8 @@ export interface UploadFile extends FileWithFormat {
   uid: string
 }
 
-export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Element | null {
+export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
+  const { renderEngine } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<UploadFile[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
   const [renderID, setRenderID] = useState<number>(0)
@@ -244,7 +244,7 @@ export default function LayerSidebar({ renderEngine }: SidebarProps): JSX.Elemen
             }}
           >
             {layers.map((layer) => (
-              <LayerListItem key={layer.uid + renderID} file={layer} renderEngine={renderEngine} actions={actions} />
+              <LayerListItem key={layer.uid + renderID} file={layer} actions={actions} />
             ))}
           </Stack>
 

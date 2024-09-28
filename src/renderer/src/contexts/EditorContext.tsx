@@ -1,4 +1,20 @@
+import React from 'react'
 import { ContextMenuItemOptions } from "mantine-contextmenu"
+import { Units } from '@src/renderer/types'
+import { RenderEngine } from '@src/renderer'
+
+export interface EditorContext {
+  renderEngine: RenderEngine
+  units: Units
+  setUnits: React.Dispatch<React.SetStateAction<Units>>
+}
+
+export const EditorConfigProvider = React.createContext<EditorContext>({
+  renderEngine: new RenderEngine({container: document.createElement('div')}),
+  units: 'mm',
+  setUnits: () => {}
+})
+
 
 export const menuItemsBase: ContextMenuItemOptions[] = []
 

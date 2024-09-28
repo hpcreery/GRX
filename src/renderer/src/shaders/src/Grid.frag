@@ -44,7 +44,7 @@ void main() {
   float mody = mod(FragCoord.y - u_Offset.y, u_Spacing.y);
   float modx = mod(FragCoord.x - u_Offset.x, u_Spacing.x);
   if (u_Type == 0) {
-    if ((modx < pixel_size || modx > u_Spacing.x - pixel_size) && (mody < pixel_size|| mody > u_Spacing.y - pixel_size)) {
+    if ((modx < pixel_size || modx > u_Spacing.x - pixel_size) && (mody < pixel_size || mody > u_Spacing.y - pixel_size)) {
       gl_FragColor = u_Color;
     }
   } else if (u_Type == 1) {

@@ -1,10 +1,9 @@
 import { useState, useEffect, useContext } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
 import { Binary, TransformOrder, Units } from "@src/renderer/types"
-import { RenderEngine } from "@src/renderer"
 import type { LayerInfo } from "@src/renderer/engine"
 import { vec2 } from "gl-matrix"
-import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
@@ -15,7 +14,6 @@ import { IconGripHorizontal } from "@tabler/icons-react"
 import { getUnitsConversion } from "@src/renderer/utils"
 
 export interface LayerTransformProps {
-  renderEngine: RenderEngine
   layersUID: string
   visible: boolean
   onClose: () => void
@@ -46,7 +44,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   const [transformOrder, setTransformOrder] = useState<TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
-  const { units } = useContext(ConfigEditorProvider)
+  const { units, renderEngine } = useContext(EditorConfigProvider)
   const [layerUnits, setLayerUnts] = useState<Units>(units)
   const [layerName, setLayerName] = useState<string>("")
 
@@ -71,7 +69,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   useEffect(() => {
-    props.renderEngine.backend.then((backend) => {
+    renderEngine.backend.then((backend) => {
       backend.getLayers().then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.uid === props.layersUID) {
@@ -98,7 +96,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }, [])
 
   useEffect(() => {
-    props.renderEngine.backend.then((backend) => {
+    renderEngine.backend.then((backend) => {
       backend.getLayers().then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.uid === props.layersUID) {
