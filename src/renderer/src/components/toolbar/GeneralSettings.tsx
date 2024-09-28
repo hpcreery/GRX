@@ -9,7 +9,7 @@ interface SettingsModalProps {
 }
 
 export default function GeneralSettingsModal({ renderEngine }: SettingsModalProps): JSX.Element | null {
-  const { transparency, setTransparency, setPrimaryColor, units, setUnits } = React.useContext(ConfigEditorProvider)
+  const { transparency, setTransparency, setPrimaryColor, units, setUnits } = React.useContext(EditorConfigProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
 
