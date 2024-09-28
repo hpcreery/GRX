@@ -2,7 +2,7 @@ import React from "react"
 import { PointerEvent } from "@src/renderer"
 import { PointerEvents, RenderEngine } from "@src/renderer"
 import { Card, Group, Text, Tooltip } from "@mantine/core"
-import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
+import { EditorConfigProvider } from "@src/contexts/ConfigEditor"
 import { getUnitsConversion } from "@src/renderer/utils"
 
 interface MousePositionProps {
@@ -11,7 +11,7 @@ interface MousePositionProps {
 
 export default function MousePosition(props: MousePositionProps): JSX.Element | null {
   const { renderEngine } = props
-  const { units } = React.useContext(ConfigEditorProvider)
+  const { units } = React.useContext(EditorConfigProvider)
 
   const [x, setX] = React.useState<number>(0)
   const [y, setY] = React.useState<number>(0)

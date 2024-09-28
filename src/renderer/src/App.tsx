@@ -16,7 +16,7 @@ import { useContextMenu } from "mantine-contextmenu"
 import { menuItems } from "./contexts/EngineContext"
 
 export default function App(): JSX.Element | null {
-  const { transparency } = useContext(ConfigEditorProvider)
+  const { transparency } = useContext(EditorConfigProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement("div"))

@@ -25,7 +25,7 @@ import GridSettings from "./GridSettings"
 import EngineSettings from "./EngineSettings"
 import type { PointerSettings } from "@src/renderer"
 import { useContextMenu } from "mantine-contextmenu"
-import { ConfigEditorProvider } from "@src/contexts/ConfigEditor"
+import { EditorConfigProvider } from "@src/contexts/ConfigEditor"
 import { actions } from "@src/contexts/Spotlight"
 import { menuItems } from "@src/contexts/EngineContext"
 
@@ -34,7 +34,7 @@ interface ToolbarProps {
 }
 
 export default function Toolbar({ renderEngine }: ToolbarProps): JSX.Element | null {
-  const { units } = React.useContext(ConfigEditorProvider)
+  const { units } = React.useContext(EditorConfigProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)

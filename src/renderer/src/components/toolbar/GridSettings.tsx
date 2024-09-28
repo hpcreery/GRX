@@ -1,6 +1,6 @@
 import React, { useEffect } from "react"
 import { RenderEngine } from "@src/renderer"
-import { ConfigEditorProvider } from "../../contexts/ConfigEditor"
+import { EditorConfigProvider } from "../../contexts/ConfigEditor"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput } from "@mantine/core"
 import { getUnitsConversion } from "@src/renderer/utils"
@@ -11,7 +11,7 @@ interface GridSettingsProps {
 }
 
 export default function GridSettings({ renderEngine }: GridSettingsProps): JSX.Element | null {
-  const { units } = React.useContext(ConfigEditorProvider)
+  const { units } = React.useContext(EditorConfigProvider)
   const [spacingX, setSpacingX] = React.useState<number>(renderEngine.grid.spacing_x)
   const [spacingY, setSpacingY] = React.useState<number>(renderEngine.grid.spacing_y)
   const [offsetX, setOffsetX] = React.useState<number>(renderEngine.grid.offset_x)
