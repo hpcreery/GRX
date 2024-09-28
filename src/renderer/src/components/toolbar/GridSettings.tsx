@@ -1,6 +1,6 @@
 import React, { useEffect } from "react"
 import { RenderEngine } from "@src/renderer"
-import { ConfigEditorProvider } from "../../contexts/ConfigEditor"
+import { EditorConfigProvider } from "../../contexts/ConfigEditor"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput } from "@mantine/core"
 import { getUnitsConversion } from "@src/renderer/utils"
