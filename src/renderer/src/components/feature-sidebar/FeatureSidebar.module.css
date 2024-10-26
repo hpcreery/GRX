@@ -2,3 +2,7 @@
   table-layout: fixed;
   width: 100%;
 }
+
+.closeAll {
+  transition: all 0.5s;
+}

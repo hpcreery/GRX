@@ -450,7 +450,7 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
    */
   public resize_factor = 1
   /**
-   * rotation in degrees ( clockwise )
+   * rotation in degrees ( counterclockwise )
    */
   public rotation = 0
   /**

@@ -28,6 +28,7 @@ interface ToolbarProps {
 }
 
 function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
+  const [hover, setHover] = useState<boolean>(false)
   return (
     <ThemeIcon
       size="sm"
@@ -36,9 +37,13 @@ function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
       style={{
         position: "absolute",
         right: "0px",
+        cursor: "pointer",
       }}
+      className={classes.closeAll}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
     >
-      {children}
+      {hover ? <IconX /> : children}
     </ThemeIcon>
   )
 }
@@ -114,7 +119,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
 
   useEffect(() => {
     const handler = (e): void => {
-      console.log("feature clicked", (e as CustomEvent<QueryFeature[]>).detail)
+      // console.log("feature clicked", (e as CustomEvent<QueryFeature[]>).detail)
       const featuresTemp = (e as CustomEvent<QueryFeature[]>).detail
       if (featuresTemp.length > 0) {
         setMounted(true)
@@ -247,7 +252,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
               </Code>
             </Text>
             <Text>
-              Rotation (cw): <Code>{feature.rotation}&deg;</Code>
+              Rotation (ccw): <Code>{feature.rotation}&deg;</Code>
             </Text>
             <Text>
               Symbol:{" "}
