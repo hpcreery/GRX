@@ -39,7 +39,7 @@ export default function InfoModal(): JSX.Element | null {
         <Title order={5}>About:</Title>
         <Paper shadow="xs" p="sm" withBorder>
           <Text>
-            GRX is a free and open source software for viewing EDA Manufacturing Artwork files. It currently supports Gerber, NC, GDSII, and DXF file
+            GRX is a GPU-Accelerated, free, and open source software for viewing EDA Manufacturing Artwork files. Currently supporting Gerber, NC, GDSII, and DXF file
             formats.
           </Text>
         </Paper>

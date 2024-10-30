@@ -3,7 +3,7 @@
     <img src="./resources/icon.png" width="120" height="120">
   </a>
   <h1>GRX</h1>
-  <p>Fastest Web Based EDA Manufacturing Artwork Viewer</p>
+  <p>GPU-Accelerated Web Based EDA Manufacturing Artwork Viewer</p>
   <a title="GRX" href="https://grx.creery.org">
     <img src="https://img.shields.io/website?label=grx.creery.org&url=https%3A%2F%2Fgrx.creery.org%2F">
   </a>
@@ -20,6 +20,7 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 
 ## Features
 
+- 🚀 GPU-Accelerated
 - 🏃 Fast and Responsive
 - 👍 Easy to use
 - 🤏 Touchscreen Friendly
@@ -35,7 +36,7 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
   - [x] XNC ( attributes coming soon! )
   - [ ] IPC-NC-349
   - [x] Excellon
-  - [ ] Sieb & Meyer
+  - [x] Sieb & Meyer ( excellon version )
 - [x] GDSII
 - [ ] ODB++
 - [ ] IPC-2581
@@ -47,5 +48,9 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 - [Electron](https://electronjs.org/)
 - [React](https://reactjs.org/)
 - [regl](http://regl.party/)
+- [Web Workers](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API)
+- [WebGL](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API)
 - [Typescript](https://www.typescriptlang.org/)
 - [Tracespace (forked)](https://github.com/hpcreery/tracespace)
+- [Vite](https://vitejs.dev/)
+- [Mantine](https://mantine.dev/)
