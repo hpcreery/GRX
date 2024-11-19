@@ -9,7 +9,7 @@ import messages from "./messages"
 // only unreferenced cells are drawn
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
-  const scale = gdsii.UNITS.metersPerDatabaseUnit / gdsii.UNITS.userUnitsPerDatabaseUnit
+  const scale = (1 / gdsii.UNITS.metersPerDatabaseUnit) * 1000
 
   const plotter = new Plotter(scale)
 
