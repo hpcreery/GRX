@@ -62,6 +62,7 @@ export type CommandCstChildren = {
   visionAutoCalibration?: VisionAutoCalibrationCstNode[]
   cannedSlot?: CannedSlotCstNode[]
   cannedCircle?: CannedCircleCstNode[]
+  repeatHole?: RepeatHoleCstNode[]
 }
 
 export interface UnitsCstNode extends CstNode {
@@ -669,6 +670,17 @@ export type CannedCircleCstChildren = {
   x: XCstNode[]
 }
 
+export interface RepeatHoleCstNode extends CstNode {
+  name: "repeatHole"
+  children: RepeatHoleCstChildren
+}
+
+export type RepeatHoleCstChildren = {
+  R: IToken[]
+  Number: IToken[]
+  coordinate: CoordinateCstNode[]
+}
+
 export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT
   command(children: CommandCstChildren, param?: IN): OUT
@@ -732,4 +744,5 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   visionAutoCalibration(children: VisionAutoCalibrationCstChildren, param?: IN): OUT
   cannedSlot(children: CannedSlotCstChildren, param?: IN): OUT
   cannedCircle(children: CannedCircleCstChildren, param?: IN): OUT
+  repeatHole(children: RepeatHoleCstChildren, param?: IN): OUT
 }

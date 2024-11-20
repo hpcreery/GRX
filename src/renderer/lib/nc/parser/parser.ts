@@ -46,6 +46,8 @@ const DefaultTokens = {
   A: createToken({ name: "A", pattern: /A/ }),
   I: createToken({ name: "I", pattern: /I/ }),
   J: createToken({ name: "J", pattern: /J/ }),
+  // Repeats
+  R: createToken({ name: "R", pattern: /R/ }),
   // M Codes
   M00: createToken({ name: "M00", pattern: /M00/ }),
   M01: createToken({ name: "M01", pattern: /M01/ }),
@@ -190,6 +192,7 @@ class NCParser extends CstParser {
   visionAutoCalibration!: ParserMethod<unknown[], CstNode>
   cannedSlot!: ParserMethod<unknown[], CstNode>
   cannedCircle!: ParserMethod<unknown[], CstNode>
+  repeatHole!: ParserMethod<unknown[], CstNode>
 
   constructor() {
     super(multiModeLexerDefinition, {
@@ -252,6 +255,7 @@ class NCParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.visionAutoCalibration) },
         { ALT: (): CstNode => this.SUBRULE(this.cannedSlot) },
         { ALT: (): CstNode => this.SUBRULE(this.cannedCircle) },
+        { ALT: (): CstNode => this.SUBRULE(this.repeatHole) },
       ])
     })
 
@@ -620,6 +624,12 @@ class NCParser extends CstParser {
     this.RULE("cannedCircle", () => {
       this.CONSUME(DefaultTokens.G84)
       this.SUBRULE(this.x)
+    })
+
+    this.RULE("repeatHole", () => {
+      this.CONSUME(DefaultTokens.R)
+      this.CONSUME(DefaultTokens.Number)
+      this.SUBRULE(this.coordinate)
     })
 
 
@@ -1596,6 +1606,25 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         }),
       }),
     )
+  }
+
+  repeatHole(ctx: Cst.RepeatHoleCstChildren): void {
+    const repeats = Number(ctx.Number[0].image)
+    let { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (x == undefined) x = 0
+    if (y == undefined) y = 0
+    for (let i = 0; i < repeats; i++) {
+      this.state.y += y
+      this.state.x += x
+      this.result.push(
+        new Shapes.Pad({
+          symbol: this.state.currentTool,
+          x: this.state.x,
+          y: this.state.y,
+        }),
+      )
+    }
+
   }
 
   parseCoordinate(coordinate: string): number {
