@@ -575,9 +575,10 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 
   public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
-    this.transform.scale = (this.transform.scale * 1) / getUnitsConversion(this.units)
+    const initScale = this.transform.scale
+    this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
     const features = super.select(pointer, context)
-    this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
+    this.transform.scale = initScale
     return features
   }
 
@@ -590,9 +591,10 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        this.transform.scale = (this.transform.scale * 1) / getUnitsConversion(this.units)
+        const initScale = this.transform.scale
+        this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
         super.render(context)
-        this.transform.scale = this.transform.scale * getUnitsConversion(this.units)
+        this.transform.scale = initScale
       })
     })
   }

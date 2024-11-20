@@ -41,7 +41,7 @@ export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
 
 export interface Transform {
   /**
-   * Translation in x and y
+   * Translation in x and y, in mm units. The base unit is mm.
    */
   datum: vec2
   /**

@@ -45,7 +45,6 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   const [transformOrder, setTransformOrder] = useState<TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
   const { units, renderEngine } = useContext(EditorConfigProvider)
-  const [layerUnits, setLayerUnts] = useState<Units>(units)
   const [layerName, setLayerName] = useState<string>("")
 
   const sensors = useSensors(
@@ -74,7 +73,6 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
         layers.forEach((layer: LayerInfo) => {
           if (layer.uid === props.layersUID) {
             setLayerName(layer.name)
-            setLayerUnts(layer.units)
             setDatumX(layer.transform.datum[0])
             setDatumY(layer.transform.datum[1])
             setRotation(layer.transform.rotation)
@@ -114,6 +112,10 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     })
   })
 
+  const roundToThree = (num: number): number => {
+      return Number(`${Math.round(Number(`${num}e+5`))}e-5`)
+  }
+
   return (
     <Modal opened={props.visible} onClose={props.onClose} title={`Transform: ${layerName}`}>
       <Group justify="center" wrap="nowrap" grow>
@@ -121,17 +123,17 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
           label={`Datum X (${units})`}
           description="Layer X translation"
           placeholder="Input number"
-          value={Number(((datumX * getUnitsConversion(units)) / getUnitsConversion(layerUnits)).toFixed(2))}
-          step={getUnitsConversion(layerUnits)}
-          onChange={(x) => setDatumX(Number(((Number(x) * getUnitsConversion(layerUnits)) / getUnitsConversion(units)).toFixed(2)))}
+          value={roundToThree(datumX * getUnitsConversion(units))}
+          step={1}
+          onChange={(x) => setDatumX(roundToThree(Number(x) / getUnitsConversion(units)))}
         />
         <NumberInput
           label={`Datum Y (${units})`}
           description="Layer Y translation"
           placeholder="Input number"
-          value={Number(((datumY * getUnitsConversion(units)) / getUnitsConversion(layerUnits)).toFixed(2))}
-          step={getUnitsConversion(layerUnits)}
-          onChange={(y) => setDatumY(Number(((Number(y) * getUnitsConversion(layerUnits)) / getUnitsConversion(units)).toFixed(2)))}
+          value={roundToThree(((datumY * getUnitsConversion(units))))}
+          step={1}
+          onChange={(y) => setDatumY(roundToThree(Number(y) / getUnitsConversion(units)))}
         />
       </Group>
       <Space h="md" />
