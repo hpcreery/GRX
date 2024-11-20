@@ -3,7 +3,6 @@
   "include": ["electron.vite.config.*", "src/main/*", "src/preload/*"],
   "compilerOptions": {
     "composite": true,
-    "emitDeclarationOnly": true,
     "outDir": "dist/types",
     "types": ["electron-vite/node"]
   }

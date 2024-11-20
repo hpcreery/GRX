@@ -7,7 +7,6 @@
     "src/preload/*.d.ts"
   ],
   "compilerOptions": {
-    "emitDeclarationOnly": true,
     "outDir": "dist/types",
     "composite": true,
     "jsx": "react-jsx",
