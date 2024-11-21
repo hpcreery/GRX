@@ -252,7 +252,7 @@ export class RenderEngineBackend {
 
   public layers: LayerRenderer[] = []
   public selections: LayerRenderer[] = []
-  public layersQueue: { name: string; uid: string }[] = []
+  public layersQueue: { name: string; id: string }[] = []
 
   public ctx: OffscreenCanvasRenderingContext2D
   public regl: REGL.Regl
@@ -592,7 +592,7 @@ export class RenderEngineBackend {
     const pluginWorker = plugins[params.format].plugin
     if (pluginWorker) {
       const tempUID = UID()
-      this.layersQueue.push({ name: params.props.name || "", uid: tempUID })
+      this.layersQueue.push({ name: params.props.name || "", id: tempUID })
       const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
       const addMessageCallback = async (title: string, message: string): Promise<void> => {
         // await notifications.show({title, message})
@@ -608,7 +608,7 @@ export class RenderEngineBackend {
       } finally {
         parser[Comlink.releaseProxy]()
         instance.terminate()
-        const index = this.layersQueue.findIndex((file) => file.uid === tempUID)
+        const index = this.layersQueue.findIndex((file) => file.id === tempUID)
         if (index != -1) {
           this.layersQueue.splice(index, 1)
         }
@@ -668,6 +668,26 @@ export class RenderEngineBackend {
     this.render({
       force: true,
     })
+  }
+  // export function arrayMove<T>(array: T[], from: number, to: number): T[] {
+  //   const newArray = array.slice();
+  //   newArray.splice(
+  //     to < 0 ? newArray.length + to : to,
+  //     0,
+  //     newArray.splice(from, 1)[0]
+  //   );
+
+  //   return newArray;
+  // }
+
+  public moveLayer(from: number, to: number): void {
+    this.layers.splice(
+      to < 0 ? this.layers.length + to : to,
+      0,
+      this.layers.splice(from, 1)[0]
+    )
+    console.log(this.layers.map((layer) => layer.name))
+
   }
 
   public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {

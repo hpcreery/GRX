@@ -8,11 +8,11 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { IconGripHorizontal } from "@tabler/icons-react"
 import { getUnitsConversion } from "@src/renderer/utils"
-import {restrictToVerticalAxis, restrictToParentElement} from "@dnd-kit/modifiers"
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
 export interface LayerTransformProps {
   layersUID: string
@@ -55,13 +55,15 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     }),
   )
 
-  function handleDragEnd(event): void {
+  function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event
-
+    if (over == null) {
+      return
+    }
     if (active.id !== over.id) {
       setTransformOrder((items) => {
-        const oldIndex = items.indexOf(active.id)
-        const newIndex = items.indexOf(over.id)
+        const oldIndex = items.indexOf(active.id as "scale" | "rotate" | "translate" | "mirror")
+        const newIndex = items.indexOf(over.id as "scale" | "rotate" | "translate" | "mirror")
 
         return arrayMove(items, oldIndex, newIndex)
       })
@@ -114,7 +116,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   })
 
   const roundToThree = (num: number): number => {
-      return Number(`${Math.round(Number(`${num}e+5`))}e-5`)
+    return Number(`${Math.round(Number(`${num}e+5`))}e-5`)
   }
 
   return (
@@ -132,7 +134,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
           label={`Datum Y (${units})`}
           description="Layer Y translation"
           placeholder="Input number"
-          value={roundToThree(((datumY * getUnitsConversion(units))))}
+          value={roundToThree(datumY * getUnitsConversion(units))}
           step={1}
           onChange={(y) => setDatumY(roundToThree(Number(y) / getUnitsConversion(units)))}
         />
@@ -171,10 +173,15 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
       <Space h="md" />
       <Input.Wrapper label="Order of Transormations" description="Drag and drop operations. Performed in order from top to bottom.">
         <Space h="xs" />
-        <Paper shadow="md" radius="lg" p="xs" withBorder>
-          <Stack align="stretch" justify="center" gap="xs">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
-              <SortableContext items={transformOrder} strategy={verticalListSortingStrategy} >
+        <Paper shadow="md" radius="md" withBorder p={4}>
+          <Stack align="stretch" justify="center" gap={4}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            >
+              <SortableContext items={transformOrder} strategy={verticalListSortingStrategy}>
                 {transformOrder.map((id) => (
                   <SortableItem key={id} id={id} />
                 ))}
@@ -207,6 +214,7 @@ export function SortableItem(props: SortableItemProps): JSX.Element {
       variant="default"
       ref={setNodeRef}
       style={style}
+      radius="sm"
       {...attributes}
       {...listeners}
     >

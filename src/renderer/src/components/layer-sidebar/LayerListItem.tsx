@@ -19,12 +19,16 @@ import {
   IconContrastOff,
   IconContrast,
   IconClearAll,
+  IconGripVertical,
 } from "@tabler/icons-react"
 import { useContextMenu } from "mantine-contextmenu"
 import type { LayerInfo } from "@src/renderer/engine"
 import { vec3 } from "gl-matrix"
 import LayerTransform from "./transform/LayerTransform"
-import { EditorConfigProvider } from '@src/contexts/EditorContext'
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
+
+import { CSS } from "@dnd-kit/utilities"
+import { useSortable } from "@dnd-kit/sortable"
 
 interface LayerListItemProps {
   file: UploadFile
@@ -46,7 +50,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const { file, actions } = props
   const layer: Pick<Layer, "name" | "uid"> = {
     name: file.name,
-    uid: file.uid,
+    uid: file.id,
   }
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
@@ -54,6 +58,13 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [loading, setLoading] = useState<boolean>(true)
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false)
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
+
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.file.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
 
   // const featureHistogramModalRef = useRef<FeatureHistogramModalRef>(null)
 
@@ -173,7 +184,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           api.start({ x: mx, y: my, width: -mx })
           lastx = mx
         } else {
-          api.start({ x: lastx < -20 ? -40 : 0, y: 0, width: lastx < -20 ? 40 : 0 })
+          api.start({ x: lastx < -20 ? -50 : 0, y: 0, width: lastx < -20 ? 50 : 0 })
         }
       },
       onWheel: ({ offset: [mx, my] }) => {
@@ -183,12 +194,12 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
     {
       drag: {
         axis: "x",
-        bounds: { left: -40, right: 1, top: 0, bottom: 0 },
+        bounds: { left: -50, right: 1, top: 0, bottom: 0 },
         filterTaps: true,
       },
       wheel: {
         axis: "x",
-        bounds: { left: 0, right: 40, top: 0, bottom: 0 },
+        bounds: { left: 0, right: 50, top: 0, bottom: 0 },
       },
     },
   )
@@ -266,7 +277,9 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           onContextMenu={showContextMenu(items)}
           style={{
             display: "flex",
+            ...style,
           }}
+          ref={setNodeRef}
         >
           <animated.div {...bind()} style={{ width: "100%", overflow: "hidden", touchAction: "none", overscrollBehaviorX: "none" }}>
             <Tooltip label={file.name} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
@@ -277,37 +290,44 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
                   overflow: "hidden",
                   overscrollBehaviorX: "none",
                   padding: 0,
-                  "--button-justify": "flex-start",
-                  paddingLeft: 10,
+                  paddingLeft: 0,
                 }}
-                variant="subtle"
+                variant="default"
                 color={colors.colorScheme === "dark" ? theme.colors.gray[1] : theme.colors.gray[9]}
                 radius="sm"
                 leftSection={
-                  visible ? (
-                    <IconCircleFilled
-                      size={18}
-                      style={{
-                        color: chroma.gl(color[0], color[1], color[2]).hex(),
-                      }}
-                      onClick={(e): void => {
-                        e.stopPropagation()
-                        setShowColorPicker(!showColorPicker)
-                      }}
+                  <>
+                    <IconGripVertical
+                      size={14}
+                      {...attributes}
+                      {...listeners}
                     />
-                  ) : (
-                    <IconCircleDotted
-                      size={18}
-                      style={{
-                        color: chroma.gl(color[0], color[1], color[2]).hex(),
-                      }}
-                      onClick={(e): void => {
-                        e.stopPropagation()
-                        setShowColorPicker(!showColorPicker)
-                      }}
-                    />
-                  )
+                    {visible ? (
+                      <IconCircleFilled
+                        size={18}
+                        style={{
+                          color: chroma.gl(color[0], color[1], color[2]).hex(),
+                        }}
+                        onClick={(e): void => {
+                          e.stopPropagation()
+                          setShowColorPicker(!showColorPicker)
+                        }}
+                      />
+                    ) : (
+                      <IconCircleDotted
+                        size={18}
+                        style={{
+                          color: chroma.gl(color[0], color[1], color[2]).hex(),
+                        }}
+                        onClick={(e): void => {
+                          e.stopPropagation()
+                          setShowColorPicker(!showColorPicker)
+                        }}
+                      />
+                    )}
+                  </>
                 }
+                justify="flex-start"
                 onClick={(): void => {
                   toggleVisible()
                 }}
@@ -320,10 +340,10 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           <animated.div {...bind()} style={{ width }}>
             <Button
               radius="sm"
-              style={{ padding: 0, width: `100%`, overflow: "hidden" }}
+              style={{ padding: 0, width: `calc(100% - 4px)`, overflow: "hidden", marginLeft: 4 }}
               leftSection={<IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />}
               onClick={deleteLayer}
-              variant="subtle"
+              variant="default"
               color="gray"
               styles={{
                 section: {
@@ -371,11 +391,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           ]}
         />
       </Popover.Dropdown>
-      <LayerTransform
-        layersUID={layer.uid}
-        visible={layerTransformVisible}
-        onClose={() => setLayerTransformVisible(false)}
-      />
+      <LayerTransform layersUID={layer.uid} visible={layerTransformVisible} onClose={() => setLayerTransformVisible(false)} />
     </Popover>
   )
 }

@@ -9,16 +9,19 @@ import * as Comlink from "comlink"
 import { pluginList, plugins } from "@src/renderer/plugins"
 import { EngineEvents } from "@src/renderer/engine"
 import { useContextMenu } from "mantine-contextmenu"
-import { EditorConfigProvider } from '@src/contexts/EditorContext'
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
+
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core"
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
 const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
-interface SidebarProps {
-}
+interface SidebarProps {}
 
 export interface UploadFile extends FileWithFormat {
   format: string
-  uid: string
+  id: string
 }
 
 export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
@@ -30,16 +33,16 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
 
-  function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string; uid: string }[]): void {
+  function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string; id: string }[]): void {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: layer.format })
+      const newfile: UploadFile = Object.assign(file, { id: layer.uid, format: layer.format })
       newLayers.push(newfile)
     })
     loadingLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { uid: layer.uid, format: "" })
+      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: "" })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -56,7 +59,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     return defaultFormat
   }
   async function uploadFiles(files: FileWithFormat[]): Promise<void> {
-    setFiles(files.map((file) => Object.assign(file, { format: identifyFileType(file), uid: UID() })))
+    setFiles(files.map((file) => Object.assign(file, { format: identifyFileType(file), id: UID() })))
   }
 
   async function confirmFiles(files: UploadFile[]): Promise<void> {
@@ -68,7 +71,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     layers.forEach(async (layer) => {
       const backend = await renderEngine.backend
       if (!backend) return
-      await backend.removeLayer(layer.uid)
+      await backend.removeLayer(layer.id)
       setLayers([])
       setRenderID(0)
     })
@@ -99,15 +102,15 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     remove: async (file: UploadFile): Promise<void> => {
       const backend = await renderEngine.backend
       if (!backend) return
-      await backend.removeLayer(file.uid)
-      setLayers(layers.filter((l) => l.uid !== file.uid))
+      await backend.removeLayer(file.id)
+      setLayers(layers.filter((l) => l.id !== file.id))
       return
     },
     hideAll: (): void => {
       layers.forEach(async (layer) => {
         const backend = await renderEngine.backend
         if (!backend) return
-        await backend.setLayerProps(layer.uid, { visible: false })
+        await backend.setLayerProps(layer.id, { visible: false })
         setRenderID(renderID + 1)
       })
     },
@@ -115,7 +118,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       layers.forEach(async (layer) => {
         const backend = await renderEngine.backend
         if (!backend) return
-        await backend.setLayerProps(layer.uid, { visible: true })
+        await backend.setLayerProps(layer.id, { visible: true })
         setRenderID(renderID + 1)
       })
     },
@@ -143,6 +146,32 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     },
   ]
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  function handleDragEnd(event: DragEndEvent): void {
+    const { active, over } = event
+    if (over == null) {
+      return
+    }
+    if (active.id !== over.id) {
+      renderEngine.backend.then(async (backend) => {
+        const oldIndex = layers.findIndex((item) => item.id === active.id)
+        const newIndex = layers.findIndex((item) => item.id === over.id)
+        await backend.moveLayer(oldIndex, newIndex)
+      })
+      setLayers((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id)
+        const newIndex = items.findIndex((item) => item.id === over.id)
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
+
   return (
     <div
       style={{
@@ -157,7 +186,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         <Stack>
           {files.map((file) => (
             <Select
-              key={file.uid}
+              key={file.id}
               label={file.name}
               placeholder="Pick value"
               data={pluginList}
@@ -165,7 +194,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
               comboboxProps={{ shadow: "md" }}
               onChange={(value): void => {
                 if (!value) return
-                files.find((f) => f.uid === file.uid)!.format = value
+                files.find((f) => f.id === file.id)!.format = value
               }}
             />
           ))}
@@ -228,7 +257,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         padding={4}
       >
         <ScrollArea className="scroll-area-sidebar" type="scroll" scrollbars="y" h={"100%"} w={"100%"}>
-          <Group grow pb={5}>
+          <Group grow pb={4}>
             <FileButton onChange={uploadFiles} accept="*" multiple>
               {(props): JSX.Element => (
                 <Button variant="default" {...props} radius="sm">
@@ -240,12 +269,21 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           <Stack
             justify="flex-start"
             style={{
-              "--stack-gap": "2px",
+              "--stack-gap": "4px",
             }}
           >
-            {layers.map((layer) => (
-              <LayerListItem key={layer.uid + renderID} file={layer} actions={actions} />
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            >
+              <SortableContext items={layers} strategy={verticalListSortingStrategy}>
+                {layers.map((layer) => (
+                  <LayerListItem key={layer.id + renderID} file={layer} actions={actions} />
+                ))}
+              </SortableContext>
+            </DndContext>
           </Stack>
 
           {/* {layers.length > 0 && (
