@@ -669,16 +669,6 @@ export class RenderEngineBackend {
       force: true,
     })
   }
-  // export function arrayMove<T>(array: T[], from: number, to: number): T[] {
-  //   const newArray = array.slice();
-  //   newArray.splice(
-  //     to < 0 ? newArray.length + to : to,
-  //     0,
-  //     newArray.splice(from, 1)[0]
-  //   );
-
-  //   return newArray;
-  // }
 
   public moveLayer(from: number, to: number): void {
     this.layers.splice(
@@ -686,8 +676,6 @@ export class RenderEngineBackend {
       0,
       this.layers.splice(from, 1)[0]
     )
-    console.log(this.layers.map((layer) => layer.name))
-
   }
 
   public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {

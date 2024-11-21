@@ -15,6 +15,10 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
+import { Resizable } from 're-resizable';
+
+import { useLocalStorage } from "@mantine/hooks"
+
 const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {}
@@ -32,6 +36,10 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState<boolean>(false)
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
+  const [layerSidebarWidth, setLayerSidebarWidth] = useLocalStorage<number>({
+    key: "layerSidebarWidth",
+    defaultValue: 220,
+  })
 
   function registerLayers(rendererLayers: LayerInfo[], loadingLayers: { name: string; id: string }[]): void {
     const newLayers: UploadFile[] = []
@@ -241,14 +249,43 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           </div>
         </Group>
       </Dropzone.FullScreen>
+      <Resizable
+        defaultSize={{
+          width: 220,
+          height: "100%",
+        }}
+        size={{
+          width: layerSidebarWidth,
+          height: "100%",
+        }}
+        onResizeStop={(_e, _direction, _ref, d) => {
+          setLayerSidebarWidth(layerSidebarWidth + d.width)
+        }}
+        minWidth={200}
+        maxWidth={500}
+        enable={{
+          top: false,
+          right: true,
+          bottom: false,
+          left: false,
+          topRight: false,
+          bottomRight: false,
+          bottomLeft: false,
+          topLeft: false,
+        }}
+        style={{
+          pointerEvents: "all",
+        }}
+>
       <Card
         onContextMenu={showContextMenu(contextItems)}
         radius="md"
         withBorder
         style={{
-          width: 220,
+          width: '-webkit-fill-available',
           height: "-webkit-fill-available",
           margin: 10,
+          marginRight: 0,
           pointerEvents: "all",
           overflowY: "auto",
           overflowX: "hidden",
@@ -300,6 +337,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           )} */}
         </ScrollArea>
       </Card>
+      </Resizable>
     </div>
   )
 }

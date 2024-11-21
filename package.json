@@ -67,6 +67,7 @@
     "ndarray": "^1.0.19",
     "nearley": "^2.20.1",
     "on-change": "^5.0.1",
+    "re-resizable": "^6.10.1",
     "react-color": "^2.19.3",
     "regl": "^2.1.0",
     "regl-stats-widget": "^0.0.1",
