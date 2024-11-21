@@ -12,6 +12,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { IconGripHorizontal } from "@tabler/icons-react"
 import { getUnitsConversion } from "@src/renderer/utils"
+import {restrictToVerticalAxis, restrictToParentElement} from "@dnd-kit/modifiers"
 
 export interface LayerTransformProps {
   layersUID: string
@@ -172,8 +173,8 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
         <Space h="xs" />
         <Paper shadow="md" radius="lg" p="xs" withBorder>
           <Stack align="stretch" justify="center" gap="xs">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={transformOrder} strategy={verticalListSortingStrategy}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
+              <SortableContext items={transformOrder} strategy={verticalListSortingStrategy} >
                 {transformOrder.map((id) => (
                   <SortableItem key={id} id={id} />
                 ))}
