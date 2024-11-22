@@ -627,6 +627,7 @@ class NCParser extends CstParser {
     })
 
     this.RULE("repeatHole", () => {
+      this.CONSUME(DefaultTokens.NewLine) // newline character is necessary, with fault tolerance the R can be read at the wrong time
       this.CONSUME(DefaultTokens.R)
       this.CONSUME(DefaultTokens.Number)
       this.SUBRULE(this.coordinate)
