@@ -365,6 +365,15 @@ export class RenderEngine {
     image.src = URL.createObjectURL(new Blob([font]))
   }
 
+  public downloadImage(): void {
+    const canvasUrl = this.canvasGL.toDataURL("image/jpeg", 1);
+    const createEl = document.createElement('a');
+    createEl.href = canvasUrl;
+    createEl.download = "grx-screenshot.jpeg";
+    createEl.click();
+    createEl.remove();
+  }
+
   public async destroy(): Promise<void> {
     const backend = await this.backend
     backend.destroy()

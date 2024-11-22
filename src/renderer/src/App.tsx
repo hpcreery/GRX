@@ -17,6 +17,7 @@ import { useContextMenu } from "mantine-contextmenu"
 import { menuItems } from "./contexts/EditorContext"
 import { useLocalStorage } from "@mantine/hooks"
 import { Units } from "./renderer/types"
+import { IconPhotoDown } from "@tabler/icons-react"
 
 export default function App(): JSX.Element | null {
   const { transparency } = useContext(ThemeConfigProvider)
@@ -41,6 +42,12 @@ export default function App(): JSX.Element | null {
           EngineEvents.MESSAGE,
           Comlink.proxy((e) => msg(e as MessageData)),
         )
+      })
+      menuItems.push({
+        key: "download-canvas",
+        icon: <IconPhotoDown stroke={1.5} size={18} />,
+        title: "Download Screensot",
+        onClick: () => Engine.downloadImage(),
       })
     })
     return (): void => {
