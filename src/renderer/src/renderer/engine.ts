@@ -116,7 +116,7 @@ interface OriginRenderUniforms {
 
 export interface LayerInfo {
   name: string
-  uid: string
+  id: string
   color: vec3
   context: string
   type: string
@@ -625,7 +625,7 @@ export class RenderEngineBackend {
     return this.layers.map((layer) => {
       return {
         name: layer.name,
-        uid: layer.uid,
+        id: layer.id,
         color: layer.color,
         context: layer.context,
         type: layer.type,
@@ -661,8 +661,8 @@ export class RenderEngineBackend {
     this.updateTransform()
   }
 
-  public removeLayer(uid: string): void {
-    const index = this.layers.findIndex((layer) => layer.uid === uid)
+  public removeLayer(id: string): void {
+    const index = this.layers.findIndex((layer) => layer.id === id)
     if (index === -1) return
     this.layers.splice(index, 1)
     this.render({
@@ -678,8 +678,8 @@ export class RenderEngineBackend {
     )
   }
 
-  public setLayerProps(uid: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
-    const layer = this.layers.find((layer) => layer.uid === uid)
+  public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+    const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer, props)
     this.render({
@@ -687,8 +687,8 @@ export class RenderEngineBackend {
     })
   }
 
-  public setLayerTransform(uid: string, transform: Partial<Transform>): void {
-    const layer = this.layers.find((layer) => layer.uid === uid)
+  public setLayerTransform(id: string, transform: Partial<Transform>): void {
+    const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer.transform, transform)
     this.render({
@@ -731,7 +731,7 @@ export class RenderEngineBackend {
         if (!layer.visible) continue
         const selectedFeatures = layer.select(pointer, context)
         for (const feature of selectedFeatures) {
-          features.push(Object.assign(feature, { layer: layer.uid, units: layer.units }))
+          features.push(Object.assign(feature, { layer: layer.id, units: layer.units }))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -740,7 +740,7 @@ export class RenderEngineBackend {
           alpha: 0.7,
           units: layer.units,
           name: layer.name,
-          uid: layer.uid,
+          id: layer.id,
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
           image: JSON.parse(JSON.stringify(selectedFeatures)),
           transform: layer.transform,

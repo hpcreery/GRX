@@ -15,7 +15,7 @@ import { getUnitsConversion } from "@src/renderer/utils"
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
 export interface LayerTransformProps {
-  layersUID: string
+  layerID: string
   visible: boolean
   onClose: () => void
 }
@@ -74,7 +74,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     renderEngine.backend.then((backend) => {
       backend.getLayers().then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
-          if (layer.uid === props.layersUID) {
+          if (layer.id === props.layerID) {
             setLayerName(layer.name)
             setDatumX(layer.transform.datum[0])
             setDatumY(layer.transform.datum[1])
@@ -100,8 +100,8 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     renderEngine.backend.then((backend) => {
       backend.getLayers().then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
-          if (layer.uid === props.layersUID) {
-            backend.setLayerTransform(layer.uid, {
+          if (layer.id === props.layerID) {
+            backend.setLayerTransform(layer.id, {
               datum: vec2.fromValues(datumX, datumY),
               rotation: rotation,
               scale: scale,

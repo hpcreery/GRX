@@ -45,7 +45,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { id: layer.uid, format: layer.format })
+      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: layer.format })
       newLayers.push(newfile)
     })
     loadingLayers.forEach(async (layer) => {
@@ -313,7 +313,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
               sensors={sensors}
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              modifiers={[restrictToVerticalAxis]}
             >
               <SortableContext items={layers} strategy={verticalListSortingStrategy}>
                 {layers.map((layer) => (

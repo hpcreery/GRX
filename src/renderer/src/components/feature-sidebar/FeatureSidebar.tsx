@@ -140,7 +140,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
   }, [])
 
   const getInfo = (feature: QueryFeature): JSX.Element => {
-    const layer = layers.find((x) => x.uid === feature.layer)
+    const layer = layers.find((x) => x.id === feature.layer)
     let layerColor = "black"
     let layerName = "Unknown"
     if (layer) {

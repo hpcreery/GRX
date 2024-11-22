@@ -1498,7 +1498,7 @@ function REGLApp(): JSX.Element {
 
     //   for (const layer of layers) {
     //     console.log(layer)
-    //     // backend.setLayerProps(layer.uid, { visible: false })
+    //     // backend.setLayerProps(layer.id, { visible: false })
     //     layer.
     //   }
     // }))
@@ -1506,7 +1506,7 @@ function REGLApp(): JSX.Element {
     // find all shapes in engine and loop through the shapes
     // Engine.backend.then(backend => backend.layers.then(layers => {
     //   for (const layer of layers) {
-    //     // backend.setLayerProps(layer.uid, { visible: false })
+    //     // backend.setLayerProps(layer.id, { visible: false })
     //     console.log(layer)
     //   }
     // }))
@@ -1560,7 +1560,7 @@ function REGLApp(): JSX.Element {
               const backend = await engine.backend
               backend.getLayers().then((layers) => {
                 setLayers(layers)
-                layers.map((l) => backend.setLayerProps(l.uid, { color: [Math.random(), Math.random(), Math.random()] }))
+                layers.map((l) => backend.setLayerProps(l.id, { color: [Math.random(), Math.random(), Math.random()] }))
               })
             }}
           >
@@ -1618,7 +1618,7 @@ function REGLApp(): JSX.Element {
                   defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const backend = await engine.backend
-                    backend.setLayerProps(layer.uid || layer.name, { visible: e.target.checked })
+                    backend.setLayerProps(layer.id || layer.name, { visible: e.target.checked })
                   }}
                 />
               </div>

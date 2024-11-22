@@ -479,7 +479,7 @@ export class ShapeRenderer {
 
 export interface LayerProps {
   name: string
-  uid?: string
+  id?: string
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
@@ -503,7 +503,7 @@ interface LayerAttributes {}
 
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
-  public uid: string = UID()
+  public id: string = UID()
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
@@ -540,8 +540,8 @@ export default class LayerRenderer extends ShapeRenderer {
     if (props.visible !== undefined) {
       this.visible = props.visible
     }
-    if (props.uid !== undefined) {
-      this.uid = props.uid
+    if (props.id !== undefined) {
+      this.id = props.id
     }
     if (props.format !== undefined) {
       this.format = props.format
