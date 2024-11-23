@@ -87,20 +87,18 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
 
   return (
     <Popover position="right" withArrow trapFocus shadow="md" opened={colorPickerVisible} onChange={setColorPickerVisible}>
-      <Popover.Target>
-        <DraggableLayer
-          actions={actions}
-          setLayerTransformVisible={setLayerTransformVisible}
-          showContextMenu={showContextMenu}
-          file={file}
-          bind={bind}
-          setColor={setColor}
-          color={color}
-          setColorPickerVisible={setColorPickerVisible}
-          colorPickerVisible={colorPickerVisible}
-          width={width}
-        />
-      </Popover.Target>
+      <DraggableLayer
+        actions={actions}
+        setLayerTransformVisible={setLayerTransformVisible}
+        showContextMenu={showContextMenu}
+        file={file}
+        bind={bind}
+        setColor={setColor}
+        color={color}
+        setColorPickerVisible={setColorPickerVisible}
+        colorPickerVisible={colorPickerVisible}
+        width={width}
+      />
       <Popover.Dropdown
         style={{
           padding: "0.5rem",
@@ -160,7 +158,18 @@ interface DraggableLayerProps {
 }
 
 function DraggableLayer(props: DraggableLayerProps): JSX.Element {
-  const { showContextMenu, file, bind, setColorPickerVisible: setShowColorPicker, color, setColor, colorPickerVisible: showColorPicker, width, setLayerTransformVisible, actions } = props
+  const {
+    showContextMenu,
+    file,
+    bind,
+    setColorPickerVisible: setShowColorPicker,
+    color,
+    setColor,
+    colorPickerVisible: showColorPicker,
+    width,
+    setLayerTransformVisible,
+    actions,
+  } = props
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.file.id })
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
@@ -346,54 +355,56 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     >
       <animated.div {...bind()} style={{ width: "100%", overflow: "hidden", touchAction: "none", overscrollBehaviorX: "none" }}>
         <Tooltip label={file.name} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
-          <Button
-            style={{
-              textAlign: "left",
-              width: "100%",
-              overflow: "hidden",
-              overscrollBehaviorX: "none",
-              padding: 0,
-              paddingLeft: 0,
-            }}
-            variant="default"
-            color={colors.colorScheme === "dark" ? theme.colors.gray[1] : theme.colors.gray[9]}
-            radius="sm"
-            leftSection={
-              <>
-                <IconGripVertical size={14} {...attributes} {...listeners} />
-                {visible ? (
-                  <IconCircleFilled
-                    size={18}
-                    style={{
-                      color: chroma.gl(color[0], color[1], color[2]).hex(),
-                    }}
-                    onClick={(e): void => {
-                      e.stopPropagation()
-                      setShowColorPicker(!showColorPicker)
-                    }}
-                  />
-                ) : (
-                  <IconCircleDotted
-                    size={18}
-                    style={{
-                      color: chroma.gl(color[0], color[1], color[2]).hex(),
-                    }}
-                    onClick={(e): void => {
-                      e.stopPropagation()
-                      setShowColorPicker(!showColorPicker)
-                    }}
-                  />
-                )}
-              </>
-            }
-            justify="flex-start"
-            onClick={(): void => {
-              toggleVisible()
-            }}
-            loading={loading}
-          >
-            {file.name}
-          </Button>
+          <Popover.Target>
+            <Button
+              style={{
+                textAlign: "left",
+                width: "100%",
+                overflow: "hidden",
+                overscrollBehaviorX: "none",
+                padding: 0,
+                paddingLeft: 0,
+              }}
+              variant="default"
+              color={colors.colorScheme === "dark" ? theme.colors.gray[1] : theme.colors.gray[9]}
+              radius="sm"
+              leftSection={
+                <>
+                  <IconGripVertical size={14} {...attributes} {...listeners} />
+                  {visible ? (
+                    <IconCircleFilled
+                      size={18}
+                      style={{
+                        color: chroma.gl(color[0], color[1], color[2]).hex(),
+                      }}
+                      onClick={(e): void => {
+                        e.stopPropagation()
+                        setShowColorPicker(!showColorPicker)
+                      }}
+                    />
+                  ) : (
+                    <IconCircleDotted
+                      size={18}
+                      style={{
+                        color: chroma.gl(color[0], color[1], color[2]).hex(),
+                      }}
+                      onClick={(e): void => {
+                        e.stopPropagation()
+                        setShowColorPicker(!showColorPicker)
+                      }}
+                    />
+                  )}
+                </>
+              }
+              justify="flex-start"
+              onClick={(): void => {
+                toggleVisible()
+              }}
+              loading={loading}
+            >
+              {file.name}
+            </Button>
+          </Popover.Target>
         </Tooltip>
       </animated.div>
       <animated.div {...bind()} style={{ width }}>
