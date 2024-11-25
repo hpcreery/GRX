@@ -59,7 +59,6 @@ export class RenderEngine {
             force: true,
           })
         })
-        if (name == "COLOR_BLEND") this.updateBlendCommand()
         target[name] = value
         return true
       },
@@ -336,11 +335,6 @@ export class RenderEngine {
   public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
     backend.addFile(params)
-  }
-
-  public async updateBlendCommand(): Promise<void> {
-    const backend = await this.backend
-    backend.updateBlendCommand()
   }
 
   public async render(props: RenderProps): Promise<void> {

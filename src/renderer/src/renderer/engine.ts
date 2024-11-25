@@ -260,6 +260,8 @@ export class RenderEngineBackend {
 
   private renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   private blend: REGL.DrawCommand
+  private overlayBlendFunc: REGL.DrawCommand
+  private contrastBlendFunc: REGL.DrawCommand
   private overlay: REGL.DrawCommand
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridRenderProps>
   private renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
@@ -279,12 +281,10 @@ export class RenderEngineBackend {
       height,
     }
 
-    // const ctx = offscreenCanvas.getContext('2d')
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
     this.ctx = offscreenCanvas2D.getContext("2d")!
     console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
-    // console.log(gl)
 
     this.regl = REGL({
       gl,
@@ -372,17 +372,12 @@ export class RenderEngineBackend {
       blend: {
         enable: true,
 
-        func: {
-          srcRGB:
-            this.settings.COLOR_BLEND === ColorBlend.OVERLAY
-              ? "src color"
-              : this.settings.COLOR_BLEND === ColorBlend.CONTRAST
-                ? "one minus dst color"
-                : "one minus dst color",
-          srcAlpha: "one",
-          dstRGB: "one minus src color",
-          dstAlpha: "one",
-        },
+        // func: {
+        //   srcRGB:"one minus dst color",
+        //   srcAlpha: "one",
+        //   dstRGB: "one minus src color",
+        //   dstAlpha: "one",
+        // },
 
         equation: {
           rgb: "add",
@@ -390,6 +385,28 @@ export class RenderEngineBackend {
         },
         color: [0, 0, 0, 0.1],
       },
+    })
+
+    this.overlayBlendFunc = this.regl({
+      blend: {
+        func: {
+          srcRGB: "src color",
+          srcAlpha: "one",
+          dstRGB: "one minus src color",
+          dstAlpha: "one",
+        }
+      }
+    })
+
+    this.contrastBlendFunc = this.regl({
+      blend: {
+        func: {
+          srcRGB: "one minus dst color",
+          srcAlpha: "one",
+          dstRGB: "one minus src color",
+          dstAlpha: "one",
+        }
+      }
     })
 
     this.overlay = this.regl({
@@ -421,32 +438,6 @@ export class RenderEngineBackend {
 
   public initializeGlyphRenderer(glyphData: Uint8ClampedArray): void {
     initializeGlyphRenderer(this.regl, glyphData)
-  }
-
-  public updateBlendCommand(): void {
-    this.blend = this.regl({
-      blend: {
-        enable: true,
-
-        func: {
-          srcRGB:
-            this.settings.COLOR_BLEND === ColorBlend.OVERLAY
-              ? "src color"
-              : this.settings.COLOR_BLEND === ColorBlend.CONTRAST
-                ? "one minus dst color"
-                : "one minus dst color",
-          srcAlpha: "one",
-          dstRGB: "one minus src color",
-          dstAlpha: "one",
-        },
-
-        equation: {
-          rgb: "add",
-          alpha: "add",
-        },
-        color: [0, 0, 0, 0.1],
-      },
-    })
   }
 
   public resize(width: number, height: number): void {
@@ -878,7 +869,13 @@ export class RenderEngineBackend {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         updateLayers && layer.render(context)
-        this.blend(() => this.renderToScreen({ renderTexture: layer.framebuffer }))
+        this.blend(() => {
+          if (this.settings.COLOR_BLEND == ColorBlend.OVERLAY) {
+            this.overlayBlendFunc(() => this.renderToScreen({ renderTexture: layer.framebuffer }))
+          } else {
+            this.contrastBlendFunc(() => this.renderToScreen({ renderTexture: layer.framebuffer }))
+          }
+        })
       }
       for (const selection of this.selections) {
         selection.render(context)
