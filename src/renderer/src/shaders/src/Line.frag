@@ -95,12 +95,11 @@ float drawShape(vec2 FragCoord, int SymNum) {
   float t_Height = pullSymbolParameter(u_Parameters.height, SymNum);
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
 
-  float dist = 100000.0;
+  float dist = 100000.0; // some far away number
 
   if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
   } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
-    // dist = -100000.0;
     dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
   }
   return dist;

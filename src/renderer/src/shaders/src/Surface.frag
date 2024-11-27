@@ -74,7 +74,7 @@ float draw(float dist, float pixel_size) {
   return dist;
 }
 
-vec2 transfromLocation(vec2 pixel_coord) {
+vec2 transformLocation(vec2 pixel_coord) {
   vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 transformed_position = u_InverseTransform * vec3(normal_frag_coord, 1.0);
   return transformed_position.xy;
@@ -141,11 +141,11 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
-  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
+  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   float dist = surfaceDistMain(FragCoord);
 
   if (u_QueryMode) {
-    vec2 PointerPosition = transfromLocation(u_PointerPosition);
+    vec2 PointerPosition = transformLocation(u_PointerPosition);
     // float PointerDist = surfaceDistMain(PointerPosition);
 
     vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
