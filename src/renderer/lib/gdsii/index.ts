@@ -31,7 +31,7 @@ export async function plugin(
     delete props.name
     addLayer({
       name: layer,
-      units: "mm", // TODO: use 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000),
+      units: 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000),
       image: shapes.shapes,
       ...props,
     })

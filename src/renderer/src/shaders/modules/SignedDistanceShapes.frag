@@ -743,7 +743,8 @@ float drawShape(vec2 FragCoord, int SymNum) {
       dist = max(dist, hole);
     }
   } else {
-    dist = 1.0;
+    // u_Shapes.Null
+    dist = 10000000.0; // some far away number
   }
   return dist;
 }
