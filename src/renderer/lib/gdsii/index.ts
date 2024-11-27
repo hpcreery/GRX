@@ -6,9 +6,9 @@
 // import gdsiiFile from './testdata/GdsIITests_test.gds?url' // broken boundaries, paths with different ends
 // import gdsiiFile from './testdata/GdsIITests_circles.gds?url'
 
-import * as LEXER from "./lexer"
-import * as PARSER from "./parser"
-import * as CONVERTER from "./converter"
+import { record_reader } from "./lexer"
+import { parse } from "./parser"
+import { convert } from "./converter"
 
 import messages from "./messages"
 
@@ -23,15 +23,15 @@ export async function plugin(
 ): Promise<void> {
   messages.setSender(addMessage, "GDSII")
   messages.clear()
-  const tokens = LEXER.record_reader(buffer)
-  const bnf = PARSER.parse(tokens)
-  const layerHierarchy = CONVERTER.convert(bnf)
+  const tokens = record_reader(buffer)
+  const bnf = parse(tokens)
+  const layerHierarchy = convert(bnf)
 
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
     delete props.name
     addLayer({
       name: layer,
-      units: "mm",
+      units: "mm", // TODO: use 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000),
       image: shapes.shapes,
       ...props,
     })

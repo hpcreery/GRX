@@ -2,6 +2,7 @@ import { vec2 } from "gl-matrix"
 import * as TREE from "./gdsii_tree"
 import * as Shapes from "../../src/renderer/shapes"
 import { GDSIIHierarchy } from "./types"
+import messages from "./messages"
 
 export class Plotter {
   scale: number
@@ -58,7 +59,6 @@ export class Plotter {
   }
 
   public addPolyLine(el: TREE.path): Shapes.PolyLine {
-    // const el = element.el as TREE.path
     const width = (el.WIDTH ? el.WIDTH.width : 0.001) * this.scale
 
     const lines: { x: number; y: number }[] = []
@@ -93,7 +93,7 @@ export class Plotter {
     this.referencedCells.add(srefName)
     // check if gdsiiHierarchy[srefName] exists
     if (!this.gdsiiHierarchy[srefName]) {
-      console.warn(`SREF ${srefName} not found in hierarchy.`)
+      messages.warn(`SREF ${srefName} not found in hierarchy.`)
       return
     }
     for (const [_idx, cell] of this.gdsiiHierarchy[srefName].entries()) {
@@ -116,13 +116,11 @@ export class Plotter {
   }
 
   public addArrayReference(el: TREE.aref): void {
-    // const el = element.el as TREE.aref
     const arefName = el.SNAME.name
     this.referencedCells.add(arefName)
     // check if gdsiiHierarchy[srefName] exists
     if (!this.gdsiiHierarchy[arefName]) {
-      console.warn(`AREF ${arefName} not found in hierarchy.`)
-      // continue
+      messages.warn(`AREF ${arefName} not found in hierarchy.`)
       return
     }
     const origin = vec2.fromValues(el.XY[0].x * this.scale, el.XY[0].y * this.scale)

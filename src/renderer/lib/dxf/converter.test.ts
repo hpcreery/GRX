@@ -38,7 +38,6 @@ const basicEntities: BasicEntityTestList = {
     shapeType: FeatureTypeIdentifier.POLYLINE,
     testShape: (shape: AnyShape): void => {
       shape = shape as Shapes.PolyLine
-      // console.log(shape)
       expect(shape.lines.length).to.equal(3)
       expect(shape.xs).to.equal(0)
       expect(shape.ys).to.equal(0)
@@ -56,7 +55,6 @@ const basicEntities: BasicEntityTestList = {
     shapeType: FeatureTypeIdentifier.ARC,
     testShape: (shape: AnyShape): void => {
       shape = shape as Shapes.Arc
-      // console.log(shape)
       expect(shape.xc).to.equal(0)
       expect(shape.yc).to.equal(0)
       expect(shape.xs).to.equal(1)
@@ -71,7 +69,6 @@ const basicEntities: BasicEntityTestList = {
     shapeType: FeatureTypeIdentifier.ARC,
     testShape: (shape: AnyShape): void => {
       shape = shape as Shapes.Arc
-      // console.log(shape)
       expect(shape.xc).to.equal(0)
       expect(shape.yc).to.equal(0)
       expect(shape.xs).to.equal(1)
@@ -142,15 +139,12 @@ function basicEntityTest(entity: BasicEntityTest, name: string): void {
       expect(units).to.equal("inch")
     })
     it("should have correct layer", () => {
-      // console.log(layerHierarchy)
       expect(Object.keys(layerHierarchy)).to.include(entity.layer)
     })
     it("should have correct shape", () => {
       // expect(layerHierarchy[entity.layer].shapes.length).to.equal(1)
-      console.log(layerHierarchy[entity.layer].shapes[0].type, entity.shapeType)
       expect(layerHierarchy[entity.layer].shapes[0].type).to.equal(entity.shapeType)
       const shape = layerHierarchy[entity.layer].shapes[0]
-      // console.log(shape)
       entity.testShape(shape)
     })
   })
@@ -165,12 +159,10 @@ function insertTest(): void {
     }
     const layerHierarchy = converter.convert(dxf)
     it("should have correct layer", () => {
-      // console.log(layerHierarchy)
       expect(Object.keys(layerHierarchy)).to.include("MyLayer")
     })
     it("should have correct shape", () => {
       expect(layerHierarchy["MyLayer"].shapes.length).to.equal(3)
-      console.log(layerHierarchy["MyLayer"].shapes)
       const insert0 = layerHierarchy["MyLayer"].shapes[0] as Shapes.StepAndRepeat
       const insert1 = layerHierarchy["MyLayer"].shapes[1] as Shapes.StepAndRepeat
       const insert2 = layerHierarchy["MyLayer"].shapes[2] as Shapes.StepAndRepeat
