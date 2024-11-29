@@ -426,11 +426,17 @@ export class PolygonSymbol extends StandardSymbol {
 }
 
 export type TMacroSymbol = {
+  /**
+   * symbol id. typically the symbol name and unique identifier
+   */
   id: string
   /**
    * flatten symbol. if true, the symbol polarities will be flattened, ie negatives will become truly transparent
    */
   flatten: boolean
+  /**
+   * shapes that make up the symbol
+   */
   shapes: Shape[]
 }
 
