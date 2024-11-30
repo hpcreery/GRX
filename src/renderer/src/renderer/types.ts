@@ -37,35 +37,6 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
 }
 
-export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
-
-export interface Transform {
-  /**
-   * Translation in x and y, in mm units. The base unit is mm.
-   */
-  datum: vec2
-  /**
-   * Rotation in degrees (counterclockwise)
-   */
-  rotation: number
-  /**
-   * Scale factor, 1 = 100% (no scaling)
-   */
-  scale: number
-  /**
-   * Mirror x cooriinate values => x = -x
-   */
-  mirror_x: Binary
-  /**
-   * Mirror y cooriinate values => y = -y
-   */
-  mirror_y: Binary
-  /**
-   * Order of transformations
-   */
-  order?: TransformOrder
-}
-
 export type Binary = 0 | 1
 
 export type IntersectingTypes<T, U> = { [K in Extract<keyof T, keyof U>]: T[K] }

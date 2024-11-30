@@ -3,7 +3,7 @@ import * as Shapes from "./shapes"
 import * as Symbols from "./symbols"
 import { glFloatSize } from "./constants"
 import { FeatureTypeIdentifier, Binary } from "./types"
-import { MacroRenderer, StepAndRepeatRenderer } from "./layer"
+import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 
 import PadFrag from "../shaders/src/Pad.frag"
 import PadVert from "../shaders/src/Pad.vert"

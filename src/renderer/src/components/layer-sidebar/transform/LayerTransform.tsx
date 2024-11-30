@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
-import { Binary, TransformOrder } from "@src/renderer/types"
+import { Binary } from "@src/renderer/types"
+import { TransformOrder } from "@src/renderer/transform"
 import type { LayerInfo } from "@src/renderer/engine"
 import { vec2 } from "gl-matrix"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"

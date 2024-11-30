@@ -1,4 +1,5 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Transform, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "./types"
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "./types"
+import { Transform } from './transform'
 import * as Symbols from "./symbols"
 import { vec2 } from "gl-matrix"
 
@@ -473,11 +474,23 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
 
 export class DatumText {
   public readonly type = FeatureTypeIdentifier.DATUM_TEXT
-  public x = 0
-  public y = 0
-  public text = ""
   public attributes: AttributeCollection = {}
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   */
   public index = 0
+  /**
+   * x coordinate
+   */
+  public x = 0
+  /**
+   * y coordinate
+   */
+  public y = 0
+  /**
+   * text to display
+   */
+  public text = ""
 
   constructor(props: Partial<Omit<DatumText, "type">>) {
     Object.assign(this, props)

@@ -2,7 +2,8 @@ import gdsiiPluginWorker from "@lib/gdsii?worker"
 import gerberPluginWorker from "@lib/gerber?worker"
 import dxfPluginWorker from "@lib/dxf?worker"
 import ncPluginWorker from "@lib/nc?worker"
-import { LayerProps, ShapeProps } from "./layer"
+import { LayerProps } from "./layer"
+import { ShapeProps } from "./shape-renderer"
 import * as Comlink from "comlink"
 
 export interface AddLayerProps extends ShapeProps, LayerProps {}
