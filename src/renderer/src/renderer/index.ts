@@ -6,6 +6,9 @@ import { AddLayerProps } from "./plugins"
 import font from "./text/glyph/font.png?arraybuffer"
 import { fontInfo } from "./text/glyph/font"
 
+import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
+import { fontInfo as cozetteFontInfo } from './text/cozette/font'
+
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
@@ -122,7 +125,7 @@ export class RenderEngine {
       width: this.canvasGL.width,
       height: this.canvasGL.height,
     })
-    this.sendGlyphData()
+    this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.addControls()
     this.render({
@@ -342,6 +345,13 @@ export class RenderEngine {
     backend.render(props)
   }
 
+  /**
+   * Send the glyph data to the engine
+   * This has now been deprecated in favor of using the font renderer
+   * Will be removed in the future
+   * @deprecated
+   */
+  // @ts-ignore - unused
   private sendGlyphData(): void {
     const canvas = document.createElement("canvas")
     const context = canvas.getContext("2d")
@@ -357,6 +367,42 @@ export class RenderEngine {
       })
     }
     image.src = URL.createObjectURL(new Blob([font]))
+  }
+
+  private sendFontData(): void {
+    const f = new FontFace("cozette", `url(${cozetteFont})`)
+    f.load().then((font) => {
+      document.fonts.add(font)
+      const canvas = document.createElement("canvas")
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("Could not get 2d context")
+      canvas.width = cozetteFontInfo.textureWidth
+      canvas.height = cozetteFontInfo.textureHeight
+      context.font = "13px cozette"
+      context.fillStyle = "white"
+      context.textBaseline = "top"
+      context.lineWidth = 2
+      context.strokeStyle = "black"
+      const characters = Object.keys(cozetteFontInfo.glyphInfos)
+      for (let i = 0; i < characters.length; i++) {
+        const char = characters[i]
+        context.strokeText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
+        context.fillText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
+      }
+
+      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight)
+      this.backend.then((engine) => {
+        engine.initializeFontRenderer(imageData.data)
+      })
+
+      // download font image sample
+      // const canvasUrl = canvas.toDataURL("image/png", 1);
+      // const createEl = document.createElement('a');
+      // createEl.href = canvasUrl;
+      // createEl.download = "font.png";
+      // createEl.click();
+      // createEl.remove();
+    })
   }
 
   public downloadImage(): void {

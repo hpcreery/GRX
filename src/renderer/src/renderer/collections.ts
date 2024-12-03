@@ -24,6 +24,8 @@ import { vec2 } from "gl-matrix"
 import earcut from "earcut"
 import { fontInfo } from "./text/glyph/font"
 
+import { fontInfo as cozetteFontInfo } from './text/cozette/font'
+
 const {
   LINE_RECORD_PARAMETERS,
   PAD_RECORD_PARAMETERS,
@@ -213,6 +215,12 @@ export const ReglRenderers: TReglRenderers = {
   renderToScreen: undefined,
 }
 
+/**
+ * This glyph renderer is deprecated and will be removed in the future.
+ * @param regl
+ * @param glyphData
+ * @deprecated Use initializeFontRenderer instead
+ */
 export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8ClampedArray): void {
   const texture = regl.texture({
     data: glyphData,
@@ -267,6 +275,69 @@ export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8Clamped
       u_texture: texture,
       u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
       u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
+    },
+
+    instances: regl.prop<SurfaceAttachments, "length">("length"),
+    count: 6,
+    primitive: "triangles",
+  })
+}
+
+
+export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
+  const texture = regl.texture({
+    data,
+    width: cozetteFontInfo.textureWidth,
+    height: cozetteFontInfo.textureHeight,
+    format: "rgba",
+    type: "uint8",
+    mag: "nearest",
+    min: "nearest",
+  })
+
+  ReglRenderers.drawDatumText = regl<
+    DatumTextUniforms,
+    DatumTextAttributes,
+    DatumTextAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & WorldContext
+  >({
+    frag: GlyphtextFrag,
+    vert: GlyphtextVert,
+
+    attributes: {
+      a_position: {
+        buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
+        offset: 0,
+        stride: 2 * glFloatSize,
+        divisor: 1,
+      },
+      a_texcoord: {
+        buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
+        offset: 0,
+        stride: 2 * glFloatSize,
+        divisor: 1,
+      },
+      a_StringIndex: {
+        buffer: regl.prop<DatumTextAttachments, "stringIndexes">("stringIndexes"),
+        offset: 0,
+        stride: 1 * glFloatSize,
+        divisor: 1,
+      },
+      a_Vertex_Position: [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ],
+    },
+
+    uniforms: {
+      u_texture: texture,
+      u_TextureDimensions: [cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight],
+      u_LetterDimensions: [cozetteFontInfo.fontWidth, cozetteFontInfo.fontHeight],
     },
 
     instances: regl.prop<SurfaceAttachments, "length">("length"),
@@ -1068,12 +1139,12 @@ export class DatumTextShaderCollection {
     const stringIndexes: number[] = []
     image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
-      const string = record.text.toLowerCase()
+      const string = record.text
       const x = record.x
       const y = record.y
       for (let i = 0; i < string.length; ++i) {
         const letter = string[i]
-        const glyphInfo = fontInfo.glyphInfos[letter]
+        const glyphInfo = cozetteFontInfo.glyphInfos[letter]
         if (glyphInfo !== undefined) {
           positions.push(x, y)
           texcoords.push(glyphInfo.x, glyphInfo.y)
@@ -1081,6 +1152,7 @@ export class DatumTextShaderCollection {
         }
       }
     })
+
     this.attachment.positions(positions)
     this.attachment.texcoords(texcoords)
     this.attachment.stringIndexes(stringIndexes)
