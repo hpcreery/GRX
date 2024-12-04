@@ -744,7 +744,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
     }
   } else {
     // u_Shapes.Null
-    dist = 10000000.0; // some far away number
+    dist = SDF_FAR_AWAY;
   }
   return dist;
 }

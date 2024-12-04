@@ -81,7 +81,7 @@ vec2 transformLocation(vec2 pixel_coord) {
 }
 
 float surfaceDistMain(vec2 FragCoord) {
-  float dist = 10000000.0; // some far away number
+  float dist = SDF_FAR_AWAY;
   for (float i = -5.0; i <= 4.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
