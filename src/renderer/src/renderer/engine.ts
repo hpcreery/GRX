@@ -342,7 +342,11 @@ export class RenderEngineBackend {
     })
 
     this.loadingFrame = new LoadingAnimation(this.regl, this.world)
-    this.measurements = new SimpleMeasurement(this.regl, this.ctx)
+    // this.measurements = new SimpleMeasurement(this.regl, this.ctx)
+    this.measurements = new SimpleMeasurement({
+      regl: this.regl,
+      ctx: this.ctx,
+    })
 
     this.renderGrid = this.regl<GridRenderUniforms, Record<string, never>, GridRenderProps, WorldContext>({
       vert: FullScreenQuad,

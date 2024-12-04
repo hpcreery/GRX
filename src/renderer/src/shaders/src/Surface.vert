@@ -12,7 +12,7 @@ uniform bool u_PointerDown;
 uniform bool u_QueryMode;
 
 // COMMON ATTRIBUTES
-attribute vec2 a_Vertex_Position;
+attribute vec2 a_VertexPosition;
 
 // SURFACE UNIFORMS
 uniform sampler2D u_Vertices;
@@ -66,11 +66,11 @@ void main() {
   vec2 point3 = getVertexPosition(a_Indicies.z * 2.0 + a_ContourOffset + a_SurfaceOffset);
 
   vec2 OffsetPosition = vec2(0.0, 0.0);
-  if (a_Vertex_Position.x == 0.0)
+  if (a_VertexPosition.x == 0.0)
     OffsetPosition = point1;
-  else if (a_Vertex_Position.x == 1.0)
+  else if (a_VertexPosition.x == 1.0)
     OffsetPosition = point2;
-  else if (a_Vertex_Position.x == 2.0)
+  else if (a_VertexPosition.x == 2.0)
     OffsetPosition = point3;
 
   // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_ContourOffset);
@@ -89,11 +89,11 @@ void main() {
 
   if (u_QueryMode) {
     vec2 New_Vertex_Position = vec2(0.0, 0.0);
-    if (a_Vertex_Position.x == 0.0)
+    if (a_VertexPosition.x == 0.0)
       New_Vertex_Position = vec2(1.0, -1.0);
-    else if (a_Vertex_Position.x == 1.0)
+    else if (a_VertexPosition.x == 1.0)
       New_Vertex_Position = vec2(-1.0, 1.0);
-    else if (a_Vertex_Position.x == 2.0)
+    else if (a_VertexPosition.x == 2.0)
       New_Vertex_Position = vec2(1.0, 1.0);
     FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(a_SurfaceIndex, u_Resolution.x) + 0.5, floor(a_SurfaceIndex / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }

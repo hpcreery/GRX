@@ -406,10 +406,10 @@ export class RenderEngine {
   }
 
   public downloadImage(): void {
-    const canvasUrl = this.canvasGL.toDataURL("image/jpeg", 1)
+    const canvasUrl = this.canvasGL.toDataURL("image/png", 1)
     const createEl = document.createElement("a")
     createEl.href = canvasUrl
-    createEl.download = "grx-screenshot.jpeg"
+    createEl.download = "grx-screenshot.png"
     createEl.click()
     createEl.remove()
   }

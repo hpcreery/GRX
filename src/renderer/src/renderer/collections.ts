@@ -46,7 +46,7 @@ interface LineUniforms {}
 interface ArcUniforms {}
 
 interface DatumTextUniforms {
-  u_texture: REGL.Texture2D
+  u_Texture: REGL.Texture2D
   u_TextureDimensions: vec2
   u_LetterDimensions: vec2
 }
@@ -83,10 +83,10 @@ interface ArcAttributes {
 }
 
 interface DatumTextAttributes {
-  a_position: CustomAttributeConfig
-  a_texcoord: CustomAttributeConfig
+  a_Position: CustomAttributeConfig
+  a_Texcoord: CustomAttributeConfig
   a_StringIndex: CustomAttributeConfig
-  a_Vertex_Position: number[][]
+  a_VertexPosition: number[][]
 }
 
 interface DatumAttributes {
@@ -130,7 +130,7 @@ interface SurfaceAttributes {
   a_ContourPolarity: CustomAttributeConfig
   a_ContourOffset: CustomAttributeConfig
   a_Indicies: CustomAttributeConfig
-  a_Vertex_Position: number[][]
+  a_VertexPosition: number[][]
   a_QtyVerts: CustomAttributeConfig
   a_QtyContours: CustomAttributeConfig
   a_SurfaceIndex: CustomAttributeConfig
@@ -243,13 +243,13 @@ export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8Clamped
     vert: GlyphtextVert,
 
     attributes: {
-      a_position: {
+      a_Position: {
         buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
         offset: 0,
         stride: 2 * glFloatSize,
         divisor: 1,
       },
-      a_texcoord: {
+      a_Texcoord: {
         buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
         offset: 0,
         stride: 2 * glFloatSize,
@@ -261,7 +261,7 @@ export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8Clamped
         stride: 1 * glFloatSize,
         divisor: 1,
       },
-      a_Vertex_Position: [
+      a_VertexPosition: [
         [0, 0],
         [0, 1],
         [1, 0],
@@ -272,7 +272,7 @@ export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8Clamped
     },
 
     uniforms: {
-      u_texture: texture,
+      u_Texture: texture,
       u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
       u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
     },
@@ -306,13 +306,13 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
     vert: GlyphtextVert,
 
     attributes: {
-      a_position: {
+      a_Position: {
         buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
         offset: 0,
         stride: 2 * glFloatSize,
         divisor: 1,
       },
-      a_texcoord: {
+      a_Texcoord: {
         buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
         offset: 0,
         stride: 2 * glFloatSize,
@@ -324,7 +324,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
         stride: 1 * glFloatSize,
         divisor: 1,
       },
-      a_Vertex_Position: [
+      a_VertexPosition: [
         [0, 0],
         [0, 1],
         [1, 0],
@@ -335,7 +335,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
     },
 
     uniforms: {
-      u_texture: texture,
+      u_Texture: texture,
       u_TextureDimensions: [cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight],
       u_LetterDimensions: [cozetteFontInfo.fontWidth, cozetteFontInfo.fontHeight],
     },
@@ -593,7 +593,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
         divisor: 1,
       },
 
-      a_Vertex_Position: [
+      a_VertexPosition: [
         [0, 0],
         [1, 1],
         [2, 2],
@@ -1121,6 +1121,7 @@ export class DatumTextShaderCollection {
   private regl: REGL.Regl
 
   public attachment: DatumTextAttachments
+  public texts: Shapes.DatumText[] = []
 
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
@@ -1139,6 +1140,7 @@ export class DatumTextShaderCollection {
     const stringIndexes: number[] = []
     image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
+      this.texts.push(record)
       const string = record.text
       const x = record.x
       const y = record.y
