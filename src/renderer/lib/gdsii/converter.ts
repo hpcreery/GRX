@@ -26,6 +26,8 @@ export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
         plotter.addReference(element.el as TREE.sref)
       } else if (element.type === "aref") {
         plotter.addArrayReference(element.el as TREE.aref)
+      } else if (element.type === "text") {
+        plotter.addText(element.el as TREE.text)
       } else {
         messages.warn(`Converter: unhandled element, ${JSON.stringify(element)}`)
       }

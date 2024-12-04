@@ -165,4 +165,14 @@ export class Plotter {
       this.pushShape(cell.layer, srShape)
     }
   }
+
+  public addText(el: TREE.text): void {
+    const text = new Shapes.DatumText({
+      x: el.XY[0].x,
+      y: el.XY[0].y,
+      text: el.STRING.string,
+    })
+
+    this.pushShape(el.LAYER.layer, text)
+  }
 }
