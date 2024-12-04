@@ -7,7 +7,7 @@ import font from "./text/glyph/font.png?arraybuffer"
 import { fontInfo } from "./text/glyph/font"
 
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
-import { fontInfo as cozetteFontInfo } from './text/cozette/font'
+import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -49,8 +49,8 @@ export class RenderEngine {
       OUTLINE_MODE: false,
       COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
-      MAX_ZOOM: 100,
-      MIN_ZOOM: 0.01,
+      MAX_ZOOM: 1000,
+      MIN_ZOOM: 0.001,
       ZOOM_TO_CURSOR: true,
       SHOW_DATUMS: false,
     },
@@ -406,12 +406,12 @@ export class RenderEngine {
   }
 
   public downloadImage(): void {
-    const canvasUrl = this.canvasGL.toDataURL("image/jpeg", 1);
-    const createEl = document.createElement('a');
-    createEl.href = canvasUrl;
-    createEl.download = "grx-screenshot.jpeg";
-    createEl.click();
-    createEl.remove();
+    const canvasUrl = this.canvasGL.toDataURL("image/jpeg", 1)
+    const createEl = document.createElement("a")
+    createEl.href = canvasUrl
+    createEl.download = "grx-screenshot.jpeg"
+    createEl.click()
+    createEl.remove()
   }
 
   public async destroy(): Promise<void> {

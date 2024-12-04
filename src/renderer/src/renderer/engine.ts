@@ -173,7 +173,7 @@ export class RenderEngineBackend {
     OUTLINE_MODE: false,
     COLOR_BLEND: "Contrast",
     BACKGROUND_COLOR: [0, 0, 0, 0],
-    MAX_ZOOM: 100,
+    MAX_ZOOM: 1000,
     MIN_ZOOM: 0.001,
     ZOOM_TO_CURSOR: true,
     SHOW_DATUMS: false,
@@ -281,7 +281,6 @@ export class RenderEngineBackend {
       width,
       height,
     }
-
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
     this.ctx = offscreenCanvas2D.getContext("2d")!
@@ -395,8 +394,8 @@ export class RenderEngineBackend {
           srcAlpha: "one",
           dstRGB: "one minus src color",
           dstAlpha: "one",
-        }
-      }
+        },
+      },
     })
 
     this.contrastBlendFunc = this.regl({
@@ -406,8 +405,8 @@ export class RenderEngineBackend {
           srcAlpha: "one",
           dstRGB: "one minus src color",
           dstAlpha: "one",
-        }
-      }
+        },
+      },
     })
 
     this.overlay = this.regl({
@@ -667,11 +666,7 @@ export class RenderEngineBackend {
   }
 
   public moveLayer(from: number, to: number): void {
-    this.layers.splice(
-      to < 0 ? this.layers.length + to : to,
-      0,
-      this.layers.splice(from, 1)[0]
-    )
+    this.layers.splice(to < 0 ? this.layers.length + to : to, 0, this.layers.splice(from, 1)[0])
   }
 
   public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
