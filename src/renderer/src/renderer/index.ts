@@ -360,7 +360,7 @@ export class RenderEngine {
       context.font = `${cozetteFontInfo.fontSize}px cozette`
       context.fillStyle = "white"
       context.textBaseline = "top"
-      context.lineWidth = 2
+      context.lineWidth = 3
       context.strokeStyle = "black"
       const characters = Object.keys(cozetteFontInfo.glyphInfos)
       for (let i = 0; i < characters.length; i++) {
