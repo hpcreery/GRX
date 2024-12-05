@@ -1,7 +1,7 @@
 import REGL from "regl"
 import { mat3, vec2, vec3, vec4 } from "gl-matrix"
 import LayerRenderer, { LayerRendererProps } from "./layer"
-import { initializeGlyphRenderer, initializeFontRenderer, initializeRenderers, ReglRenderers, ScreenRenderProps } from "./collections"
+import { initializeFontRenderer, initializeRenderers, ReglRenderers, ScreenRenderProps } from "./collections"
 import * as Shapes from "./shapes"
 import * as Comlink from "comlink"
 import plugins from "./plugins"
@@ -438,10 +438,6 @@ export class RenderEngineBackend {
     this.render({
       force: true,
     })
-  }
-
-  public initializeGlyphRenderer(glyphData: Uint8ClampedArray): void {
-    initializeGlyphRenderer(this.regl, glyphData)
   }
 
   public initializeFontRenderer(fontData: Uint8ClampedArray): void {

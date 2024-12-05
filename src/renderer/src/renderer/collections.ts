@@ -22,7 +22,6 @@ import { WorldContext } from "./engine"
 import { vec2 } from "gl-matrix"
 
 import earcut from "earcut"
-import { fontInfo } from "./text/glyph/font"
 
 import { fontInfo as cozetteFontInfo } from './text/cozette/font'
 
@@ -48,7 +47,8 @@ interface ArcUniforms {}
 interface DatumTextUniforms {
   u_Texture: REGL.Texture2D
   u_TextureDimensions: vec2
-  u_LetterDimensions: vec2
+  u_CharDimensions: vec2
+  u_CharSpacing: vec2
 }
 
 interface DatumUniforms {}
@@ -85,7 +85,7 @@ interface ArcAttributes {
 interface DatumTextAttributes {
   a_Position: CustomAttributeConfig
   a_Texcoord: CustomAttributeConfig
-  a_StringIndex: CustomAttributeConfig
+  a_CharPosition: CustomAttributeConfig
   a_VertexPosition: number[][]
 }
 
@@ -111,7 +111,7 @@ export interface LineAttachments {
 export interface DatumTextAttachments {
   positions: REGL.Buffer
   texcoords: REGL.Buffer
-  stringIndexes: REGL.Buffer
+  charPosition: REGL.Buffer
   length: number
 }
 
@@ -192,8 +192,18 @@ interface TShaderAttachment {
   datumLines: LineAttachments
   datumArcs: ArcAttachments
 }
+export interface TLoadedReglRenderers {
+  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
+  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments>
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
+  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+}
 
-interface TReglRenderers {
+export interface TReglRenderers {
   drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
   drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
@@ -213,74 +223,6 @@ export const ReglRenderers: TReglRenderers = {
   drawDatumText: undefined,
   drawFrameBuffer: undefined,
   renderToScreen: undefined,
-}
-
-/**
- * This glyph renderer is deprecated and will be removed in the future.
- * @param regl
- * @param glyphData
- * @deprecated Use initializeFontRenderer instead
- */
-export function initializeGlyphRenderer(regl: REGL.Regl, glyphData: Uint8ClampedArray): void {
-  const texture = regl.texture({
-    data: glyphData,
-    width: fontInfo.textureWidth,
-    height: fontInfo.textureHeight,
-    format: "rgba",
-    type: "uint8",
-    mag: "nearest",
-    min: "nearest",
-  })
-
-  ReglRenderers.drawDatumText = regl<
-    DatumTextUniforms,
-    DatumTextAttributes,
-    DatumTextAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
-    frag: GlyphtextFrag,
-    vert: GlyphtextVert,
-
-    attributes: {
-      a_Position: {
-        buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
-        offset: 0,
-        stride: 2 * glFloatSize,
-        divisor: 1,
-      },
-      a_Texcoord: {
-        buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
-        offset: 0,
-        stride: 2 * glFloatSize,
-        divisor: 1,
-      },
-      a_StringIndex: {
-        buffer: regl.prop<DatumTextAttachments, "stringIndexes">("stringIndexes"),
-        offset: 0,
-        stride: 1 * glFloatSize,
-        divisor: 1,
-      },
-      a_VertexPosition: [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 0],
-        [0, 1],
-        [1, 1],
-      ],
-    },
-
-    uniforms: {
-      u_Texture: texture,
-      u_TextureDimensions: [fontInfo.textureWidth, fontInfo.textureHeight],
-      u_LetterDimensions: [fontInfo.letterWidth, fontInfo.letterHeight],
-    },
-
-    instances: regl.prop<SurfaceAttachments, "length">("length"),
-    count: 6,
-    primitive: "triangles",
-  })
 }
 
 
@@ -318,10 +260,10 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
         stride: 2 * glFloatSize,
         divisor: 1,
       },
-      a_StringIndex: {
-        buffer: regl.prop<DatumTextAttachments, "stringIndexes">("stringIndexes"),
+      a_CharPosition: {
+        buffer: regl.prop<DatumTextAttachments, "charPosition">("charPosition"),
         offset: 0,
-        stride: 1 * glFloatSize,
+        stride: 2 * glFloatSize,
         divisor: 1,
       },
       a_VertexPosition: [
@@ -337,7 +279,8 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
     uniforms: {
       u_Texture: texture,
       u_TextureDimensions: [cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight],
-      u_LetterDimensions: [cozetteFontInfo.fontWidth, cozetteFontInfo.fontHeight],
+      u_CharDimensions: [cozetteFontInfo.fontSize, cozetteFontInfo.fontSize],
+      u_CharSpacing: cozetteFontInfo.fontSpacing,
     },
 
     instances: regl.prop<SurfaceAttachments, "length">("length"),
@@ -1129,7 +1072,7 @@ export class DatumTextShaderCollection {
     this.attachment = {
       positions: this.regl.buffer(0),
       texcoords: this.regl.buffer(0),
-      stringIndexes: this.regl.buffer(0),
+      charPosition: this.regl.buffer(0),
       length: 0,
     }
   }
@@ -1137,27 +1080,34 @@ export class DatumTextShaderCollection {
   refresh(image: Shapes.Shape[]): this {
     const positions: number[] = []
     const texcoords: number[] = []
-    const stringIndexes: number[] = []
+    const charPosition: vec2[] = []
     image.map((record) => {
       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
       this.texts.push(record)
       const string = record.text
       const x = record.x
       const y = record.y
+      let row = 0
+      let col = 0
       for (let i = 0; i < string.length; ++i) {
         const letter = string[i]
         const glyphInfo = cozetteFontInfo.glyphInfos[letter]
         if (glyphInfo !== undefined) {
           positions.push(x, y)
           texcoords.push(glyphInfo.x, glyphInfo.y)
-          stringIndexes.push(i)
+          charPosition.push([col, row])
+        }
+        col++
+        if (letter === "\n") {
+          row--
+          col = 0
         }
       }
     })
 
     this.attachment.positions(positions)
     this.attachment.texcoords(texcoords)
-    this.attachment.stringIndexes(stringIndexes)
+    this.attachment.charPosition(charPosition)
     this.attachment.length = positions.length / 2
     return this
   }

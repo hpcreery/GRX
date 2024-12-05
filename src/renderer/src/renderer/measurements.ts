@@ -5,7 +5,6 @@ import type { Units } from "./types"
 import { getUnitsConversion } from "./utils"
 import { RendererProps, ShapeRenderer } from "./shape-renderer"
 import * as Shapes from "./shapes"
-import { ReglRenderers } from "./collections"
 
 // import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
 // import SimpleMeasurementVert from "@src/shaders/src/Measurements/SimpleMeasurement.vert"
@@ -40,7 +39,7 @@ export class SimpleMeasurement extends ShapeRenderer {
       const y = Math.abs(y1 - y2) * getUnitsConversion(this.units)
       this.image.push(
         new Shapes.DatumText({
-          text: `${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""} (X:${parseFloat(x.toFixed(4))} Y:${parseFloat(y.toFixed(4))})`,
+          text: `${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""}\n(X:${parseFloat(x.toFixed(4))} Y:${parseFloat(y.toFixed(4))})`,
           x: (x1 + x2) / 2,
           y: (y1 + y2) / 2,
           attributes: {
@@ -55,7 +54,6 @@ export class SimpleMeasurement extends ShapeRenderer {
       this.image.push(new Shapes.DatumLine({ xs: x1, ys: y1, xe: x2, ye: y2 }))
     })
     this.dirty = true
-
   }
 
   public addMeasurement(point: vec2): void {
@@ -87,8 +85,6 @@ export class SimpleMeasurement extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
-    // botchy patch to fix lazy loading of drawDatumText. The drawDatumText is only defined when the Font Glyph Set is sent over from the DOM
-    if (this.drawDatumText == undefined && ReglRenderers.drawDatumText !== undefined) this.drawDatumText = ReglRenderers.drawDatumText
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
@@ -96,10 +92,7 @@ export class SimpleMeasurement extends ShapeRenderer {
       depth: 1,
     })
     this.framebuffer.use(() => {
-      const showDatums = context.settings.SHOW_DATUMS
-      context.settings.SHOW_DATUMS = true
       super.render(context)
-      context.settings.SHOW_DATUMS = showDatums
     })
   }
 }

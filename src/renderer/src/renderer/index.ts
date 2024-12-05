@@ -3,8 +3,8 @@ import EngineWorker from "./engine?worker"
 import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from "./engine"
 import { AddLayerProps } from "./plugins"
 
-import font from "./text/glyph/font.png?arraybuffer"
-import { fontInfo } from "./text/glyph/font"
+// import font from "./text/glyph/font.png?arraybuffer"
+// import { fontInfo } from "./text/glyph/font"
 
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
@@ -100,7 +100,10 @@ export class RenderEngine {
         if (name === "mode") {
           if (value === "move") this.CONTAINER.style.cursor = "grab"
           if (value === "select") this.CONTAINER.style.cursor = "crosshair"
-          if (value === "measure") this.CONTAINER.style.cursor = "crosshair"
+          if (value === "measure") {
+            this.CONTAINER.style.cursor = "crosshair"
+            this.settings.SHOW_DATUMS = true
+          }
         }
         target[name] = value
         return true
@@ -345,30 +348,6 @@ export class RenderEngine {
     backend.render(props)
   }
 
-  /**
-   * Send the glyph data to the engine
-   * This has now been deprecated in favor of using the font renderer
-   * Will be removed in the future
-   * @deprecated
-   */
-  // @ts-ignore - unused
-  private sendGlyphData(): void {
-    const canvas = document.createElement("canvas")
-    const context = canvas.getContext("2d")
-    if (!context) throw new Error("Could not get 2d context")
-    canvas.width = fontInfo.textureWidth
-    canvas.height = fontInfo.textureHeight
-    const image = new Image()
-    image.onload = (): void => {
-      context.drawImage(image, 0, 0)
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
-      this.backend.then((engine) => {
-        engine.initializeGlyphRenderer(imageData.data)
-      })
-    }
-    image.src = URL.createObjectURL(new Blob([font]))
-  }
-
   private sendFontData(): void {
     const f = new FontFace("cozette", `url(${cozetteFont})`)
     f.load().then((font) => {
@@ -378,7 +357,7 @@ export class RenderEngine {
       if (!context) throw new Error("Could not get 2d context")
       canvas.width = cozetteFontInfo.textureWidth
       canvas.height = cozetteFontInfo.textureHeight
-      context.font = "13px cozette"
+      context.font = `${cozetteFontInfo.fontSize}px cozette`
       context.fillStyle = "white"
       context.textBaseline = "top"
       context.lineWidth = 2

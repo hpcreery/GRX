@@ -6,15 +6,10 @@ import { BoundingBox, FeatureTypeIdentifier } from "./types"
 import ShapeTransform from './transform'
 
 import {
-  ArcAttachments,
   DatumShaderCollection,
-  FrameBufferRenderAttachments,
-  DatumTextAttachments,
   DatumTextShaderCollection,
-  LineAttachments,
-  PadAttachments,
   ReglRenderers,
-  SurfaceAttachments,
+  TLoadedReglRenderers,
 } from "./collections"
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
@@ -98,13 +93,7 @@ export class ShapeRenderer {
   protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
   protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
-  protected drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
-  protected drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
-  protected drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
-  protected drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
-  protected drawDatumPoints: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttributes>
-  protected flattenSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
+  protected drawCollections: TLoadedReglRenderers
   public surfaceFrameBuffer: REGL.Framebuffer2D
   public queryFrameBuffer: REGL.Framebuffer2D
 
@@ -228,13 +217,7 @@ export class ShapeRenderer {
       },
     })
 
-    this.drawPads = ReglRenderers.drawPads!
-    this.drawLines = ReglRenderers.drawLines!
-    this.drawArcs = ReglRenderers.drawArcs!
-    this.drawSurfaces = ReglRenderers.drawSurfaces!
-    this.flattenSurfaces = ReglRenderers.drawFrameBuffer!
-    this.drawDatumText = ReglRenderers.drawDatumText!
-    this.drawDatumPoints = ReglRenderers.drawDatums!
+    this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true,
@@ -271,9 +254,9 @@ export class ShapeRenderer {
         depth: 0,
       })
       this.surfaceFrameBuffer.use(() => {
-        this.drawSurfaces(attachment)
+        this.drawCollections.drawSurfaces(attachment)
       })
-      this.flattenSurfaces({
+      this.drawCollections.drawFrameBuffer({
         renderTexture: this.surfaceFrameBuffer,
         qtyFeatures: this.qtyFeatures,
         index: attachment.surfaceIndex,
@@ -389,20 +372,20 @@ export class ShapeRenderer {
   private drawDatums(context: REGL.DefaultContext & WorldContext): void {
     if (context.settings.SHOW_DATUMS === false) return
     this.datumConfig(() => {
-      this.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
-      this.drawLines(this.shapeCollection.shaderAttachment.datumLines)
-      this.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
+      this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
+      this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.datumLines)
+      this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      if (typeof this.drawDatumText === "function") this.drawDatumText(this.datumTextCollection.attachment)
-      this.drawDatumPoints(this.datumCollection.attachment)
+      if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
+      this.drawCollections.drawDatums(this.datumCollection.attachment)
     })
   }
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
-    if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawPads(this.shapeCollection.shaderAttachment.pads)
-    if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawArcs(this.shapeCollection.shaderAttachment.arcs)
-    if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawLines(this.shapeCollection.shaderAttachment.lines)
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
+    if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
+    if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
     this.drawSurfaceWithHoles(context)
   }
 
@@ -446,7 +429,6 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
-  private drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>, FrameBufferRenderAttachments>
   constructor(props: MacroRendererProps) {
     super(props)
 
@@ -456,7 +438,6 @@ export class MacroRenderer extends ShapeRenderer {
       depth: true,
     })
 
-    this.drawFrameBuffer = ReglRenderers.drawFrameBuffer!
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {
@@ -488,7 +469,7 @@ export class MacroRenderer extends ShapeRenderer {
     })
     this.transform.polarity = tempPol
     this.commonConfig(() => {
-      this.drawFrameBuffer({
+      this.drawCollections.drawFrameBuffer({
         renderTexture: this.framebuffer,
         index: this.transform.index,
         qtyFeatures: context.prevQtyFeaturesRef ?? 1,
