@@ -18,7 +18,7 @@ varying vec2 v_Texcoord;
 void main() {
   // Multiply the position by the matrix.
 
-  vec2 character_move = vec2(u_PixelSize * a_CharPosition * ((u_CharDimensions + u_CharSpacing) / u_Resolution.x));
+  vec2 character_move = vec2(u_PixelSize * a_CharPosition * ((u_CharDimensions + u_CharSpacing) / u_Resolution));
 
   vec2 Transformed_Position = (u_Transform * vec3(a_Position, 1)).xy;
   gl_Position = vec4(Transformed_Position + (a_VertexPosition/u_Resolution) * u_CharDimensions * u_PixelSize + character_move, 0, 1);
