@@ -776,10 +776,15 @@ export class ShapesShaderCollection {
 
   public refresh(image: Shapes.Shape[]): this {
     // first order of business is to clear the shapes
+    console.log("refreshing shapes", image.length)
+    console.time("refresh shapes")
     this.symbolsCollection.symbols.clear()
     this.shapes.clear()
 
-    this.shaderAttachment.surfaces.map((surface) => {
+    const surfacesLength = this.shaderAttachment.surfaces.length
+    for (let i = 0; i < surfacesLength; i++) {
+      const surface = this.shaderAttachment.surfaces[i]
+
       surface.vertices.destroy()
       surface.contourIndexBuffer.destroy()
       surface.contourOffsetBuffer.destroy()
@@ -790,9 +795,13 @@ export class ShapesShaderCollection {
       surface.surfaceIndexBuffer.destroy()
       surface.surfacePolarityBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
-    })
+    }
+
     this.shaderAttachment.surfaces.length = 0
-    this.shaderAttachment.surfacesWithHoles.map((surface) => {
+    const surfacesWithHolesLength = this.shaderAttachment.surfacesWithHoles.length
+    for (let i = 0; i < surfacesWithHolesLength; i++) {
+      const surface = this.shaderAttachment.surfacesWithHoles[i]
+
       surface.vertices.destroy()
       surface.contourIndexBuffer.destroy()
       surface.contourOffsetBuffer.destroy()
@@ -803,7 +812,7 @@ export class ShapesShaderCollection {
       surface.surfaceIndexBuffer.destroy()
       surface.surfacePolarityBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
-    })
+    }
     this.shaderAttachment.surfacesWithHoles.length = 0
 
     function isGetter(obj, prop): boolean {
@@ -824,7 +833,9 @@ export class ShapesShaderCollection {
       }
     }
 
-    image.forEach((record) => {
+    const imageLength = image.length
+    for (let i = 0; i < imageLength; i++) {
+      const record = image[i]
       if (record.type === FeatureTypeIdentifier.SURFACE) {
         this.shapes.surfaces.push(record)
       } else if (record.type === FeatureTypeIdentifier.PAD && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
@@ -848,44 +859,56 @@ export class ShapesShaderCollection {
         fixSymbolGetter(record)
         this.shapes.datumPoints.push(record)
       }
-    })
+    }
 
-    this.shapes.pads.forEach((record) => {
+    const padsLength = this.shapes.pads.length
+    for (let i = 0; i < padsLength; i++) {
+      const record = this.shapes.pads[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.lines.forEach((record) => {
+    }
+    const linesLength = this.shapes.lines.length
+    for (let i = 0; i < linesLength; i++) {
+      const record = this.shapes.lines[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.arcs.forEach((record) => {
+    }
+    const arcsLength = this.shapes.arcs.length
+    for (let i = 0; i < arcsLength; i++) {
+      const record = this.shapes.arcs[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.datumLines.forEach((record) => {
+    }
+    const datumLinesLength = this.shapes.datumLines.length
+    for (let i = 0; i < datumLinesLength; i++) {
+      const record = this.shapes.datumLines[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.datumArcs.forEach((record) => {
+    }
+    const datumArcsLength = this.shapes.datumArcs.length
+    for (let i = 0; i < datumArcsLength; i++) {
+      const record = this.shapes.datumArcs[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
-    this.shapes.datumPoints.forEach((record) => {
+    }
+    const datumPointsLength = this.shapes.datumPoints.length
+    for (let i = 0; i < datumPointsLength; i++) {
+      const record = this.shapes.datumPoints[i]
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-        return
+        continue
       }
       this.symbolsCollection.add(record.symbol)
-    })
+    }
 
     this.symbolsCollection.refresh()
 
@@ -905,12 +928,66 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumLines.length = this.shapes.datumLines.length
     this.shaderAttachment.datumArcs.length = this.shapes.datumArcs.length
 
-    this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
-    this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
-    this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
-    this.shaderAttachment.datumPoints.buffer(this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
-    this.shaderAttachment.datumLines.buffer(this.shapes.datumLines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
-    this.shaderAttachment.datumArcs.buffer(this.shapes.datumArcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
+    const pads: number[] = []
+    const padRecordsLength = PAD_RECORD_PARAMETERS.length
+    for (let i = 0; i < padsLength; i++) {
+      const record = this.shapes.pads[i]
+      for (let j = 0; j < padRecordsLength; j++) {
+        const key = PAD_RECORD_PARAMETERS[j]
+        pads.push(record[key])
+      }
+    }
+    this.shaderAttachment.pads.buffer(pads)
+    const lines: number[] = []
+    const lineRecordsLength = LINE_RECORD_PARAMETERS.length
+    for (let i = 0; i < linesLength; i++) {
+      const record = this.shapes.lines[i]
+      for (let j = 0; j < lineRecordsLength; j++) {
+        const key = LINE_RECORD_PARAMETERS[j]
+        lines.push(record[key])
+      }
+    }
+    this.shaderAttachment.lines.buffer(lines)
+    const arcs: number[] = []
+    const arcRecordsLength = ARC_RECORD_PARAMETERS.length
+    for (let i = 0; i < arcsLength; i++) {
+      const record = this.shapes.arcs[i]
+      for (let j = 0; j < arcRecordsLength; j++) {
+        const key = ARC_RECORD_PARAMETERS[j]
+        arcs.push(record[key])
+      }
+    }
+    this.shaderAttachment.arcs.buffer(arcs)
+    const datumPoints: number[] = []
+    const datumPointsRecordsLength = PAD_RECORD_PARAMETERS.length
+    for (let i = 0; i < datumPointsLength; i++) {
+      const record = this.shapes.datumPoints[i]
+      for (let j = 0; j < datumPointsRecordsLength; j++) {
+        const key = PAD_RECORD_PARAMETERS[j]
+        datumPoints.push(record[key])
+      }
+    }
+    this.shaderAttachment.datumPoints.buffer(datumPoints)
+    const datumLines: number[] = []
+    const datumLinesRecordsLength = LINE_RECORD_PARAMETERS.length
+    for (let i = 0; i < datumLinesLength; i++) {
+      const record = this.shapes.datumLines[i]
+      for (let j = 0; j < datumLinesRecordsLength; j++) {
+        const key = LINE_RECORD_PARAMETERS[j]
+        datumLines.push(record[key])
+      }
+    }
+    this.shaderAttachment.datumLines.buffer(datumLines)
+    const datumArcs: number[] = []
+    const datumArcsRecordsLength = ARC_RECORD_PARAMETERS.length
+    for (let i = 0; i < datumArcsLength; i++) {
+      const record = this.shapes.datumArcs[i]
+      for (let j = 0; j < datumArcsRecordsLength; j++) {
+        const key = ARC_RECORD_PARAMETERS[j]
+        datumArcs.push(record[key])
+      }
+    }
+    this.shaderAttachment.datumArcs.buffer(datumArcs)
 
     const surfacePolarities: number[] = []
     const surfaceOffsets: number[] = []
@@ -924,7 +1001,9 @@ export class ShapesShaderCollection {
     const allVertices: number[] = []
 
     let surfaceOffset = 0
-    this.shapes.surfaces.forEach((record) => {
+    const surfaceShapesLength = this.shapes.surfaces.length
+    for (let i = 0; i < surfaceShapesLength; i++) {
+      const record = this.shapes.surfaces[i]
       const contourPolarities: number[] = []
       const contourOffsets: number[] = []
       const contourIndexes: number[] = []
@@ -937,12 +1016,17 @@ export class ShapesShaderCollection {
         if (contour.poly_type === 0) hasHoles = true
         const vertices = this.getVertices(contour)
         const ears = earcut(vertices)
-        ears.forEach((ear) => indicies.push(ear))
-        const lengthArray = new Array<number>(ears.length / 3)
-        lengthArray.fill(contour.poly_type).forEach((polarity) => contourPolarities.push(polarity))
-        lengthArray.fill(contourOffset).forEach((offset) => contourOffsets.push(offset))
-        lengthArray.fill(contourIndex).forEach((index) => contourIndexes.push(index))
-        lengthArray.fill(vertices.length / 2).forEach((qty) => contourVertexQty.push(qty))
+        const earsLength = ears.length
+        for (let i = 0; i < earsLength; i++) {
+          indicies.push(ears[i])
+        }
+        const triLength = ears.length / 3
+        for (let i = 0; i < triLength; i++) {
+          contourPolarities.push(contour.poly_type)
+          contourOffsets.push(contourOffset)
+          contourIndexes.push(contourIndex)
+          contourVertexQty.push(vertices.length / 2)
+        }
         contourOffset += vertices.length
         contourIndex++
         return vertices
@@ -977,22 +1061,42 @@ export class ShapesShaderCollection {
           length: length,
         })
       } else {
-        contourPolarities.forEach((polarity) => allContourPolarities.push(polarity))
-        contourOffsets.forEach((offset) => allContourOffsets.push(offset))
-        contourIndexes.forEach((index) => allContourIndexes.push(index))
-        contourVertexQty.forEach((qty) => allContourVertexQty.push(qty))
+        const contourPolaritiesLength = contourPolarities.length
+        for (let i = 0; i < contourPolaritiesLength; i++) {
+          allContourPolarities.push(contourPolarities[i])
+        }
+        const contourOffsetsLength = contourOffsets.length
+        for (let i = 0; i < contourOffsetsLength; i++) {
+          allContourOffsets.push(contourOffsets[i])
+        }
+        const contourIndexesLength = contourIndexes.length
+        for (let i = 0; i < contourIndexesLength; i++) {
+          allContourIndexes.push(contourIndexes[i])
+        }
+        const contourVertexQtyLength = contourVertexQty.length
+        for (let i = 0; i < contourVertexQtyLength; i++) {
+          allContourVertexQty.push(contourVertexQty[i])
+        }
 
-        indicies.forEach((index) => allIndicies.push(index))
-        vertices.forEach((vertex) => allVertices.push(vertex))
+        const indiciesLength = indicies.length
+        for (let i = 0; i < indiciesLength; i++) {
+          allIndicies.push(indicies[i])
+        }
+        const verticesLength = vertices.length
+        for (let i = 0; i < verticesLength; i++) {
+          allVertices.push(vertices[i])
+        }
 
         const length = indicies.length / 3
-        new Array<number>(length).fill(0).forEach(() => surfaceIndexes.push(record.index))
-        new Array<Binary>(length).fill(0).forEach(() => surfacePolarities.push(record.polarity))
-        new Array<number>(length).fill(0).forEach(() => surfaceOffsets.push(surfaceOffset))
+        for (let i = 0; i < length; i++) {
+          surfaceIndexes.push(record.index)
+          surfacePolarities.push(record.polarity)
+          surfaceOffsets.push(surfaceOffset)
+          allContourQty.push(record.contours.length)
+        }
         surfaceOffset += vertices.length
-        new Array<number>(length).fill(0).forEach(() => allContourQty.push(record.contours.length))
       }
-    })
+    }
 
     if (allVertices.length != 0) {
       const { width, height, data } = fixedTextureData(this.regl.limits.maxTextureSize, allVertices)
@@ -1020,7 +1124,7 @@ export class ShapesShaderCollection {
         length: allIndicies.length / 3,
       })
     }
-
+    console.timeEnd("refresh shapes")
     return this
   }
 
