@@ -67,6 +67,12 @@ float circleDist(vec2 p, float radius) {
   return length(p) - radius;
 }
 
+vec3 circleSDG(in vec2 p, in float r)
+{
+    float d = length(p);
+    return vec3( d-r, p/d );
+}
+
 float triangleDist(vec2 p, float radius) {
   return max(abs(p).x * 0.866025 +
     p.y * 0.5, -p.y) - radius * 0.5;
@@ -582,7 +588,7 @@ float outerBorderMask(float dist, float width) {
 
 #pragma glslify: pullSymbolParameter = require(./PullSymbolParameter.frag,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-float drawShape(vec2 FragCoord, int SymNum) {
+vec3 drawShape(vec2 FragCoord, int SymNum) {
 
   float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
   float t_Width = pullSymbolParameter(u_Parameters.width, SymNum);
@@ -603,6 +609,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
   float t_Num_Rings = pullSymbolParameter(u_Parameters.num_rings, SymNum);
 
   float dist = 10.0;
+  vec3 sdg = vec3(10.0,10.0,10.0);
 
   if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
@@ -610,6 +617,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    sdg = circleSDG(FragCoord.xy, t_Outer_Dia / 2.0);
   } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
     dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     if (t_Inner_Dia != 0.0) {
@@ -746,7 +754,8 @@ float drawShape(vec2 FragCoord, int SymNum) {
     // u_Shapes.Null
     dist = SDF_FAR_AWAY;
   }
-  return dist;
+  // return dist;
+  return sdg;
 }
 
 #pragma glslify: export(drawShape)

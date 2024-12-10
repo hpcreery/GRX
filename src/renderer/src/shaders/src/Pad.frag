@@ -65,14 +65,14 @@ mat2 rotateCW(float angle) {
 //     Draw functions       //
 //////////////////////////////
 
-float draw(float dist, float pixel_size) {
+vec3 draw(vec3 dist, float pixel_size) {
   if (DEBUG == 1) {
     return dist;
   }
-  if (dist > pixel_size / 2.0) {
+  if (dist.x > pixel_size / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -pixel_size / 2.0) {
+  if (dist.x * float(u_OutlineMode) < -pixel_size / 2.0) {
     discard;
   }
   return dist;
@@ -101,13 +101,14 @@ void main() {
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
+  vec3 sdg = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
+  float dist = sdg.x;
 
   if (u_QueryMode) {
     vec2 PointerPosition = transformLocation(u_PointerPosition);
-    float PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
+    vec3 PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
 
-    if (PointerDist < pixel_size) {
+    if (PointerDist.x < pixel_size) {
       if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
         gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
         return;
@@ -119,9 +120,32 @@ void main() {
     }
   }
 
+  if (DEBUG == 1) {
+    // float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+    // float pixel_size = u_PixelSize / scale;
+    // vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
+    // col *= 1.0 - exp(-3.0*abs(dist * 0.01 / pixel_size));
+    // col *= 0.8 + 0.25*cos(dist / pixel_size);
+    // // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,u_PixelSize,abs(dist)) );
+    // if (dist < 0.0 && dist > -pixel_size) {
+    //   col = vec3(1.0, 1.0, 1.0);
+    // }
+    // gl_FragColor = vec4(col, 1.0);
+    float d = sdg.x;
+    vec2 g = sdg.yz;
+    vec3 col = (d>0.0) ? vec3(0.9,0.6,0.3) : vec3(0.4,0.7,0.85);
+    col *= 1.0 + vec3(0.5*g,0.0);
+  //col = vec3(0.5+0.5*g,1.0);
+    col *= 1.0 - 0.5*exp(-16.0*abs(d));
+    col *= 0.9 + 0.1*cos(150.0*d);
+    col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,0.01,abs(d)) );
+    gl_FragColor = vec4(col,1.0);
+    return;
+  }
+
   #pragma glslify: import('../modules/Debug.glsl')
 
-  dist = draw(dist, pixel_size);
+  sdg = draw(sdg, pixel_size);
 
   gl_FragColor = vec4(color, alpha);
 }

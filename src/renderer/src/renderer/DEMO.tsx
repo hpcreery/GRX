@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useMemo } from "react"
 import "../App.css"
 import * as Symbols from "./symbols"
 import * as Shapes from "./shapes"
@@ -1231,17 +1231,17 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    Engine.addLayer({
-      name: "pads",
-      // transform: {
-      //   datum: [0.5, 0],
-      //   scale: 1,
-      //   rotation: 0,
-      //   mirror: 1,
-      // },
-      image: SQUARE_GRID,
-      units: "mm",
-    })
+    // Engine.addLayer({
+    //   name: "pads",
+    //   // transform: {
+    //   //   datum: [0.5, 0],
+    //   //   scale: 1,
+    //   //   rotation: 0,
+    //   //   mirror: 1,
+    //   // },
+    //   image: SQUARE_GRID,
+    //   units: "mm",
+    // })
 
     // Engine.addLayer({
     //   name: '+/- lines',
@@ -1299,16 +1299,21 @@ function REGLApp(): JSX.Element {
     //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     // })
 
-    // Engine.addLayer({
-    //   name: 'brush lines',
-    //   image: LINE_RECORDS_ARRAY_POS,
-    //   units: 'mm'
-    // })
+    Engine.addLayer({
+      name: 'circle',
+      image: [
+        new Shapes.Pad({
+          x: 0,
+          y: 0,
+          symbol: new Symbols.RoundSymbol({
+            outer_dia: 1,
+            inner_dia: 0,
+          })
+        })
+      ],
+      units: 'mm'
+    })
 
-    // Engine.addLayer({
-    //   name: 'brush arcs',
-    //   image: ARC_BRUSH_RECORDS_ARRAY_POS,
-    //   units: 'mm'
     // })
 
     // setTimeout(() => {
@@ -1352,11 +1357,11 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: "datums",
-      image: DATUMS,
-      units: "mm",
-    })
+    // Engine.addLayer({
+    //   name: "datums",
+    //   image: DATUMS,
+    //   units: "mm",
+    // })
 
     // Engine.addLayer({
     //   name: 'validation',
@@ -1554,7 +1559,7 @@ function REGLApp(): JSX.Element {
           }}
         >
           <StatsWidget />
-          <MouseCoordinates engine={engine} />
+          <MouseCoordinates engine={engine} key='coordinates'/>
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
@@ -1690,9 +1695,12 @@ function StatsWidget(): JSX.Element {
 function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   const [mouse, setMouse] = React.useState({ x: "0", y: "0" })
 
-  props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
-    setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
-  })
+  useMemo(() => {
+    props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
+      setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
+    })
+  }, [props.engine])
+
   return (
     <div
       style={{
