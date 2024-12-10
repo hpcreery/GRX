@@ -229,8 +229,8 @@ export const ReglRenderers: TReglRenderers = {
 export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
   const texture = regl.texture({
     data,
-    width: cozetteFontInfo.textureWidth,
-    height: cozetteFontInfo.textureHeight,
+    width: cozetteFontInfo.textureSize[0],
+    height: cozetteFontInfo.textureSize[1],
     format: "rgba",
     type: "uint8",
     mag: "nearest",
@@ -278,8 +278,8 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
 
     uniforms: {
       u_Texture: texture,
-      u_TextureDimensions: [cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight],
-      u_CharDimensions: [cozetteFontInfo.fontSize, cozetteFontInfo.fontSize],
+      u_TextureDimensions: cozetteFontInfo.textureSize,
+      u_CharDimensions: cozetteFontInfo.fontSize,
       u_CharSpacing: cozetteFontInfo.fontSpacing,
     },
 
@@ -1091,7 +1091,7 @@ export class DatumTextShaderCollection {
       let col = 0
       for (let i = 0; i < string.length; ++i) {
         const letter = string[i]
-        const glyphInfo = cozetteFontInfo.glyphInfos[letter]
+        const glyphInfo = cozetteFontInfo.characterLocation[letter]
         if (glyphInfo !== undefined) {
           positions.push(x, y)
           texcoords.push(glyphInfo.x, glyphInfo.y)

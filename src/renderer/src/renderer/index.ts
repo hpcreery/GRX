@@ -355,21 +355,21 @@ export class RenderEngine {
       const canvas = document.createElement("canvas")
       const context = canvas.getContext("2d")
       if (!context) throw new Error("Could not get 2d context")
-      canvas.width = cozetteFontInfo.textureWidth
-      canvas.height = cozetteFontInfo.textureHeight
-      context.font = `${cozetteFontInfo.fontSize}px cozette`
+      canvas.width = cozetteFontInfo.textureSize[0]
+      canvas.height = cozetteFontInfo.textureSize[1]
+      context.font = `${cozetteFontInfo.fontSize[1]}px cozette`
       context.fillStyle = "white"
       context.textBaseline = "top"
       context.lineWidth = 3
       context.strokeStyle = "black"
-      const characters = Object.keys(cozetteFontInfo.glyphInfos)
+      const characters = Object.keys(cozetteFontInfo.characterLocation)
       for (let i = 0; i < characters.length; i++) {
         const char = characters[i]
-        context.strokeText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
-        context.fillText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
+        context.strokeText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
+        context.fillText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
       }
 
-      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight)
+      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0], cozetteFontInfo.textureSize[1])
       this.backend.then((engine) => {
         engine.initializeFontRenderer(imageData.data)
       })
