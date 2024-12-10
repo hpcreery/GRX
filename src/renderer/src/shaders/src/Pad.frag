@@ -105,19 +105,24 @@ void main() {
   float dist = sdg.x;
 
   if (u_QueryMode) {
-    vec2 PointerPosition = transformLocation(u_PointerPosition);
-    vec3 PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
 
-    if (PointerDist.x < pixel_size) {
-      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
+    // if (PointerDist.x < pixel_size) {
+    if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+      vec2 PointerPosition = transformLocation(u_PointerPosition);
+      vec3 PointerSDG = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
+      // gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      float direction = 0.0;
+      if (PointerSDG.x < pixel_size) {
+        direction = 1.0;
       }
+      gl_FragColor = vec4(abs(PointerSDG.x), PointerSDG.yz * 0.5 + 0.5, direction);
+      return;
     } else {
       discard;
     }
+    // } else {
+    //   discard;
+    // }
   }
 
   if (DEBUG == 1) {
@@ -138,7 +143,10 @@ void main() {
   //col = vec3(0.5+0.5*g,1.0);
     col *= 1.0 - 0.5*exp(-16.0*abs(d));
     col *= 0.9 + 0.1*cos(150.0*d);
-    col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,0.01,abs(d)) );
+    // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,0.01,abs(d)) );
+    if (d < 0.0 && d > -pixel_size) {
+      col = vec3(1.0, 1.0, 1.0);
+    }
     gl_FragColor = vec4(col,1.0);
     return;
   }

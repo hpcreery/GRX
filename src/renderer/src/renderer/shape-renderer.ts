@@ -283,7 +283,14 @@ export class ShapeRenderer {
     return this
   }
 
+
+
   public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+    // const getWorldPosition = (x: number, y: number): [number, number] => {
+    //   const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
+    //   const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
+    //   return [mouse[0], mouse[1]]
+    // }
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -317,11 +324,36 @@ export class ShapeRenderer {
     })
     const features: Shapes.Shape[] = []
     for (let i = 0; i < data.length; i += 4) {
-      const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      if (value > 0) {
+      // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
+      const direction = data[i+3] > 0 ? 1 : -1
+      console.log(data.slice(i, i + 4).toString())
+      const distance = data[i] / 255
+      const xDir = (data[i + 1] / 255) * 2 - 1
+      const yDir = (data[i + 2] / 255) * 2 - 1
+      // const angle = Math.atan2(yDir, xDir)
+      // console.log(pointer)
+      // this.image.push(new Shapes.DatumLine({
+      //   index: this.image.length,
+      //   xs: pointer[0],
+      //   ys: pointer[1],
+      //   xe: pointer[0] + xDir * distance,
+      //   // xe: pointer[0] + Math.cos(angle) * distance,
+      //   ye: pointer[1] + yDir * distance,
+      //   // ye: pointer[1] + Math.sin(angle) * distance,
+      //   // symbol: new Symbols.RoundSymbol({ outer_dia: 0.01, inner_dia: 0 }),
+      // }))
+      // this.dirty = true
+      // console.log({ distance, xDir, yDir })
+      // if (direction > 0) {
         const feat = Object.assign({}, this.image[i / 4])
+        Object.assign(feat, { selectionInfo: {
+          distance,
+          xDir,
+          yDir,
+          direction,
+        } })
         features.push(feat)
-      }
+      // }
     }
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {

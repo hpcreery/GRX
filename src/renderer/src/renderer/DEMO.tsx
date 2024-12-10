@@ -3,7 +3,7 @@ import "../App.css"
 import * as Symbols from "./symbols"
 import * as Shapes from "./shapes"
 import { RenderEngine } from "."
-import { Button, Switch, Box } from "@mantine/core"
+import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
@@ -1615,6 +1615,8 @@ function REGLApp(): JSX.Element {
               engine.settings.ZOOM_TO_CURSOR = e.target.checked
             }}
           />
+          Mouse Mode
+          <SegmentedControl data={['move', 'select', 'measure'] as const} onChange={(mode) => engine.pointerSettings.mode = mode as "select" | "move" | "measure"} />
           {layers.map((layer, i) => {
             return (
               <div key={i}>

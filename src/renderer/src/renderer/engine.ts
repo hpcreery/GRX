@@ -717,12 +717,21 @@ export class RenderEngineBackend {
   public select(pointer: vec2): QueryFeature[] {
     const features: QueryFeature[] = []
     this.selections.length = 0
-    this.world((context) => {
+    this.world(async (context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const selectedFeatures = layer.select(pointer, context)
         for (const feature of selectedFeatures) {
           features.push(Object.assign(feature, { layer: layer.id, units: layer.units }))
+          const normalizedWorldPosition = vec2.create()
+          vec2.div(normalizedWorldPosition, pointer, [context.viewportWidth, context.viewportHeight])
+          const position = await this.getWorldPosition(normalizedWorldPosition[0], normalizedWorldPosition[1])
+          const { distance, xDir, yDir, direction } = feature.selectionInfo
+          console.log({ distance, xDir, yDir, direction })
+          this.clearMeasurements()
+          this.addMeasurement(position)
+          this.updateMeasurement([position[0] + xDir * distance * direction, position[1] + yDir * distance * direction])
+
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -744,6 +753,7 @@ export class RenderEngineBackend {
     this.render({
       force: true,
     })
+
     return features
   }
 
