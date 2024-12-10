@@ -39,7 +39,7 @@ export class SimpleMeasurement extends ShapeRenderer {
       const y = Math.abs(y1 - y2) * getUnitsConversion(this.units)
       this.image.push(
         new Shapes.DatumText({
-          text: `↙${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""}\n(X:${parseFloat(x.toFixed(4))} Y:${parseFloat(y.toFixed(4))})`,
+          text: `↙${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
           x: (x1 + x2) / 2,
           y: (y1 + y2) / 2,
           attributes: {
