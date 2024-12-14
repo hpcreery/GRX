@@ -1539,12 +1539,31 @@ function REGLApp(): JSX.Element {
           //   height: 1,
           //   inner_dia: 0.5,
           // })
-          symbol: new Symbols.ChamferedRectangleSymbol({
-            width: 2.0,
-            height: 1.0,
-            corner_radius: 0.2,
-            corners: 1,
-            inner_dia: 0,
+          // symbol: new Symbols.ChamferedRectangleSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   inner_dia: 0,
+          // })
+          // symbol: new Symbols.DiamondSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   inner_dia: 0.5,
+          // })
+          // symbol: new Symbols.OctagonSymbol({
+          //   width: 2.0,
+          //   height: 2.0,
+          //   corner_radius: 0.5,
+          //   inner_dia: 0.5,
+          // })
+          // symbol: new Symbols.RoundDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          // })
+          symbol: new Symbols.SquareDonutSymbol({
+            outer_dia: 2.0,
+            inner_dia: 0.8
           })
         })
       ],

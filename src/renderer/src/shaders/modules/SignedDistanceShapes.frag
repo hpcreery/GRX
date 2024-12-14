@@ -206,7 +206,7 @@ vec3 roundBoxSDG(vec2 p, vec2 size, float radius, float corners) {
   return roundBoxSDG(p, size, r);
 }
 
-// Chamfered box with vec4 of rounded corners
+// Chamfered box with vec4 of chamfered corners
 float chamferedBoxDist(vec2 p, vec2 size, vec4 corners) {
   float distb = boxDist(p ,size);
   size /= 2.0;
@@ -233,59 +233,6 @@ vec3 segmentSDF( in vec2 p, in vec2 a, in vec2 b )
     return vec3(d*sign(side),q/d*sign(side));
 }
 
-// float dot2( in vec2 v ) { return dot(v,v); }
-// float msign( in float x ) { return (x>0.0)?1.0:-1.0; }
-
-// // https://iquilezles.org/articles/distfunctions2d
-// float sdCircle( in vec2 p, in vec2 c, in float r )
-// {
-//     return length(p-c) - r;
-// }
-
-// // https://iquilezles.org/articles/distfunctions2d
-// vec2 sdSqLine( in vec2 p, in vec2 a, in vec2 b )
-// {
-// 	vec2 pa = p-a, ba = b-a;
-// 	float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-// 	return vec2( dot2(pa-ba*h), ba.x*pa.y-ba.y*pa.x );
-// }
-
-// // SDF of a shape made of a set line and arc segments
-// float sdShape( in vec2 p, int kType[7], float kPath[17] )
-// {
-//     vec2 vb = vec2(kPath[0],kPath[1]);
-    
-//     float d = dot2(p-vb);
-//     int off = 0;
-//     float s = 1.0;
-//     for( int i=0; i<7; i++ )
-//     {
-//         vec2 va = vb;
-//         vec2 ds;
-        
-//         if( kType[i]==0) // line (x,y)
-//         {
-//             vb = vec2(kPath[off+2],kPath[off+3]);
-//             ds = sdSqLine( p, va, vb );
-//             off += 2;
-//         }
-//         else if( kType[i]==1) // arc (x,y,r)
-//         {
-//             vb = vec2(kPath[off+3],kPath[off+4]);
-//             ds = sdSqArc(p, va, vb, kPath[off+2], d );
-//         	off += 3;
-
-//         }
-        
-//         // in/out test
-//         bvec3 cond = bvec3( p.y>=va.y, p.y<vb.y, ds.y>0.0 );
-//         if( all(cond) || all(not(cond)) ) s*=-1.0;  
-
-//         d = min( d, ds.x );
-//     }
-// 	return s*sqrt(d);
-// }
-
 vec3 mergeSDG( in vec3 fill, in vec3 remove) {
   if (fill.x > remove.x) {
     return fill;
@@ -293,7 +240,7 @@ vec3 mergeSDG( in vec3 fill, in vec3 remove) {
   return remove * vec3(1.0, 1.0, 1.0);
 }
 
-// Chamfered box with vec4 of rounded corners
+// Chamfered box with vec4 of chamfered corners
 vec3 chamferedBoxSDG(vec2 p, vec2 size, vec4 corners) {
   // float dist = chamferedBoxDist(p, size, corners);
   // const float eps = 0.001;
@@ -337,6 +284,13 @@ vec3 chamferedBoxSDG(vec2 p, vec2 size, float radius, float corners) {
 float diamonDist(vec2 p, vec2 size) {
   float dist = abs(p.x) * size.y + abs(p.y) * size.x - size.x * size.y * 0.5;
   return dist / (size.x + size.y) * 2.0;
+}
+
+// Diamond
+vec3 diamonSDG(vec2 p, vec2 size) {
+  vec2 ap = abs(p);
+  vec3 side = segmentSDF(ap, vec2(size.x/2.0, 0.0), vec2(0.0, size.y/2.0));
+  return side * vec3(1.0, sign(p.x), sign(p.y));
 }
 
 // Horizontal Hexagon
@@ -884,25 +838,50 @@ vec3 drawShape(vec2 FragCoord, int SymNum) {
       sdg = mergeSDG(sdg, hole);
     }
   } else if (t_Symbol == u_Shapes.Diamond) {
+    // SD Variant
     dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
+    sdg = diamonSDG(FragCoord.xy, vec2(t_Width, t_Height));
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Octagon) {
+    // SD Variant
     dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
+    sdg = chamferedBoxSDG(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Round_Donut) {
+    // SD Variant
     float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
     float OuterCircle = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
     dist = substract(InnerCircle, OuterCircle);
+    // SDG Variant
+    vec3 OuterCircleSDG = circleSDG(FragCoord.xy, t_Outer_Dia / 2.0);
+    vec3 InnerCircleSDG = circleSDG(FragCoord.xy, t_Inner_Dia / 2.0) * -1.0;
+    sdg = mergeSDG(OuterCircleSDG, InnerCircleSDG);
+
   } else if (t_Symbol == u_Shapes.Square_Donut) {
+    // SD Variant
     float InnerSquare = boxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia));
     float OuterSquare = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
     dist = substract(InnerSquare, OuterSquare);
+    // SDG Variant
+    vec3 OuterSquareSDG = boxSDG(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
+    vec3 InnerSquareSDG = boxSDG(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia)) * -1.0;
+    sdg = mergeSDG(OuterSquareSDG, InnerSquareSDG);
   } else if (t_Symbol == u_Shapes.SquareRound_Donut) {
     float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
     float OuterCircle = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
