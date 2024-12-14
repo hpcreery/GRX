@@ -92,6 +92,17 @@ vec2 transformLocation(vec2 pixel_coord) {
   return true_coord;
 }
 
+vec2 transformGradient(vec2 gradient) {
+  vec2 true_coord = gradient * rotateCW(radians(v_Rotation)) / v_ResizeFactor;
+  if (v_Mirror_X == 1.0) {
+    true_coord.x = -true_coord.x;
+  }
+  if (v_Mirror_Y == 1.0) {
+    true_coord.y = -true_coord.y;
+  }
+  return true_coord;
+}
+
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   float pixel_size = u_PixelSize / scale;
@@ -100,30 +111,38 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
-  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  vec3 sdg = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
-  float dist = sdg.x;
 
   if (u_QueryMode) {
-
-    // if (PointerDist.x < pixel_size) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
       vec2 PointerPosition = transformLocation(u_PointerPosition);
       vec3 PointerSDG = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
-      // gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+      // .x = f(p)
+      // .y = ∂f(p)/∂x
+      // .z = ∂f(p)/∂y
+      // .yz = ∇f(p) with ‖∇f(p)‖ = 1
+      vec2 PointerGradient = PointerSDG.yz;
+      PointerGradient = transformGradient(PointerGradient);
       float direction = 0.0;
       if (PointerSDG.x < pixel_size) {
         direction = 1.0;
       }
-      gl_FragColor = vec4(abs(PointerSDG.x), PointerSDG.yz * 0.5 + 0.5, direction);
+      gl_FragColor = vec4(abs(PointerSDG.x), PointerGradient * 0.5 + 0.5, direction);
       return;
     } else {
       discard;
     }
-    // } else {
-    //   discard;
-    // }
   }
+
+
+  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  vec3 sdg = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
+  // .x = f(p)
+  // .y = ∂f(p)/∂x
+  // .z = ∂f(p)/∂y
+  // .yz = ∇f(p) with ‖∇f(p)‖ = 1
+  float dist = sdg.x;
+
+
 
   if (DEBUG == 1) {
     // float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;

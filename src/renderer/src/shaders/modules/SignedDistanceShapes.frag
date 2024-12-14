@@ -71,6 +71,15 @@ vec3 circleSDG(in vec2 p, in float r)
 {
     float d = length(p);
     return vec3( d-r, p/d );
+
+    // float dist = circleDist(p, r);
+
+    // const float eps = 0.001;
+    // vec2 grad = normalize(vec2(
+    //     (circleDist(p+vec2(1,0)*eps, r)-circleDist(p+vec2(-1,0)*eps, r)),
+    //     (circleDist(p+vec2(0,1)*eps, r)-circleDist(p+vec2( 0,-1)*eps, r))
+    // ));
+    // return vec3(dist, grad);
 }
 
 float triangleDist(vec2 p, float radius) {
@@ -102,6 +111,16 @@ float boxDist(vec2 p, vec2 size) {
   size /= 2.0;
   vec2 d = abs(p) - size;
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+vec3 boxSDG( in vec2 p, in vec2 size ) {
+  size /= 2.0;
+  vec2 w = abs(p) - size;
+  vec2 s = vec2(p.x < 0.0 ? -1 : 1, p.y < 0.0 ? -1 : 1);
+  float g = max(w.x, w.y);
+  vec2  q = max(w, 0.0);
+  float l = length(q);
+  return vec3((g > 0.0) ? l : g, s * ((g > 0.0) ? q / l : ((w.x > w.y) ? vec2(1, 0) : vec2(0, 1))));
 }
 
 vec4 roundedCornersVector(float corners) {
@@ -149,6 +168,13 @@ float roundBoxDist(vec2 p, vec2 size, float radius) {
   return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - radius;
 }
 
+// Round Box with rounded all corners
+vec3 roundBoxSDG(vec2 p, vec2 size, float radius) {
+  size -= (radius * 2.0);
+  vec3 dis_gra = boxSDG(p, size);
+  return vec3( dis_gra.x - radius, dis_gra.yz );
+}
+
 // Round box with vec4 of rounded corners
 float roundBoxDist(vec2 p, vec2 size, vec4 corners) {
   size /= 2.0;
@@ -158,26 +184,153 @@ float roundBoxDist(vec2 p, vec2 size, vec4 corners) {
   return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corners.x;
 }
 
+// Round box with vec4 of rounded corners
+vec3 roundBoxSDG(vec2 p, vec2 size, vec4 corners) {
+  corners.xy = (p.y > 0.0) ? corners.xy : corners.wz;
+  corners.x = (p.x > 0.0) ? corners.x : corners.y;
+  // vec2 q = abs(p) - size + corners.x;
+  // return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - corners.x;
+  vec3 dis_gra = boxSDG(p, size - (corners.x * 2.0));
+  return vec3( dis_gra.x - corners.x, dis_gra.yz );
+}
+
 // Round box with uniform corner radius and float of corners rounded, see roundedCornersVector
 float roundBoxDist(vec2 p, vec2 size, float radius, float corners) {
   vec4 r = radius * roundedCornersVector(corners);
   return roundBoxDist(p, size, r);
 }
 
+// Round box with uniform corner radius and float of corners rounded, see roundedCornersVector
+vec3 roundBoxSDG(vec2 p, vec2 size, float radius, float corners) {
+  vec4 r = radius * roundedCornersVector(corners);
+  return roundBoxSDG(p, size, r);
+}
+
 // Chamfered box with vec4 of rounded corners
 float chamferedBoxDist(vec2 p, vec2 size, vec4 corners) {
+  float distb = boxDist(p ,size);
   size /= 2.0;
   corners.xy = (p.y > 0.0) ? corners.xy : corners.wz;
   corners.x = (p.x > 0.0) ? corners.x : corners.y;
-  float dista = abs(p.x) + abs(p.y) - (size.x + size.y) + corners.x;
-  vec2 d = abs(p) - size;
-  return intersect(min(max(d.x, d.y), 0.0), dista);
+  float dista = (abs(p.x) + abs(p.y) - (size.x + size.y) + corners.x) / sqrt(2.0);
+  // vec2 d = abs(p) - size;
+  return intersect(distb, dista);
+}
+
+vec3 segmentSDF( in vec2 p, in vec2 a, in vec2 b )
+{
+    vec2 ba = b-a;
+    vec2 pa = p-a;
+    float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    vec2  q = pa-h*ba;
+    float d = length(q);
+    
+    //https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+    //Given a line a--b and point c
+    //(b.x - a.x)*(c.y - a.y) - (b.y - a.y)*(c.x - a.x) > 0;
+    float side = (b.x - a.x)*(p.y - a.y) - (b.y - a.y)*(p.x - a.x);
+    
+    return vec3(d*sign(side),q/d*sign(side));
+}
+
+// float dot2( in vec2 v ) { return dot(v,v); }
+// float msign( in float x ) { return (x>0.0)?1.0:-1.0; }
+
+// // https://iquilezles.org/articles/distfunctions2d
+// float sdCircle( in vec2 p, in vec2 c, in float r )
+// {
+//     return length(p-c) - r;
+// }
+
+// // https://iquilezles.org/articles/distfunctions2d
+// vec2 sdSqLine( in vec2 p, in vec2 a, in vec2 b )
+// {
+// 	vec2 pa = p-a, ba = b-a;
+// 	float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+// 	return vec2( dot2(pa-ba*h), ba.x*pa.y-ba.y*pa.x );
+// }
+
+// // SDF of a shape made of a set line and arc segments
+// float sdShape( in vec2 p, int kType[7], float kPath[17] )
+// {
+//     vec2 vb = vec2(kPath[0],kPath[1]);
+    
+//     float d = dot2(p-vb);
+//     int off = 0;
+//     float s = 1.0;
+//     for( int i=0; i<7; i++ )
+//     {
+//         vec2 va = vb;
+//         vec2 ds;
+        
+//         if( kType[i]==0) // line (x,y)
+//         {
+//             vb = vec2(kPath[off+2],kPath[off+3]);
+//             ds = sdSqLine( p, va, vb );
+//             off += 2;
+//         }
+//         else if( kType[i]==1) // arc (x,y,r)
+//         {
+//             vb = vec2(kPath[off+3],kPath[off+4]);
+//             ds = sdSqArc(p, va, vb, kPath[off+2], d );
+//         	off += 3;
+
+//         }
+        
+//         // in/out test
+//         bvec3 cond = bvec3( p.y>=va.y, p.y<vb.y, ds.y>0.0 );
+//         if( all(cond) || all(not(cond)) ) s*=-1.0;  
+
+//         d = min( d, ds.x );
+//     }
+// 	return s*sqrt(d);
+// }
+
+vec3 mergeSDG( in vec3 fill, in vec3 remove) {
+  if (fill.x > remove.x) {
+    return fill;
+  }
+  return remove * vec3(1.0, 1.0, 1.0);
+}
+
+// Chamfered box with vec4 of rounded corners
+vec3 chamferedBoxSDG(vec2 p, vec2 size, vec4 corners) {
+  // float dist = chamferedBoxDist(p, size, corners);
+  // const float eps = 0.001;
+  // vec2 grad = normalize(vec2(
+  //     (chamferedBoxDist(p+vec2(1,0)*eps, size, corners)-chamferedBoxDist(p+vec2(-1,0)*eps, size, corners)),
+  //     (chamferedBoxDist(p+vec2(0,1)*eps, size, corners)-chamferedBoxDist(p+vec2( 0,-1)*eps, size, corners))
+  // ));
+  // return vec3(dist, grad);
+  
+  vec3 box = boxSDG(p, size);
+  size /= 2.0;
+  corners.xy = (p.y > 0.0) ? corners.xy : corners.wz;
+  corners.x = (p.x > 0.0) ? corners.x : corners.y;
+  vec3 chamfer = segmentSDF(abs(p), size - vec2(corners.x, 0.0), size - vec2(0.0, corners.x));
+  if (box.x > chamfer.x) {
+    return box;
+  } else {
+    if (abs(p.x) < size.x - corners.x && chamfer.x >= 0.0) {
+      return box;
+    }
+    if (abs(p.y) < size.y - corners.x && chamfer.x >= 0.0) {
+      return box;
+    }
+    return chamfer * vec3(1.0, sign(p.x), sign(p.y));
+  }
 }
 
 // Chamfered box with uniform corner radius and float of corners rounded, see roundedCornersVector
 float chamferedBoxDist(vec2 p, vec2 size, float radius, float corners) {
   vec4 r = radius * roundedCornersVector(corners);
   return chamferedBoxDist(p, size, r);
+}
+
+// Chamfered box with uniform corner radius and float of corners rounded, see roundedCornersVector
+vec3 chamferedBoxSDG(vec2 p, vec2 size, float radius, float corners) {
+  vec4 r = radius * roundedCornersVector(corners);
+  return chamferedBoxSDG(p, size, r);
 }
 
 // Diamond
@@ -586,6 +739,56 @@ float outerBorderMask(float dist, float width) {
   return alpha1 - alpha2;
 }
 
+// this is an easy polygon of v sides sides
+// https://iquilezles.org/articles/distfunctions2d/
+// float sdPolygon( in vec2[N] v, in vec2 p )
+// {
+//     float d = dot(p-v[0],p-v[0]);
+//     float s = 1.0;
+//     for( int i=0, j=N-1; i<N; j=i, i++ )
+//     {
+//         vec2 e = v[j] - v[i];
+//         vec2 w =    p - v[i];
+//         vec2 b = w - e*clamp( dot(w,e)/dot(e,e), 0.0, 1.0 );
+//         d = min( d, dot(b,b) );
+//         bvec3 c = bvec3(p.y>=v[i].y,p.y<v[j].y,e.x*w.y>e.y*w.x);
+//         if( all(c) || all(not(c)) ) s*=-1.0;
+//     }
+//     return s*sqrt(d);
+// }
+
+///////////////////////
+//   SDG Utilities   //
+///////////////////////
+
+// vec3 onionSDG( in vec2 p, in float r )
+// {
+//   vec3 dis_gra = sdgShape(p);
+//   return vec3( abs(dis_gra.x) - r, sign(dis_gra.x)*dis_gra.yz );
+// }
+
+// vec3 mergeSDG( in vec3 fill, in vec3 remove) {
+//   if (fill.x > remove.x) {
+//     return fill;
+//   }
+//   return remove * vec3(1.0, 1.0, 1.0);
+// }
+
+// vec3 sdgRound( in vec2 p, in float r )
+// {
+//   vec3 dis_gra = sdgShape(p);
+//   return vec3( dis_gra.x - r, dis_gra.yz );
+// }
+
+// vec2 gradient(vec2 p)
+// {
+//     const float eps = 0.001;
+//     return normalize(vec2(
+//         (shape(p+vec2(1,0)*eps)-shape(p+vec2(-1,0)*eps)),
+//         (shape(p+vec2(0,1)*eps)-shape(p+vec2( 0,-1)*eps))
+//     ));
+// }
+
 #pragma glslify: pullSymbolParameter = require(./PullSymbolParameter.frag,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 vec3 drawShape(vec2 FragCoord, int SymNum) {
@@ -611,36 +814,74 @@ vec3 drawShape(vec2 FragCoord, int SymNum) {
   float dist = 10.0;
   vec3 sdg = vec3(10.0,10.0,10.0);
 
+  // SD - Signed Distance (float)
+  // SDG - Signed Distance with Gradient (vec3)
+
+
   if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+    // SD Variant
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
     sdg = circleSDG(FragCoord.xy, t_Outer_Dia / 2.0);
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+    // SD Variant
     dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
+    sdg = boxSDG(FragCoord.xy, vec2(t_Width, t_Height));
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Rounded_Rectangle) {
+    // SD Variant
     dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
+    sdg = roundBoxSDG(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Oval) {
+    // SD Variant
     dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
+    // SDG Variant
+    sdg = roundBoxSDG(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
+    }
   } else if (t_Symbol == u_Shapes.Chamfered_Rectangle) {
+    // SD Variant
     dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
+    }
+    // SDG Variant
+    sdg = chamferedBoxSDG(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
+    if (t_Inner_Dia != 0.0) {
+      vec3 hole = -1.0 * circleSDG(FragCoord.xy, t_Inner_Dia / 2.0);
+      sdg = mergeSDG(sdg, hole);
     }
   } else if (t_Symbol == u_Shapes.Diamond) {
     dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));

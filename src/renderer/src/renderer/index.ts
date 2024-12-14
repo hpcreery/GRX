@@ -271,6 +271,10 @@ export class RenderEngine {
         this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
         backend.updateMeasurement([x1, y1])
+      } else if (this.pointerSettings.mode === "select") {
+        this.CONTAINER.style.cursor = "wait"
+        const [x, y] = this.getMouseCanvasCoordinates(e)
+        const features = await backend.select([x, y])
       }
 
       if (!(await backend.isDragging())) {

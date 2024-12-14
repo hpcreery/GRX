@@ -715,6 +715,8 @@ export class RenderEngineBackend {
   }
 
   public select(pointer: vec2): QueryFeature[] {
+    if (!this.dirty) return []
+    setTimeout(() => (this.dirty = true), 1000 / 30)
     const features: QueryFeature[] = []
     this.selections.length = 0
     this.world(async (context) => {
@@ -727,7 +729,7 @@ export class RenderEngineBackend {
           vec2.div(normalizedWorldPosition, pointer, [context.viewportWidth, context.viewportHeight])
           const position = await this.getWorldPosition(normalizedWorldPosition[0], normalizedWorldPosition[1])
           const { distance, xDir, yDir, direction } = feature.selectionInfo
-          console.log({ distance, xDir, yDir, direction })
+          // console.log({ distance, xDir, yDir, direction })
           this.clearMeasurements()
           this.addMeasurement(position)
           this.updateMeasurement([position[0] + xDir * distance * direction, position[1] + yDir * distance * direction])
@@ -750,9 +752,9 @@ export class RenderEngineBackend {
         this.selections.push(newSelectionLayer)
       }
     })
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
 
     return features
   }

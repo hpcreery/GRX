@@ -1299,21 +1299,6 @@ function REGLApp(): JSX.Element {
     //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     // })
 
-    Engine.addLayer({
-      name: 'circle',
-      image: [
-        new Shapes.Pad({
-          x: 0,
-          y: 0,
-          symbol: new Symbols.RoundSymbol({
-            outer_dia: 1,
-            inner_dia: 0,
-          })
-        })
-      ],
-      units: 'mm'
-    })
-
     // })
 
     // setTimeout(() => {
@@ -1522,6 +1507,49 @@ function REGLApp(): JSX.Element {
     //   // transform.position[1] = 3
     //   transform.update()
     // }))
+
+    Engine.addLayer({
+      name: 'circle',
+      image: [
+        new Shapes.Pad({
+          x: 0,
+          y: 0,
+          rotation: 0,
+          resize_factor: 1.0,
+          mirror_x: 0,
+          mirror_y: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 1,
+          //   inner_dia: 0.5,
+          // })
+          // symbol: new Symbols.RectangleSymbol({
+          //   width: 2,
+          //   height: 1,
+          //   inner_dia: 0.5,
+          // })
+          // symbol: new Symbols.RoundedRectangleSymbol({
+          //   width: 2,
+          //   height: 1,
+          //   corner_radius: 0.2,
+          //   inner_dia: 0.5,
+          //   corners: 1,
+          // }),
+          // symbol: new Symbols.OvalSymbol({
+          //   width: 2,
+          //   height: 1,
+          //   inner_dia: 0.5,
+          // })
+          symbol: new Symbols.ChamferedRectangleSymbol({
+            width: 2.0,
+            height: 1.0,
+            corner_radius: 0.2,
+            corners: 1,
+            inner_dia: 0,
+          })
+        })
+      ],
+      units: 'mm'
+    })
 
     Engine.render({
       force: true,

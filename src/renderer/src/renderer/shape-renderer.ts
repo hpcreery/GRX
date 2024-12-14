@@ -326,7 +326,7 @@ export class ShapeRenderer {
     for (let i = 0; i < data.length; i += 4) {
       // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
       const direction = data[i+3] > 0 ? 1 : -1
-      console.log(data.slice(i, i + 4).toString())
+      // console.log(data.slice(i, i + 4).toString())
       const distance = data[i] / 255
       const xDir = (data[i + 1] / 255) * 2 - 1
       const yDir = (data[i + 2] / 255) * 2 - 1
