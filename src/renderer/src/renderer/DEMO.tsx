@@ -1509,7 +1509,7 @@ function REGLApp(): JSX.Element {
     // }))
 
     Engine.addLayer({
-      name: 'circle',
+      name: "circle",
       image: [
         new Shapes.Pad({
           x: 0,
@@ -1561,13 +1561,75 @@ function REGLApp(): JSX.Element {
           //   outer_dia: 2.0,
           //   inner_dia: 1.0,
           // })
-          symbol: new Symbols.SquareDonutSymbol({
+          // symbol: new Symbols.SquareDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 0.8
+          // })
+          // symbol: new Symbols.RoundedSquareDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.8,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          // }),
+          // symbol: new Symbols.RectangleDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   line_width: 0.1,
+          // }),
+          // symbol: new Symbols.RoundedRectangleDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   line_width: 0.1,
+          //   inner_dia: 0.0,
+          // }),
+          // symbol: new Symbols.OvalDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   line_width: 0.1,
+          // }),
+          // symbol: new Symbols.HorizontalHexagonSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          // }),
+          // symbol: new Symbols.VerticalHexagonSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          // }),
+          // symbol: new Symbols.ButterflySymbol({
+          //   outer_dia: 2.0,
+          // }),
+          // symbol: new Symbols.SquareButterflySymbol({
+          //   width: 2.0,
+          // }),
+          // symbol: new Symbols.TriangleSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          // }),
+          // symbol: new Symbols.HalfOvalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          // }),
+          // symbol: new Symbols.RoundedRoundThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.1,
+          //   angle: 0,
+          //   num_spokes: 4,
+          // }),
+          symbol: new Symbols.SquaredRoundThermalSymbol({
             outer_dia: 2.0,
-            inner_dia: 0.8
-          })
-        })
+            inner_dia: 1.0,
+            gap: 0.3,
+            angle: 0,
+            num_spokes: 5,
+          }),
+        }),
       ],
-      units: 'mm'
+      units: "mm",
     })
 
     Engine.render({
@@ -1606,7 +1668,7 @@ function REGLApp(): JSX.Element {
           }}
         >
           <StatsWidget />
-          <MouseCoordinates engine={engine} key='coordinates'/>
+          <MouseCoordinates engine={engine} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
@@ -1663,7 +1725,10 @@ function REGLApp(): JSX.Element {
             }}
           />
           Mouse Mode
-          <SegmentedControl data={['move', 'select', 'measure'] as const} onChange={(mode) => engine.pointerSettings.mode = mode as "select" | "move" | "measure"} />
+          <SegmentedControl
+            data={["move", "select", "measure"] as const}
+            onChange={(mode) => (engine.pointerSettings.mode = mode as "select" | "move" | "measure")}
+          />
           {layers.map((layer, i) => {
             return (
               <div key={i}>

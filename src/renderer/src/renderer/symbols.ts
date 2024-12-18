@@ -216,16 +216,14 @@ export class RoundedSquareDonutSymbol extends StandardSymbol {
 }
 
 export class RectangleDonutSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "inner_dia"> & Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
+  constructor(symbol: Pick<TStandardSymbol, "width" | "height" | "line_width"> & Partial<{ id: string; attributes: AttributeCollection }>) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Donut, ...symbol })
   }
 }
 
 export class RoundedRectangleDonutSymbol extends StandardSymbol {
   constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "corner_radius" | "corners" | "line_width" | "inner_dia"> &
+    symbol: Pick<TStandardSymbol, "width" | "height" | "corner_radius" | "corners" | "line_width"> &
       Partial<{ id: string; attributes: AttributeCollection }>,
   ) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Rectangle_Donut, ...symbol })
@@ -233,9 +231,7 @@ export class RoundedRectangleDonutSymbol extends StandardSymbol {
 }
 
 export class OvalDonutSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "inner_dia"> & Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
+  constructor(symbol: Pick<TStandardSymbol, "width" | "height" | "line_width"> & Partial<{ id: string; attributes: AttributeCollection }>) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Oval_Donut, ...symbol })
   }
 }
