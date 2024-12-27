@@ -1620,12 +1620,19 @@ function REGLApp(): JSX.Element {
           //   angle: 0,
           //   num_spokes: 4,
           // }),
-          symbol: new Symbols.SquaredRoundThermalSymbol({
+          // symbol: new Symbols.SquaredRoundThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 0.4,
+          //   gap: 0.3,
+          //   angle: 10,
+          //   num_spokes: 5,
+          // }),
+          symbol: new Symbols.SquareThermalSymbol({
             outer_dia: 2.0,
             inner_dia: 1.0,
-            gap: 0.3,
+            gap: 0.4,
             angle: 0,
-            num_spokes: 5,
+            num_spokes: 1,
           }),
         }),
       ],

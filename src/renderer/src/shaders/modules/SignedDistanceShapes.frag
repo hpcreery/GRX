@@ -572,11 +572,11 @@ float roundThermalExactDist(in vec2 p, in float od, in float id, in float angle,
   float offset_id = ir - ir * (cos(asin((gap * 0.5) / ir)));
 
   vec2 sc = vec2(sin(gap/2.0), cos(gap/2.0));
-  float testa = length(vec2(p1, p2) - vec2(gap/2.0, ((id * 0.5) - offset_id) * cos(r_angle)));
-  float testb = length(vec2(p1, p2) - vec2(-gap/2.0, ((id * 0.5) - offset_id) * cos(r_angle)));
-  float testc = length(vec2(p1, p2) - vec2(gap/2.0, ((od * 0.5) - offset_od) * cos(r_angle)));
-  float testd = length(vec2(p1, p2) - vec2(-gap/2.0, ((od * 0.5) - offset_od) * cos(r_angle)));
-  float corners = min(min(testa, testb), min(testc, testd));
+  float corner1 = length(vec2(p1, p2) - vec2(gap/2.0, ((id * 0.5) - offset_id)));
+  float corner2 = length(vec2(p1, p2) - vec2(-gap/2.0, ((id * 0.5) - offset_id)));
+  float corner3 = length(vec2(p1, p2) - vec2(gap/2.0, ((od * 0.5) - offset_od)));
+  float corner4 = length(vec2(p1, p2) - vec2(-gap/2.0, ((od * 0.5) - offset_od)));
+  float corners = min(min(corner1, corner2), min(corner3, corner4));
 
 
   float da = (leng * sin(n_angle) + gap / 2.0);
@@ -626,6 +626,148 @@ float squareThermalDist(in vec2 p, in float od, in float id, in float angle, in 
   float d = substract(innersquare, outersquare);
   float therm = max(d, spokeDist(p, angle, num_of_spokes, gap));
   return therm;
+}
+
+float udSegment( in vec2 p, in vec2 a, in vec2 b )
+{
+    vec2 ba = b-a;
+    vec2 pa = p-a;
+    float h =clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    return length(pa-h*ba);
+}
+
+float squareThermalExactDist(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
+
+  float min_id = gap/(tan(radians(180.0/num_of_spokes)));
+  id = max(id, min_id);
+  float outersquare = boxDist(p, vec2(od, od));
+  float innersquare = boxDist(p, vec2(id, id));
+  float d = substract(innersquare, outersquare);
+
+  float r_angle = radians(angle);
+
+  float n_angle = atan(p.y, p.x) - r_angle;
+  n_angle = mod(n_angle + PI, (PI * 2.0) / num_of_spokes) - (PI / num_of_spokes);
+
+  float near_spoke_angle = atan(p.y, p.x) - n_angle;
+  // nomalize angle
+  near_spoke_angle = atan(sin(near_spoke_angle), cos(near_spoke_angle));
+
+  float offset_x = (gap / 2.0) * cos(near_spoke_angle + PI/2.0);
+  float offset_y = (gap / 2.0) * sin(near_spoke_angle + PI/2.0);
+
+  float outer_square_width = od / 2.0;
+  float outer_square_height = od / 2.0;
+
+  float x_side = near_spoke_angle >= -PI/2.0 && near_spoke_angle <= PI/2.0 ? 1.0 : -1.0;
+  float y_side = near_spoke_angle >= 0.0 ? 1.0 : -1.0;
+
+  float offset_outer_square_edge_a = min((x_side * outer_square_width + offset_x)/cos(near_spoke_angle), (y_side * outer_square_height + offset_y)/sin(near_spoke_angle));
+  float offset_outer_square_edge_b = min((x_side * outer_square_width - offset_x)/cos(near_spoke_angle), (y_side * outer_square_height - offset_y)/sin(near_spoke_angle));
+
+  float inner_square_width = id / 2.0;
+  float inner_square_height = id / 2.0;
+
+  float offset_inner_square_edge_a = min((x_side * inner_square_width + offset_x)/cos(near_spoke_angle), (y_side * inner_square_height + offset_y)/sin(near_spoke_angle));
+  float offset_inner_square_edge_b = min((x_side * inner_square_width - offset_x)/cos(near_spoke_angle), (y_side * inner_square_height - offset_y)/sin(near_spoke_angle));
+
+
+  float ir = id / 2.0;
+  float or = od / 2.0;
+  float offset_od = or - or * (cos(asin((gap * 0.5) / or)));
+  float offset_id = ir - ir * (cos(asin((gap * 0.5) / ir)));
+
+  // distance from angle to edge of square
+  float point_angle = 0.0;
+  float r_od = min(1.0/abs(cos(point_angle)*od), 1.0/abs(sin(point_angle))*od);
+  float r_id = min(1.0/abs(cos(point_angle)*id), 1.0/abs(sin(point_angle))*id);
+
+  vec2 sc = vec2(sin(gap/2.0), cos(gap/2.0));
+
+  vec2 a1 = vec2(gap/2.0, (offset_outer_square_edge_b));
+  vec2 a2 = vec2(gap/2.0, (offset_inner_square_edge_b));
+  vec2 b1 = vec2(-gap/2.0, (offset_outer_square_edge_a));
+  vec2 b2 = vec2(-gap/2.0, (offset_inner_square_edge_a));
+
+  float leng = length(p);
+  // p1, p2 are the x, y coordinates of the point p rotated by the angle of the spoke in relation to the quantity of spokes
+  float p1 = (leng * sin(n_angle));
+  float p2 = (leng * cos(n_angle));
+  vec2 ap = vec2(p1, p2);
+
+  float side1 = udSegment(ap, a1, a2);
+  float side2 = udSegment(ap, b1, b2);
+  float side = min(side1, side2);
+
+  float da = (leng * sin(n_angle) + gap / 2.0);
+  float db = (-leng * sin(n_angle) + gap / 2.0);
+  float spokes = min(da, db);
+
+  if (num_of_spokes == 1.0) {
+    vec2 p1 = rotateCW(r_angle) * p;
+    spokes = min(spokes, p1.x);
+  }
+  if (d <= 0.0){
+    if (spokes >= 0.0) {
+      return side;
+    }
+    return max(d, -side);
+  }
+
+  if (outersquare > 0.0) {
+    vec2 p_outside = vec2(min(abs(p.x), od / 2.0) * sign(p.x), min(abs(p.y), od / 2.0) * sign(p.y));
+    float near_outside_angle = atan(p_outside.y, p_outside.x) - r_angle;
+    near_outside_angle = mod(near_outside_angle + PI, (PI * 2.0) / num_of_spokes) - (PI / num_of_spokes);
+    float leng_outer = length(p_outside);
+    float dist_outer_gapa = (leng_outer * sin(near_outside_angle) + gap / 2.0);
+    float dist_outer_gapb = (-leng_outer * sin(near_outside_angle) + gap / 2.0);
+    float dist_outer_gap = min(dist_outer_gapa, dist_outer_gapb);
+    if (num_of_spokes == 1.0) {
+      vec2 p1_outer = rotateCW(r_angle) * p_outside;
+      dist_outer_gap = min(dist_outer_gap, p1_outer.x);
+    }
+    if (dist_outer_gap >= 0.0) {
+      return side;
+    }
+  }
+
+  vec2 p_inside = p;
+  if (abs(abs(p.x) - id/2.0) > abs(abs(p.y) - id/2.0)) {
+    p_inside = vec2(p.x, id/2.0 * sign(p.y));
+  } else {
+    p_inside = vec2(id/2.0 * sign(p.x), p.y);
+  }
+  if (innersquare < 0.0){
+    float near_inside_angle = atan(p_inside.y, p_inside.x) - r_angle;
+    near_inside_angle = mod(near_inside_angle + PI, (PI * 2.0) / num_of_spokes) - (PI / num_of_spokes);
+    float leng_inner = length(p_inside);
+    float dist_inner_gapa = (leng_inner * sin(near_inside_angle) + gap / 2.0);
+    float dist_inner_gapb = (-leng_inner * sin(near_inside_angle) + gap / 2.0);
+    float dist_inner_gap= min(dist_inner_gapa, dist_inner_gapb);
+    if (num_of_spokes == 1.0) {
+      vec2 p1_inner = rotateCW(r_angle) * p_inside;
+      dist_inner_gap = min(dist_inner_gap, p1_inner.x);
+    }
+    if (dist_inner_gap >= 0.0) {
+      return side;
+    }
+  }
+
+
+
+  float a = max(d, spokes);
+  return d;
+
+}
+
+vec3 squareThermalSDG(in vec2 p, in float od, in float id, in float angle, in float num_of_spokes, in float gap) {
+  float dist = squareThermalExactDist(p, od, id, angle, num_of_spokes, gap);
+  const float eps = 0.001;
+  vec2 grad = normalize(vec2(
+      (squareThermalExactDist(p + vec2(1, 0) * eps, od, id, angle, num_of_spokes, gap) - squareThermalExactDist(p + vec2(-1, 0) * eps, od, id, angle, num_of_spokes, gap)),
+      (squareThermalExactDist(p + vec2(0, 1) * eps, od, id, angle, num_of_spokes, gap) - squareThermalExactDist(p + vec2(0, -1) * eps, od, id, angle, num_of_spokes, gap))
+  ));
+  return vec3(dist, grad);
 }
 
 float boxThermalDist(in vec2 p, in float width, in float height, in float angle, in float num_of_spokes, in float gap, in float line_width) {
@@ -1196,7 +1338,10 @@ vec3 drawShape(vec2 FragCoord, int SymNum) {
     // SDG Variant
     sdg = roundThermalSDG(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
   } else if (t_Symbol == u_Shapes.Square_Thermal) {
+    // SD Variant
     dist = squareThermalDist(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
+    // SDG Variant
+    sdg = squareThermalSDG(FragCoord.xy, t_Outer_Dia, t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
   } else if (t_Symbol == u_Shapes.Open_Corners_Square_Thermal) {
     dist = boxThermalOpenCornersDist(FragCoord.xy, t_Outer_Dia, t_Outer_Dia, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
   } else if (t_Symbol == u_Shapes.Line_Thermal) {
