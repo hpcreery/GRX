@@ -59,7 +59,7 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Symbols=u_Symbols,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.extended.frag',u_Parameters=u_Parameters,u_Symbols=u_Symbols,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 //////////////////////////////
 //     Draw functions       //

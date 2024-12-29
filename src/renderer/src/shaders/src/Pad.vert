@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
@@ -95,6 +95,7 @@ void main() {
 
   Size += vec2(pixel_size, pixel_size);
 
+  // vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 SizedPosition = a_Vertex_Position * (Size / 1.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
   if (a_Mirror_X == 1.0) {

@@ -3,21 +3,16 @@ import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "./shapes"
 import * as Symbols from "./symbols"
 import { BoundingBox, FeatureTypeIdentifier } from "./types"
-import ShapeTransform from './transform'
+import ShapeTransform from "./transform"
 
-import {
-  DatumShaderCollection,
-  DatumTextShaderCollection,
-  ReglRenderers,
-  TLoadedReglRenderers,
-} from "./collections"
+import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
 import type { WorldContext } from "./engine"
 import { getScaleMat3 } from "./utils"
 
-const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
+const { SYMBOL_PARAMETERS_MAP, ALL_SYMBOLS_MAP } = Symbols
 
 interface CommonAttributes {}
 
@@ -172,7 +167,7 @@ export class ShapeRenderer {
           return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
-        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
+        ...Object.entries(ALL_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Symbols.${key}`]: value }), {}),
         ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}),
       },
     })
@@ -283,8 +278,6 @@ export class ShapeRenderer {
     return this
   }
 
-
-
   public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
     // const getWorldPosition = (x: number, y: number): [number, number] => {
     //   const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
@@ -325,7 +318,7 @@ export class ShapeRenderer {
     const features: Shapes.Shape[] = []
     for (let i = 0; i < data.length; i += 4) {
       // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      const direction = data[i+3] > 0 ? 1 : -1
+      const direction = data[i + 3] > 0 ? 1 : -1
       // console.log(data.slice(i, i + 4).toString())
       const distance = data[i] / 255
       const xDir = (data[i + 1] / 255) * 2 - 1
@@ -345,14 +338,16 @@ export class ShapeRenderer {
       // this.dirty = true
       // console.log({ distance, xDir, yDir })
       // if (direction > 0) {
-        const feat = Object.assign({}, this.image[i / 4])
-        Object.assign(feat, { selectionInfo: {
+      const feat = Object.assign({}, this.image[i / 4])
+      Object.assign(feat, {
+        selectionInfo: {
           distance,
           xDir,
           yDir,
           direction,
-        } })
-        features.push(feat)
+        },
+      })
+      features.push(feat)
       // }
     }
     this.macroCollection.macros.forEach((macro) => {
@@ -415,6 +410,8 @@ export class ShapeRenderer {
 
   private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
     if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
+    if (this.shapeCollection.shaderAttachment.padsExtended.length != 0)
+      this.drawCollections.drawPadsExtended(this.shapeCollection.shaderAttachment.padsExtended)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
     if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
     if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
@@ -469,7 +466,6 @@ export class MacroRenderer extends ShapeRenderer {
     this.framebuffer = this.regl.framebuffer({
       depth: true,
     })
-
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {

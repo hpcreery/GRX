@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
@@ -109,7 +109,7 @@ float circleDist(vec2 p, float radius) {
 }
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Symbols=u_Symbols,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 // Here we can redefine drawShape with a much smaller footprint to improve comiling performance. Limiting arcs to only be drawn with circles.
 float drawShape(vec2 FragCoord, int SymNum) {
 
@@ -118,7 +118,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
 
   float dist = 10.0;
 
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+  if (t_Symbol == u_Symbols.Round || t_Symbol == u_Symbols.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
   } else {
     dist = 1.0;

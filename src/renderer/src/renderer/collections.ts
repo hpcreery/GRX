@@ -7,6 +7,7 @@ import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 
 import PadFrag from "../shaders/src/Pad.frag"
 import PadVert from "../shaders/src/Pad.vert"
+import PadFragExtended from "../shaders/src/Pad.extended.frag"
 import LineFrag from "../shaders/src/Line.frag"
 import LineVert from "../shaders/src/Line.vert"
 import ArcFrag from "../shaders/src/Arc.frag"
@@ -23,7 +24,7 @@ import { vec2 } from "gl-matrix"
 
 import earcut from "earcut"
 
-import { fontInfo as cozetteFontInfo } from './text/cozette/font'
+import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -184,6 +185,7 @@ export interface ScreenRenderUniforms {
 
 interface TShaderAttachment {
   pads: PadAttachments
+  padsExtended: PadAttachments
   lines: LineAttachments
   arcs: ArcAttachments
   surfaces: SurfaceAttachments[]
@@ -194,6 +196,7 @@ interface TShaderAttachment {
 }
 export interface TLoadedReglRenderers {
   drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
+  drawPadsExtended: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
   drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
@@ -205,6 +208,7 @@ export interface TLoadedReglRenderers {
 
 export interface TReglRenderers {
   drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
+  drawPadsExtended: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
   drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
   drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
@@ -216,6 +220,7 @@ export interface TReglRenderers {
 
 export const ReglRenderers: TReglRenderers = {
   drawPads: undefined,
+  drawPadsExtended: undefined,
   drawArcs: undefined,
   drawLines: undefined,
   drawSurfaces: undefined,
@@ -224,7 +229,6 @@ export const ReglRenderers: TReglRenderers = {
   drawFrameBuffer: undefined,
   renderToScreen: undefined,
 }
-
 
 export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
   const texture = regl.texture({
@@ -292,6 +296,73 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
 export function initializeRenderers(regl: REGL.Regl): void {
   ReglRenderers.drawPads = regl<PadUniforms, PadAttributes, PadAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: PadFrag,
+    vert: PadVert,
+
+    uniforms: {},
+
+    attributes: {
+      a_Index: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
+        divisor: 1,
+      },
+
+      a_Location: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
+        divisor: 1,
+      },
+
+      a_SymNum: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+        divisor: 1,
+      },
+
+      a_ResizeFactor: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+        divisor: 1,
+      },
+
+      a_Polarity: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+        divisor: 1,
+      },
+
+      a_Rotation: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+        divisor: 1,
+      },
+
+      a_Mirror_X: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+        divisor: 1,
+      },
+
+      a_Mirror_Y: {
+        buffer: regl.prop<PadAttachments, "buffer">("buffer"),
+        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
+        divisor: 1,
+      },
+    },
+
+    instances: regl.prop<PadAttachments, "length">("length"),
+  })
+
+  ReglRenderers.drawPadsExtended = regl<PadUniforms, PadAttributes, PadAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
+    frag: PadFragExtended,
     vert: PadVert,
 
     uniforms: {},
@@ -686,6 +757,7 @@ const { SYMBOL_PARAMETERS } = Symbols
 
 interface ShapesList {
   pads: Shapes.Pad[]
+  padsExtended: Shapes.Pad[]
   lines: Shapes.Line[]
   arcs: Shapes.Arc[]
   surfaces: Shapes.Surface[]
@@ -719,6 +791,7 @@ export class ShapesShaderCollection {
     })
     this.shapes = {
       pads: [],
+      padsExtended: [],
       lines: [],
       arcs: [],
       surfaces: [],
@@ -727,6 +800,7 @@ export class ShapesShaderCollection {
       datumArcs: [],
       clear: function (): void {
         this.pads.length = 0
+        this.padsExtended.length = 0
         this.lines.length = 0
         this.arcs.length = 0
         this.surfaces.length = 0
@@ -737,6 +811,10 @@ export class ShapesShaderCollection {
     }
     this.shaderAttachment = {
       pads: {
+        buffer: regl.buffer(0),
+        length: 0,
+      },
+      padsExtended: {
         buffer: regl.buffer(0),
         length: 0,
       },
@@ -767,7 +845,7 @@ export class ShapesShaderCollection {
 
   public get histogram(): ShapesListHistogram {
     return {
-      pads: this.shapes.pads.length,
+      pads: this.shapes.pads.length + this.shapes.padsExtended.length,
       lines: this.shapes.lines.length,
       arcs: this.shapes.arcs.length,
       surfaces: this.shapes.surfaces.length,
@@ -829,7 +907,11 @@ export class ShapesShaderCollection {
         this.shapes.surfaces.push(record)
       } else if (record.type === FeatureTypeIdentifier.PAD && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
-        this.shapes.pads.push(record)
+        if (record.symbol.symbol > Symbols.STANDARD_SYMBOLS.length) {
+          this.shapes.padsExtended.push(record)
+        } else {
+          this.shapes.pads.push(record)
+        }
       } else if (record.type === FeatureTypeIdentifier.LINE && record.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         fixSymbolGetter(record)
         this.shapes.lines.push(record)
@@ -851,6 +933,12 @@ export class ShapesShaderCollection {
     })
 
     this.shapes.pads.forEach((record) => {
+      if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
+        return
+      }
+      this.symbolsCollection.add(record.symbol)
+    })
+    this.shapes.padsExtended.forEach((record) => {
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
         return
       }
@@ -891,6 +979,7 @@ export class ShapesShaderCollection {
 
     // inverse order to render from front to back to save on overdraw
     this.shapes.pads.sort((a, b) => b.index - a.index)
+    this.shapes.padsExtended.sort((a, b) => b.index - a.index)
     this.shapes.lines.sort((a, b) => b.index - a.index)
     this.shapes.arcs.sort((a, b) => b.index - a.index)
     this.shapes.datumPoints.sort((a, b) => b.index - a.index)
@@ -899,6 +988,7 @@ export class ShapesShaderCollection {
     this.shapes.surfaces.sort((a, b) => b.index - a.index)
 
     this.shaderAttachment.pads.length = this.shapes.pads.length
+    this.shaderAttachment.padsExtended.length = this.shapes.padsExtended.length
     this.shaderAttachment.lines.length = this.shapes.lines.length
     this.shaderAttachment.arcs.length = this.shapes.arcs.length
     this.shaderAttachment.datumPoints.length = this.shapes.datumPoints.length
@@ -906,6 +996,7 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumArcs.length = this.shapes.datumArcs.length
 
     this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
+    this.shaderAttachment.padsExtended.buffer(this.shapes.padsExtended.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.datumPoints.buffer(this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
@@ -1322,11 +1413,11 @@ export class StepAndRepeatCollection {
 }
 
 function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
-  let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
+  let endSymbolType = Symbols.ALL_SYMBOLS_MAP.Null
   if (record.pathtype == "round") {
-    endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Round
+    endSymbolType = Symbols.ALL_SYMBOLS_MAP.Round
   } else if (record.pathtype == "square") {
-    endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Square
+    endSymbolType = Symbols.ALL_SYMBOLS_MAP.Square
   }
 
   const endSymbol = new Symbols.StandardSymbol({
@@ -1339,7 +1430,7 @@ function drawPolyline(record: Shapes.PolyLine, shapes: ShapesList): void {
 
   const lineSymbol = new Symbols.StandardSymbol({
     id: "polyline-line",
-    symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    symbol: Symbols.ALL_SYMBOLS_MAP.Null,
     width: record.width,
     height: record.width,
     outer_dia: record.width,

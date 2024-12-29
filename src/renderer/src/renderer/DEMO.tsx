@@ -495,7 +495,7 @@ SYMBOLS.push(round_sym)
 
 const square_sym = new Symbols.StandardSymbol({
   id: "round", // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+  symbol: Symbols.ALL_SYMBOLS_MAP.Square, // symbol
   width: 0.01, // width, square side, diameter
   height: 0.01, // height
   corner_radius: 0.002, // corner radius
@@ -518,7 +518,7 @@ SYMBOLS.push(square_sym)
 
 const square2_sym = new Symbols.StandardSymbol({
   id: "round", // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+  symbol: Symbols.ALL_SYMBOLS_MAP.Square, // symbol
   width: 0.04, // width, square side, diameter
   height: 0.04, // height
   corner_radius: 0.002, // corner radius
@@ -833,7 +833,7 @@ new Array<number>(N_MACROS).fill(0).map(() => {
 
 const large_square_sym = new Symbols.StandardSymbol({
   id: "round", // id
-  symbol: Symbols.STANDARD_SYMBOLS_MAP.Square, // symbol
+  symbol: Symbols.ALL_SYMBOLS_MAP.Square, // symbol
   width: 0.5, // width, square side, diameter
   height: 0.5, // height
   corner_radius: 0.002, // corner radius
@@ -1622,17 +1622,55 @@ function REGLApp(): JSX.Element {
           // }),
           // symbol: new Symbols.SquaredRoundThermalSymbol({
           //   outer_dia: 2.0,
-          //   inner_dia: 0.4,
+          //   inner_dia: 1.0,
           //   gap: 0.3,
           //   angle: 10,
           //   num_spokes: 5,
           // }),
-          symbol: new Symbols.SquareThermalSymbol({
-            outer_dia: 2.0,
-            inner_dia: 1.0,
-            gap: 0.4,
-            angle: 0,
-            num_spokes: 1,
+          // symbol: new Symbols.SquareThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.4,
+          //   angle: 45,
+          //   num_spokes: 4,
+          // }),
+          // symbol: new Symbols.OpenCornersSquareThermalSymbol({
+          //   outer_dia: 2.0,
+          //   gap: 0.4,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   line_width: 0.5,
+          // }),
+          // symbol: new Symbols.LineThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.1,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   // line_width: 0.5,
+          // }),
+          // symbol: new Symbols.SquareRoundThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.4,
+          //   angle: 10,
+          //   num_spokes: 5,
+          // }),
+          // symbol: new Symbols.RectangularThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.3,
+          //   angle: 90,
+          //   num_spokes: 4,
+          //   line_width: 0.1,
+          // }),
+          symbol: new Symbols.RectangularThermalOpenCornersSymbol({
+            width: 2.0,
+            height: 1.0,
+            gap: 0.3,
+            angle: 45,
+            line_width: 0.1,
+            num_spokes: 4,
           }),
         }),
       ],

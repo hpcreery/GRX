@@ -1,4 +1,4 @@
-struct Shapes {
+struct Symbols {
   float Round;
   float Square;
   float Rectangle;
