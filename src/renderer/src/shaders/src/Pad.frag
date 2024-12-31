@@ -100,23 +100,36 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
+
+  // if (u_QueryMode) {
+  //   // if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+  //     vec2 PointerPosition = transformLocation(u_PointerPosition);
+  //     float PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
+
+  //     // const float eps = 0.001;
+  //     // vec2 grad = normalize(vec2(
+  //     //     (drawShape(PointerPosition + vec2(1, 0) * eps, int(v_SymNum)) * v_ResizeFactor - drawShape(PointerPosition + vec2(-1, 0) * eps, int(v_SymNum)) * v_ResizeFactor),
+  //     //     (drawShape(PointerPosition + vec2(0, 1) * eps, int(v_SymNum)) * v_ResizeFactor - drawShape(PointerPosition + vec2(0, -1) * eps, int(v_SymNum)) * v_ResizeFactor)
+  //     // ));
+  //     // gl_FragColor = vec4(PointerDist, grad.x, grad.y, 0.0);
+  //     gl_FragColor = vec4(PointerDist);
+  //     return;
+  //   // } else {
+  //   //   discard;
+  //   // }
+  // }
+
+
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = transformLocation(u_PointerPosition);
+  }
+
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
 
   if (u_QueryMode) {
-    vec2 PointerPosition = transformLocation(u_PointerPosition);
-    float PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
-
-    if (PointerDist < pixel_size) {
-      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
-      }
-    } else {
-      discard;
-    }
+    gl_FragColor = vec4(dist);
+    return;
   }
 
   #pragma glslify: import('../modules/Debug.glsl')

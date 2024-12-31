@@ -288,7 +288,14 @@ export class RenderEngineBackend {
 
     this.regl = REGL({
       gl,
-      extensions: ["angle_instanced_arrays", "OES_texture_float", "webgl_depth_texture", "EXT_frag_depth", "EXT_blend_minmax"],
+      extensions: [
+        "angle_instanced_arrays",
+        "OES_texture_float",
+        "webgl_depth_texture",
+        "EXT_frag_depth",
+        "EXT_blend_minmax",
+        // "WEBGL_color_buffer_float",
+      ],
       profile: true,
     })
     console.log("WEBGL LIMITS", this.regl.limits)
@@ -715,14 +722,26 @@ export class RenderEngineBackend {
   }
 
   public select(pointer: vec2): QueryFeature[] {
+    if (!this.dirty) return []
+    setTimeout(() => (this.dirty = true), 1000 / 30)
     const features: QueryFeature[] = []
     this.selections.length = 0
-    this.world((context) => {
+    this.world(async (context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const selectedFeatures = layer.select(pointer, context)
         for (const feature of selectedFeatures) {
           features.push(Object.assign(feature, { layer: layer.id, units: layer.units }))
+
+          // THIS IS EXPERIMENTAL
+          const normalizedWorldPosition = vec2.create()
+          vec2.div(normalizedWorldPosition, pointer, [context.viewportWidth, context.viewportHeight])
+          const position = await this.getWorldPosition(normalizedWorldPosition[0], normalizedWorldPosition[1])
+          const { distance, xDir, yDir } = feature.selectionInfo
+          // console.log({ distance, xDir, yDir, direction })
+          this.clearMeasurements()
+          this.addMeasurement(position)
+          this.updateMeasurement([position[0] - xDir * distance, position[1] - yDir * distance])
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -741,9 +760,9 @@ export class RenderEngineBackend {
         this.selections.push(newSelectionLayer)
       }
     })
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
     return features
   }
 

@@ -3,14 +3,9 @@ import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "./shapes"
 import * as Symbols from "./symbols"
 import { BoundingBox, FeatureTypeIdentifier } from "./types"
-import ShapeTransform from './transform'
+import ShapeTransform from "./transform"
 
-import {
-  DatumShaderCollection,
-  DatumTextShaderCollection,
-  ReglRenderers,
-  TLoadedReglRenderers,
-} from "./collections"
+import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
@@ -221,6 +216,8 @@ export class ShapeRenderer {
 
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true,
+      colorType: "float",
+      // colorFormat: "rgba32f",
     })
     this.surfaceFrameBuffer = this.regl.framebuffer({
       depth: true,
@@ -295,33 +292,74 @@ export class ShapeRenderer {
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
-    this.regl.clear({
-      framebuffer: this.queryFrameBuffer,
-      color: [0, 0, 0, 0],
-      depth: 0,
-    })
-    this.queryFrameBuffer.use(() => {
-      this.commonConfig(() => {
-        this.queryConfig({ pointer }, () => {
-          this.drawPrimitives(context)
-          this.drawDatums(context)
+
+    const queryDistance = (pointer: vec2): Float32Array => {
+      this.regl.clear({
+        framebuffer: this.queryFrameBuffer,
+        color: [0, 0, 0, 0],
+        depth: 0,
+      })
+      this.queryFrameBuffer.use(() => {
+        this.commonConfig(() => {
+          this.queryConfig({ pointer }, () => {
+            this.drawPrimitives(context)
+            this.drawDatums(context)
+          })
         })
       })
-    })
-    const data = this.regl.read({
-      framebuffer: this.queryFrameBuffer,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-    })
+      const data = this.regl.read<Float32Array>({
+        framebuffer: this.queryFrameBuffer,
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+      })
+      return data
+    }
+
+    const distData = queryDistance(pointer)
+    const epsilons = 0.1
+    const dataRight = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)))
+    const dataLeft = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)))
+    const dataUp = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)))
+    const dataDown = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)))
+
     const features: Shapes.Shape[] = []
-    for (let i = 0; i < data.length; i += 4) {
-      const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      if (value > 0) {
-        const feat = Object.assign({}, this.image[i / 4])
-        features.push(feat)
-      }
+    for (let i = 0; i < distData.length; i += 4) {
+      // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
+      // if (value > 0) {
+      // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
+      // console.log(data.slice(i, i + 4).toString())
+      const distance = distData[i]
+      const grad = vec2.fromValues(dataRight[i] - dataLeft[i], dataUp[i] - dataDown[i])
+      vec2.normalize(grad, grad)
+      // const grad = vec2.fromValues(distData[i + 1], distData[i + 2])
+      // console.log({ distance, grad })
+
+      // this.image.push(new Shapes.DatumLine({
+      //   index: this.image.length,
+      //   xs: pointer[0],
+      //   ys: pointer[1],
+      //   xe: pointer[0] + xDir * distance,
+      //   // xe: pointer[0] + Math.cos(angle) * distance,
+      //   ye: pointer[1] + yDir * distance,
+      //   // ye: pointer[1] + Math.sin(angle) * distance,
+      //   // symbol: new Symbols.RoundSymbol({ outer_dia: 0.01, inner_dia: 0 }),
+      // }))
+      // this.dirty = true
+      // console.log({ distance, xDir, yDir })
+      // if (direction > 0) {
+      const feat = Object.assign({}, this.image[i / 4])
+      // const feat = Object.assign({}, this.image[i / 4])
+      Object.assign(feat, {
+        selectionInfo: {
+          distance,
+          xDir: grad[0],
+          yDir: grad[1],
+        },
+      })
+      features.push(feat)
+      // }
     }
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
@@ -437,7 +475,6 @@ export class MacroRenderer extends ShapeRenderer {
     this.framebuffer = this.regl.framebuffer({
       depth: true,
     })
-
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {

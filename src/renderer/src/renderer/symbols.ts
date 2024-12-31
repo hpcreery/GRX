@@ -101,6 +101,7 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
   public width = 0
   public height = 0
   public corner_radius = 0
+  /** CORNERS IS A VALUE FROM 0 TO 15, 1,2,4,8 indicate the chamfered corner and the sum of the values is between 0 and 15 base 2 added up */
   public corners = 0
   public outer_dia = 0
   public inner_dia = 0
@@ -215,9 +216,7 @@ export class RoundedSquareDonutSymbol extends StandardSymbol {
 }
 
 export class RectangleDonutSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "inner_dia"> & Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
+  constructor(symbol: Pick<TStandardSymbol, "width" | "height" | "line_width"> & Partial<{ id: string; attributes: AttributeCollection }>) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Donut, ...symbol })
   }
 }
@@ -232,9 +231,7 @@ export class RoundedRectangleDonutSymbol extends StandardSymbol {
 }
 
 export class OvalDonutSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "inner_dia"> & Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
+  constructor(symbol: Pick<TStandardSymbol, "width" | "height" | "line_width"> & Partial<{ id: string; attributes: AttributeCollection }>) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Oval_Donut, ...symbol })
   }
 }
