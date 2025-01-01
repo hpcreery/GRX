@@ -488,7 +488,7 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length).fill(0).map((_, i) => {
 
 const round_sym = new Symbols.RoundSymbol({
   outer_dia: 1,
-  inner_dia: 0.9,
+  inner_dia: 0,
 })
 
 SYMBOLS.push(round_sym)
@@ -1508,6 +1508,58 @@ function REGLApp(): JSX.Element {
     //   transform.update()
     // }))
 
+    // Engine.addLayer({
+    //   name: "Lines",
+    //   units: "mm",
+    //   image: [
+    //     new Shapes.Line({
+    //       xs: 0,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 0,
+    //       symbol: round_sym,
+    //       polarity: 1,
+    //     }),
+    //     new Shapes.Line({
+    //       xs: 1,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 1,
+    //       symbol: round_sym,
+    //       polarity: 1,
+    //     }),
+    //   ],
+    // })
+
+    // Engine.addLayer({
+    //   name: "Arcs",
+    //   units: "mm",
+    //   image: [
+    //     new Shapes.Arc({
+    //       xs: 0,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 0,
+    //       xc: 0.5,
+    //       yc: 0,
+    //       clockwise: 1,
+    //       symbol: round_sym,
+    //       polarity: 1,
+    //     }),
+    //     new Shapes.Arc({
+    //       xs: 1,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 1,
+    //       xc: 1,
+    //       yc: 0.5,
+    //       clockwise: 1,
+    //       symbol: round_sym,
+    //       polarity: 1,
+    //     }),
+    //   ],
+    // })
+
     Engine.addLayer({
       name: "circle",
       image: [
@@ -1518,6 +1570,7 @@ function REGLApp(): JSX.Element {
           resize_factor: 1.0,
           mirror_x: 0,
           mirror_y: 0,
+          // symbol: new Symbols.NullSymbol({}),
           // symbol: new Symbols.RoundSymbol({
           //   outer_dia: 1,
           //   inner_dia: 0.5,
@@ -1631,8 +1684,8 @@ function REGLApp(): JSX.Element {
           //   outer_dia: 2.0,
           //   inner_dia: 1.0,
           //   gap: 0.4,
-          //   angle: 40,
-          //   num_spokes: 4,
+          //   angle: 0,
+          //   num_spokes: 5,
           // }),
           // symbol: new Symbols.OpenCornersSquareThermalSymbol({
           //   outer_dia: 2.0,
@@ -1656,31 +1709,31 @@ function REGLApp(): JSX.Element {
           //   angle: 10,
           //   num_spokes: 3,
           // }),
-          symbol: new Symbols.RectangularThermalSymbol({
-            width: 2.0,
-            height: 1.0,
-            gap: 0.3,
-            angle: 90,
-            num_spokes: 4,
-            line_width: 0.1,
-          }),
+          // symbol: new Symbols.RectangularThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.3,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   line_width: 0.1,
+          // // }),
           // symbol: new Symbols.RectangularThermalOpenCornersSymbol({
           //   width: 2.0,
           //   height: 1.0,
           //   gap: 0.3,
           //   angle: 0,
           //   line_width: 0.1,
-          //   num_spokes: 4,
+          //   num_spokes: 1,
           // }),
-          // symbol: new Symbols.RoundedSquareThermalSymbol({
-          //   outer_dia: 2.0,
-          //   inner_dia: 1.0,
-          //   corner_radius: 0.2,
-          //   corners: 1,
-          //   gap: 0.4,
-          //   angle: 20,
-          //   num_spokes: 4,
-          // }),
+          symbol: new Symbols.RoundedSquareThermalSymbol({
+            outer_dia: 2.0,
+            inner_dia: 1.9,
+            corner_radius: 0.2,
+            corners: 1,
+            gap: 0.4,
+            angle: 20,
+            num_spokes: 4,
+          }),
         }),
       ],
       units: "mm",
