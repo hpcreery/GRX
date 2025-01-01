@@ -18,6 +18,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform float u_Polarity;
@@ -116,12 +117,10 @@ float drawShape(vec2 FragCoord, int SymNum) {
   float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
 
-  float dist = 10.0;
+  float dist = SDF_FAR_AWAY;
 
   if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  } else {
-    dist = 1.0;
   }
   return dist;
 }
@@ -132,9 +131,9 @@ float drawShape(vec2 FragCoord, int SymNum) {
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (DEBUG == 1) {
-    return dist;
-  }
+  // if (DEBUG == 1) {
+  //   return dist;
+  // }
   if (dist > pixel_size / 2.0) {
     discard;
   }
@@ -146,7 +145,7 @@ float draw(float dist, float pixel_size) {
 
 
 
-float arcDistance(vec2 FragCoord) {
+float arcDistMain(vec2 FragCoord) {
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
   float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
@@ -175,8 +174,30 @@ float arcDistance(vec2 FragCoord) {
   return dist;
 }
 
+float arcDistSkeleton(vec2 FragCoord) {
+  float OD = 0.0;
 
-vec2 transfromLocation(vec2 pixel_location) {
+  // ? radius can be different bewtween these two
+  float radius = distance(v_Start_Location, v_Center_Location);
+  float radius2 = distance(v_End_Location, v_Center_Location);
+
+  float sdX = v_Start_Location.x - v_Center_Location.x;
+  float sdY = v_Start_Location.y - v_Center_Location.y;
+  float start_angle = atan(sdY, sdX);
+  float edX = v_End_Location.x - v_Center_Location.x;
+  float edY = v_End_Location.y - v_Center_Location.y;
+  float end_angle = atan(edY, edX);
+
+  float dist = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  if (start_angle == end_angle) {
+    dist = circleDist(FragCoord, radius - (OD / 2.0));
+  }
+  dist = substract(dist, abs(circleDist(FragCoord, radius)) - OD / 2.0);
+  return dist;
+}
+
+
+vec2 transformLocation(vec2 pixel_location) {
   vec2 normal_coord = ((pixel_location.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 transformed_position = u_InverseTransform * vec3(normal_coord, 1.0);
   vec2 offset_postition = transformed_position.xy - v_Center_Location;
@@ -192,24 +213,33 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
-  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
-  float dist = arcDistance(FragCoord);
+  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = transformLocation(u_PointerPosition);
+  }
+
+  float dist = arcDistMain(FragCoord);
+
+  if (u_SkeletonMode) {
+    float skeleton = arcDistSkeleton(FragCoord);
+    if (u_OutlineMode) {
+      dist = max(dist, -skeleton);
+    } else {
+      dist = skeleton;
+    }
+  }
 
   if (u_QueryMode) {
-    vec2 PointerPosition = transfromLocation(u_PointerPosition);
-    float PointerDist = arcDistance(PointerPosition);
-
-    if (PointerDist < pixel_size) {
-      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
-      }
+    if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+      gl_FragColor = vec4(dist);
+      return;
     } else {
       discard;
     }
   }
+
+
+
 
   #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);

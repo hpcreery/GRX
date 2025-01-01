@@ -318,39 +318,22 @@ export class ShapeRenderer {
     }
 
     const distData = queryDistance(pointer)
-    const epsilons = 0.1
+    // console.log(distData)
+    const epsilons = 1
     const dataRight = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)))
     const dataLeft = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)))
     const dataUp = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)))
     const dataDown = queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)))
 
     const features: Shapes.Shape[] = []
+    let closestIndex: number | undefined = undefined
     for (let i = 0; i < distData.length; i += 4) {
-      // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      // if (value > 0) {
-      // const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      // console.log(data.slice(i, i + 4).toString())
       const distance = distData[i]
+      console.log({ distance })
       const grad = vec2.fromValues(dataRight[i] - dataLeft[i], dataUp[i] - dataDown[i])
       vec2.normalize(grad, grad)
-      // const grad = vec2.fromValues(distData[i + 1], distData[i + 2])
-      // console.log({ distance, grad })
-
-      // this.image.push(new Shapes.DatumLine({
-      //   index: this.image.length,
-      //   xs: pointer[0],
-      //   ys: pointer[1],
-      //   xe: pointer[0] + xDir * distance,
-      //   // xe: pointer[0] + Math.cos(angle) * distance,
-      //   ye: pointer[1] + yDir * distance,
-      //   // ye: pointer[1] + Math.sin(angle) * distance,
-      //   // symbol: new Symbols.RoundSymbol({ outer_dia: 0.01, inner_dia: 0 }),
-      // }))
-      // this.dirty = true
-      // console.log({ distance, xDir, yDir })
-      // if (direction > 0) {
+      // if (distance < 0) {
       const feat = Object.assign({}, this.image[i / 4])
-      // const feat = Object.assign({}, this.image[i / 4])
       Object.assign(feat, {
         selectionInfo: {
           distance,
@@ -359,6 +342,12 @@ export class ShapeRenderer {
         },
       })
       features.push(feat)
+      if (closestIndex == undefined) {
+        closestIndex = i
+      }
+      if (distance < distData[closestIndex]) {
+        closestIndex = i
+      }
       // }
     }
     this.macroCollection.macros.forEach((macro) => {

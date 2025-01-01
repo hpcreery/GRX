@@ -17,6 +17,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform float u_Polarity;
@@ -111,9 +112,9 @@ float drawShape(vec2 FragCoord, int SymNum) {
 
 
 float draw(float dist, float pixel_size) {
-  if (DEBUG == 1) {
-    return dist;
-  }
+  // if (DEBUG == 1) {
+  //   return dist;
+  // }
   if (dist > pixel_size / 2.0) {
     discard;
   }
@@ -142,7 +143,27 @@ float lineDistMain(vec2 coord) {
   return dist;
 }
 
-vec2 transfromLocation(vec2 pixel_coord) {
+float lineDistSkeleton(vec2 coord) {
+  vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
+  // float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
+  // float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
+  // float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  // float OD = max(t_Outer_Dia, max(t_Width, t_Height));
+  float OD = 0.0;
+
+  float dX = v_Start_Location.x - v_End_Location.x;
+  float dY = v_Start_Location.y - v_End_Location.y;
+  float len = distance(v_Start_Location, v_End_Location);
+  float angle = atan(dY/dX);
+  // float start = drawShape(translate(coord, (v_Start_Location - Center_Location)) * rotateCW(-angle + PI/2.0), int(v_SymNum));
+  // float end = drawShape(translate(coord, (v_End_Location - Center_Location)) * rotateCW(-angle + PI/2.0), int(v_SymNum));
+  float dist = boxDist(coord * rotateCW(-angle), vec2(len, OD));
+  // float dist = merge(start,end);
+  // dist = merge(dist, con);
+  return dist;
+}
+
+vec2 transformLocation(vec2 pixel_coord) {
   vec2 center_location = (v_Start_Location + v_End_Location) / 2.0;
   vec2 normal_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 transformed_position = u_InverseTransform * vec3(normal_coord, 1.0);
@@ -159,23 +180,25 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
-  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
+  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = transformLocation(u_PointerPosition);
+  }
+
   float dist = lineDistMain(FragCoord);
-
-
-
+  if (u_SkeletonMode) {
+    float skeleton = lineDistSkeleton(FragCoord);
+    if (u_OutlineMode) {
+      dist = max(dist, -skeleton);
+    } else {
+      dist = skeleton;
+    }
+  }
 
   if (u_QueryMode) {
-    vec2 PointerCoord = transfromLocation(u_PointerPosition);
-    float PointerDist = lineDistMain(PointerCoord);
-
-    if (PointerDist < pixel_size) {
-      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
-      }
+    if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+      gl_FragColor = vec4(dist);
+      return;
     } else {
       discard;
     }

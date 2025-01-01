@@ -321,6 +321,7 @@ export class RenderEngineBackend {
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
+        u_SkeletonMode: () => this.settings.SKELETON_MODE,
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,

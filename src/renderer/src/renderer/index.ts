@@ -47,6 +47,7 @@ export class RenderEngine {
         this.MSPFRAME = 1000 / value
       },
       OUTLINE_MODE: false,
+      SKELETON_MODE: true,
       COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 1000,

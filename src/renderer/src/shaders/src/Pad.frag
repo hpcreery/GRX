@@ -66,9 +66,9 @@ mat2 rotateCW(float angle) {
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (DEBUG == 1) {
-    return dist;
-  }
+  // if (DEBUG == 1) {
+  //   return dist;
+  // }
   if (dist > pixel_size / 2.0) {
     discard;
   }
@@ -100,26 +100,6 @@ void main() {
   vec3 color = u_Color * max(float(u_OutlineMode), polarity);
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
-
-  // if (u_QueryMode) {
-  //   // if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-  //     vec2 PointerPosition = transformLocation(u_PointerPosition);
-  //     float PointerDist = drawShape(PointerPosition, int(v_SymNum)) * v_ResizeFactor;
-
-  //     // const float eps = 0.001;
-  //     // vec2 grad = normalize(vec2(
-  //     //     (drawShape(PointerPosition + vec2(1, 0) * eps, int(v_SymNum)) * v_ResizeFactor - drawShape(PointerPosition + vec2(-1, 0) * eps, int(v_SymNum)) * v_ResizeFactor),
-  //     //     (drawShape(PointerPosition + vec2(0, 1) * eps, int(v_SymNum)) * v_ResizeFactor - drawShape(PointerPosition + vec2(0, -1) * eps, int(v_SymNum)) * v_ResizeFactor)
-  //     // ));
-  //     // gl_FragColor = vec4(PointerDist, grad.x, grad.y, 0.0);
-  //     gl_FragColor = vec4(PointerDist);
-  //     return;
-  //   // } else {
-  //   //   discard;
-  //   // }
-  // }
-
-
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
     FragCoord = transformLocation(u_PointerPosition);
@@ -127,9 +107,37 @@ void main() {
 
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
 
+
+  // intuitive way to calculate the distance to the border of the shape at an angle/axis
+  // float x = 0.0;
+  // float y = 0.0;
+  // float angle = 20.0;
+  // float offset = dist;
+  // float offsetRight = drawShape(FragCoord + vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
+  // float offsetLeft = drawShape(FragCoord - vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
+  // float direction = sign(offsetLeft - offsetRight);
+  // if (direction == 0.0) {
+  //   direction = 1.0;
+  // }
+  // #pragma unroll 1
+  // for (int i = 0; i < 10; i += 1) {
+  //   x = FragCoord.x + cos(angle) * offset * direction;
+  //   y = FragCoord.y + sin(angle) * offset * direction;
+  //   offset += drawShape(vec2(x, y), int(v_SymNum)) * v_ResizeFactor;
+  //   if (offset < 0.0) {
+  //     break;
+  //   }
+  // }
+  // dist = offset * direction;
+
   if (u_QueryMode) {
-    gl_FragColor = vec4(dist);
-    return;
+    if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+      gl_FragColor = vec4(dist);
+      // gl_FragColor = vec4(dist, offset, 0.0, 0.0);
+      return;
+    } else {
+      discard;
+    }
   }
 
   #pragma glslify: import('../modules/Debug.glsl')

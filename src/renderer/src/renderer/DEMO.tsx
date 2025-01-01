@@ -1185,6 +1185,7 @@ function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [engine, setEngine] = React.useState<RenderEngine>()
   const [_outlineMode, setOutlineMode] = React.useState<boolean>(true)
+  const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
 
   React.useEffect(() => {
@@ -1804,6 +1805,19 @@ function REGLApp(): JSX.Element {
             onChange={(e): void => {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
+              engine.backend.then((backend) =>
+                backend.getLayers().then((layers) => {
+                  setLayers(layers)
+                }),
+              )
+            }}
+          />
+          Skeleton Mode
+          <Switch
+            defaultChecked={engine.settings.SKELETON_MODE}
+            onChange={(e): void => {
+              engine.settings.SKELETON_MODE = e.target.checked
+              setSkeletonMode(e.target.checked)
               engine.backend.then((backend) =>
                 backend.getLayers().then((layers) => {
                   setLayers(layers)

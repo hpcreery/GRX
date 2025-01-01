@@ -889,8 +889,6 @@ float sqaureRoundThermalDist(in vec2 p, in vec2 outer_size, in float id, in floa
 
 float roundedSquareThermalDist(in vec2 p, in vec2 outer_size, in vec2 inner_size, in float angle, in float num_of_spokes, in float gap, in float radius, in float corners) {
 
-  // float outersquare = boxDist(p, outer_size);
-  // float innersquare = boxDist(p, inner_size);
   float inner_radius = max(0.0, radius - (outer_size.x - inner_size.x) / 2.0);
   float outersquare = roundBoxDist(p, outer_size, radius, corners);
   float innersquare = roundBoxDist(p, inner_size, inner_radius, corners);
