@@ -132,7 +132,7 @@ void main() {
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist);
+      gl_FragColor = vec4(dist, 0.0, 0.0, sign(dist));
       // gl_FragColor = vec4(dist, offset, 0.0, 0.0);
       return;
     } else {

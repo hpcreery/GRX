@@ -109,6 +109,26 @@ float circleDist(vec2 p, float radius) {
   return length(p) - radius;
 }
 
+float roundArcDist( in vec2 p, in float curve, in float radius, float thickness )
+{
+    // sc is the sin/cos of the arc's aperture
+    vec2 sc = vec2(sin(curve), cos(curve));
+    p.x = abs(p.x);
+    return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*radius) : abs(length(p)-radius)) - thickness;
+}
+
+float flatArcDist( in vec2 p, in float curve, in float radius, float thickness )
+{
+    // sc is the sin/cos of the arc's aperture
+    vec2 sc = vec2(sin(curve), cos(curve));
+    p.x = abs(p.x);
+
+    p = mat2(sc.x,sc.y,-sc.y,sc.x)*p;
+
+    return max( abs(length(p)-radius)-thickness*0.5,
+                length(vec2(p.x,max(0.0,abs(radius-p.y)-thickness*0.5)))*sign(p.x) );
+}
+
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 // #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 // Here we can redefine drawShape with a much smaller footprint to improve comiling performance. Limiting arcs to only be drawn with circles.
@@ -146,6 +166,7 @@ float draw(float dist, float pixel_size) {
 
 
 float arcDistMain(vec2 FragCoord) {
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, int(v_SymNum));
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
   float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
@@ -162,15 +183,29 @@ float arcDistMain(vec2 FragCoord) {
   float edY = v_End_Location.y - v_Center_Location.y;
   float end_angle = atan(edY, edX);
 
-  float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
-  float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
-  float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
-  if (start_angle == end_angle) {
-    con = circleDist(FragCoord, radius - (OD / 2.0));
+  // invalid SDF
+  // float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
+  // float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
+  // float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  // if (start_angle == end_angle) {
+  //   con = circleDist(FragCoord, radius - (OD / 2.0));
+  // }
+  // con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
+  // float dist = merge(start, end);
+  // dist = merge(dist, con);
+
+  float dist = SDF_FAR_AWAY;
+  float rotation_direction = PI/2.0 * (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0);
+  float angle_diff = abs(start_angle - end_angle)/2.0;
+  float curve_direction = rotation_direction > 0.0 ? angle_diff : PI - angle_diff;
+  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+    dist = roundArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD / 2.0);
+  } else {
+    dist = flatArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD);
   }
-  con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
-  float dist = merge(start, end);
-  dist = merge(dist, con);
+  if (start_angle == end_angle) {
+    dist = abs(circleDist(FragCoord, radius)) - OD / 2.0;
+  }
   return dist;
 }
 
@@ -188,11 +223,21 @@ float arcDistSkeleton(vec2 FragCoord) {
   float edY = v_End_Location.y - v_Center_Location.y;
   float end_angle = atan(edY, edX);
 
-  float dist = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  // float dist = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  // if (start_angle == end_angle) {
+  //   dist = circleDist(FragCoord, radius - (OD / 2.0));
+  // }
+  // dist = substract(dist, abs(circleDist(FragCoord, radius)) - OD / 2.0);
+  // return dist;
+
+  float dist = SDF_FAR_AWAY;
+  float rotation_direction = PI/2.0 * (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0);
+  float angle_diff = abs(start_angle - end_angle)/2.0;
+  float curve_direction = rotation_direction > 0.0 ? angle_diff : PI - angle_diff;
+  dist = roundArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, 0.0);
   if (start_angle == end_angle) {
-    dist = circleDist(FragCoord, radius - (OD / 2.0));
+    dist = abs(circleDist(FragCoord, radius));
   }
-  dist = substract(dist, abs(circleDist(FragCoord, radius)) - OD / 2.0);
   return dist;
 }
 
@@ -231,17 +276,14 @@ void main() {
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist);
+      gl_FragColor = vec4(dist, 0.0, 0.0, sign(dist));
       return;
     } else {
       discard;
     }
   }
 
-
-
-
-  #pragma glslify: import('../modules/Debug.glsl')
+  // #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);
 
   gl_FragColor = vec4(color, alpha);

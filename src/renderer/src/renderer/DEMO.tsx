@@ -191,29 +191,29 @@ new Array<number>(N_SURFACES).fill(0).map((_, i) => {
         //   y: 0 + i * 0.1,
         // }),
       ]),
-      new Shapes.Contour({
-        poly_type: 0,
-        // Start point.
-        xs: 0.04 + i * 0.1,
-        ys: 0.04 + i * 0.1,
-      }).addSegments([
-        new Shapes.Contour_Line_Segment({
-          x: 0.04 + i * 0.1,
-          y: 0.03 + i * 0.1,
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.03 + i * 0.1,
-          y: 0.03 + i * 0.1,
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.03 + i * 0.1,
-          y: 0.04 + i * 0.1,
-        }),
-        new Shapes.Contour_Line_Segment({
-          x: 0.04 + i * 0.1,
-          y: 0.04 + i * 0.1,
-        }),
-      ]),
+      // new Shapes.Contour({
+      //   poly_type: 0,
+      //   // Start point.
+      //   xs: 0.04 + i * 0.1,
+      //   ys: 0.04 + i * 0.1,
+      // }).addSegments([
+      //   new Shapes.Contour_Line_Segment({
+      //     x: 0.04 + i * 0.1,
+      //     y: 0.03 + i * 0.1,
+      //   }),
+      //   new Shapes.Contour_Line_Segment({
+      //     x: 0.03 + i * 0.1,
+      //     y: 0.03 + i * 0.1,
+      //   }),
+      //   new Shapes.Contour_Line_Segment({
+      //     x: 0.03 + i * 0.1,
+      //     y: 0.04 + i * 0.1,
+      //   }),
+      //   new Shapes.Contour_Line_Segment({
+      //     x: 0.04 + i * 0.1,
+      //     y: 0.04 + i * 0.1,
+      //   }),
+      // ]),
       // new Shapes.Contour({
       //   poly_type: 0,
       //   // Start point.
@@ -242,35 +242,35 @@ new Array<number>(N_SURFACES).fill(0).map((_, i) => {
   )
 })
 
-SURFACE_RECORDS_ARRAY.push(
-  new Shapes.Surface({
-    polarity: 1,
-  }).addContour(
-    new Shapes.Contour({
-      poly_type: 1,
-      // Start point.
-      xs: -1,
-      ys: 0,
-    }).addSegments([
-      // new Shapes.Contour_Line_Segment({
-      //   x: 0.02 + i * 0.1,
-      //   y: -0.02 + i * 0.1,
-      // }),
-      new Shapes.Contour_Arc_Segment({
-        x: 0,
-        y: -1,
-        xc: 0,
-        yc: 0,
-        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-        clockwise: 0,
-      }),
-      new Shapes.Contour_Line_Segment({
-        x: -1,
-        y: 0,
-      }),
-    ]),
-  ),
-)
+// SURFACE_RECORDS_ARRAY.push(
+//   new Shapes.Surface({
+//     polarity: 1,
+//   }).addContour(
+//     new Shapes.Contour({
+//       poly_type: 1,
+//       // Start point.
+//       xs: -1,
+//       ys: 0,
+//     }).addSegments([
+//       // new Shapes.Contour_Line_Segment({
+//       //   x: 0.02 + i * 0.1,
+//       //   y: -0.02 + i * 0.1,
+//       // }),
+//       new Shapes.Contour_Arc_Segment({
+//         x: 0,
+//         y: -1,
+//         xc: 0,
+//         yc: 0,
+//         // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+//         clockwise: 0,
+//       }),
+//       new Shapes.Contour_Line_Segment({
+//         x: -1,
+//         y: 0,
+//       }),
+//     ]),
+//   ),
+// )
 
 const SURFACE_ARC_TEST: Shapes.Surface[] = []
 
@@ -488,7 +488,7 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length).fill(0).map((_, i) => {
 //   })
 
 const round_sym = new Symbols.RoundSymbol({
-  outer_dia: 1,
+  outer_dia: 0.1,
   inner_dia: 0,
 })
 
@@ -1185,7 +1185,7 @@ DATUMS.push(
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [engine, setEngine] = React.useState<RenderEngine>()
-  const [_outlineMode, setOutlineMode] = React.useState<boolean>(true)
+  const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
 
@@ -1456,11 +1456,12 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    // Engine.addLayer({
-    //   name: 'surfaces',
-    //   image: SURFACE_RECORDS_ARRAY,
-    //   units: 'mm'
-    // })
+    Engine.addLayer({
+      name: "surfaces",
+      visible: true,
+      image: SURFACE_RECORDS_ARRAY,
+      units: "mm",
+    })
 
     // Engine.addFile({
     //   file: gtl_mm,
@@ -1520,7 +1521,16 @@ function REGLApp(): JSX.Element {
           ys: 0,
           xe: 1,
           ye: 0,
-          symbol: round_sym,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          // symbol: new Symbols.SquareSymbol({
+          //   width: 0.1,
+          //   height: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.NullSymbol({}),
           polarity: 1,
         }),
         new Shapes.Line({
@@ -1528,7 +1538,79 @@ function REGLApp(): JSX.Element {
           ys: 0,
           xe: 1,
           ye: 1,
-          symbol: round_sym,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 1,
+          ys: 1,
+          xe: 0,
+          ye: 1,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 1,
+          xe: 0,
+          ye: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 1,
+          xe: 1,
+          ye: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
           polarity: 1,
         }),
       ],
@@ -1561,11 +1643,78 @@ function REGLApp(): JSX.Element {
           symbol: round_sym,
           polarity: 1,
         }),
+        new Shapes.Arc({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 0,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          xc: 1,
+          yc: 0.5,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 0,
+          ys: 0,
+          xe: 0.5,
+          ye: 0.5,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 0.5,
+          ys: 0.5,
+          xe: 1,
+          ye: 0,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 0,
+          xe: 0.5,
+          ye: 0.5,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 1,
+          xe: 1,
+          ye: 1,
+          xc: 0.5,
+          yc: 0.5,
+          clockwise: 1,
+          symbol: round_sym,
+          polarity: 1,
+        }),
       ],
     })
 
     Engine.addLayer({
       name: "circle",
+      visible: false,
       image: [
         new Shapes.Pad({
           x: 0,

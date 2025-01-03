@@ -10,7 +10,7 @@ import type { Units, BoundingBox } from "./types"
 import Transform from "./transform"
 import GridFrag from "../shaders/src/Grid.frag"
 import OriginFrag from "../shaders/src/Origin.frag"
-import LoadingFrag from "../shaders/src/Loading/Winding.frag"
+// import LoadingFrag from "../shaders/src/Loading/Winding.frag"
 import FullScreenQuad from "../shaders/src/FullScreenQuad.vert"
 import { UID } from "./utils"
 import { SimpleMeasurement } from "./measurements"
@@ -172,7 +172,7 @@ export class RenderEngineBackend {
       this.MSPFRAME = 1000 / value
     },
     OUTLINE_MODE: false,
-    SKELETON_MODE: true,
+    SKELETON_MODE: false,
     COLOR_BLEND: "Contrast",
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
@@ -269,7 +269,7 @@ export class RenderEngineBackend {
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridRenderProps>
   private renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
 
-  public loadingFrame: LoadingAnimation
+  // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
   public parsers: PluginsDefinition = {}
@@ -351,7 +351,7 @@ export class RenderEngineBackend {
       offset: 0,
     })
 
-    this.loadingFrame = new LoadingAnimation(this.regl, this.world)
+    // this.loadingFrame = new LoadingAnimation(this.regl, this.world)
     // this.measurements = new SimpleMeasurement(this.regl, this.ctx)
     this.measurements = new SimpleMeasurement({
       regl: this.regl,
@@ -726,7 +726,8 @@ export class RenderEngineBackend {
 
   public select(pointer: vec2): QueryFeature[] {
     if (!this.dirty) return []
-    setTimeout(() => (this.dirty = true), 1000 / 30)
+    // setTimeout(() => (this.dirty = true), 1000 / 30)
+    setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
     const features: QueryFeature[] = []
     this.selections.length = 0
     this.world(async (context) => {
@@ -836,13 +837,13 @@ export class RenderEngineBackend {
     })
   }
 
-  public startLoading(): void {
-    this.loadingFrame.start()
-  }
+  // public startLoading(): void {
+  //   this.loadingFrame.start()
+  // }
 
-  public stopLoading(): void {
-    this.loadingFrame.stop()
-  }
+  // public stopLoading(): void {
+  //   this.loadingFrame.stop()
+  // }
 
   public addMeasurement(point: vec2): void {
     this.measurements.addMeasurement(point)
@@ -876,7 +877,7 @@ export class RenderEngineBackend {
   public render(props: RenderProps = RenderEngineBackend.defaultRenderProps): void {
     const { force, updateLayers } = { ...RenderEngineBackend.defaultRenderProps, ...props }
     if (!this.dirty && !force) return
-    if (this.loadingFrame.enabled) return
+    // if (this.loadingFrame.enabled) return
     if (updateLayers) this.dirty = false
     this.regl.clear({
       color: [0, 0, 0, 0],
@@ -941,43 +942,43 @@ export function logMatrix(matrix: mat3): void {
   )
 }
 
-export interface LoadingRenderProps {}
+// export interface LoadingRenderProps {}
 
-interface LoadingRenderUniforms {}
+// interface LoadingRenderUniforms {}
 
-class LoadingAnimation {
-  private regl: REGL.Regl
-  private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
-  private tick: REGL.Cancellable = { cancel: () => {} }
-  private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+// class LoadingAnimation {
+//   private regl: REGL.Regl
+//   private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
+//   private tick: REGL.Cancellable = { cancel: () => {} }
+//   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
-  private _enabled = false
+//   private _enabled = false
 
-  get enabled(): boolean {
-    return this._enabled
-  }
+//   get enabled(): boolean {
+//     return this._enabled
+//   }
 
-  constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
-    this.regl = regl
-    this.world = world
-    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>({
-      vert: FullScreenQuad,
-      frag: LoadingFrag,
-    })
-    // this.start()
-  }
+//   constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
+//     this.regl = regl
+//     this.world = world
+//     this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>({
+//       vert: FullScreenQuad,
+//       frag: LoadingFrag,
+//     })
+//     // this.start()
+//   }
 
-  public start(): void {
-    this._enabled = true
-    this.tick = this.regl.frame(() => {
-      this.world(() => {
-        this.renderLoading()
-      })
-    })
-  }
+//   public start(): void {
+//     this._enabled = true
+//     this.tick = this.regl.frame(() => {
+//       this.world(() => {
+//         this.renderLoading()
+//       })
+//     })
+//   }
 
-  public stop(): void {
-    this._enabled = false
-    this.tick.cancel()
-  }
-}
+//   public stop(): void {
+//     this._enabled = false
+//     this.tick.cancel()
+//   }
+// }

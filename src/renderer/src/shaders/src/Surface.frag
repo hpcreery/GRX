@@ -142,27 +142,63 @@ void main() {
   float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = transformLocation(u_PointerPosition);
+  }
+
   float dist = surfaceDistMain(FragCoord);
 
-  if (u_QueryMode) {
-    vec2 PointerPosition = transformLocation(u_PointerPosition);
-    // float PointerDist = surfaceDistMain(PointerPosition);
+  // float dist = lineDistMain(FragCoord);
+  // if (u_SkeletonMode) {
+  //   float skeleton = lineDistSkeleton(FragCoord);
+  //   if (u_OutlineMode) {
+  //     dist = max(dist, -skeleton);
+  //   } else {
+  //     dist = skeleton;
+  //   }
+  // }
 
+  if (u_QueryMode) {
     vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
-
-    if (pointInTriangle(PointerPosition, point1, point2, point3)) {
-      if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
-      }
+    float side = 1.0;
+    if (pointInTriangle(FragCoord, point1, point2, point3)) {
+      side = -1.0;
     } else {
       discard;
     }
+    if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
+      gl_FragColor = vec4(dist, 0.0, 0.0, side);
+      return;
+    } else {
+      discard;
+    }
+    // } else {
+    //   discard;
+    // }
   }
+
+
+  // if (u_QueryMode) {
+  //   vec2 PointerPosition = transformLocation(u_PointerPosition);
+  //   // float PointerDist = surfaceDistMain(PointerPosition);
+
+  //   vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
+  //   vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
+  //   vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
+
+  //   if (pointInTriangle(PointerPosition, point1, point2, point3)) {
+  //     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
+  //       gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+  //       return;
+  //     } else {
+  //       discard;
+  //     }
+  //   } else {
+  //     discard;
+  //   }
+  // }
 
 
 
@@ -177,6 +213,9 @@ void main() {
   // }
   // gl_FragColor = vec4(col, 1.0);
   // return;
+  #pragma glslify: import('../modules/Debug.glsl')
+
+
 
 
   dist = draw(dist, pixel_size);

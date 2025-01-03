@@ -329,16 +329,20 @@ export class ShapeRenderer {
     let closestIndex: number | undefined = undefined
     for (let i = 0; i < distData.length; i += 4) {
       const distance = distData[i]
-      console.log({ distance })
+      const inside = distData[i + 3] < 0
+      // console.log({ distance })
       const grad = vec2.fromValues(dataRight[i] - dataLeft[i], dataUp[i] - dataDown[i])
       vec2.normalize(grad, grad)
       // if (distance < 0) {
+      // if (inside) {
       const feat = Object.assign({}, this.image[i / 4])
       Object.assign(feat, {
         selectionInfo: {
           distance,
           xDir: grad[0],
           yDir: grad[1],
+          // xDir: 1,
+          // yDir: 0,
         },
       })
       features.push(feat)
