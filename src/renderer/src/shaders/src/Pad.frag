@@ -111,7 +111,7 @@ void main() {
   // intuitive way to calculate the distance to the border of the shape at an angle/axis
   // float x = 0.0;
   // float y = 0.0;
-  // float angle = 20.0;
+  // float angle = 0.0;
   // float offset = dist;
   // float offsetRight = drawShape(FragCoord + vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
   // float offsetLeft = drawShape(FragCoord - vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
@@ -120,10 +120,10 @@ void main() {
   //   direction = 1.0;
   // }
   // #pragma unroll 1
-  // for (int i = 0; i < 10; i += 1) {
+  // for (int i = 0; i < 4; i += 1) {
   //   x = FragCoord.x + cos(angle) * offset * direction;
   //   y = FragCoord.y + sin(angle) * offset * direction;
-  //   offset += drawShape(vec2(x, y), int(v_SymNum)) * v_ResizeFactor;
+  //   offset += abs(drawShape(vec2(x, y), int(v_SymNum))) * v_ResizeFactor;
   //   if (offset < 0.0) {
   //     break;
   //   }
