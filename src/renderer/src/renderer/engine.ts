@@ -71,6 +71,7 @@ export interface RenderSettings {
   FPS: number
   MSPFRAME: number
   OUTLINE_MODE: boolean
+  SKELETON_MODE: boolean
   COLOR_BLEND: ColorBlends
   BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
@@ -171,6 +172,7 @@ export class RenderEngineBackend {
       this.MSPFRAME = 1000 / value
     },
     OUTLINE_MODE: false,
+    SKELETON_MODE: true,
     COLOR_BLEND: "Contrast",
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
