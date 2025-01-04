@@ -1,6 +1,6 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine?worker"
-import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from "./engine"
+import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
 import { AddLayerProps } from "./plugins"
 
 // import font from "./text/glyph/font.png?arraybuffer"
@@ -398,6 +398,11 @@ export class RenderEngine {
     createEl.download = "grx-screenshot.png"
     createEl.click()
     createEl.remove()
+  }
+
+  public async getStats(): Promise<Stats> {
+    const backend = await this.backend
+    return backend.getStats()
   }
 
   public async destroy(): Promise<void> {

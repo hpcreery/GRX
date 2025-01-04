@@ -9,14 +9,14 @@ import { PointerEvent, PointerEvents } from "."
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
 
-// import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
-// import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
-// import gko from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?raw'
-// import plc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?raw'
-// import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
-// import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
-// import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
-// import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
+import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
+import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
+import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
+import pls from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?arraybuffer"
+import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
+import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
+import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
 // import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
@@ -1361,61 +1361,61 @@ function REGLApp(): JSX.Element {
     // })
 
     // Engine.addFile({
-    //   file: cmp,
-    //   format: 'rs274x',
+    //   buffer: cmp,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'cmp',
-    //   }
+    //     name: "cmp",
+    //   },
     // })
     // Engine.addFile({
-    //   file: drd,
-    //   format: 'rs274x',
+    //   buffer: drd,
+    //   format: "nc",
     //   props: {
-    //     name: 'drd',
-    //   }
+    //     name: "drd",
+    //   },
     // })
     // Engine.addFile({
-    //   file: gko,
-    //   format: 'rs274x',
+    //   buffer: gko,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'gko',
-    //   }
+    //     name: "gko",
+    //   },
     // })
     // Engine.addFile({
-    //   file: plc,
-    //   format: 'rs274x',
+    //   buffer: plc,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'plc',
+    //     name: "plc",
     //     visible: true,
-    //   }
+    //   },
     // })
     // Engine.addFile({
-    //   file: pls,
-    //   format: 'rs274x',
+    //   buffer: pls,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'pls',
-    //   }
+    //     name: "pls",
+    //   },
     // })
     // Engine.addFile({
-    //   file: stc,
-    //   format: 'rs274x',
+    //   buffer: stc,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'stc',
-    //   }
+    //     name: "stc",
+    //   },
     // })
     // Engine.addFile({
-    //   file: sts,
-    //   format: 'rs274x',
+    //   buffer: sts,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'sts',
-    //   }
+    //     name: "sts",
+    //   },
     // })
     // Engine.addFile({
-    //   file: sol,
-    //   format: 'rs274x',
+    //   buffer: sol,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'sol',
-    //   }
+    //     name: "sol",
+    //   },
     // })
 
     // Engine.addLayer({
@@ -2023,7 +2023,8 @@ function REGLApp(): JSX.Element {
             width: "100px",
           }}
         >
-          <StatsWidget />
+          {/* <StatsWidget /> */}
+          <REGLStatsWidget engine={engine} />
           <MouseCoordinates engine={engine} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
@@ -2171,6 +2172,92 @@ function StatsWidget(): JSX.Element {
       <div>FPS: {fps}</div>
       <div>Avg FPS: {avgFPS}</div>
       <div>Memory: {memory} MB</div>
+    </div>
+  )
+}
+
+function REGLStatsWidget(props: { engine: RenderEngine }): JSX.Element {
+  const [count, setCount] = React.useState<number>(0)
+  const [cpuTime, setCPUTime] = React.useState<number>(0)
+  const [gpuTime, setGPUTime] = React.useState<number>(0)
+  const [averageGPUTime, setAverageGPUTime] = React.useState<number>(0)
+  const [averageCPUTime, setAverageCPUTime] = React.useState<number>(0)
+  const [fps, setFPS] = React.useState<number>(0)
+  const [gpuFPS, setGPUFPS] = React.useState<number>(0)
+  const [textureSize, setTextureSize] = React.useState<number>(0)
+  const [bufferSize, setBufferSize] = React.useState<number>(0)
+  const [renderBufferSize, setRenderBufferSize] = React.useState<number>(0)
+  const [bufferCount, setBufferCount] = React.useState<number>(0)
+  const [textureCount, setTextureCount] = React.useState<number>(0)
+  const [shaderCount, setShaderCount] = React.useState<number>(0)
+  const [framebufferCount, setFramebufferCount] = React.useState<number>(0)
+  const [elementsCount, setElementsCount] = React.useState<number>(0)
+
+  const round = (value: number, precision: number): number => {
+    const multiplier = Math.pow(10, precision || 0)
+    return Math.round(value * multiplier) / multiplier
+  }
+
+  const update = async (): Promise<void> => {
+    const precision = 3
+    const stats = await props.engine.getStats()
+    // console.log(stats)
+    const averageGPU = stats.world.gpuTime / stats.world.count
+    setAverageGPUTime(round(averageGPU, precision))
+    const averageCPU = stats.world.cpuTime / stats.world.count
+    setAverageCPUTime(round(averageCPU, precision))
+    setCount(stats.world.count)
+    setCPUTime(round(stats.world.cpuTime, precision))
+    setGPUTime(round(stats.world.gpuTime, precision))
+    setFPS(Math.round(1000 / ((stats.world.cpuTime + stats.world.gpuTime) / stats.world.count)))
+    setGPUFPS(Math.round(1000 / (stats.world.gpuTime / stats.world.count)))
+    setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
+    setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
+    setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
+    setBufferCount(stats.regl.bufferCount)
+    setTextureCount(stats.regl.textureCount)
+    setShaderCount(stats.regl.shaderCount)
+    setFramebufferCount(stats.regl.framebufferCount)
+    setElementsCount(stats.regl.elementsCount)
+    requestAnimationFrame(update)
+  }
+
+  React.useEffect(() => {
+    requestAnimationFrame(update)
+  }, [])
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        right: 0,
+        padding: 10,
+        background: "rgba(0,0,0,0.5)",
+        color: "white",
+        fontFamily: "monospace",
+        fontSize: 12,
+        pointerEvents: "none",
+        zIndex: 100,
+        userSelect: "none",
+        minWidth: 250,
+      }}
+    >
+      <div>Frame Count: {count}</div>
+      <div>Total CPU Time: {cpuTime}ms</div>
+      <div>Total GPU Time: {gpuTime}ms</div>
+      <div>Avg CPU Time: {averageCPUTime}ms</div>
+      <div>Avg GPU Time: {averageGPUTime}ms</div>
+      <div>Theoretical FPS: {fps}</div>
+      <div>GPU FPS: {gpuFPS}</div>
+      <div>Texture Size: {textureSize}MB</div>
+      <div>Buffer Size: {bufferSize}MB</div>
+      <div>Render Buffer Size: {renderBufferSize}MB</div>
+      <div>Buffer Count: {bufferCount}</div>
+      <div>Texture Count: {textureCount}</div>
+      <div>Shader Count: {shaderCount}</div>
+      <div>Framebuffer Count: {framebufferCount}</div>
+      <div>Elements Count: {elementsCount}</div>
     </div>
   )
 }

@@ -239,9 +239,6 @@ export class RenderEngineBackend {
   private dirty = true
 
   // public stats: Stats = {
-  //   renderDuration: 0,
-  //   fps: 0,
-  //   lastRenderTime: 0
   // }
 
   // ** make layers a proxy so that we can call render when a property is updated
@@ -297,6 +294,7 @@ export class RenderEngineBackend {
         "EXT_frag_depth",
         "EXT_blend_minmax",
         // "WEBGL_color_buffer_float",
+        "EXT_disjoint_timer_query",
       ],
       profile: true,
     })
@@ -349,6 +347,8 @@ export class RenderEngineBackend {
       primitive: "triangles",
       count: 6,
       offset: 0,
+
+      profile: true,
     })
 
     // this.loadingFrame = new LoadingAnimation(this.regl, this.world)
@@ -879,6 +879,7 @@ export class RenderEngineBackend {
     if (!this.dirty && !force) return
     // if (this.loadingFrame.enabled) return
     if (updateLayers) this.dirty = false
+    this.regl.poll()
     this.regl.clear({
       color: [0, 0, 0, 0],
       depth: 1,
@@ -907,29 +908,89 @@ export class RenderEngineBackend {
       this.measurements.render(context)
       this.overlay(() => this.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
+    // this.getStats()
   }
 
-  public stats(): void {
+  public getStats(): Stats {
     // console.log(this.regl.stats)
-    // console.log('Texture Count: ' + this.regl.stats.textureCount)
-    // console.log(
-    //   'Texture Memory: ' + Math.round(this.regl.stats.getTotalTextureSize() / 1024 / 1024) + ' MB'
-    // )
-    // console.log('Render Buffer Count: ' + this.regl.stats.renderbufferCount)
-    // console.log(
-    //   'Render Buffer Memory: ' +
-    //     Math.round(this.regl.stats.getTotalRenderbufferSize() / 1024 / 1024) +
-    //     ' MB'
-    // )
-    // console.log('Buffer Count: ' + this.regl.stats.bufferCount)
-    // console.log(
-    //   'Buffer Memory: ' + Math.round(this.regl.stats.getTotalBufferSize() / 1024 / 1024) + ' MB'
-    // )
+    // console.log(this.world.stats)
+    return {
+      regl: {
+        totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
+        totalBufferSize: this.regl.stats.getTotalBufferSize ? this.regl.stats!.getTotalBufferSize() : -1,
+        totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
+        maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
+        maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
+        // ...this.regl.stats,
+        bufferCount: this.regl.stats.bufferCount,
+        elementsCount: this.regl.stats.elementsCount,
+        framebufferCount: this.regl.stats.framebufferCount,
+        shaderCount: this.regl.stats.shaderCount,
+        textureCount: this.regl.stats.textureCount,
+        cubeCount: this.regl.stats.cubeCount,
+        renderbufferCount: this.regl.stats.renderbufferCount,
+        maxTextureUnits: this.regl.stats.maxTextureUnits,
+        vaoCount: this.regl.stats.vaoCount,
+      },
+      world: this.world.stats,
+    }
+
+    // /** The number of array buffers currently allocated */
+    // bufferCount: number;
+    // /** The number of element buffers currently allocated */
+    // elementsCount: number;
+    // /** The number of framebuffers currently allocated */
+    // framebufferCount: number;
+    // /** The number of shaders currently allocated */
+    // shaderCount: number;
+    // /** The number of textures currently allocated */
+    // textureCount: number;
+    // /** The number of cube maps currently allocated */
+    // cubeCount: number;
+    // /** The number of renderbuffers currently allocated */
+    // renderbufferCount: number;
+    // /** The maximum number of texture units used */
+    // maxTextureUnits: number;
+    // /** Number of vertex array objects */
+    // vaoCount: number;
+
+    // // The following functions are only available if regl is initialized with option `profile: true`
+
+    // /** The total amount of memory allocated for textures and cube maps */
+    // getTotalTextureSize?: () => number;
+    // /** The total amount of memory allocated for array buffers and element buffers */
+    // getTotalBufferSize?: () => number;
+    // /** The total amount of memory allocated for renderbuffers */
+    // getTotalRenderbufferSize?: () => number;
+    // /** The maximum number of uniforms in any shader */
+    // getMaxUniformsCount?: () => number;
+    // /** The maximum number of attributes in any shader */
+    // getMaxAttributesCount?: () => number;
+
+    // console.log("Texture Count: " + this.regl.stats.textureCount)
+    // console.log("Texture Memory: " + Math.round(this.regl.stats.getTotalTextureSize() / 1024 / 1024) + " MB")
+    // console.log("Render Buffer Count: " + this.regl.stats.renderbufferCount)
+    // console.log("Render Buffer Memory: " + Math.round(this.regl.stats.getTotalRenderbufferSize() / 1024 / 1024) + " MB")
+    // console.log("Buffer Count: " + this.regl.stats.bufferCount)
+    // console.log("Buffer Memory: " + Math.round(this.regl.stats.getTotalBufferSize() / 1024 / 1024) + " MB")
   }
 
   public destroy(): void {
     this.regl.destroy()
   }
+}
+
+export interface Stats {
+  regl: ReglStats
+  world: REGL.CommandStats
+}
+
+interface ReglStats extends REGL.Stats {
+  totalTextureSize: number
+  totalBufferSize: number
+  totalRenderbufferSize: number
+  maxUniformsCount: number
+  maxAttributesCount: number
 }
 
 Comlink.expose(RenderEngineBackend)
