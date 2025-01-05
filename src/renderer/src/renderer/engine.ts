@@ -6,7 +6,7 @@ import * as Shapes from "./shapes"
 import * as Comlink from "comlink"
 import plugins from "./plugins"
 import type { Plugin, PluginsDefinition, AddLayerProps } from "./plugins"
-import type { Units, BoundingBox } from "./types"
+import { type Units, type BoundingBox, FeatureTypeIdentifier, SnapMode } from "./types"
 import Transform from "./transform"
 import GridFrag from "../shaders/src/Grid.frag"
 import OriginFrag from "../shaders/src/Origin.frag"
@@ -14,6 +14,7 @@ import OriginFrag from "../shaders/src/Origin.frag"
 import FullScreenQuad from "../shaders/src/FullScreenQuad.vert"
 import { UID } from "./utils"
 import { SimpleMeasurement } from "./measurements"
+import { ShapeDistance } from "./shape-renderer"
 
 export interface WorldProps {}
 
@@ -23,6 +24,7 @@ interface WorldUniforms {
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
+  u_SkeletonMode: boolean
   u_PointerPosition: vec2
   u_PointerDown: boolean
   u_QueryMode: boolean
@@ -54,13 +56,6 @@ export interface RenderEngineBackendConfig {
   height: number
 }
 
-// export interface Stats {
-//   renderDuration: number,
-//   fps: number,
-//   lastRenderTime: number
-// }
-
-// export type ColorBlend = 'Contrast' | 'Overlay'
 export const ColorBlend = {
   CONTRAST: "Contrast",
   OVERLAY: "Overlay",
@@ -72,6 +67,7 @@ export interface RenderSettings {
   MSPFRAME: number
   OUTLINE_MODE: boolean
   SKELETON_MODE: boolean
+  SNAP_MODE: SnapMode[]
   COLOR_BLEND: ColorBlends
   BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
@@ -150,7 +146,9 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { layer: string; units: Units }
+export interface QuerySelection extends ShapeDistance {
+  sourceLayer: string
+}
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
@@ -173,6 +171,7 @@ export class RenderEngineBackend {
     },
     OUTLINE_MODE: false,
     SKELETON_MODE: false,
+    SNAP_MODE: [SnapMode.EDGE],
     COLOR_BLEND: "Contrast",
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
@@ -554,7 +553,7 @@ export class RenderEngineBackend {
     this.transform.update()
   }
 
-  public async getWorldPosition(x: number, y: number): Promise<[number, number]> {
+  public getWorldPosition(x: number, y: number): [number, number] {
     const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
     const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
     return [mouse[0], mouse[1]]
@@ -724,28 +723,31 @@ export class RenderEngineBackend {
     }
   }
 
-  public select(pointer: vec2): QueryFeature[] {
-    if (!this.dirty) return []
-    // setTimeout(() => (this.dirty = true), 1000 / 30)
-    setTimeout(() => (this.dirty = true), this.settings.MSPFRAME)
-    const features: QueryFeature[] = []
+  public select(pointer: vec2): QuerySelection[] {
+    const selection: QuerySelection[] = []
     this.selections.length = 0
-    this.world(async (context) => {
+    this.world((context) => {
+      this.clearMeasurements()
+      const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const selectedFeatures = layer.select(pointer, context)
-        for (const feature of selectedFeatures) {
-          features.push(Object.assign(feature, { layer: layer.id, units: layer.units }))
+        const layerSelection = layer.queryDistance(pointer, context)
+        for (const select of layerSelection) {
+          if (select.distance >= 0.01 / scale) continue
+          selection.push({
+            sourceLayer: layer.id,
+            ...select,
+            // units: layer.units,
+          })
 
           // THIS IS EXPERIMENTAL
-          const normalizedWorldPosition = vec2.create()
-          vec2.div(normalizedWorldPosition, pointer, [context.viewportWidth, context.viewportHeight])
-          const position = await this.getWorldPosition(normalizedWorldPosition[0], normalizedWorldPosition[1])
-          const { distance, xDir, yDir } = feature.selectionInfo
-          // console.log({ distance, xDir, yDir, direction })
-          this.clearMeasurements()
-          this.addMeasurement(position)
-          this.updateMeasurement([position[0] - xDir * distance, position[1] - yDir * distance])
+          this.measurements.addMeasurement(pointer)
+          // this.measurements.updateMeasurement([pointer[0] - select.direction[0] * select.distance, pointer[1] - select.direction[1] * select.distance])
+          // this.measurements.finishMeasurement([
+          //   pointer[0] - select.direction[0] * select.distance,
+          //   pointer[1] - select.direction[1] * select.distance,
+          // ])
+          this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -756,18 +758,73 @@ export class RenderEngineBackend {
           name: layer.name,
           id: layer.id,
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
-          image: JSON.parse(JSON.stringify(selectedFeatures)),
+          image: this.copySelectionToImage(selection),
           transform: layer.transform,
-          // image: layerFeatures
         })
         newSelectionLayer.dirty = true
         this.selections.push(newSelectionLayer)
       }
     })
-    // this.render({
-    //   force: true,
-    // })
-    return features
+    this.render({
+      force: true,
+    })
+    return selection
+  }
+
+  public snap(pointer: vec2): vec2 {
+    if (this.settings.SNAP_MODE.length === 0) return pointer
+
+    let closest: ShapeDistance | undefined = undefined
+    // const viewport = vec2.fromValues(this.viewBox.width, this.viewBox.height)
+    this.world((context) => {
+      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
+        if (this.settings.SNAP_MODE.includes(SnapMode.EDGE)) {
+          const layerSelection = layer.queryDistance(pointer, context)
+          for (const select of layerSelection) {
+            // if (select.distance >= 0.01 / scale) continue
+            if (closest == undefined) {
+              closest = select
+              continue
+            }
+            if (select.distance >= closest.distance) continue
+            closest = select
+          }
+        }
+        if (this.settings.SNAP_MODE.includes(SnapMode.CENTER)) {
+          // TODO! implement center snap
+          continue
+        }
+        if (this.settings.SNAP_MODE.includes(SnapMode.GRID)) {
+          // TODO! implement grid snap
+          continue
+        }
+      }
+    })
+    console.log(closest)
+    if (closest == undefined) return pointer
+    const newPointer = vec2.create()
+    vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), closest.direction, closest.distance))
+    return newPointer
+  }
+
+  private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
+    const image: Shapes.Shape[] = []
+    for (const select of selection) {
+      // we want to deep clone this object to avoid the layer renderer from mutating the properties
+      const shape = JSON.parse(JSON.stringify(select.shape)) as Shapes.Shape
+      if (select.children.length > 0) {
+        if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
+          shape.shapes = this.copySelectionToImage(select.children)
+        }
+        if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
+          shape.symbol.shapes = this.copySelectionToImage(select.children)
+        }
+      }
+      image.push(shape)
+    }
+    return image
   }
 
   public clearSelection(): void {
@@ -846,7 +903,8 @@ export class RenderEngineBackend {
   // }
 
   public addMeasurement(point: vec2): void {
-    this.measurements.addMeasurement(point)
+    const pointSnap = this.snap(point)
+    this.measurements.addMeasurement(pointSnap)
     this.render()
   }
 
@@ -856,6 +914,20 @@ export class RenderEngineBackend {
       force: true,
       updateLayers: false,
     })
+  }
+
+  public finishMeasurement(point: vec2): void {
+    const pointSnap = this.snap(point)
+    this.measurements.finishMeasurement(pointSnap)
+    this.render()
+  }
+
+  public getMeasurements(): { point1: vec2; point2: vec2 }[] {
+    return this.measurements.getMeasurements()
+  }
+
+  public getCurrentMeasurement(): { point1: vec2; point2: vec2 } | null {
+    return this.measurements.getCurrentMeasurement()
   }
 
   public clearMeasurements(): void {

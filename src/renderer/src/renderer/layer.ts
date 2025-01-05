@@ -1,13 +1,11 @@
 import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
-import * as Shapes from "./shapes"
 import { Units, BoundingBox } from "./types"
 
 import type { WorldContext } from "./engine"
 import { getUnitsConversion, UID } from "./utils"
 
-import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
-
+import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
 
 export interface LayerProps {
   name: string
@@ -106,10 +104,10 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
     this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
-    const features = super.select(pointer, context)
+    const features = super.queryDistance(pointer, context)
     this.transform.scale = initScale
     return features
   }

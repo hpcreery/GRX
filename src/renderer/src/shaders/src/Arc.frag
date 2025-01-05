@@ -241,6 +241,20 @@ float arcDistSkeleton(vec2 FragCoord) {
   return dist;
 }
 
+float arcDist(vec2 FragCoord) {
+  float dist = arcDistMain(FragCoord);
+
+  if (u_SkeletonMode) {
+    float skeleton = arcDistSkeleton(FragCoord);
+    if (u_OutlineMode) {
+      dist = max(dist, -skeleton);
+    } else {
+      dist = skeleton;
+    }
+  }
+  return dist;
+}
+
 
 vec2 transformLocation(vec2 pixel_location) {
   vec2 normal_coord = ((pixel_location.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
@@ -260,30 +274,29 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = transformLocation(u_PointerPosition);
+    FragCoord = u_PointerPosition;
   }
 
-  float dist = arcDistMain(FragCoord);
+  float dist = arcDist(FragCoord);
 
-  if (u_SkeletonMode) {
-    float skeleton = arcDistSkeleton(FragCoord);
-    if (u_OutlineMode) {
-      dist = max(dist, -skeleton);
-    } else {
-      dist = skeleton;
-    }
-  }
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist, 0.0, 0.0, sign(dist));
+      vec2 direction = normalize(vec2(
+          (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
+          (arcDist(FragCoord + vec2(0, 1) * EPSILON) - arcDist(FragCoord + vec2(0, -1) * EPSILON))
+      ));
+      // the first value is the distance to the border of the shape
+      // the second value is the direction of the border of the shape
+      // the third value is the indicator of a measurement
+      gl_FragColor = vec4(dist, direction, 1.0);
       return;
     } else {
       discard;
     }
   }
 
-  // #pragma glslify: import('../modules/Debug.glsl')
+  #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);
 
   gl_FragColor = vec4(color, alpha);

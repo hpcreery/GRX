@@ -160,6 +160,19 @@ float lineDistSkeleton(vec2 coord) {
   return dist;
 }
 
+float lineDist(vec2 coord) {
+  float dist = lineDistMain(coord);
+  if (u_SkeletonMode) {
+    float skeleton = lineDistSkeleton(coord);
+    if (u_OutlineMode) {
+      dist = max(dist, -skeleton);
+    } else {
+      dist = skeleton;
+    }
+  }
+  return dist;
+}
+
 vec2 transformLocation(vec2 pixel_coord) {
   vec2 center_location = (v_Start_Location + v_End_Location) / 2.0;
   vec2 normal_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
@@ -179,22 +192,21 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = transformLocation(u_PointerPosition);
+    FragCoord = u_PointerPosition;
   }
 
-  float dist = lineDistMain(FragCoord);
-  if (u_SkeletonMode) {
-    float skeleton = lineDistSkeleton(FragCoord);
-    if (u_OutlineMode) {
-      dist = max(dist, -skeleton);
-    } else {
-      dist = skeleton;
-    }
-  }
+  float dist = lineDist(FragCoord);
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist, 0.0, 0.0, sign(dist));
+      vec2 direction = normalize(vec2(
+          (lineDist(FragCoord + vec2(1, 0) * EPSILON) - lineDist(FragCoord + vec2(-1, 0) * EPSILON)),
+          (lineDist(FragCoord + vec2(0, 1) * EPSILON) - lineDist(FragCoord + vec2(0, -1) * EPSILON))
+      ));
+      // the first value is the distance to the border of the shape
+      // the second value is the direction of the border of the shape
+      // the third value is the indicator of a measurement
+      gl_FragColor = vec4(dist, direction, 1.0);
       return;
     } else {
       discard;

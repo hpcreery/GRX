@@ -191,29 +191,29 @@ new Array<number>(N_SURFACES).fill(0).map((_, i) => {
         //   y: 0 + i * 0.1,
         // }),
       ]),
-      // new Shapes.Contour({
-      //   poly_type: 0,
-      //   // Start point.
-      //   xs: 0.04 + i * 0.1,
-      //   ys: 0.04 + i * 0.1,
-      // }).addSegments([
-      //   new Shapes.Contour_Line_Segment({
-      //     x: 0.04 + i * 0.1,
-      //     y: 0.03 + i * 0.1,
-      //   }),
-      //   new Shapes.Contour_Line_Segment({
-      //     x: 0.03 + i * 0.1,
-      //     y: 0.03 + i * 0.1,
-      //   }),
-      //   new Shapes.Contour_Line_Segment({
-      //     x: 0.03 + i * 0.1,
-      //     y: 0.04 + i * 0.1,
-      //   }),
-      //   new Shapes.Contour_Line_Segment({
-      //     x: 0.04 + i * 0.1,
-      //     y: 0.04 + i * 0.1,
-      //   }),
-      // ]),
+      new Shapes.Contour({
+        poly_type: 0,
+        // Start point.
+        xs: 0.04 + i * 0.1,
+        ys: 0.04 + i * 0.1,
+      }).addSegments([
+        new Shapes.Contour_Line_Segment({
+          x: 0.04 + i * 0.1,
+          y: 0.03 + i * 0.1,
+        }),
+        new Shapes.Contour_Line_Segment({
+          x: 0.03 + i * 0.1,
+          y: 0.03 + i * 0.1,
+        }),
+        new Shapes.Contour_Line_Segment({
+          x: 0.03 + i * 0.1,
+          y: 0.04 + i * 0.1,
+        }),
+        new Shapes.Contour_Line_Segment({
+          x: 0.04 + i * 0.1,
+          y: 0.04 + i * 0.1,
+        }),
+      ]),
       // new Shapes.Contour({
       //   poly_type: 0,
       //   // Start point.
@@ -1458,7 +1458,7 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: "surfaces",
-      visible: true,
+      visible: false,
       image: SURFACE_RECORDS_ARRAY,
       units: "mm",
     })
@@ -1513,7 +1513,7 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: "Lines",
-      visible: false,
+      visible: true,
       units: "mm",
       image: [
         new Shapes.Line({

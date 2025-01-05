@@ -143,83 +143,56 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = transformLocation(u_PointerPosition);
+    FragCoord = u_PointerPosition;
   }
 
   float dist = surfaceDistMain(FragCoord);
 
-  // float dist = lineDistMain(FragCoord);
-  // if (u_SkeletonMode) {
-  //   float skeleton = lineDistSkeleton(FragCoord);
-  //   if (u_OutlineMode) {
-  //     dist = max(dist, -skeleton);
-  //   } else {
-  //     dist = skeleton;
-  //   }
-  // }
 
   if (u_QueryMode) {
     vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
-    float side = 1.0;
-    if (pointInTriangle(FragCoord, point1, point2, point3)) {
-      side = -1.0;
-    } else {
-      discard;
-    }
     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist, 0.0, 0.0, side);
-      return;
+      if (pointInTriangle(FragCoord, point1, point2, point3)) {
+        vec2 direction = normalize(vec2(
+            (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
+            (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(-dist, -direction, 1.0);
+        return;
+      } else {
+        discard;
+      }
+
+
+
+      // vec2 direction = normalize(vec2(
+      //     (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
+      //     (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
+      // ));
+      // if (pointInTriangle(FragCoord, point1, point2, point3)) {
+      //   direction = -direction;
+      //   dist = -dist;
+      // }
+      // if (dist < 0.01) {
+      //   gl_FragColor = vec4(dist, direction, 0.0);
+      //   return;
+      // } else {
+      //   discard;
+      // }
+
+
     } else {
       discard;
     }
-    // } else {
-    //   discard;
-    // }
   }
 
 
-  // if (u_QueryMode) {
-  //   vec2 PointerPosition = transformLocation(u_PointerPosition);
-  //   // float PointerDist = surfaceDistMain(PointerPosition);
-
-  //   vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
-  //   vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
-  //   vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
-
-  //   if (pointInTriangle(PointerPosition, point1, point2, point3)) {
-  //     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-  //       gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  //       return;
-  //     } else {
-  //       discard;
-  //     }
-  //   } else {
-  //     discard;
-  //   }
-  // }
-
-
-
-
-  // ** DEBUG **
-  // vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
-  // col *= 1.0 - exp(-3.0*abs(dist * 0.01 / pixel_size));
-  // col *= 0.8 + 0.25*cos(dist / pixel_size);
-  // // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,pixel_size,abs(dist)) );
-  // if (dist > 0.0 && dist < pixel_size) {
-  //   col = vec3(1.0, 1.0, 1.0);
-  // }
-  // gl_FragColor = vec4(col, 1.0);
-  // return;
   #pragma glslify: import('../modules/Debug.glsl')
-
-
-
-
   dist = draw(dist, pixel_size);
   gl_FragColor = vec4(color, alpha);
-
-  // gl_FragColor = vec4(1.0,1.0,1.0,1.0);
 }

@@ -1,10 +1,8 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine?worker"
-import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
+import type { GridRenderProps, QuerySelection, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
 import { AddLayerProps } from "./plugins"
-
-// import font from "./text/glyph/font.png?arraybuffer"
-// import { fontInfo } from "./text/glyph/font"
+import { SnapMode } from "./types"
 
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
@@ -48,6 +46,7 @@ export class RenderEngine {
       },
       OUTLINE_MODE: false,
       SKELETON_MODE: false,
+      SNAP_MODE: [SnapMode.EDGE],
       COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 1000,
@@ -164,27 +163,29 @@ export class RenderEngine {
     })
   }
 
-  public getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-    // Get the mouse position relative to the canvas
-    const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-    return [e.clientX - offsetX, height - (e.clientY - offsetY)]
-  }
-
-  public async getMouseNormalizedWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
-    const { width, height } = this.CONTAINER.getBoundingClientRect()
-    const mouse_element_pos = this.getMouseCanvasCoordinates(e)
-
-    // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
-    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
-
-    return mouse_normalize_pos
-  }
-
   public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
+    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+
+    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+      // Get the mouse position relative to the canvas
+      // const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
+      return [e.clientX - offsetX, height - (e.clientY - offsetY)]
+    }
+
+    function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
+      // const { width, height } = this.CONTAINER.getBoundingClientRect()
+      const mouse_element_pos = getMouseCanvasCoordinates(e)
+
+      // Normalize the mouse position to the canvas
+      const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
+      // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+      // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+      return mouse_normalize_pos
+    }
+
     const backend = await this.backend
-    return backend.getWorldPosition(...(await this.getMouseNormalizedWorldCoordinates(e)))
+    return backend.getWorldPosition(...getMouseNormalizedWorldCoordinates(e))
   }
 
   public async zoomFit(): Promise<void> {
@@ -220,17 +221,17 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      const [x, y] = await this.getMouseWorldCoordinates(e)
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === "move") {
         this.CONTAINER.style.cursor = "grabbing"
         await backend.grabViewport()
       } else if (this.pointerSettings.mode === "select") {
         this.CONTAINER.style.cursor = "wait"
-        const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.select([x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
-          new CustomEvent<QueryFeature[]>(PointerEvents.POINTER_SELECT, {
+          new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
           }),
         )
@@ -238,11 +239,17 @@ export class RenderEngine {
       } else if (this.pointerSettings.mode === "measure") {
         this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        backend.addMeasurement([x1, y1])
+        const currentMeasurement = await backend.getCurrentMeasurement()
+        if (currentMeasurement != null) {
+          backend.finishMeasurement([x1, y1])
+        } else {
+          backend.addMeasurement([x1, y1])
+        }
       }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
+      // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === "move") {
         this.CONTAINER.style.cursor = "grab"
         await backend.releaseViewport()
@@ -265,19 +272,13 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+      const [x, y] = await this.getMouseWorldCoordinates(e)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
       if (this.pointerSettings.mode === "measure") {
         this.CONTAINER.style.cursor = "crosshair"
-        const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        backend.updateMeasurement([x1, y1])
-
-        // THIS IS TEMOPORARY
-      } else if (this.pointerSettings.mode === "select") {
-        this.CONTAINER.style.cursor = "default"
-        const [x, y] = this.getMouseCanvasCoordinates(e)
-        const features = await backend.select([x, y])
+        backend.updateMeasurement([x, y])
       }
 
       if (!(await backend.isDragging())) {

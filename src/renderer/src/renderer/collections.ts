@@ -23,7 +23,7 @@ import { vec2 } from "gl-matrix"
 
 import earcut from "earcut"
 
-import { fontInfo as cozetteFontInfo } from './text/cozette/font'
+import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -224,7 +224,6 @@ export const ReglRenderers: TReglRenderers = {
   drawFrameBuffer: undefined,
   renderToScreen: undefined,
 }
-
 
 export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
   const texture = regl.texture({

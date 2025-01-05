@@ -48,3 +48,10 @@ export type BoundingBox = {
   min: vec2
   max: vec2
 }
+
+export const SnapMode = {
+  EDGE: "EDGE",
+  CENTER: "CENTER",
+  GRID: "GRID",
+} as const
+export type SnapMode = (typeof SnapMode)[keyof typeof SnapMode]

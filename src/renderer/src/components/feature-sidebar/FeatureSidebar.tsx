@@ -15,7 +15,7 @@ import {
   IconArrowUpBar,
   IconNorthStar,
 } from "@tabler/icons-react"
-import { LayerInfo, QueryFeature } from "@src/renderer/engine"
+import { LayerInfo, QuerySelection } from "@src/renderer/engine"
 import classes from "./FeatureSidebar.module.css"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { getUnitsConversion } from "@src/renderer/utils"
@@ -24,8 +24,7 @@ import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/symbols"
 import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/types"
 import { menuItems } from "@src/contexts/EditorContext"
 
-interface ToolbarProps {
-}
+interface ToolbarProps {}
 
 function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
   const [hover, setHover] = useState<boolean>(false)
@@ -49,7 +48,7 @@ function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
 }
 
 export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
-  const [features, setFeatures] = useState<QueryFeature[]>([])
+  const [features, setFeatures] = useState<QuerySelection[]>([])
   const [mounted, setMounted] = useState<boolean>(false)
   const { units, renderEngine } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<LayerInfo[]>([])
@@ -120,10 +119,10 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
   useEffect(() => {
     const handler = (e): void => {
       // console.log("feature clicked", (e as CustomEvent<QueryFeature[]>).detail)
-      const featuresTemp = (e as CustomEvent<QueryFeature[]>).detail
+      const featuresTemp = (e as CustomEvent<QuerySelection[]>).detail
       if (featuresTemp.length > 0) {
         setMounted(true)
-        setFeatures((e as CustomEvent<QueryFeature[]>).detail)
+        setFeatures((e as CustomEvent<QuerySelection[]>).detail)
       } else {
         setMounted(false)
       }
@@ -139,7 +138,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
     }
   }, [])
 
-  const getInfo = (feature: QueryFeature): JSX.Element => {
+  const getInfo = (feature: QuerySelection): JSX.Element => {
     const layer = layers.find((x) => x.id === feature.layer)
     let layerColor = "black"
     let layerName = "Unknown"

@@ -102,7 +102,7 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = transformLocation(u_PointerPosition);
+    FragCoord = u_PointerPosition;
   }
 
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
@@ -131,9 +131,17 @@ void main() {
   // dist = offset * direction;
 
   if (u_QueryMode) {
+
+
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      gl_FragColor = vec4(dist, 0.0, 0.0, sign(dist));
-      // gl_FragColor = vec4(dist, offset, 0.0, 0.0);
+      vec2 direction = normalize(vec2(
+          (drawShape(FragCoord + vec2(1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor),
+          (drawShape(FragCoord + vec2(0, 1) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, int(v_SymNum)) * v_ResizeFactor)
+      ));
+      // the first value is the distance to the border of the shape
+      // the second value is the direction of the border of the shape
+      // the third value is the indicator of a measurement
+      gl_FragColor = vec4(dist, direction, 1.0);
       return;
     } else {
       discard;

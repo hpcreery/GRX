@@ -89,18 +89,18 @@ void main() {
 
   if (u_QueryMode) {
     vec2 New_Vertex_Position = vec2(0.0, 0.0);
-    // if (a_VertexPosition.x == 0.0)
-    //   New_Vertex_Position = vec2(1.0, -1.0);
-    // else if (a_VertexPosition.x == 1.0)
-    //   New_Vertex_Position = vec2(-1.0, 1.0);
-    // else if (a_VertexPosition.x == 2.0)
-    //   New_Vertex_Position = vec2(1.0, 1.0);
     if (a_VertexPosition.x == 0.0)
-      New_Vertex_Position = vec2(0.0, 0.0);
+      New_Vertex_Position = vec2(1.0, -1.0);
     else if (a_VertexPosition.x == 1.0)
-      New_Vertex_Position = vec2(1.0, 0.0);
+      New_Vertex_Position = vec2(-1.0, 1.0);
     else if (a_VertexPosition.x == 2.0)
-      New_Vertex_Position = vec2(0.0, 1.0);
+      New_Vertex_Position = vec2(1.0, 1.0);
+    // if (a_VertexPosition.x == 0.0)
+    //   New_Vertex_Position = vec2(0.0, 0.0);
+    // else if (a_VertexPosition.x == 1.0)
+    //   New_Vertex_Position = vec2(1.0, 0.0);
+    // else if (a_VertexPosition.x == 2.0)
+    //   New_Vertex_Position = vec2(0.0, 1.0);
     FinalPosition.xy = ((((New_Vertex_Position + vec2(mod(a_SurfaceIndex, u_Resolution.x) + 0.5, floor(a_SurfaceIndex / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
   }
 
