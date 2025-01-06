@@ -2,15 +2,10 @@ import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "./shapes"
 import * as Symbols from "./symbols"
-import { BoundingBox, FeatureTypeIdentifier } from "./types"
-import ShapeTransform from './transform'
+import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "./types"
+import ShapeTransform from "./transform"
 
-import {
-  DatumShaderCollection,
-  DatumTextShaderCollection,
-  ReglRenderers,
-  TLoadedReglRenderers,
-} from "./collections"
+import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
@@ -36,11 +31,18 @@ interface QueryUniforms {
   u_Color: vec3
   u_Alpha: number
   u_PointerPosition: vec2
+  u_SnapMode: number
 }
 interface QueryAttributes {}
 
 interface QueryProps {
   pointer: vec2
+  snapMode: number
+}
+
+interface DatumConfigUniforms {
+  u_Color: vec3
+  u_Alpha: number
 }
 
 export interface RendererProps {
@@ -61,12 +63,12 @@ interface ShapeRendererCommonContext {
   transformMatrix: mat3
 }
 
-interface DatumUniforms {
-  u_Color: vec3
-  u_Alpha: number
+export type ShapeDistance = {
+  distance: number
+  direction: vec2
+  shape: Shapes.Shape
+  children: ShapeDistance[]
 }
-
-interface DatumAttributes {}
 
 export class ShapeRenderer {
   public regl: REGL.Regl
@@ -79,6 +81,7 @@ export class ShapeRenderer {
   //   this.dirty = true
   // })
   public readonly image: Shapes.Shape[] = []
+  // public selection: SelectShapes[] = []
 
   public shapeCollection: ShapesShaderCollection
   public macroCollection: MacroShaderCollection
@@ -98,6 +101,8 @@ export class ShapeRenderer {
   public queryFrameBuffer: REGL.Framebuffer2D
 
   public transform: ShapeTransform = new ShapeTransform()
+
+  public distanceQueryRaw: Float32Array = new Float32Array(0)
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
@@ -172,8 +177,9 @@ export class ShapeRenderer {
           return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
-        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
+        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Symbols.${key}`]: value }), {}),
         ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}),
+        ...Object.entries(SNAP_MODES_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_SnapModes.${key}`]: value }), {}),
       },
     })
 
@@ -183,10 +189,11 @@ export class ShapeRenderer {
         u_Color: [1, 1, 1],
         u_Alpha: 1,
         u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
+        u_SnapMode: this.regl.prop<QueryProps, "snapMode">("snapMode"),
       },
     })
 
-    this.datumConfig = this.regl<DatumUniforms, DatumAttributes, Record<string, never>, WorldContext>({
+    this.datumConfig = this.regl<DatumConfigUniforms, Record<string, never>, Record<string, never>, WorldContext>({
       depth: {
         enable: false,
         mask: true,
@@ -221,9 +228,12 @@ export class ShapeRenderer {
 
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true,
+      colorType: "float",
+      // colorFormat: "rgba32f",
     })
     this.surfaceFrameBuffer = this.regl.framebuffer({
       depth: true,
+      colorType: "float",
     })
   }
 
@@ -283,7 +293,7 @@ export class ShapeRenderer {
     return this
   }
 
-  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext): Shapes.Shape[] {
+  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -295,57 +305,90 @@ export class ShapeRenderer {
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
+
+    if (this.distanceQueryRaw.length != width * height * 4) {
+      this.distanceQueryRaw = new Float32Array(width * height * 4)
+    }
+
     this.regl.clear({
       framebuffer: this.queryFrameBuffer,
+      // in the color buffer, the first value is the distance, the next two are the direction, the last is to indicate there is a measurement at all. (0 = empty)
       color: [0, 0, 0, 0],
       depth: 0,
     })
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
-        this.queryConfig({ pointer }, () => {
+        this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
           this.drawPrimitives(context)
           this.drawDatums(context)
         })
       })
     })
-    const data = this.regl.read({
+    this.regl.read<Float32Array>({
       framebuffer: this.queryFrameBuffer,
       x: 0,
       y: 0,
       width: width,
       height: height,
+      data: this.distanceQueryRaw,
     })
-    const features: Shapes.Shape[] = []
-    for (let i = 0; i < data.length; i += 4) {
-      const value = data.slice(i, i + 4).reduce((acc, val) => acc + val, 0)
-      if (value > 0) {
-        const feat = Object.assign({}, this.image[i / 4])
-        features.push(feat)
+
+    const distData = this.distanceQueryRaw
+    // console.log(distData)
+
+    const distances: ShapeDistance[] = []
+    let closestIndex: number | undefined = undefined
+    for (let i = 0; i < distData.length; i += 4) {
+      // the last value is to indicate there is a measurement at all. (0 = empty)
+      if (distData[i + 3] == 0) continue
+      const distance = distData[i]
+
+      const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
+
+      distances.push({
+        shape: this.image[i / 4],
+        distance,
+        direction,
+        children: [],
+      })
+      if (closestIndex == undefined) {
+        closestIndex = i
+      }
+      if (distance < distData[closestIndex]) {
+        closestIndex = i
       }
     }
+
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        const macroFeatures = macro.renderer.select(pointer, context)
+        const macroFeatures = macro.renderer.queryDistance(pointer, snapMode, context)
         if (macroFeatures.length > 0) {
-          const macroCopy = Object.assign({}, record)
-          macroCopy.symbol = Object.assign({}, macro.macro)
-          macroCopy.symbol.shapes = macroFeatures
-          features.push(macroCopy)
+          const closest = macroFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
+          distances.push({
+            shape: record,
+            distance: closest.distance,
+            direction: closest.direction,
+            children: macroFeatures,
+          })
         }
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.select(pointer, context)
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, snapMode, context)
       if (stepAndRepeatFeatures.length > 0) {
-        const stepAndRepeatCopy = Object.assign({}, stepAndRepeat.record)
-        stepAndRepeatCopy.shapes = stepAndRepeatFeatures
-        features.push(stepAndRepeatCopy)
+        const closest = stepAndRepeatFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
+        distances.push({
+          shape: stepAndRepeat.record,
+          distance: closest.distance,
+          direction: closest.direction,
+          children: stepAndRepeatFeatures,
+        })
       }
     })
     context.transformMatrix = origMatrix
-    return features
+    return distances
   }
 
   public render(context: REGL.DefaultContext & WorldContext): void {
@@ -437,7 +480,6 @@ export class MacroRenderer extends ShapeRenderer {
     this.framebuffer = this.regl.framebuffer({
       depth: true,
     })
-
   }
 
   public updateTransformFromPad(pad: Shapes.Pad): void {
@@ -497,13 +539,17 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public select(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): Shapes.Shape[] {
-    const features: Shapes.Shape[] = []
+  public queryDistance(
+    pointer: vec2,
+    snapMode: SnapMode,
+    context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
+  ): ShapeDistance[] {
+    const features: ShapeDistance[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.select(pointer, context)
+      const nestedFeatures = super.queryDistance(pointer, snapMode, context)
       if (nestedFeatures.length > 0) features.push(...nestedFeatures)
     })
     return features

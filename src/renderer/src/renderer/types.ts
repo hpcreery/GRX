@@ -37,6 +37,10 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
 }
 
+export function toValues<T extends string>(map: { [key in T]: string }): T[] {
+  return Object.keys(map) as T[]
+}
+
 export type Binary = 0 | 1
 
 export type IntersectingTypes<T, U> = { [K in Extract<keyof T, keyof U>]: T[K] }
@@ -48,3 +52,28 @@ export type BoundingBox = {
   min: vec2
   max: vec2
 }
+
+export const ColorBlend = {
+  CONTRAST: "Contrast",
+  OVERLAY: "Overlay",
+} as const
+export type ColorBlend = (typeof ColorBlend)[keyof typeof ColorBlend]
+
+export const SnapMode = {
+  OFF: "OFF",
+  EDGE: "EDGE",
+  CENTER: "CENTER",
+  // GRID: "GRID",
+} as const
+export const SNAP_MODES = toValues(SnapMode)
+export const SNAP_MODES_MAP = toMap(SNAP_MODES)
+export type SnapMode = keyof typeof SNAP_MODES_MAP
+
+export const PointerMode = {
+  MOVE: "MOVE",
+  SELECT: "SELECT",
+  MEASURE: "MEASURE",
+} as const
+export const POINTER_MODES = toValues(PointerMode)
+export const POINTER_MODES_MAP = toMap(POINTER_MODES)
+export type PointerMode = keyof typeof POINTER_MODES_MAP

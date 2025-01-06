@@ -7,7 +7,8 @@
     col *= 1.0 - exp(-3.0*abs(dist * 0.01 / pixel_size));
     col *= 0.8 + 0.25*cos(dist / pixel_size);
     // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,u_PixelSize,abs(dist)) );
-    if (dist < 0.0 && dist > -pixel_size) {
+    // if (dist < 0.0 && dist > -pixel_size) {
+    if (dist < pixel_size && dist > -pixel_size) {
       col = vec3(1.0, 1.0, 1.0);
     }
     gl_FragColor = vec4(col, 1.0);

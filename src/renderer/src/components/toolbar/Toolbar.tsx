@@ -15,6 +15,7 @@ import {
   IconZoomReset,
   IconTrashX,
   IconEngine,
+  IconPointerPin,
 } from "@tabler/icons-react"
 // import chroma from 'chroma-js'
 import { Modal, ActionIcon, Card, Group, Tooltip, useMantineTheme, Kbd } from "@mantine/core"
@@ -27,16 +28,17 @@ import { useContextMenu } from "mantine-contextmenu"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { actions } from "@src/contexts/Spotlight"
 import { menuItems } from "@src/contexts/EditorContext"
+import { PointerMode } from "@src/renderer/types"
+import SnapSettings from "./SnapSettings"
 
-
-interface ToolbarProps {
-}
+interface ToolbarProps {}
 
 export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const { units, renderEngine } = React.useContext(EditorConfigProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
+  const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
@@ -47,7 +49,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     menuItems.push({
       key: "clear measurements",
       title: "Clear Measurements",
-      icon: <IconTrashX  stroke={1.5} size={18} color={theme.colors.red[7]}/>,
+      icon: <IconTrashX stroke={1.5} size={18} color={theme.colors.red[7]} />,
       onClick: async (): Promise<void> => {
         const backend = await renderEngine.backend
         backend.clearMeasurements()
@@ -115,8 +117,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Move Mode",
       description: "Enable mouse move mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = "move"
-        setPointerMode("move")
+        renderEngine.pointerSettings.mode = PointerMode.MOVE
+        setPointerMode(PointerMode.MOVE)
       },
       leftSection: <IconArrowsMove />,
       rightSection: <Kbd>A</Kbd>,
@@ -126,8 +128,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Select Mode",
       description: "Enable mouse select mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = "select"
-        setPointerMode("select")
+        renderEngine.pointerSettings.mode = PointerMode.SELECT
+        setPointerMode(PointerMode.SELECT)
       },
       leftSection: <IconClick />,
       rightSection: <Kbd>S</Kbd>,
@@ -137,8 +139,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Measure Mode",
       description: "Enable mouse measure mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = "measure"
-        setPointerMode("measure")
+        renderEngine.pointerSettings.mode = PointerMode.MEASURE
+        setPointerMode(PointerMode.MEASURE)
       },
       leftSection: <IconRulerMeasure />,
       rightSection: <Kbd>D</Kbd>,
@@ -149,22 +151,22 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "a",
       (): void => {
-        renderEngine.pointerSettings.mode = "move"
-        setPointerMode("move")
+        renderEngine.pointerSettings.mode = PointerMode.MOVE
+        setPointerMode(PointerMode.MOVE)
       },
     ],
     [
       "s",
       (): void => {
-        renderEngine.pointerSettings.mode = "select"
-        setPointerMode("select")
+        renderEngine.pointerSettings.mode = PointerMode.SELECT
+        setPointerMode(PointerMode.SELECT)
       },
     ],
     [
       "d",
       (): void => {
-        renderEngine.pointerSettings.mode = "measure"
-        setPointerMode("measure")
+        renderEngine.pointerSettings.mode = PointerMode.MEASURE
+        setPointerMode(PointerMode.MEASURE)
       },
     ],
     [
@@ -221,10 +223,10 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
               <ActionIcon
                 size="lg"
                 radius="sm"
-                variant={pointerMode == "move" ? "outline" : "default"}
+                variant={pointerMode == PointerMode.MOVE ? "outline" : "default"}
                 onClick={() => {
-                  renderEngine.pointerSettings.mode = "move"
-                  setPointerMode("move")
+                  renderEngine.pointerSettings.mode = PointerMode.MOVE
+                  setPointerMode(PointerMode.MOVE)
                 }}
               >
                 <IconArrowsMove size={18} />
@@ -234,10 +236,10 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
               <ActionIcon
                 size="lg"
                 radius="sm"
-                variant={pointerMode == "select" ? "outline" : "default"}
+                variant={pointerMode == PointerMode.SELECT ? "outline" : "default"}
                 onClick={() => {
-                  renderEngine.pointerSettings.mode = "select"
-                  setPointerMode("select")
+                  renderEngine.pointerSettings.mode = PointerMode.SELECT
+                  setPointerMode(PointerMode.SELECT)
                 }}
               >
                 <IconClick size={18} />
@@ -247,10 +249,10 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
               <ActionIcon
                 size="lg"
                 radius="sm"
-                variant={pointerMode == "measure" ? "outline" : "default"}
+                variant={pointerMode == PointerMode.MEASURE ? "outline" : "default"}
                 onClick={(): void => {
-                  renderEngine.pointerSettings.mode = "measure"
-                  setPointerMode("measure")
+                  renderEngine.pointerSettings.mode = PointerMode.MEASURE
+                  setPointerMode(PointerMode.MEASURE)
                 }}
                 onContextMenu={showContextMenu(contextItems)}
               >
@@ -269,6 +271,11 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 }}
               >
                 <IconZoomReset size={18} />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Snap Settings">
+              <ActionIcon size="lg" radius="sm" variant="default" onClick={snapSettingsModalHandlers.open}>
+                <IconPointerPin size={18} />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Outline Mode">
@@ -310,6 +317,9 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       </Modal>
       <Modal title="Engine Settings" keepMounted opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
         <EngineSettings />
+      </Modal>
+      <Modal title="Snap Settings" keepMounted opened={snapSettingsModal} onClose={snapSettingsModalHandlers.close}>
+        <SnapSettings />
       </Modal>
     </>
   )

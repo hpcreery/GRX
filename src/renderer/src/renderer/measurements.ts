@@ -59,10 +59,8 @@ export class SimpleMeasurement extends ShapeRenderer {
   public addMeasurement(point: vec2): void {
     if (this.currentMeasurement) {
       this.measurements.push(this.currentMeasurement)
-      this.currentMeasurement = null
-    } else {
-      this.currentMeasurement = { point1: point, point2: point }
     }
+    this.currentMeasurement = { point1: point, point2: point }
     this.refresh()
   }
 
@@ -71,6 +69,29 @@ export class SimpleMeasurement extends ShapeRenderer {
       this.currentMeasurement.point2 = point
       this.refresh()
     }
+  }
+
+  public finishMeasurement(point: vec2): void {
+    if (this.currentMeasurement) {
+      // this.currentMeasurement.point2 = point
+      this.updateMeasurement(point)
+      this.measurements.push(this.currentMeasurement)
+      this.currentMeasurement = null
+      this.refresh()
+    }
+  }
+
+  public cancelMeasurement(): void {
+    this.currentMeasurement = null
+    this.refresh()
+  }
+
+  public getMeasurements(): { point1: vec2; point2: vec2 }[] {
+    return this.measurements
+  }
+
+  public getCurrentMeasurement(): { point1: vec2; point2: vec2 } | null {
+    return this.currentMeasurement
   }
 
   public clearMeasurements(): void {

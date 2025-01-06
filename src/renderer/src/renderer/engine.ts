@@ -6,14 +6,15 @@ import * as Shapes from "./shapes"
 import * as Comlink from "comlink"
 import plugins from "./plugins"
 import type { Plugin, PluginsDefinition, AddLayerProps } from "./plugins"
-import type { Units, BoundingBox } from "./types"
+import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend } from "./types"
 import Transform from "./transform"
 import GridFrag from "../shaders/src/Grid.frag"
 import OriginFrag from "../shaders/src/Origin.frag"
-import LoadingFrag from "../shaders/src/Loading/Winding.frag"
+// import LoadingFrag from "../shaders/src/Loading/Winding.frag"
 import FullScreenQuad from "../shaders/src/FullScreenQuad.vert"
 import { UID } from "./utils"
 import { SimpleMeasurement } from "./measurements"
+import { ShapeDistance } from "./shape-renderer"
 
 export interface WorldProps {}
 
@@ -23,6 +24,8 @@ interface WorldUniforms {
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
+  u_SkeletonMode: boolean
+  u_SnapMode: number
   u_PointerPosition: vec2
   u_PointerDown: boolean
   u_QueryMode: boolean
@@ -54,24 +57,13 @@ export interface RenderEngineBackendConfig {
   height: number
 }
 
-// export interface Stats {
-//   renderDuration: number,
-//   fps: number,
-//   lastRenderTime: number
-// }
-
-// export type ColorBlend = 'Contrast' | 'Overlay'
-export const ColorBlend = {
-  CONTRAST: "Contrast",
-  OVERLAY: "Overlay",
-} as const
-export type ColorBlends = (typeof ColorBlend)[keyof typeof ColorBlend]
-
 export interface RenderSettings {
   FPS: number
   MSPFRAME: number
   OUTLINE_MODE: boolean
-  COLOR_BLEND: ColorBlends
+  SKELETON_MODE: boolean
+  SNAP_MODE: SnapMode
+  COLOR_BLEND: ColorBlend
   BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
   MIN_ZOOM: number
@@ -149,7 +141,10 @@ export interface Pointer {
   down: boolean
 }
 
-export type QueryFeature = Shapes.Shape & { layer: string; units: Units }
+export interface QuerySelection extends ShapeDistance {
+  sourceLayer: string
+  units: Units
+}
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
 
@@ -171,7 +166,9 @@ export class RenderEngineBackend {
       this.MSPFRAME = 1000 / value
     },
     OUTLINE_MODE: false,
-    COLOR_BLEND: "Contrast",
+    SKELETON_MODE: false,
+    SNAP_MODE: SnapMode.OFF,
+    COLOR_BLEND: ColorBlend.CONTRAST,
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
     MIN_ZOOM: 0.001,
@@ -236,12 +233,6 @@ export class RenderEngineBackend {
 
   private dirty = true
 
-  // public stats: Stats = {
-  //   renderDuration: 0,
-  //   fps: 0,
-  //   lastRenderTime: 0
-  // }
-
   // ** make layers a proxy so that we can call render when a property is updated
   // public layers: LayerRenderer[] = new Proxy([], {
   //   set: (target, name, value): boolean => {
@@ -267,7 +258,7 @@ export class RenderEngineBackend {
   private renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridRenderProps>
   private renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
 
-  public loadingFrame: LoadingAnimation
+  // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
   public parsers: PluginsDefinition = {}
@@ -288,7 +279,15 @@ export class RenderEngineBackend {
 
     this.regl = REGL({
       gl,
-      extensions: ["angle_instanced_arrays", "OES_texture_float", "webgl_depth_texture", "EXT_frag_depth", "EXT_blend_minmax"],
+      extensions: [
+        "angle_instanced_arrays",
+        "OES_texture_float",
+        "webgl_depth_texture",
+        "EXT_frag_depth",
+        "EXT_blend_minmax",
+        // "WEBGL_color_buffer_float",
+        "EXT_disjoint_timer_query",
+      ],
       profile: true,
     })
     console.log("WEBGL LIMITS", this.regl.limits)
@@ -314,6 +313,9 @@ export class RenderEngineBackend {
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
+        u_SkeletonMode: () => this.settings.SKELETON_MODE,
+        // u_SnapMode: () => this.settings.SNAP_MODE,
+        u_SnapMode: SNAP_MODES_MAP.OFF,
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
@@ -339,9 +341,11 @@ export class RenderEngineBackend {
       primitive: "triangles",
       count: 6,
       offset: 0,
+
+      profile: true,
     })
 
-    this.loadingFrame = new LoadingAnimation(this.regl, this.world)
+    // this.loadingFrame = new LoadingAnimation(this.regl, this.world)
     // this.measurements = new SimpleMeasurement(this.regl, this.ctx)
     this.measurements = new SimpleMeasurement({
       regl: this.regl,
@@ -544,7 +548,7 @@ export class RenderEngineBackend {
     this.transform.update()
   }
 
-  public async getWorldPosition(x: number, y: number): Promise<[number, number]> {
+  public getWorldPosition(x: number, y: number): [number, number] {
     const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
     const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
     return [mouse[0], mouse[1]]
@@ -714,15 +718,28 @@ export class RenderEngineBackend {
     }
   }
 
-  public select(pointer: vec2): QueryFeature[] {
-    const features: QueryFeature[] = []
+  public select(pointer: vec2): QuerySelection[] {
+    const selection: QuerySelection[] = []
     this.selections.length = 0
     this.world((context) => {
+      this.clearMeasurements()
+      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const selectedFeatures = layer.select(pointer, context)
-        for (const feature of selectedFeatures) {
-          features.push(Object.assign(feature, { layer: layer.id, units: layer.units }))
+        const distances = layer.queryDistance(pointer, SnapMode.EDGE, context)
+        const layerSelection = distances.filter((shape) => shape.distance <= 0)
+        for (const select of layerSelection) {
+          // if (select.distance >= 0.01 / scale) continue
+          // if (select.distance >= 0.0) continue
+          selection.push({
+            sourceLayer: layer.id,
+            ...select,
+            units: layer.units,
+          })
+
+          // THIS IS A VISUAL AIDS FOR THE SELECTION
+          // this.measurements.addMeasurement(pointer)
+          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -733,9 +750,8 @@ export class RenderEngineBackend {
           name: layer.name,
           id: layer.id,
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
-          image: JSON.parse(JSON.stringify(selectedFeatures)),
+          image: this.copySelectionToImage(layerSelection),
           transform: layer.transform,
-          // image: layerFeatures
         })
         newSelectionLayer.dirty = true
         this.selections.push(newSelectionLayer)
@@ -744,7 +760,53 @@ export class RenderEngineBackend {
     this.render({
       force: true,
     })
-    return features
+    return selection
+  }
+
+  public snap(pointer: vec2): vec2 {
+    // if (this.settings.SNAP_MODE == SnapMode.OFF) return pointer
+
+    let closest: ShapeDistance | undefined = undefined
+    this.world((context) => {
+      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
+      for (const layer of this.layers) {
+        if (!layer.visible) continue
+        const layerSelection = layer.queryDistance(pointer, this.settings.SNAP_MODE, context)
+        for (const select of layerSelection) {
+          // if (select.distance >= 0.01 / scale) continue
+          if (closest == undefined) {
+            closest = select
+            continue
+          }
+          if (select.distance < closest.distance) {
+            closest = select
+          }
+          // closest = select
+        }
+      }
+    })
+    if (closest == undefined) return pointer
+    const newPointer = vec2.create()
+    vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), (closest as ShapeDistance).direction, (closest as ShapeDistance).distance))
+    return newPointer
+  }
+
+  private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
+    const image: Shapes.Shape[] = []
+    for (const select of selection) {
+      // we want to deep clone this object to avoid the layer renderer from mutating the properties
+      const shape = JSON.parse(JSON.stringify(select.shape)) as Shapes.Shape
+      if (select.children.length > 0) {
+        if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
+          shape.shapes = this.copySelectionToImage(select.children)
+        }
+        if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
+          shape.symbol.shapes = this.copySelectionToImage(select.children)
+        }
+      }
+      image.push(shape)
+    }
+    return image
   }
 
   public clearSelection(): void {
@@ -814,16 +876,17 @@ export class RenderEngineBackend {
     })
   }
 
-  public startLoading(): void {
-    this.loadingFrame.start()
-  }
+  // public startLoading(): void {
+  //   this.loadingFrame.start()
+  // }
 
-  public stopLoading(): void {
-    this.loadingFrame.stop()
-  }
+  // public stopLoading(): void {
+  //   this.loadingFrame.stop()
+  // }
 
   public addMeasurement(point: vec2): void {
-    this.measurements.addMeasurement(point)
+    const pointSnap = this.snap(point)
+    this.measurements.addMeasurement(pointSnap)
     this.render()
   }
 
@@ -833,6 +896,20 @@ export class RenderEngineBackend {
       force: true,
       updateLayers: false,
     })
+  }
+
+  public finishMeasurement(point: vec2): void {
+    const pointSnap = this.snap(point)
+    this.measurements.finishMeasurement(pointSnap)
+    this.render()
+  }
+
+  public getMeasurements(): { point1: vec2; point2: vec2 }[] {
+    return this.measurements.getMeasurements()
+  }
+
+  public getCurrentMeasurement(): { point1: vec2; point2: vec2 } | null {
+    return this.measurements.getCurrentMeasurement()
   }
 
   public clearMeasurements(): void {
@@ -854,8 +931,9 @@ export class RenderEngineBackend {
   public render(props: RenderProps = RenderEngineBackend.defaultRenderProps): void {
     const { force, updateLayers } = { ...RenderEngineBackend.defaultRenderProps, ...props }
     if (!this.dirty && !force) return
-    if (this.loadingFrame.enabled) return
+    // if (this.loadingFrame.enabled) return
     if (updateLayers) this.dirty = false
+    this.regl.poll()
     this.regl.clear({
       color: [0, 0, 0, 0],
       depth: 1,
@@ -886,27 +964,44 @@ export class RenderEngineBackend {
     })
   }
 
-  public stats(): void {
-    // console.log(this.regl.stats)
-    // console.log('Texture Count: ' + this.regl.stats.textureCount)
-    // console.log(
-    //   'Texture Memory: ' + Math.round(this.regl.stats.getTotalTextureSize() / 1024 / 1024) + ' MB'
-    // )
-    // console.log('Render Buffer Count: ' + this.regl.stats.renderbufferCount)
-    // console.log(
-    //   'Render Buffer Memory: ' +
-    //     Math.round(this.regl.stats.getTotalRenderbufferSize() / 1024 / 1024) +
-    //     ' MB'
-    // )
-    // console.log('Buffer Count: ' + this.regl.stats.bufferCount)
-    // console.log(
-    //   'Buffer Memory: ' + Math.round(this.regl.stats.getTotalBufferSize() / 1024 / 1024) + ' MB'
-    // )
+  public getStats(): Stats {
+    return {
+      regl: {
+        totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
+        totalBufferSize: this.regl.stats.getTotalBufferSize ? this.regl.stats!.getTotalBufferSize() : -1,
+        totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
+        maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
+        maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
+        bufferCount: this.regl.stats.bufferCount,
+        elementsCount: this.regl.stats.elementsCount,
+        framebufferCount: this.regl.stats.framebufferCount,
+        shaderCount: this.regl.stats.shaderCount,
+        textureCount: this.regl.stats.textureCount,
+        cubeCount: this.regl.stats.cubeCount,
+        renderbufferCount: this.regl.stats.renderbufferCount,
+        maxTextureUnits: this.regl.stats.maxTextureUnits,
+        vaoCount: this.regl.stats.vaoCount,
+      },
+      world: this.world.stats,
+    }
   }
 
   public destroy(): void {
     this.regl.destroy()
   }
+}
+
+export interface Stats {
+  regl: ReglStats
+  world: REGL.CommandStats
+}
+
+interface ReglStats extends REGL.Stats {
+  totalTextureSize: number
+  totalBufferSize: number
+  totalRenderbufferSize: number
+  maxUniformsCount: number
+  maxAttributesCount: number
 }
 
 Comlink.expose(RenderEngineBackend)
@@ -919,43 +1014,43 @@ export function logMatrix(matrix: mat3): void {
   )
 }
 
-export interface LoadingRenderProps {}
+// export interface LoadingRenderProps {}
 
-interface LoadingRenderUniforms {}
+// interface LoadingRenderUniforms {}
 
-class LoadingAnimation {
-  private regl: REGL.Regl
-  private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
-  private tick: REGL.Cancellable = { cancel: () => {} }
-  private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
+// class LoadingAnimation {
+//   private regl: REGL.Regl
+//   private renderLoading: REGL.DrawCommand<REGL.DefaultContext, LoadingRenderProps>
+//   private tick: REGL.Cancellable = { cancel: () => {} }
+//   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
-  private _enabled = false
+//   private _enabled = false
 
-  get enabled(): boolean {
-    return this._enabled
-  }
+//   get enabled(): boolean {
+//     return this._enabled
+//   }
 
-  constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
-    this.regl = regl
-    this.world = world
-    this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>({
-      vert: FullScreenQuad,
-      frag: LoadingFrag,
-    })
-    // this.start()
-  }
+//   constructor(regl: REGL.Regl, world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>) {
+//     this.regl = regl
+//     this.world = world
+//     this.renderLoading = this.regl<LoadingRenderUniforms, Record<string, never>, LoadingRenderProps>({
+//       vert: FullScreenQuad,
+//       frag: LoadingFrag,
+//     })
+//     // this.start()
+//   }
 
-  public start(): void {
-    this._enabled = true
-    this.tick = this.regl.frame(() => {
-      this.world(() => {
-        this.renderLoading()
-      })
-    })
-  }
+//   public start(): void {
+//     this._enabled = true
+//     this.tick = this.regl.frame(() => {
+//       this.world(() => {
+//         this.renderLoading()
+//       })
+//     })
+//   }
 
-  public stop(): void {
-    this._enabled = false
-    this.tick.cancel()
-  }
-}
+//   public stop(): void {
+//     this._enabled = false
+//     this.tick.cancel()
+//   }
+// }

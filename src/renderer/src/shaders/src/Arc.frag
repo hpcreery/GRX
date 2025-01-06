@@ -2,11 +2,15 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
+
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
 
 
 // COMMON UNIFORMS
@@ -18,6 +22,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform float u_Polarity;
@@ -108,37 +113,40 @@ float circleDist(vec2 p, float radius) {
   return length(p) - radius;
 }
 
-#pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// Here we can redefine drawShape with a much smaller footprint to improve comiling performance. Limiting arcs to only be drawn with circles.
-float drawShape(vec2 FragCoord, int SymNum) {
-
-  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
-
-  float dist = 10.0;
-
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
-    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  } else {
-    dist = 1.0;
-  }
-  return dist;
+float roundArcDist( in vec2 p, in float curve, in float radius, float thickness )
+{
+    // sc is the sin/cos of the arc's aperture
+    vec2 sc = vec2(sin(curve), cos(curve));
+    p.x = abs(p.x);
+    return ((sc.y*p.x>sc.x*p.y) ? length(p-sc*radius) : abs(length(p)-radius)) - thickness;
 }
 
+float flatArcDist( in vec2 p, in float curve, in float radius, float thickness )
+{
+    // sc is the sin/cos of the arc's aperture
+    vec2 sc = vec2(sin(curve), cos(curve));
+    p.x = abs(p.x);
+
+    p = mat2(sc.x,sc.y,-sc.y,sc.x)*p;
+
+    return max( abs(length(p)-radius)-thickness*0.5,
+                length(vec2(p.x,max(0.0,abs(radius-p.y)-thickness*0.5)))*sign(p.x) );
+}
+
+#pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 //////////////////////////////
 //     Draw functions       //
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (DEBUG == 1) {
-    return dist;
-  }
+  // if (DEBUG == 1) {
+  //   return dist;
+  // }
   if (dist > pixel_size / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -pixel_size / 2.0) {
+  if (dist * float(u_OutlineMode || u_SkeletonMode) < -pixel_size / 2.0) {
     discard;
   }
   return dist;
@@ -146,7 +154,8 @@ float draw(float dist, float pixel_size) {
 
 
 
-float arcDistance(vec2 FragCoord) {
+float arcDistMain(vec2 FragCoord) {
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, int(v_SymNum));
   float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
   float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
   float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
@@ -163,20 +172,80 @@ float arcDistance(vec2 FragCoord) {
   float edY = v_End_Location.y - v_Center_Location.y;
   float end_angle = atan(edY, edX);
 
-  float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
-  float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
-  float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
-  if (start_angle == end_angle) {
-    con = circleDist(FragCoord, radius - (OD / 2.0));
+  // invalid SDF
+  // float start = drawShape(translate(FragCoord, (v_Start_Location - v_Center_Location)) * rotateCW(-start_angle), int(v_SymNum));
+  // float end = drawShape(translate(FragCoord, (v_End_Location - v_Center_Location)) * rotateCW(-end_angle), int(v_SymNum));
+  // float con = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  // if (start_angle == end_angle) {
+  //   con = circleDist(FragCoord, radius - (OD / 2.0));
+  // }
+  // con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
+  // float dist = merge(start, end);
+  // dist = merge(dist, con);
+
+  float dist = SDF_FAR_AWAY;
+  float rotation_direction = PI/2.0 * (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0);
+  float angle_diff = abs(start_angle - end_angle)/2.0;
+  float curve_direction = rotation_direction > 0.0 ? angle_diff : PI - angle_diff;
+  if (t_Symbol == u_Symbols.Round || t_Symbol == u_Symbols.Hole) {
+    dist = roundArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD / 2.0);
+  } else {
+    dist = flatArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD);
   }
-  con = substract(con, abs(circleDist(FragCoord, radius)) - OD / 2.0);
-  float dist = merge(start, end);
-  dist = merge(dist, con);
+  if (start_angle == end_angle) {
+    dist = abs(circleDist(FragCoord, radius)) - OD / 2.0;
+  }
+  return dist;
+}
+
+float arcDistSkeleton(vec2 FragCoord) {
+  float OD = 0.0;
+
+  // ? radius can be different bewtween these two
+  float radius = distance(v_Start_Location, v_Center_Location);
+  float radius2 = distance(v_End_Location, v_Center_Location);
+
+  float sdX = v_Start_Location.x - v_Center_Location.x;
+  float sdY = v_Start_Location.y - v_Center_Location.y;
+  float start_angle = atan(sdY, sdX);
+  float edX = v_End_Location.x - v_Center_Location.x;
+  float edY = v_End_Location.y - v_Center_Location.y;
+  float end_angle = atan(edY, edX);
+
+  // float dist = (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0) * slice(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0)), abs(start_angle - end_angle) / 2.0);
+  // if (start_angle == end_angle) {
+  //   dist = circleDist(FragCoord, radius - (OD / 2.0));
+  // }
+  // dist = substract(dist, abs(circleDist(FragCoord, radius)) - OD / 2.0);
+  // return dist;
+
+  float dist = SDF_FAR_AWAY;
+  float rotation_direction = PI/2.0 * (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0);
+  float angle_diff = abs(start_angle - end_angle)/2.0;
+  float curve_direction = rotation_direction > 0.0 ? angle_diff : PI - angle_diff;
+  dist = roundArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, 0.0);
+  if (start_angle == end_angle) {
+    dist = abs(circleDist(FragCoord, radius));
+  }
+  return dist;
+}
+
+float arcDist(vec2 FragCoord) {
+  float dist = arcDistMain(FragCoord);
+
+  if (u_SkeletonMode) {
+    float skeleton = arcDistSkeleton(FragCoord);
+    if (u_OutlineMode) {
+      dist = max(dist, -skeleton);
+    } else {
+      dist = skeleton;
+    }
+  }
   return dist;
 }
 
 
-vec2 transfromLocation(vec2 pixel_location) {
+vec2 transformLocation(vec2 pixel_location) {
   vec2 normal_coord = ((pixel_location.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 transformed_position = u_InverseTransform * vec3(normal_coord, 1.0);
   vec2 offset_postition = transformed_position.xy - v_Center_Location;
@@ -189,23 +258,43 @@ void main() {
   float pixel_size = u_PixelSize / scale;
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
+  vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
+  float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
-  vec2 FragCoord = transfromLocation(gl_FragCoord.xy);
-  float dist = arcDistance(FragCoord);
+  vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = u_PointerPosition - v_Center_Location;
+  }
+
+  float dist = arcDist(FragCoord);
+
 
   if (u_QueryMode) {
-    vec2 PointerPosition = transfromLocation(u_PointerPosition);
-    float PointerDist = arcDistance(PointerPosition);
-
-    if (PointerDist < pixel_size) {
-      if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        vec2 direction = normalize(vec2(
+            (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
+            (arcDist(FragCoord + vec2(0, 1) * EPSILON) - arcDist(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
         return;
-      } else {
-        discard;
       }
+      if (u_SnapMode == u_SnapModes.CENTER) {
+        dist = length(FragCoord);
+        vec2 direction = normalize(vec2(
+            (length(FragCoord + vec2(1, 0) * EPSILON) - length(FragCoord + vec2(-1, 0) * EPSILON)),
+            (length(FragCoord + vec2(0, 1) * EPSILON) - length(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+        return;
+      }
+      discard;
     } else {
       discard;
     }

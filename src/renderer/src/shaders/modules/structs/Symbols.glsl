@@ -1,4 +1,4 @@
-struct Shapes {
+struct Symbols {
   float Round;
   float Square;
   float Rectangle;
@@ -20,19 +20,11 @@ struct Shapes {
   float Square_Butterfly;
   float Triangle;
   float Half_Oval;
-  float Rounded_Round_Thermal;
-  float Squared_Round_Thermal;
-  float Square_Thermal;
-  float Open_Corners_Square_Thermal;
-  float Line_Thermal;
-  float Square_Round_Thermal;
-  float Rectangular_Thermal;
-  float Rectangular_Thermal_Open_Corners;
-  float Rounded_Square_Thermal;
-  float Rounded_Square_Thermal_Open_Corners;
-  float Rounded_Rectangular_Thermal;
-  float Oval_Thermal;
-  float Oblong_Thermal;
+  float Circle_Thermal;
+  float Rectangle_Thermal;
+  float Rectangle_Thermal_Open_Corners;
+  float Square_Circle_Thermal;
+  float Constrained_Rectangle_Thermal;
   // float Home_Plate;
   // float Inverted_Home_Plate;
   // float Flat_Home_Plate;
@@ -42,7 +34,6 @@ struct Shapes {
   // float Dogbone;
   // float DPack;
   float Ellipse;
-  // float Moire;
   float MoireODB;
   float MoireGerber;
   float Hole;

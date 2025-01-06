@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
