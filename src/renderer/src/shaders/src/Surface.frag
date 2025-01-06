@@ -2,6 +2,10 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
+
 // COMMON UNIFORMS
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
@@ -155,19 +159,22 @@ void main() {
     vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-      if (pointInTriangle(FragCoord, point1, point2, point3)) {
-        vec2 direction = normalize(vec2(
-            (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
-            (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
-        ));
-        // the first value is the distance to the border of the shape
-        // the second value is the direction of the border of the shape
-        // the third value is the indicator of a measurement
-        gl_FragColor = vec4(-dist, -direction, 1.0);
-        return;
-      } else {
-        discard;
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        if (pointInTriangle(FragCoord, point1, point2, point3)) {
+          vec2 direction = normalize(vec2(
+              (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
+              (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
+          ));
+          // the first value is the distance to the border of the shape
+          // the second value is the direction of the border of the shape
+          // the third value is the indicator of a measurement
+          gl_FragColor = vec4(-dist, -direction, 1.0);
+          return;
+        } else {
+          discard;
+        }
       }
+      discard;
     } else {
       discard;
     }

@@ -143,6 +143,7 @@ export interface Pointer {
 
 export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
+  units: Units
 }
 
 export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
@@ -231,9 +232,6 @@ export class RenderEngineBackend {
   }
 
   private dirty = true
-
-  // public stats: Stats = {
-  // }
 
   // ** make layers a proxy so that we can call render when a property is updated
   // public layers: LayerRenderer[] = new Proxy([], {
@@ -736,12 +734,12 @@ export class RenderEngineBackend {
           selection.push({
             sourceLayer: layer.id,
             ...select,
-            // units: layer.units,
+            units: layer.units,
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION
-          this.measurements.addMeasurement(pointer)
-          this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
+          // this.measurements.addMeasurement(pointer)
+          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -780,8 +778,10 @@ export class RenderEngineBackend {
             closest = select
             continue
           }
-          if (select.distance >= closest.distance) continue
-          closest = select
+          if (select.distance < closest.distance) {
+            closest = select
+          }
+          // closest = select
         }
       }
     })

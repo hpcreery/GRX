@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
@@ -187,7 +187,7 @@ float arcDistMain(vec2 FragCoord) {
   float rotation_direction = PI/2.0 * (v_Clockwise == 0.0 ? -1.0 : 1.0) * (start_angle - end_angle >= 0.0 ? 1.0 : -1.0);
   float angle_diff = abs(start_angle - end_angle)/2.0;
   float curve_direction = rotation_direction > 0.0 ? angle_diff : PI - angle_diff;
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+  if (t_Symbol == u_Symbols.Round || t_Symbol == u_Symbols.Hole) {
     dist = roundArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD / 2.0);
   } else {
     dist = flatArcDist(FragCoord * rotateCCW(((start_angle + end_angle) / 2.0) - rotation_direction), curve_direction, radius, OD);
@@ -271,8 +271,6 @@ void main() {
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-
-
       if (u_SnapMode == u_SnapModes.EDGE) {
         vec2 direction = normalize(vec2(
             (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
@@ -282,6 +280,7 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         dist = length(FragCoord);
@@ -293,9 +292,9 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
-
-      return;
+      discard;
     } else {
       discard;
     }

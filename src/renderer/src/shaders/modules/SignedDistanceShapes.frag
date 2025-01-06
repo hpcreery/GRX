@@ -678,103 +678,103 @@ float drawShape(vec2 FragCoord, int SymNum) {
 
   float dist = 10.0;
 
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+  if (t_Symbol == u_Symbols.Round || t_Symbol == u_Symbols.Hole) {
     dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+  } else if (t_Symbol == u_Symbols.Square || t_Symbol == u_Symbols.Rectangle) {
     dist = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Rounded_Rectangle) {
+  } else if (t_Symbol == u_Symbols.Rounded_Rectangle) {
     dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Oval) {
+  } else if (t_Symbol == u_Symbols.Oval) {
     dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Chamfered_Rectangle) {
+  } else if (t_Symbol == u_Symbols.Chamfered_Rectangle) {
     dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Diamond) {
+  } else if (t_Symbol == u_Symbols.Diamond) {
     dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Octagon) {
+  } else if (t_Symbol == u_Symbols.Octagon) {
     dist = chamferedBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, 15.0);
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
     }
-  } else if (t_Symbol == u_Shapes.Round_Donut) {
+  } else if (t_Symbol == u_Symbols.Round_Donut) {
     float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
     float OuterCircle = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
     dist = substract(InnerCircle, OuterCircle);
-  } else if (t_Symbol == u_Shapes.Square_Donut) {
+  } else if (t_Symbol == u_Symbols.Square_Donut) {
     float InnerSquare = boxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia));
     float OuterSquare = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
     dist = substract(InnerSquare, OuterSquare);
-  } else if (t_Symbol == u_Shapes.SquareRound_Donut) {
+  } else if (t_Symbol == u_Symbols.SquareRound_Donut) {
     float InnerCircle = circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
     float OuterCircle = boxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia));
     dist = substract(InnerCircle, OuterCircle);
-  } else if (t_Symbol == u_Shapes.Rounded_Square_Donut) {
+  } else if (t_Symbol == u_Symbols.Rounded_Square_Donut) {
     float InnerSquare = roundBoxDist(FragCoord.xy, vec2(t_Inner_Dia, t_Inner_Dia), t_Corner_Radius - (t_Outer_Dia - t_Inner_Dia) / 2.0, t_Corners);
     float OuterSquare = roundBoxDist(FragCoord.xy, vec2(t_Outer_Dia, t_Outer_Dia), t_Corner_Radius, t_Corners);
     dist = substract(InnerSquare, OuterSquare);
-  } else if (t_Symbol == u_Shapes.Rectangle_Donut) {
+  } else if (t_Symbol == u_Symbols.Rectangle_Donut) {
     float InnerRect = boxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0));
     float OuterRect = boxDist(FragCoord.xy, vec2(t_Width, t_Height));
     dist = substract(InnerRect, OuterRect);
-  } else if (t_Symbol == u_Shapes.Rounded_Rectangle_Donut) {
+  } else if (t_Symbol == u_Symbols.Rounded_Rectangle_Donut) {
     float OuterRect = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius, t_Corners);
     float InnerRect = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), t_Corner_Radius - t_Line_Width, t_Corners);
     dist = substract(InnerRect, OuterRect);
-  } else if (t_Symbol == u_Shapes.Oval_Donut) {
+  } else if (t_Symbol == u_Symbols.Oval_Donut) {
     float OuterOval = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), min(t_Height, t_Width) / 2.0);
     float InnerOval = roundBoxDist(FragCoord.xy, vec2(t_Width - t_Line_Width * 2.0, t_Height - t_Line_Width * 2.0), min(t_Height, t_Width) / 2.0 - t_Line_Width);
     dist = substract(InnerOval, OuterOval);
-  } else if (t_Symbol == u_Shapes.Horizontal_Hexagon) {
+  } else if (t_Symbol == u_Symbols.Horizontal_Hexagon) {
     dist = horizHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
-  } else if (t_Symbol == u_Shapes.Vertical_Hexagon) {
+  } else if (t_Symbol == u_Symbols.Vertical_Hexagon) {
     dist = verticalHexagonDist(FragCoord.xy, vec2(t_Width, t_Height), t_Corner_Radius);
-  } else if (t_Symbol == u_Shapes.Butterfly) {
+  } else if (t_Symbol == u_Symbols.Butterfly) {
     dist = butterflyDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  } else if (t_Symbol == u_Shapes.Square_Butterfly) {
+  } else if (t_Symbol == u_Symbols.Square_Butterfly) {
     dist = squareButterflydist(FragCoord.xy, t_Width / 2.0);
-  } else if (t_Symbol == u_Shapes.Triangle) {
+  } else if (t_Symbol == u_Symbols.Triangle) {
     dist = triangleDist(FragCoord.xy, t_Width, t_Height);
-  } else if (t_Symbol == u_Shapes.Half_Oval) {
+  } else if (t_Symbol == u_Symbols.Half_Oval) {
     dist = roundBoxDist(FragCoord.xy, vec2(t_Width, t_Height), t_Height / 2.0, 9.0);
-  } else if (t_Symbol == u_Shapes.Circle_Thermal) {
+  } else if (t_Symbol == u_Symbols.Circle_Thermal) {
     dist = roundedBoxThermalDist(FragCoord.xy, t_Outer_Dia, t_Outer_Dia, t_Angle, t_Num_Spokes, t_Gap, (t_Outer_Dia - t_Inner_Dia)/2.0, t_Outer_Dia/2.0, 15.0, t_Round);
-  } else if (t_Symbol == u_Shapes.Rectangle_Thermal) {
+  } else if (t_Symbol == u_Symbols.Rectangle_Thermal) {
     dist = roundedBoxThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Corner_Radius, t_Corners, t_Round);
-  } else if (t_Symbol == u_Shapes.Rectangle_Thermal_Open_Corners) {
+  } else if (t_Symbol == u_Symbols.Rectangle_Thermal_Open_Corners) {
     dist = boxThermalOpenCornersDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width);
-  } else if (t_Symbol == u_Shapes.Square_Circle_Thermal) {
+  } else if (t_Symbol == u_Symbols.Square_Circle_Thermal) {
     dist = sqaureRoundThermalDist(FragCoord.xy, vec2(t_Outer_Dia), t_Inner_Dia, t_Angle, t_Num_Spokes, t_Gap);
-  } else if (t_Symbol == u_Shapes.Constrained_Rectangle_Thermal) {
+  } else if (t_Symbol == u_Symbols.Constrained_Rectangle_Thermal) {
     dist = fixedAngleRoundedBoxThermalDist(FragCoord.xy, t_Width, t_Height, t_Angle, t_Num_Spokes, t_Gap, t_Line_Width, t_Corner_Radius, t_Corners, t_Round);
-    } else if (t_Symbol == u_Shapes.MoireODB) {
+    } else if (t_Symbol == u_Symbols.MoireODB) {
     dist = moireODBDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle);
-  } else if (t_Symbol == u_Shapes.MoireGerber) {
+  } else if (t_Symbol == u_Symbols.MoireGerber) {
     dist = moireGerberDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle, t_Outer_Dia);
-  } else if (t_Symbol == u_Shapes.Polygon) {
+  } else if (t_Symbol == u_Symbols.Polygon) {
     dist = regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), t_Outer_Dia / 2.0, int(t_Corners));
     if (t_Line_Width != 0.0) {
       float inner = -1.0 * regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
@@ -785,7 +785,7 @@ float drawShape(vec2 FragCoord, int SymNum) {
       dist = max(dist, hole);
     }
   } else {
-    // u_Shapes.Null
+    // u_Symbols.Null
     dist = SDF_FAR_AWAY;
   }
   return dist;

@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/SnapModes.glsl')
 uniform SnapModes u_SnapModes;
@@ -64,7 +64,7 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
+#pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Symbols=u_Symbols,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 //////////////////////////////
 //     Draw functions       //
@@ -160,6 +160,7 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         dist = length(FragCoord) * v_ResizeFactor;
@@ -171,8 +172,9 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
-      return;
+      discard;
     } else {
       discard;
     }

@@ -177,7 +177,7 @@ export class ShapeRenderer {
           return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
-        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
+        ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Symbols.${key}`]: value }), {}),
         ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}),
         ...Object.entries(SNAP_MODES_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_SnapModes.${key}`]: value }), {}),
       },

@@ -263,41 +263,138 @@ export class HalfOvalSymbol extends StandardSymbol {
   }
 }
 
-// export class RoundThermalSymbol extends StandardSymbol {
-//   constructor(
-//     symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap" | "round"> &
-//       Partial<{ id: string; attributes: AttributeCollection }>,
-//   ) {
-//     super({ symbol: STANDARD_SYMBOLS_MAP.Round_Thermal, ...symbol })
-//   }
-// }
+export class CircleThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "num_spokes" | "angle" | "gap" | "round"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal, ...symbol })
+  }
+}
 
-// export class SquaredRoundThermalSymbol extends StandardSymbol {
-//   constructor(
-//     symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap" | "round"> &
-//       Partial<{ id: string; attributes: AttributeCollection }>,
-//   ) {
-//     super({ symbol: STANDARD_SYMBOLS_MAP.Squared_Round_Thermal, ...symbol })
-//   }
-// }
+export class RectangleThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "corner_radius" | "corners" | "num_spokes" | "angle" | "gap" | "round"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal, ...symbol })
+  }
+}
 
-// export class SquareThermalSymbol extends StandardSymbol {
-//   constructor(
-//     symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap"> &
-//       Partial<{ id: string; attributes: AttributeCollection }>,
-//   ) {
-//     super({ symbol: STANDARD_SYMBOLS_MAP.Square_Thermal, ...symbol })
-//   }
-// }
+export class RectangleThermalOpenCornersSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "num_spokes" | "angle" | "gap"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal_Open_Corners, ...symbol })
+  }
+}
 
-// export class OpenCornersSquareThermalSymbol extends StandardSymbol {
-//   constructor(
-//     symbol: Pick<TStandardSymbol, "outer_dia" | "angle" | "num_spokes" | "gap" | "line_width"> &
-//       Partial<{ id: string; attributes: AttributeCollection }>,
-//   ) {
-//     super({ symbol: STANDARD_SYMBOLS_MAP.Open_Corners_Square_Thermal, ...symbol })
-//   }
-// }
+export class SquareCircleThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "num_spokes" | "angle" | "gap"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Circle_Thermal, ...symbol })
+  }
+}
+
+export class ConstrainedRectangleThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "corner_radius" | "corners" | "num_spokes" | "angle" | "gap" | "round"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Constrained_Rectangle_Thermal, ...symbol })
+  }
+}
+
+export class EllipseSymbol extends StandardSymbol {
+  constructor(symbol: Pick<TStandardSymbol, "width" | "height"> & Partial<{ id: string; attributes: AttributeCollection }>) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Ellipse, ...symbol })
+  }
+}
+
+export class MoireGerberSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "ring_width" | "ring_gap" | "num_rings" | "line_width" | "line_length" | "angle"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.MoireGerber, ...symbol })
+  }
+}
+
+export class MoireODBSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "ring_width" | "ring_gap" | "num_rings" | "line_width" | "line_length" | "angle"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.MoireODB, outer_dia: symbol.line_length, ...symbol })
+  }
+}
+
+export class PolygonSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "corners" | "line_width" | "inner_dia" | "angle"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Polygon, ...symbol })
+  }
+}
+
+// THESE ARE SUDO-SYMBOLS THAT ARE MADE UP OF OTHER PRIMARY SYMBOLS
+export class RoundThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap" | "round"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal, ...symbol })
+  }
+}
+
+export class SquaredRoundThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Circle_Thermal, ...symbol })
+  }
+}
+
+export class SquareThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({
+      symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal,
+      width: symbol.outer_dia,
+      height: symbol.outer_dia,
+      line_width: (symbol.outer_dia - symbol.inner_dia) / 2,
+      angle: symbol.angle,
+      num_spokes: symbol.num_spokes,
+      gap: symbol.gap,
+      round: 0,
+    })
+  }
+}
+
+export class OpenCornersSquareThermalSymbol extends StandardSymbol {
+  constructor(
+    symbol: Pick<TStandardSymbol, "outer_dia" | "angle" | "num_spokes" | "gap" | "line_width"> &
+      Partial<{ id: string; attributes: AttributeCollection }>,
+  ) {
+    super({
+      symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal_Open_Corners,
+      width: symbol.outer_dia,
+      height: symbol.outer_dia,
+      line_width: symbol.line_width,
+      angle: symbol.angle,
+      num_spokes: symbol.num_spokes,
+      gap: symbol.gap,
+      round: 0,
+    })
+  }
+}
 
 // export class LineThermalSymbol extends StandardSymbol {
 //   constructor(
@@ -379,84 +476,6 @@ export class HalfOvalSymbol extends StandardSymbol {
 //     super({ symbol: STANDARD_SYMBOLS_MAP.Oblong_Thermal, ...symbol })
 //   }
 // }
-
-export class CircleThermalSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "num_spokes" | "angle" | "gap" | "round"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal, ...symbol })
-  }
-}
-
-export class RectangleThermalSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "corner_radius" | "corners" | "num_spokes" | "angle" | "gap" | "round"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal, ...symbol })
-  }
-}
-
-export class RectangleThermalOpenCornersSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "num_spokes" | "angle" | "gap"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Rectangle_Thermal_Open_Corners, ...symbol })
-  }
-}
-
-export class SquareCircleThermalSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "num_spokes" | "angle" | "gap"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Circle_Thermal, ...symbol })
-  }
-}
-
-export class ConstrainedRectangleThermalSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "line_width" | "corner_radius" | "corners" | "num_spokes" | "angle" | "gap" | "round"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Constrained_Rectangle_Thermal, ...symbol })
-  }
-}
-
-export class EllipseSymbol extends StandardSymbol {
-  constructor(symbol: Pick<TStandardSymbol, "width" | "height"> & Partial<{ id: string; attributes: AttributeCollection }>) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Ellipse, ...symbol })
-  }
-}
-
-export class MoireGerberSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "outer_dia" | "ring_width" | "ring_gap" | "num_rings" | "line_width" | "line_length" | "angle"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.MoireGerber, ...symbol })
-  }
-}
-
-export class MoireODBSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "ring_width" | "ring_gap" | "num_rings" | "line_width" | "line_length" | "angle"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.MoireODB, outer_dia: symbol.line_length, ...symbol })
-  }
-}
-
-export class PolygonSymbol extends StandardSymbol {
-  constructor(
-    symbol: Pick<TStandardSymbol, "outer_dia" | "corners" | "line_width" | "inner_dia" | "angle"> &
-      Partial<{ id: string; attributes: AttributeCollection }>,
-  ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Polygon, ...symbol })
-  }
-}
 
 export type TMacroSymbol = {
   /**

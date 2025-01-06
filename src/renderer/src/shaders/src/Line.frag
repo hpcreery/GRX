@@ -2,8 +2,8 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: import('../modules/structs/Shapes.glsl')
-uniform Shapes u_Shapes;
+#pragma glslify: import('../modules/structs/Symbols.glsl')
+uniform Symbols u_Symbols;
 
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
@@ -144,10 +144,10 @@ float lineDistMain(vec2 coord) {
   float dist = SDF_FAR_AWAY;
 
 
-  // Lines can only be drawn with squares and circles, and null shapes
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
+  // Lines can only be drawn with squares and circles, and null symbols
+  if (t_Symbol == u_Symbols.Round || t_Symbol == u_Symbols.Hole) {
     dist = segmentDist(coord, v_Start_Location, v_End_Location, OD/2.0);
-  } else if (t_Symbol == u_Shapes.Square || t_Symbol == u_Shapes.Rectangle) {
+  } else if (t_Symbol == u_Symbols.Square || t_Symbol == u_Symbols.Rectangle) {
     vec2 start_coord = translate(v_Start_Location, -OD * 0.5 * vec2(cos(angle), sin(angle)));
     vec2 end_coord = translate(v_End_Location, OD * 0.5 * vec2(cos(angle), sin(angle)));
     dist = orientedBoxDist(coord, start_coord, end_coord, OD);
@@ -213,6 +213,7 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         vec2 center_location = (v_Start_Location + v_End_Location) / 2.0;
@@ -226,9 +227,9 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         gl_FragColor = vec4(dist, direction, 1.0);
+        return;
       }
-
-      return;
+      discard;
     } else {
       discard;
     }
