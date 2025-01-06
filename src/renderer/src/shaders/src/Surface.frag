@@ -167,25 +167,6 @@ void main() {
       } else {
         discard;
       }
-
-
-
-      // vec2 direction = normalize(vec2(
-      //     (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
-      //     (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
-      // ));
-      // if (pointInTriangle(FragCoord, point1, point2, point3)) {
-      //   direction = -direction;
-      //   dist = -dist;
-      // }
-      // if (dist < 0.01) {
-      //   gl_FragColor = vec4(dist, direction, 0.0);
-      //   return;
-      // } else {
-      //   discard;
-      // }
-
-
     } else {
       discard;
     }

@@ -8,6 +8,10 @@ uniform Shapes u_Shapes;
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
 
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
+
 
 // COMMON UNIFORMS
 uniform sampler2D u_SymbolsTexture;
@@ -130,21 +134,6 @@ float flatArcDist( in vec2 p, in float curve, in float radius, float thickness )
 }
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// Here we can redefine drawShape with a much smaller footprint to improve comiling performance. Limiting arcs to only be drawn with circles.
-float drawShape(vec2 FragCoord, int SymNum) {
-
-  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, SymNum);
-
-  float dist = SDF_FAR_AWAY;
-
-  if (t_Symbol == u_Shapes.Round || t_Symbol == u_Shapes.Hole) {
-    dist = circleDist(FragCoord.xy, t_Outer_Dia / 2.0);
-  }
-  return dist;
-}
-
 
 //////////////////////////////
 //     Draw functions       //
@@ -274,7 +263,7 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = u_PointerPosition;
+    FragCoord = u_PointerPosition - v_Center_Location;
   }
 
   float dist = arcDist(FragCoord);
@@ -282,14 +271,30 @@ void main() {
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      vec2 direction = normalize(vec2(
-          (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
-          (arcDist(FragCoord + vec2(0, 1) * EPSILON) - arcDist(FragCoord + vec2(0, -1) * EPSILON))
-      ));
-      // the first value is the distance to the border of the shape
-      // the second value is the direction of the border of the shape
-      // the third value is the indicator of a measurement
-      gl_FragColor = vec4(dist, direction, 1.0);
+
+
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        vec2 direction = normalize(vec2(
+            (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
+            (arcDist(FragCoord + vec2(0, 1) * EPSILON) - arcDist(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
+      if (u_SnapMode == u_SnapModes.CENTER) {
+        dist = length(FragCoord);
+        vec2 direction = normalize(vec2(
+            (length(FragCoord + vec2(1, 0) * EPSILON) - length(FragCoord + vec2(-1, 0) * EPSILON)),
+            (length(FragCoord + vec2(0, 1) * EPSILON) - length(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
+
       return;
     } else {
       discard;

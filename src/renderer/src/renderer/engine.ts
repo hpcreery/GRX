@@ -6,7 +6,7 @@ import * as Shapes from "./shapes"
 import * as Comlink from "comlink"
 import plugins from "./plugins"
 import type { Plugin, PluginsDefinition, AddLayerProps } from "./plugins"
-import { type Units, type BoundingBox, FeatureTypeIdentifier, SnapMode } from "./types"
+import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlends, ColorBlend } from "./types"
 import Transform from "./transform"
 import GridFrag from "../shaders/src/Grid.frag"
 import OriginFrag from "../shaders/src/Origin.frag"
@@ -56,18 +56,12 @@ export interface RenderEngineBackendConfig {
   height: number
 }
 
-export const ColorBlend = {
-  CONTRAST: "Contrast",
-  OVERLAY: "Overlay",
-} as const
-export type ColorBlends = (typeof ColorBlend)[keyof typeof ColorBlend]
-
 export interface RenderSettings {
   FPS: number
   MSPFRAME: number
   OUTLINE_MODE: boolean
   SKELETON_MODE: boolean
-  SNAP_MODE: SnapMode[]
+  SNAP_MODE: SnapMode
   COLOR_BLEND: ColorBlends
   BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
@@ -171,8 +165,8 @@ export class RenderEngineBackend {
     },
     OUTLINE_MODE: false,
     SKELETON_MODE: false,
-    SNAP_MODE: [SnapMode.EDGE],
-    COLOR_BLEND: "Contrast",
+    SNAP_MODE: SnapMode.EDGE,
+    COLOR_BLEND: ColorBlend.CONTRAST,
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
     MIN_ZOOM: 0.001,
@@ -321,6 +315,8 @@ export class RenderEngineBackend {
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
         u_SkeletonMode: () => this.settings.SKELETON_MODE,
+        // u_SnapMode: () => this.settings.SNAP_MODE,
+        u_SnapMode: SNAP_MODES_MAP.OFF,
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
@@ -731,7 +727,7 @@ export class RenderEngineBackend {
       const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const layerSelection = layer.queryDistance(pointer, context)
+        const layerSelection = layer.queryDistance(pointer, SnapMode.EDGE, context)
         for (const select of layerSelection) {
           if (select.distance >= 0.01 / scale) continue
           selection.push({
@@ -772,7 +768,7 @@ export class RenderEngineBackend {
   }
 
   public snap(pointer: vec2): vec2 {
-    if (this.settings.SNAP_MODE.length === 0) return pointer
+    // if (this.settings.SNAP_MODE.length === 0) return pointer
 
     let closest: ShapeDistance | undefined = undefined
     // const viewport = vec2.fromValues(this.viewBox.width, this.viewBox.height)
@@ -780,29 +776,28 @@ export class RenderEngineBackend {
       // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        if (this.settings.SNAP_MODE.includes(SnapMode.EDGE)) {
-          const layerSelection = layer.queryDistance(pointer, context)
-          for (const select of layerSelection) {
-            // if (select.distance >= 0.01 / scale) continue
-            if (closest == undefined) {
-              closest = select
-              continue
-            }
-            if (select.distance >= closest.distance) continue
+        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.EDGE) {
+        const layerSelection = layer.queryDistance(pointer, this.settings.SNAP_MODE, context)
+        for (const select of layerSelection) {
+          // if (select.distance >= 0.01 / scale) continue
+          if (closest == undefined) {
             closest = select
+            continue
           }
+          if (select.distance >= closest.distance) continue
+          closest = select
         }
-        if (this.settings.SNAP_MODE.includes(SnapMode.CENTER)) {
-          // TODO! implement center snap
-          continue
-        }
-        if (this.settings.SNAP_MODE.includes(SnapMode.GRID)) {
-          // TODO! implement grid snap
-          continue
-        }
+        // }
+        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.CENTER) {
+        //   // TODO! implement center snap
+        //   continue
+        // }
+        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.GRID) {
+        //   // TODO! implement grid snap
+        //   continue
+        // }
       }
     })
-    console.log(closest)
     if (closest == undefined) return pointer
     const newPointer = vec2.create()
     vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), closest.direction, closest.distance))

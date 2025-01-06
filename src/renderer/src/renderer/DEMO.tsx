@@ -5,6 +5,8 @@ import * as Shapes from "./shapes"
 import { RenderEngine } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
+import { SNAP_MODES, SNAP_MODES_MAP, SnapMode } from "./types"
+import { POINTER_MODES, POINTER_MODES_MAP, PointerMode } from "./types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
@@ -2096,9 +2098,13 @@ function REGLApp(): JSX.Element {
           />
           Mouse Mode
           <SegmentedControl
-            data={["move", "select", "measure"] as const}
-            onChange={(mode) => (engine.pointerSettings.mode = mode as "select" | "move" | "measure")}
+            // data={["move", "select", "measure"] as const}
+            // onChange={(mode) => (engine.pointerSettings.mode = mode as "select" | "move" | "measure")}
+            data={[...POINTER_MODES]}
+            onChange={(mode) => (engine.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)}
           />
+          Snap Mode
+          <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => (engine.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)} />
           {layers.map((layer, i) => {
             return (
               <div key={i}>

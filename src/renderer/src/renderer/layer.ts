@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
-import { Units, BoundingBox } from "./types"
+import { Units, BoundingBox, SnapMode } from "./types"
 
 import type { WorldContext } from "./engine"
 import { getUnitsConversion, UID } from "./utils"
@@ -104,10 +104,10 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
+  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
     this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
-    const features = super.queryDistance(pointer, context)
+    const features = super.queryDistance(pointer, snapMode, context)
     this.transform.scale = initScale
     return features
   }

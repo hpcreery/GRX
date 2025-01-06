@@ -2,7 +2,7 @@ import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "./shapes"
 import * as Symbols from "./symbols"
-import { BoundingBox, FeatureTypeIdentifier } from "./types"
+import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "./types"
 import ShapeTransform from "./transform"
 
 import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
@@ -31,11 +31,13 @@ interface QueryUniforms {
   u_Color: vec3
   u_Alpha: number
   u_PointerPosition: vec2
+  u_SnapMode: number
 }
 interface QueryAttributes {}
 
 interface QueryProps {
   pointer: vec2
+  snapMode: number
 }
 
 interface DatumConfigUniforms {
@@ -177,6 +179,7 @@ export class ShapeRenderer {
         u_Polarity: () => this.transform.polarity,
         ...Object.entries(STANDARD_SYMBOLS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Shapes.${key}`]: value }), {}),
         ...Object.entries(SYMBOL_PARAMETERS_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_Parameters.${key}`]: value }), {}),
+        ...Object.entries(SNAP_MODES_MAP).reduce((acc, [key, value]) => Object.assign(acc, { [`u_SnapModes.${key}`]: value }), {}),
       },
     })
 
@@ -186,6 +189,7 @@ export class ShapeRenderer {
         u_Color: [1, 1, 1],
         u_Alpha: 1,
         u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
+        u_SnapMode: this.regl.prop<QueryProps, "snapMode">("snapMode"),
       },
     })
 
@@ -289,7 +293,8 @@ export class ShapeRenderer {
     return this
   }
 
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
+  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
+    // console.log(mode)
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -314,7 +319,7 @@ export class ShapeRenderer {
     })
     this.queryFrameBuffer.use(() => {
       this.commonConfig(() => {
-        this.queryConfig({ pointer }, () => {
+        this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
           this.drawPrimitives(context)
           this.drawDatums(context)
         })
@@ -359,7 +364,7 @@ export class ShapeRenderer {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        const macroFeatures = macro.renderer.queryDistance(pointer, context)
+        const macroFeatures = macro.renderer.queryDistance(pointer, snapMode, context)
         if (macroFeatures.length > 0) {
           const closest = macroFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
           distances.push({
@@ -372,7 +377,7 @@ export class ShapeRenderer {
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, context)
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, snapMode, context)
       if (stepAndRepeatFeatures.length > 0) {
         const closest = stepAndRepeatFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
         distances.push({
@@ -535,13 +540,17 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = props.record.index
   }
 
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): ShapeDistance[] {
+  public queryDistance(
+    pointer: vec2,
+    snapMode: SnapMode,
+    context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
+  ): ShapeDistance[] {
     const features: ShapeDistance[] = []
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.queryDistance(pointer, context)
+      const nestedFeatures = super.queryDistance(pointer, snapMode, context)
       if (nestedFeatures.length > 0) features.push(...nestedFeatures)
     })
     return features

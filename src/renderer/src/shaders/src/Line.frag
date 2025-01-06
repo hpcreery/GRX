@@ -8,6 +8,10 @@ uniform Shapes u_Shapes;
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
 
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
+
 // COMMIN UNIFORMS
 uniform sampler2D u_SymbolsTexture;
 uniform vec2 u_SymbolsTextureDimensions;
@@ -105,7 +109,6 @@ float orientedBoxDist( in vec2 p, in vec2 a, in vec2 b, float thickness )
 
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-// #pragma glslify: drawShape = require('../modules/SignedDistanceShapes.frag',u_Parameters=u_Parameters,u_Shapes=u_Shapes,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 
 //////////////////////////////
@@ -199,14 +202,32 @@ void main() {
 
   if (u_QueryMode) {
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      vec2 direction = normalize(vec2(
-          (lineDist(FragCoord + vec2(1, 0) * EPSILON) - lineDist(FragCoord + vec2(-1, 0) * EPSILON)),
-          (lineDist(FragCoord + vec2(0, 1) * EPSILON) - lineDist(FragCoord + vec2(0, -1) * EPSILON))
-      ));
-      // the first value is the distance to the border of the shape
-      // the second value is the direction of the border of the shape
-      // the third value is the indicator of a measurement
-      gl_FragColor = vec4(dist, direction, 1.0);
+
+
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        vec2 direction = normalize(vec2(
+            (lineDist(FragCoord + vec2(1, 0) * EPSILON) - lineDist(FragCoord + vec2(-1, 0) * EPSILON)),
+            (lineDist(FragCoord + vec2(0, 1) * EPSILON) - lineDist(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
+      if (u_SnapMode == u_SnapModes.CENTER) {
+        vec2 center_location = (v_Start_Location + v_End_Location) / 2.0;
+        FragCoord = FragCoord - center_location;
+        dist = length(FragCoord);
+        vec2 direction = normalize(vec2(
+            (length(FragCoord + vec2(1, 0) * EPSILON) - length(FragCoord + vec2(-1, 0) * EPSILON)),
+            (length(FragCoord + vec2(0, 1) * EPSILON) - length(FragCoord + vec2(0, -1) * EPSILON))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
+
       return;
     } else {
       discard;

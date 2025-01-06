@@ -2,7 +2,7 @@ import * as Comlink from "comlink"
 import EngineWorker from "./engine?worker"
 import type { GridRenderProps, QuerySelection, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
 import { AddLayerProps } from "./plugins"
-import { SnapMode } from "./types"
+import { PointerMode, SnapMode } from "./types"
 
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
@@ -21,7 +21,8 @@ interface PointerCoordinates {
 }
 
 export interface PointerSettings {
-  mode: "move" | "select" | "measure"
+  // mode: "move" | "select" | "measure"
+  mode: PointerMode
 }
 
 export const PointerEvents = {
@@ -46,7 +47,7 @@ export class RenderEngine {
       },
       OUTLINE_MODE: false,
       SKELETON_MODE: false,
-      SNAP_MODE: [SnapMode.EDGE],
+      SNAP_MODE: SnapMode.EDGE,
       COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 1000,
@@ -93,14 +94,14 @@ export class RenderEngine {
   )
   public pointerSettings: PointerSettings = new Proxy(
     {
-      mode: "move",
+      mode: PointerMode.MOVE,
     },
     {
       set: (target, name, value): boolean => {
         if (name === "mode") {
-          if (value === "move") this.CONTAINER.style.cursor = "grab"
-          if (value === "select") this.CONTAINER.style.cursor = "crosshair"
-          if (value === "measure") {
+          if (value === PointerMode.MOVE) this.CONTAINER.style.cursor = "grab"
+          if (value === PointerMode.SELECT) this.CONTAINER.style.cursor = "crosshair"
+          if (value === PointerMode.MEASURE) {
             this.CONTAINER.style.cursor = "crosshair"
             this.settings.SHOW_DATUMS = true
           }
@@ -223,10 +224,10 @@ export class RenderEngine {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
       const [x, y] = await this.getMouseWorldCoordinates(e)
       this.pointerCache.push(e)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         this.CONTAINER.style.cursor = "grabbing"
         await backend.grabViewport()
-      } else if (this.pointerSettings.mode === "select") {
+      } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         this.CONTAINER.style.cursor = "wait"
         const features = await backend.select([x, y])
         console.log("features", features)
@@ -236,7 +237,7 @@ export class RenderEngine {
           }),
         )
         this.CONTAINER.style.cursor = "crosshair"
-      } else if (this.pointerSettings.mode === "measure") {
+      } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
         const currentMeasurement = await backend.getCurrentMeasurement()
@@ -250,7 +251,7 @@ export class RenderEngine {
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
       // const [x, y] = await this.getMouseWorldCoordinates(e)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         this.CONTAINER.style.cursor = "grab"
         await backend.releaseViewport()
       }
@@ -258,14 +259,14 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         await backend.releaseViewport()
       }
       removePointerCache(e)
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         await backend.releaseViewport()
       }
       removePointerCache(e)
@@ -276,7 +277,7 @@ export class RenderEngine {
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
-      if (this.pointerSettings.mode === "measure") {
+      if (this.pointerSettings.mode === PointerMode.MEASURE) {
         this.CONTAINER.style.cursor = "crosshair"
         backend.updateMeasurement([x, y])
       }
@@ -286,7 +287,7 @@ export class RenderEngine {
         return
       }
 
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         // If more than 2 pointers are down, check for pinch gestures
         if (this.pointerCache.length >= 2) {
           const p1 = this.pointerCache[0]

@@ -5,6 +5,10 @@ precision highp float;
 #pragma glslify: import('../modules/structs/Shapes.glsl')
 uniform Shapes u_Shapes;
 
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
+
 #pragma glslify: import('../modules/structs/Parameters.glsl')
 uniform Parameters u_Parameters;
 
@@ -131,17 +135,29 @@ void main() {
   // dist = offset * direction;
 
   if (u_QueryMode) {
-
-
     if (gl_FragCoord.xy == vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x) + 0.5)) {
-      vec2 direction = normalize(vec2(
-          (drawShape(FragCoord + vec2(1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor),
-          (drawShape(FragCoord + vec2(0, 1) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, int(v_SymNum)) * v_ResizeFactor)
-      ));
-      // the first value is the distance to the border of the shape
-      // the second value is the direction of the border of the shape
-      // the third value is the indicator of a measurement
-      gl_FragColor = vec4(dist, direction, 1.0);
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        vec2 direction = normalize(vec2(
+            (drawShape(FragCoord + vec2(1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor),
+            (drawShape(FragCoord + vec2(0, 1) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, int(v_SymNum)) * v_ResizeFactor)
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
+      if (u_SnapMode == u_SnapModes.CENTER) {
+        FragCoord = FragCoord - v_Location;
+        dist = length(FragCoord) * v_ResizeFactor;
+        vec2 direction = normalize(vec2(
+            (length(FragCoord + vec2(1, 0) * EPSILON) * v_ResizeFactor - length(FragCoord + vec2(-1, 0) * EPSILON) * v_ResizeFactor),
+            (length(FragCoord + vec2(0, 1) * EPSILON) * v_ResizeFactor - length(FragCoord + vec2(0, -1) * EPSILON) * v_ResizeFactor)
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
+      }
       return;
     } else {
       discard;
