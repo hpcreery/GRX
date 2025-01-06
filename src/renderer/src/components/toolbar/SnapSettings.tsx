@@ -32,6 +32,11 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
       description: "Disable snapping",
       onClick: () => setSnapMode(SnapMode.OFF),
       leftSection: <IconPointerPin />,
+      rightSection: (
+        <div dir="ltr">
+          <Kbd>Shift</Kbd> + <Kbd>O</Kbd>
+        </div>
+      ),
     })
     actions.push({
       id: "snap edge",
@@ -39,6 +44,11 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
       description: "Snap to edge of objects",
       onClick: () => setSnapMode(SnapMode.EDGE),
       leftSection: <IconPointerPin />,
+      rightSection: (
+        <div dir="ltr">
+          <Kbd>Shift</Kbd> + <Kbd>E</Kbd>
+        </div>
+      ),
     })
     actions.push({
       id: "snap center",
@@ -46,25 +56,29 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
       description: "Snap to center of objects",
       onClick: () => setSnapMode(SnapMode.CENTER),
       leftSection: <IconPointerPin />,
-      rightSection: <Kbd>I</Kbd>,
+      rightSection: (
+        <div dir="ltr">
+          <Kbd>Shift</Kbd> + <Kbd>C</Kbd>
+        </div>
+      ),
     })
   }, [])
 
   useHotkeys([
     [
-      "shift + s + o",
+      "shift + o",
       (): void => {
         setSnapMode(SnapMode.OFF)
       },
     ],
     [
-      "shift + s + e",
+      "shift + e",
       (): void => {
         setSnapMode(SnapMode.EDGE)
       },
     ],
     [
-      "shift + s + c",
+      "shift + c",
       (): void => {
         setSnapMode(SnapMode.CENTER)
       },

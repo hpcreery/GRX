@@ -294,7 +294,6 @@ export class ShapeRenderer {
   }
 
   public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
-    // console.log(mode)
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -335,7 +334,7 @@ export class ShapeRenderer {
     })
 
     const distData = this.distanceQueryRaw
-    console.log(distData)
+    // console.log(distData)
 
     const distances: ShapeDistance[] = []
     let closestIndex: number | undefined = undefined
