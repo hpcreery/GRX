@@ -1362,27 +1362,27 @@ function REGLApp(): JSX.Element {
     //   image: polygons
     // })
 
-    Engine.addFile({
-      buffer: cmp,
-      format: "rs274x",
-      props: {
-        name: "cmp",
-      },
-    })
-    Engine.addFile({
-      buffer: drd,
-      format: "nc",
-      props: {
-        name: "drd",
-      },
-    })
-    Engine.addFile({
-      buffer: gko,
-      format: "rs274x",
-      props: {
-        name: "gko",
-      },
-    })
+    // Engine.addFile({
+    //   buffer: cmp,
+    //   format: "rs274x",
+    //   props: {
+    //     name: "cmp",
+    //   },
+    // })
+    // Engine.addFile({
+    //   buffer: drd,
+    //   format: "nc",
+    //   props: {
+    //     name: "drd",
+    //   },
+    // })
+    // Engine.addFile({
+    //   buffer: gko,
+    //   format: "rs274x",
+    //   props: {
+    //     name: "gko",
+    //   },
+    // })
     // Engine.addFile({
     //   buffer: plc,
     //   format: "rs274x",
@@ -1515,7 +1515,7 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: "Lines",
-      visible: true,
+      visible: false,
       units: "cm",
       image: [
         new Shapes.Line({
@@ -1717,25 +1717,38 @@ function REGLApp(): JSX.Element {
     Engine.addLayer({
       name: "circle",
       units: "cm",
-      visible: false,
+      visible: true,
       image: [
         new Shapes.Pad({
           x: 0,
-          y: 0,
+          y: 5,
           rotation: 0,
           resize_factor: 1.0,
           mirror_x: 0,
           mirror_y: 0,
+          symbol: new Symbols.RectangleSymbol({
+            width: 2,
+            height: 1,
+            inner_dia: 0.5,
+          }),
+        }),
+        new Shapes.Pad({
+          x: 0,
+          y: 0,
+          rotation: 10,
+          resize_factor: 2.0,
+          mirror_x: 0,
+          mirror_y: 1,
           // symbol: new Symbols.NullSymbol({}),
           // symbol: new Symbols.RoundSymbol({
           //   outer_dia: 1,
           //   inner_dia: 0.5,
           // }),
-          // symbol: new Symbols.RectangleSymbol({
-          //   width: 2,
-          //   height: 1,
-          //   inner_dia: 0.5,
-          // }),
+          symbol: new Symbols.RectangleSymbol({
+            width: 2,
+            height: 1,
+            inner_dia: 0.5,
+          }),
           // symbol: new Symbols.RoundedRectangleSymbol({
           //   width: 2,
           //   height: 1,
@@ -1968,15 +1981,15 @@ function REGLApp(): JSX.Element {
           //   round: 0,
           // }),
 
-          symbol: new Symbols.MoireGerberSymbol({
-            outer_dia: 2.0,
-            ring_width: 0.1,
-            ring_gap: 0.1,
-            num_rings: 2,
-            line_width: 0.1,
-            line_length: 2.1,
-            angle: 0,
-          }),
+          // symbol: new Symbols.MoireGerberSymbol({
+          //   outer_dia: 2.0,
+          //   ring_width: 0.1,
+          //   ring_gap: 0.1,
+          //   num_rings: 2,
+          //   line_width: 0.1,
+          //   line_length: 2.1,
+          //   angle: 0,
+          // }),
 
           // symbol: new Symbols.MoireODBSymbol({
           //   ring_width: 0.1,

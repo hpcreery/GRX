@@ -108,6 +108,13 @@ void main() {
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
     FragCoord = u_PointerPosition - v_Location;
+    if (v_Mirror_X == 1.0) {
+      FragCoord.x = -FragCoord.x;
+    }
+    if (v_Mirror_Y == 1.0) {
+      FragCoord.y = -FragCoord.y;
+    }
+    FragCoord = FragCoord * rotateCCW(radians(v_Rotation)) / v_ResizeFactor;
   }
 
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
@@ -142,6 +149,13 @@ void main() {
             (drawShape(FragCoord + vec2(1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor),
             (drawShape(FragCoord + vec2(0, 1) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, int(v_SymNum)) * v_ResizeFactor)
         ));
+        direction = rotateCW(direction, radians(v_Rotation));
+        if (v_Mirror_X == 1.0) {
+          direction.x = -direction.x;
+        }
+        if (v_Mirror_Y == 1.0) {
+          direction.y = -direction.y;
+        }
         // the first value is the distance to the border of the shape
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement

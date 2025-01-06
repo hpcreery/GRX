@@ -725,13 +725,14 @@ export class RenderEngineBackend {
     this.selections.length = 0
     this.world((context) => {
       this.clearMeasurements()
-      const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
+      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const layerSelection = layer.queryDistance(pointer, SnapMode.EDGE, context)
+        const distances = layer.queryDistance(pointer, SnapMode.EDGE, context)
+        const layerSelection = distances.filter((shape) => shape.distance <= 0)
         for (const select of layerSelection) {
           // if (select.distance >= 0.01 / scale) continue
-          if (select.distance >= 0.0) continue
+          // if (select.distance >= 0.0) continue
           selection.push({
             sourceLayer: layer.id,
             ...select,
@@ -739,8 +740,8 @@ export class RenderEngineBackend {
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION
-          // this.measurements.addMeasurement(pointer)
-          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
+          this.measurements.addMeasurement(pointer)
+          this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -751,7 +752,7 @@ export class RenderEngineBackend {
           name: layer.name,
           id: layer.id,
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
-          image: this.copySelectionToImage(selection),
+          image: this.copySelectionToImage(layerSelection),
           transform: layer.transform,
         })
         newSelectionLayer.dirty = true
@@ -961,12 +962,9 @@ export class RenderEngineBackend {
       this.measurements.render(context)
       this.overlay(() => this.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
-    // this.getStats()
   }
 
   public getStats(): Stats {
-    // console.log(this.regl.stats)
-    // console.log(this.world.stats)
     return {
       regl: {
         totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
@@ -974,7 +972,6 @@ export class RenderEngineBackend {
         totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
         maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
         maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
-        // ...this.regl.stats,
         bufferCount: this.regl.stats.bufferCount,
         elementsCount: this.regl.stats.elementsCount,
         framebufferCount: this.regl.stats.framebufferCount,
@@ -987,45 +984,6 @@ export class RenderEngineBackend {
       },
       world: this.world.stats,
     }
-
-    // /** The number of array buffers currently allocated */
-    // bufferCount: number;
-    // /** The number of element buffers currently allocated */
-    // elementsCount: number;
-    // /** The number of framebuffers currently allocated */
-    // framebufferCount: number;
-    // /** The number of shaders currently allocated */
-    // shaderCount: number;
-    // /** The number of textures currently allocated */
-    // textureCount: number;
-    // /** The number of cube maps currently allocated */
-    // cubeCount: number;
-    // /** The number of renderbuffers currently allocated */
-    // renderbufferCount: number;
-    // /** The maximum number of texture units used */
-    // maxTextureUnits: number;
-    // /** Number of vertex array objects */
-    // vaoCount: number;
-
-    // // The following functions are only available if regl is initialized with option `profile: true`
-
-    // /** The total amount of memory allocated for textures and cube maps */
-    // getTotalTextureSize?: () => number;
-    // /** The total amount of memory allocated for array buffers and element buffers */
-    // getTotalBufferSize?: () => number;
-    // /** The total amount of memory allocated for renderbuffers */
-    // getTotalRenderbufferSize?: () => number;
-    // /** The maximum number of uniforms in any shader */
-    // getMaxUniformsCount?: () => number;
-    // /** The maximum number of attributes in any shader */
-    // getMaxAttributesCount?: () => number;
-
-    // console.log("Texture Count: " + this.regl.stats.textureCount)
-    // console.log("Texture Memory: " + Math.round(this.regl.stats.getTotalTextureSize() / 1024 / 1024) + " MB")
-    // console.log("Render Buffer Count: " + this.regl.stats.renderbufferCount)
-    // console.log("Render Buffer Memory: " + Math.round(this.regl.stats.getTotalRenderbufferSize() / 1024 / 1024) + " MB")
-    // console.log("Buffer Count: " + this.regl.stats.bufferCount)
-    // console.log("Buffer Memory: " + Math.round(this.regl.stats.getTotalBufferSize() / 1024 / 1024) + " MB")
   }
 
   public destroy(): void {
