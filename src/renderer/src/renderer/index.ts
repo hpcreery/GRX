@@ -167,6 +167,8 @@ export class RenderEngine {
   public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
     const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
 
+    // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
+    // but rather the coordinates of the world
     function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
       // Get the mouse position relative to the canvas
       // const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()

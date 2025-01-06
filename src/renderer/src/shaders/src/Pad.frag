@@ -21,6 +21,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform float u_Polarity;
@@ -76,7 +77,7 @@ float draw(float dist, float pixel_size) {
   if (dist > pixel_size / 2.0) {
     discard;
   }
-  if (dist * float(u_OutlineMode) < -pixel_size / 2.0) {
+  if (dist * float(u_OutlineMode || u_SkeletonMode) < -pixel_size / 2.0) {
     discard;
   }
   return dist;
@@ -101,12 +102,12 @@ void main() {
   float pixel_size = u_PixelSize / scale;
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
+  vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
+  float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = u_PointerPosition;
+    FragCoord = u_PointerPosition - v_Location;
   }
 
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
@@ -147,7 +148,6 @@ void main() {
         gl_FragColor = vec4(dist, direction, 1.0);
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
-        FragCoord = FragCoord - v_Location;
         dist = length(FragCoord) * v_ResizeFactor;
         vec2 direction = normalize(vec2(
             (length(FragCoord + vec2(1, 0) * EPSILON) * v_ResizeFactor - length(FragCoord + vec2(-1, 0) * EPSILON) * v_ResizeFactor),

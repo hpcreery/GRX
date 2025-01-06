@@ -6,7 +6,7 @@ import * as Shapes from "./shapes"
 import * as Comlink from "comlink"
 import plugins from "./plugins"
 import type { Plugin, PluginsDefinition, AddLayerProps } from "./plugins"
-import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlends, ColorBlend } from "./types"
+import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend } from "./types"
 import Transform from "./transform"
 import GridFrag from "../shaders/src/Grid.frag"
 import OriginFrag from "../shaders/src/Origin.frag"
@@ -25,6 +25,7 @@ interface WorldUniforms {
   u_PixelSize: number
   u_OutlineMode: boolean
   u_SkeletonMode: boolean
+  u_SnapMode: number
   u_PointerPosition: vec2
   u_PointerDown: boolean
   u_QueryMode: boolean
@@ -62,7 +63,7 @@ export interface RenderSettings {
   OUTLINE_MODE: boolean
   SKELETON_MODE: boolean
   SNAP_MODE: SnapMode
-  COLOR_BLEND: ColorBlends
+  COLOR_BLEND: ColorBlend
   BACKGROUND_COLOR: vec4
   MAX_ZOOM: number
   MIN_ZOOM: number
@@ -165,7 +166,7 @@ export class RenderEngineBackend {
     },
     OUTLINE_MODE: false,
     SKELETON_MODE: false,
-    SNAP_MODE: SnapMode.EDGE,
+    SNAP_MODE: SnapMode.OFF,
     COLOR_BLEND: ColorBlend.CONTRAST,
     BACKGROUND_COLOR: [0, 0, 0, 0],
     MAX_ZOOM: 1000,
@@ -729,21 +730,17 @@ export class RenderEngineBackend {
         if (!layer.visible) continue
         const layerSelection = layer.queryDistance(pointer, SnapMode.EDGE, context)
         for (const select of layerSelection) {
-          if (select.distance >= 0.01 / scale) continue
+          // if (select.distance >= 0.01 / scale) continue
+          if (select.distance >= 0.0) continue
           selection.push({
             sourceLayer: layer.id,
             ...select,
             // units: layer.units,
           })
 
-          // THIS IS EXPERIMENTAL
-          this.measurements.addMeasurement(pointer)
-          // this.measurements.updateMeasurement([pointer[0] - select.direction[0] * select.distance, pointer[1] - select.direction[1] * select.distance])
-          // this.measurements.finishMeasurement([
-          //   pointer[0] - select.direction[0] * select.distance,
-          //   pointer[1] - select.direction[1] * select.distance,
-          // ])
-          this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
+          // THIS IS A VISUAL AIDS FOR THE SELECTION
+          // this.measurements.addMeasurement(pointer)
+          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
@@ -768,15 +765,13 @@ export class RenderEngineBackend {
   }
 
   public snap(pointer: vec2): vec2 {
-    // if (this.settings.SNAP_MODE.length === 0) return pointer
+    // if (this.settings.SNAP_MODE == SnapMode.OFF) return pointer
 
     let closest: ShapeDistance | undefined = undefined
-    // const viewport = vec2.fromValues(this.viewBox.width, this.viewBox.height)
     this.world((context) => {
       // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.EDGE) {
         const layerSelection = layer.queryDistance(pointer, this.settings.SNAP_MODE, context)
         for (const select of layerSelection) {
           // if (select.distance >= 0.01 / scale) continue
@@ -787,20 +782,11 @@ export class RenderEngineBackend {
           if (select.distance >= closest.distance) continue
           closest = select
         }
-        // }
-        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.CENTER) {
-        //   // TODO! implement center snap
-        //   continue
-        // }
-        // if (this.settings.SNAP_MODE == SNAP_MODES_MAP.GRID) {
-        //   // TODO! implement grid snap
-        //   continue
-        // }
       }
     })
     if (closest == undefined) return pointer
     const newPointer = vec2.create()
-    vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), closest.direction, closest.distance))
+    vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), (closest as ShapeDistance).direction, (closest as ShapeDistance).distance))
     return newPointer
   }
 

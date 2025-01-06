@@ -57,7 +57,7 @@ export const ColorBlend = {
   CONTRAST: "Contrast",
   OVERLAY: "Overlay",
 } as const
-export type ColorBlends = (typeof ColorBlend)[keyof typeof ColorBlend]
+export type ColorBlend = (typeof ColorBlend)[keyof typeof ColorBlend]
 
 export const SnapMode = {
   OFF: "OFF",
@@ -65,11 +65,8 @@ export const SnapMode = {
   CENTER: "CENTER",
   // GRID: "GRID",
 } as const
-
-// export const SNAP_MODES = ["OFF", "EDGE", "CENTER"] as const // , "GRID"
 export const SNAP_MODES = toValues(SnapMode)
 export const SNAP_MODES_MAP = toMap(SNAP_MODES)
-// export type SnapMode = (typeof SNAP_MODES_MAP)[keyof typeof SNAP_MODES_MAP]
 export type SnapMode = keyof typeof SNAP_MODES_MAP
 
 export const PointerMode = {
@@ -77,9 +74,6 @@ export const PointerMode = {
   SELECT: "SELECT",
   MEASURE: "MEASURE",
 } as const
-
-// export const POINTER_MODES = ["MOVE", "SELECT", "MEASURE"] as const
 export const POINTER_MODES = toValues(PointerMode)
 export const POINTER_MODES_MAP = toMap(POINTER_MODES)
-// export type PointerMode = (typeof POINTER_MODES_MAP)[keyof typeof POINTER_MODES_MAP]
 export type PointerMode = keyof typeof POINTER_MODES_MAP

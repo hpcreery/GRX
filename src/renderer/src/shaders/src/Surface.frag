@@ -8,6 +8,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform vec2 u_PointerPosition;
@@ -68,7 +69,7 @@ float sdfSegment(vec2 p, vec2 a, vec2 b) {
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (dist * float(u_OutlineMode) > pixel_size) {
+  if (dist * float(u_OutlineMode || u_SkeletonMode) > pixel_size) {
     discard;
   }
   return dist;
@@ -138,8 +139,8 @@ void main() {
   // 0     | 1      | 0
   // 1     | 0      | 0
   // 1     | 1      | 1
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
+  vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
+  float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {

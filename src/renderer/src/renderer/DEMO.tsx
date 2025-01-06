@@ -5,8 +5,8 @@ import * as Shapes from "./shapes"
 import { RenderEngine } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
-import { SNAP_MODES, SNAP_MODES_MAP, SnapMode } from "./types"
-import { POINTER_MODES, POINTER_MODES_MAP, PointerMode } from "./types"
+import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
+import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
@@ -1362,27 +1362,27 @@ function REGLApp(): JSX.Element {
     //   image: polygons
     // })
 
-    // Engine.addFile({
-    //   buffer: cmp,
-    //   format: "rs274x",
-    //   props: {
-    //     name: "cmp",
-    //   },
-    // })
-    // Engine.addFile({
-    //   buffer: drd,
-    //   format: "nc",
-    //   props: {
-    //     name: "drd",
-    //   },
-    // })
-    // Engine.addFile({
-    //   buffer: gko,
-    //   format: "rs274x",
-    //   props: {
-    //     name: "gko",
-    //   },
-    // })
+    Engine.addFile({
+      buffer: cmp,
+      format: "rs274x",
+      props: {
+        name: "cmp",
+      },
+    })
+    Engine.addFile({
+      buffer: drd,
+      format: "nc",
+      props: {
+        name: "drd",
+      },
+    })
+    Engine.addFile({
+      buffer: gko,
+      format: "rs274x",
+      props: {
+        name: "gko",
+      },
+    })
     // Engine.addFile({
     //   buffer: plc,
     //   format: "rs274x",
@@ -1516,7 +1516,7 @@ function REGLApp(): JSX.Element {
     Engine.addLayer({
       name: "Lines",
       visible: true,
-      units: "mm",
+      units: "cm",
       image: [
         new Shapes.Line({
           xs: 0,
@@ -1621,7 +1621,7 @@ function REGLApp(): JSX.Element {
     Engine.addLayer({
       name: "Arcs",
       visible: false,
-      units: "mm",
+      units: "cm",
       image: [
         new Shapes.Arc({
           xs: 0,
@@ -1716,6 +1716,7 @@ function REGLApp(): JSX.Element {
 
     Engine.addLayer({
       name: "circle",
+      units: "cm",
       visible: false,
       image: [
         new Shapes.Pad({
@@ -1987,7 +1988,6 @@ function REGLApp(): JSX.Element {
           // }),
         }),
       ],
-      units: "mm",
     })
 
     Engine.render({
@@ -2125,62 +2125,62 @@ function REGLApp(): JSX.Element {
   )
 }
 
-function StatsWidget(): JSX.Element {
-  const [fps, setFPS] = React.useState<number>(0)
-  const [avgFPS, setAvgFPS] = React.useState<number>(0)
-  const [memory, setMemory] = React.useState<number>(0)
+// function StatsWidget(): JSX.Element {
+//   const [fps, setFPS] = React.useState<number>(0)
+//   const [avgFPS, setAvgFPS] = React.useState<number>(0)
+//   const [memory, setMemory] = React.useState<number>(0)
 
-  let totalFPS = 0
-  const frameTimes: number[] = []
-  let frameCursor = 0
-  const maxFrames = 100
-  let numFrames = 0
+//   let totalFPS = 0
+//   const frameTimes: number[] = []
+//   let frameCursor = 0
+//   const maxFrames = 100
+//   let numFrames = 0
 
-  let then = performance.now()
-  function updateFPS(now: number): void {
-    now *= 0.001
-    const deltaTime = now - then
-    then = now
-    const fps = 1 / deltaTime
-    setFPS(Math.round(fps))
-    totalFPS += fps - (frameTimes[frameCursor] || 0)
-    frameTimes[frameCursor++] = fps
-    numFrames = Math.max(numFrames, frameCursor)
-    frameCursor %= maxFrames
-    const avgFPS = totalFPS / numFrames
-    setAvgFPS(Math.round(avgFPS))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
-    setMemory(Math.round(memoryUsed))
-    requestAnimationFrame(updateFPS)
-  }
+//   let then = performance.now()
+//   function updateFPS(now: number): void {
+//     now *= 0.001
+//     const deltaTime = now - then
+//     then = now
+//     const fps = 1 / deltaTime
+//     setFPS(Math.round(fps))
+//     totalFPS += fps - (frameTimes[frameCursor] || 0)
+//     frameTimes[frameCursor++] = fps
+//     numFrames = Math.max(numFrames, frameCursor)
+//     frameCursor %= maxFrames
+//     const avgFPS = totalFPS / numFrames
+//     setAvgFPS(Math.round(avgFPS))
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
+//     setMemory(Math.round(memoryUsed))
+//     requestAnimationFrame(updateFPS)
+//   }
 
-  React.useEffect(() => {
-    requestAnimationFrame(updateFPS)
-  }, [])
+//   React.useEffect(() => {
+//     requestAnimationFrame(updateFPS)
+//   }, [])
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 0,
-        right: 0,
-        padding: 10,
-        background: "rgba(0,0,0,0.5)",
-        color: "white",
-        fontFamily: "monospace",
-        fontSize: 12,
-        pointerEvents: "none",
-        zIndex: 100,
-        userSelect: "none",
-      }}
-    >
-      <div>FPS: {fps}</div>
-      <div>Avg FPS: {avgFPS}</div>
-      <div>Memory: {memory} MB</div>
-    </div>
-  )
-}
+//   return (
+//     <div
+//       style={{
+//         position: "absolute",
+//         top: 0,
+//         right: 0,
+//         padding: 10,
+//         background: "rgba(0,0,0,0.5)",
+//         color: "white",
+//         fontFamily: "monospace",
+//         fontSize: 12,
+//         pointerEvents: "none",
+//         zIndex: 100,
+//         userSelect: "none",
+//       }}
+//     >
+//       <div>FPS: {fps}</div>
+//       <div>Avg FPS: {avgFPS}</div>
+//       <div>Memory: {memory} MB</div>
+//     </div>
+//   )
+// }
 
 function REGLStatsWidget(props: { engine: RenderEngine }): JSX.Element {
   const [count, setCount] = React.useState<number>(0)
