@@ -161,14 +161,15 @@ void main() {
     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
       if (u_SnapMode == u_SnapModes.EDGE) {
         if (pointInTriangle(FragCoord, point1, point2, point3)) {
-          vec2 direction = normalize(vec2(
-              (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
-              (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
-          ));
+          // vec2 direction = normalize(vec2(
+          //     (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
+          //     (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
+          // ));
           // the first value is the distance to the border of the shape
           // the second value is the direction of the border of the shape
           // the third value is the indicator of a measurement
-          gl_FragColor = vec4(-dist, -direction, 1.0);
+          // gl_FragColor = vec4(-dist, -direction, 1.0);
+          gl_FragColor = vec4(-dist, 0.0, 0.0, 1.0);
           return;
         } else {
           discard;

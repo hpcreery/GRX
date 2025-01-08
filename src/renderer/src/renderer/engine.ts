@@ -722,15 +722,15 @@ export class RenderEngineBackend {
     const selection: QuerySelection[] = []
     this.selections.length = 0
     this.world((context) => {
-      this.clearMeasurements()
-      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
+      // this.clearMeasurements()
+      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
+      // const epsilons = 100 / scale
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const distances = layer.queryDistance(pointer, SnapMode.EDGE, context)
         const layerSelection = distances.filter((shape) => shape.distance <= 0)
         for (const select of layerSelection) {
-          // if (select.distance >= 0.01 / scale) continue
-          // if (select.distance >= 0.0) continue
+          // if (select.distance >= epsilons) continue
           selection.push({
             sourceLayer: layer.id,
             ...select,
@@ -778,7 +778,7 @@ export class RenderEngineBackend {
             closest = select
             continue
           }
-          if (select.distance < closest.distance) {
+          if (Math.abs(select.distance) < Math.abs(closest.distance)) {
             closest = select
           }
           // closest = select

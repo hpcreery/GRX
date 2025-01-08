@@ -103,6 +103,10 @@ export class ShapeRenderer {
   public transform: ShapeTransform = new ShapeTransform()
 
   public distanceQueryRaw: Float32Array = new Float32Array(0)
+  public distanceRightQueryRaw: Float32Array = new Float32Array(0)
+  public distanceLeftQueryRaw: Float32Array = new Float32Array(0)
+  public distanceUpQueryRaw: Float32Array = new Float32Array(0)
+  public distanceDownQueryRaw: Float32Array = new Float32Array(0)
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
@@ -306,35 +310,51 @@ export class ShapeRenderer {
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
 
-    if (this.distanceQueryRaw.length != width * height * 4) {
-      this.distanceQueryRaw = new Float32Array(width * height * 4)
+    const bufferLength = width * height * 4
+    if (this.distanceQueryRaw.length != bufferLength) {
+      this.distanceQueryRaw = new Float32Array(bufferLength)
+      this.distanceLeftQueryRaw = new Float32Array(bufferLength)
+      this.distanceRightQueryRaw = new Float32Array(bufferLength)
+      this.distanceUpQueryRaw = new Float32Array(bufferLength)
+      this.distanceDownQueryRaw = new Float32Array(bufferLength)
     }
 
-    this.regl.clear({
-      framebuffer: this.queryFrameBuffer,
-      // in the color buffer, the first value is the distance, the next two are the direction, the last is to indicate there is a measurement at all. (0 = empty)
-      color: [0, 0, 0, 0],
-      depth: 0,
-    })
-    this.queryFrameBuffer.use(() => {
-      this.commonConfig(() => {
-        this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
-          this.drawPrimitives(context)
-          this.drawDatums(context)
+    const queryDistance = (pointer: vec2, store: Float32Array): void => {
+      this.regl.clear({
+        framebuffer: this.queryFrameBuffer,
+        // in the color buffer, the first value is the distance, the next two are the direction, the last is to indicate there is a measurement at all. (0 = empty)
+        color: [0, 0, 0, 0],
+        depth: 0,
+      })
+      this.queryFrameBuffer.use(() => {
+        this.commonConfig(() => {
+          this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
+            this.drawPrimitives(context)
+            this.drawDatums(context)
+          })
         })
       })
-    })
-    this.regl.read<Float32Array>({
-      framebuffer: this.queryFrameBuffer,
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-      data: this.distanceQueryRaw,
-    })
+      this.regl.read<Float32Array>({
+        framebuffer: this.queryFrameBuffer,
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+        data: store,
+      })
+    }
+
+    queryDistance(pointer, this.distanceQueryRaw)
+    const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
+    const epsilons = 1 / scale
+    // console.log(epsilons / scale)
+    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
+    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
+    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
+    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
-    // console.log(distData)
+    console.log(distData)
 
     const distances: ShapeDistance[] = []
     let closestIndex: number | undefined = undefined
@@ -343,7 +363,12 @@ export class ShapeRenderer {
       if (distData[i + 3] == 0) continue
       const distance = distData[i]
 
-      const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
+      // const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
+      const direction = vec2.fromValues(
+        this.distanceRightQueryRaw[i] - this.distanceLeftQueryRaw[i],
+        this.distanceUpQueryRaw[i] - this.distanceDownQueryRaw[i],
+      )
+      vec2.normalize(direction, direction)
 
       distances.push({
         shape: this.image[i / 4],
