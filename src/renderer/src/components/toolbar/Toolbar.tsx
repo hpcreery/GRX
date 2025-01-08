@@ -16,6 +16,8 @@ import {
   IconTrashX,
   IconEngine,
   IconPointerPin,
+  IconBone,
+  IconBoneOff,
 } from "@tabler/icons-react"
 // import chroma from 'chroma-js'
 import { Modal, ActionIcon, Card, Group, Tooltip, useMantineTheme, Kbd } from "@mantine/core"
@@ -40,6 +42,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
   const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
+  const [skeletonMode, setSkeletonMode] = React.useState<boolean>(renderEngine.settings.SKELETON_MODE)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
   const { showContextMenu } = useContextMenu()
@@ -76,6 +79,28 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       },
       leftSection: <IconCube3dSphere />,
       rightSection: <Kbd>O</Kbd>,
+    })
+    actions.push({
+      id: "skeleton mode off",
+      label: "Disable Skeleton Mode",
+      description: "Default fill mode",
+      onClick: () => {
+        renderEngine.settings.SKELETON_MODE = false
+        setSkeletonMode(false)
+      },
+      leftSection: <IconBoneOff />,
+      rightSection: <Kbd>P</Kbd>,
+    })
+    actions.push({
+      id: "skeleton mode on",
+      label: "Enable Skeleton Mode",
+      description: "Show outline of all features",
+      onClick: () => {
+        renderEngine.settings.SKELETON_MODE = true
+        setSkeletonMode(true)
+      },
+      leftSection: <IconBone />,
+      rightSection: <Kbd>P</Kbd>,
     })
     actions.push({
       id: "open settings modal",
@@ -174,6 +199,13 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       (): void => {
         renderEngine.settings.OUTLINE_MODE = !renderEngine.settings.OUTLINE_MODE
         setOutlineMode(renderEngine.settings.OUTLINE_MODE)
+      },
+    ],
+    [
+      "p",
+      (): void => {
+        renderEngine.settings.SKELETON_MODE = !renderEngine.settings.SKELETON_MODE
+        setSkeletonMode(renderEngine.settings.SKELETON_MODE)
       },
     ],
     // ['g', gridSettingsModalHandlers.open],
@@ -289,6 +321,19 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 }}
               >
                 {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube size={18} />}
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip openDelay={500} withArrow label="Skeleton Mode">
+              <ActionIcon
+                size="lg"
+                radius="sm"
+                variant="default"
+                onClick={async (): Promise<void> => {
+                  renderEngine.settings.SKELETON_MODE = !skeletonMode
+                  setSkeletonMode(!skeletonMode)
+                }}
+              >
+                {skeletonMode ? <IconBone size={18} /> : <IconBoneOff size={18} />}
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={500} withArrow label="Grid Settings">
