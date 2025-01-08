@@ -1,12 +1,6 @@
 import { useEffect, useContext } from "react"
 import { Text, Flex, Kbd, SegmentedControl } from "@mantine/core"
-import {
-  // IconZoom,
-  // IconZoomScan,
-  // IconHexagonPlus,
-  IconPointerPin,
-  // IconHexagonOff,
-} from "@tabler/icons-react"
+import { IconPointerPin } from "@tabler/icons-react"
 import { SnapMode, SNAP_MODES } from "@src/renderer/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
@@ -90,18 +84,7 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Snap Mode</Text>
         <SegmentedControl value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as SnapMode)} />
-        {/* <Select clearable={false} data={SNAP_MODES} value={snapMode} onChange={(val) => val && setSnapMode(val as SnapMode)} /> */}
       </Flex>
-      {/* <Divider my="sm" /> */}
-      {/* <Flex align="center" style={{ width: "100%" }} justify="space-between">
-        <Text>Zoom To Cursor</Text>
-        <Switch checked={zoomToCursor} onChange={(event): void => setZoomToCursor(event.currentTarget.checked)} />
-      </Flex>
-      <Divider my="sm" />
-      <Flex align="center" style={{ width: "100%" }} justify="space-between">
-        <Text>Show Datums</Text>
-        <Switch checked={showDatums} onChange={(event): void => setShowDatums(event.currentTarget.checked)} />
-      </Flex> */}
     </>
   )
 }
