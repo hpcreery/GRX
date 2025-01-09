@@ -160,6 +160,10 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         // gl_FragColor = vec4(dist, direction, 1.0);
+        if (dist > 0.0) {
+          discard;
+          return;
+        }
         gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
         return;
       }
@@ -180,6 +184,10 @@ void main() {
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
         // gl_FragColor = vec4(dist, direction, 1.0);
+        if (dist > 0.0) {
+          discard;
+          return;
+        }
         gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
         return;
       }

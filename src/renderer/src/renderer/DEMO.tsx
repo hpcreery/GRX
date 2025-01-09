@@ -9,7 +9,7 @@ import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
 import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
-// import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
+import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
 // import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
@@ -1481,9 +1481,9 @@ function REGLApp(): JSX.Element {
 
     // Engine.addFile({
     //   buffer: gdsiiFile,
-    //   format: 'gdsii',
+    //   format: "gdsii",
     //   props: {
-    //     name: 'gdsii',
+    //     name: "gdsii",
     //   },
     //   // units: 'mm'
     // })
@@ -1512,6 +1512,79 @@ function REGLApp(): JSX.Element {
     //   // transform.position[1] = 3
     //   transform.update()
     // }))
+
+    // Engine.addLayer({
+    //   name: "Small Lines",
+    //   visible: true,
+    //   units: "mm",
+    //   image: [
+    //     new Shapes.Line({
+    //       xs: 0,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 0,
+    //       symbol: new Symbols.StandardSymbol({
+    //         id: "polyline-line",
+    //         symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    //         outer_dia: 0.003,
+    //       }),
+    //       polarity: 1,
+    //     }),
+    //     new Shapes.Line({
+    //       xs: 1,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 1,
+    //       symbol: new Symbols.StandardSymbol({
+    //         id: "polyline-line",
+    //         symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    //         outer_dia: 0.03,
+    //       }),
+    //       polarity: 1,
+    //     }),
+    //   ],
+    // })
+
+    Engine.addLayer({
+      name: "Poly Lines",
+      visible: true,
+      units: "mm",
+      image: [
+        new Shapes.PolyLine({
+          xs: 0,
+          ys: 0,
+          // xe: 1,
+          // ye: 0,
+          // symbol: new Symbols.StandardSymbol({
+          //   id: "polyline-line",
+          //   symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+          //   outer_dia: 0.003,
+          // }),
+          polarity: 1,
+          width: 0.005,
+          pathtype: "round",
+          cornertype: "round",
+          lines: [
+            {
+              x: 1,
+              y: 0,
+            },
+            {
+              x: 1,
+              y: 1,
+            },
+            {
+              x: 0,
+              y: 1,
+            },
+            {
+              x: 0,
+              y: 0,
+            },
+          ],
+        }),
+      ],
+    })
 
     Engine.addLayer({
       name: "Lines",
@@ -1717,7 +1790,7 @@ function REGLApp(): JSX.Element {
     Engine.addLayer({
       name: "circle",
       units: "cm",
-      visible: true,
+      visible: false,
       image: [
         new Shapes.Pad({
           x: 0,
