@@ -419,7 +419,6 @@ export class ShapeRenderer {
       }
     })
     context.transformMatrix = origMatrix
-    console.log(distances)
     return distances
   }
 

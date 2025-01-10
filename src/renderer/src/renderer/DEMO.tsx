@@ -9,7 +9,7 @@ import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
 import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
-import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
+// import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
 // import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
