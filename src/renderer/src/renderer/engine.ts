@@ -728,8 +728,8 @@ export class RenderEngineBackend {
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const distances = layer.queryDistance(pointer, SnapMode.EDGE, context)
-        const layerSelection = distances.filter((shape) => shape.distance <= 0)
-        for (const select of layerSelection) {
+        // const layerSelection = distances.filter((shape) => shape.distance <= 0)
+        for (const select of distances) {
           // if (select.distance >= epsilons) continue
           selection.push({
             sourceLayer: layer.id,
@@ -750,7 +750,7 @@ export class RenderEngineBackend {
           name: layer.name,
           id: layer.id,
           // we want to deep clone this object to avoid the layer renderer from mutating the properties
-          image: this.copySelectionToImage(layerSelection),
+          image: this.copySelectionToImage(distances),
           transform: layer.transform,
         })
         newSelectionLayer.dirty = true
@@ -764,7 +764,7 @@ export class RenderEngineBackend {
   }
 
   public snap(pointer: vec2): vec2 {
-    // if (this.settings.SNAP_MODE == SnapMode.OFF) return pointer
+    if (this.settings.SNAP_MODE == SnapMode.OFF) return pointer
 
     let closest: ShapeDistance | undefined = undefined
     this.world((context) => {

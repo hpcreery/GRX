@@ -297,6 +297,13 @@ export class ShapeRenderer {
     return this
   }
 
+  protected transformPointer(pointer: vec2): vec2 {
+    const pointerTransform = new ShapeTransform()
+    Object.assign(pointerTransform, this.transform)
+    pointerTransform.update(mat3.create())
+    return vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
+  }
+
   public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
@@ -319,7 +326,7 @@ export class ShapeRenderer {
       this.distanceDownQueryRaw = new Float32Array(bufferLength)
     }
 
-    const queryDistance = (pointer: vec2, store: Float32Array): void => {
+    const renderDistance = (pointer: vec2, store: Float32Array): void => {
       this.regl.clear({
         framebuffer: this.queryFrameBuffer,
         // in the color buffer, the first value is the distance, the next two are the direction, the last is to indicate there is a measurement at all. (0 = empty)
@@ -344,17 +351,15 @@ export class ShapeRenderer {
       })
     }
 
-    queryDistance(pointer, this.distanceQueryRaw)
+    renderDistance(pointer, this.distanceQueryRaw)
     const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
     const epsilons = 1 / scale
-    // console.log(epsilons / scale)
-    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
-    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
-    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
-    queryDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
-    console.log(distData)
 
     const distances: ShapeDistance[] = []
     let closestIndex: number | undefined = undefined
@@ -388,7 +393,8 @@ export class ShapeRenderer {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        const macroFeatures = macro.renderer.queryDistance(pointer, snapMode, context)
+        const newPointer = macro.renderer.transformPointer(pointer)
+        const macroFeatures = macro.renderer.queryDistance(newPointer, snapMode, context)
         if (macroFeatures.length > 0) {
           const closest = macroFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
           distances.push({
@@ -413,6 +419,7 @@ export class ShapeRenderer {
       }
     })
     context.transformMatrix = origMatrix
+    console.log(distances)
     return distances
   }
 
@@ -574,8 +581,11 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.queryDistance(pointer, snapMode, context)
-      if (nestedFeatures.length > 0) features.push(...nestedFeatures)
+
+      const newPointer = this.transformPointer(pointer)
+
+      const nestedFeatures = super.queryDistance(newPointer, snapMode, context)
+      features.push(...nestedFeatures)
     })
     return features
   }

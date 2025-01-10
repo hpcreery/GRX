@@ -196,12 +196,12 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
           <>
             {selection.shape.symbol.type == FeatureTypeIdentifier.SYMBOL_DEFINITION
               ? ""
-              : selection.shape.symbol.shapes.map((shape) => (
+              : selection.children.map((child) => (
                   <>
                     {getInfo({
                       sourceLayer: selection.sourceLayer,
                       units: selection.units,
-                      shape,
+                      shape: child.shape,
                       distance: selection.distance,
                       direction: selection.direction,
                       children: [],
@@ -409,12 +409,12 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
       case FeatureTypeIdentifier.STEP_AND_REPEAT:
         return (
           <>
-            {selection.shape.shapes.map((shape) => (
+            {selection.children.map((child) => (
               <>
                 {getInfo({
                   sourceLayer: selection.sourceLayer,
                   units: selection.units,
-                  shape,
+                  shape: child.shape,
                   distance: selection.distance,
                   direction: selection.direction,
                   children: [],

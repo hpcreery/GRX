@@ -1,5 +1,5 @@
 import { useEffect, useContext } from "react"
-import { Text, Flex, Kbd, SegmentedControl } from "@mantine/core"
+import { Kbd, SegmentedControl } from "@mantine/core"
 import { IconPointerPin } from "@tabler/icons-react"
 import { SnapMode, SNAP_MODES } from "@src/renderer/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
@@ -79,12 +79,5 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
     ],
   ])
 
-  return (
-    <>
-      <Flex align="center" style={{ width: "100%" }} justify="space-between">
-        <Text>Snap Mode</Text>
-        <SegmentedControl value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as SnapMode)} />
-      </Flex>
-    </>
-  )
+  return <SegmentedControl radius="sm" value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as SnapMode)} />
 }
