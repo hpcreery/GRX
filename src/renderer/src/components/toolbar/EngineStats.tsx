@@ -1,5 +1,5 @@
 import { useEffect, useContext, useState } from "react"
-import { Table, TableData, Paper } from "@mantine/core"
+import { Table, TableData } from "@mantine/core"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
 interface EngineStatsProps {}
