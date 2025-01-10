@@ -61,17 +61,48 @@ vec2 getVertexPosition(float index) {
 
 void main() {
 
-  vec2 point1 = getVertexPosition(a_Indicies.x * 2.0 + a_ContourOffset + a_SurfaceOffset);
-  vec2 point2 = getVertexPosition(a_Indicies.y * 2.0 + a_ContourOffset + a_SurfaceOffset);
-  vec2 point3 = getVertexPosition(a_Indicies.z * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  vec2 pointx = getVertexPosition(a_Indicies.x * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  vec2 pointy = getVertexPosition(a_Indicies.y * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  vec2 pointz = getVertexPosition(a_Indicies.z * 2.0 + a_ContourOffset + a_SurfaceOffset);
+
+  // float indx = mod(a_Indicies.x, a_QtyVerts);
+  // float indy = mod(a_Indicies.y, a_QtyVerts);
+  // float indz = mod(a_Indicies.z, a_QtyVerts);
+  // float indx1 = mod(a_Indicies.x + 1.0, a_QtyVerts);
+  // float indy1 = mod(a_Indicies.y + 1.0, a_QtyVerts);
+  // float indz1 = mod(a_Indicies.z + 1.0, a_QtyVerts);
+  // float indx2 = mod(a_Indicies.x - 1.0, a_QtyVerts);
+  // float indy2 = mod(a_Indicies.y - 1.0, a_QtyVerts);
+  // float indz2 = mod(a_Indicies.z - 1.0, a_QtyVerts);
+  // vec2 pointx = getVertexPosition(indx * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointy = getVertexPosition(indy * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointz = getVertexPosition(indz * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointx1 = getVertexPosition(indx1 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointy1 = getVertexPosition(indy1 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointz1 = getVertexPosition(indz1 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointx2 = getVertexPosition(indx2 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointy2 = getVertexPosition(indy2 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 pointz2 = getVertexPosition(indz2 * 2.0 + a_ContourOffset + a_SurfaceOffset);
+  // vec2 directionx = normalize(normalize(abs(normalize(pointx1) - normalize(pointx))) + normalize(abs(normalize(pointx2) - normalize(pointx))));
+  // vec2 directiony = normalize(normalize(abs(normalize(pointy1) - normalize(pointy))) + normalize(abs(normalize(pointy2) - normalize(pointy))));
+  // vec2 directionz = normalize(normalize(abs(normalize(pointz1) - normalize(pointz))) + normalize(abs(normalize(pointz2) - normalize(pointz))));
+  // vec2 centroid = (pointx + pointy + pointz) / 3.0;
+  // float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+  // float pixel_size = u_PixelSize / scale;
+  // directionx = directionx * sign(pointx - centroid);
+  // directiony = directiony * sign(pointy - centroid);
+  // directionz = directionz * sign(pointz - centroid);
+  // pointx = pointx + directionx * (pixel_size * SNAP_DISTANCE_PIXELS);
+  // pointy = pointy + directiony * (pixel_size * SNAP_DISTANCE_PIXELS);
+  // pointz = pointz + directionz * (pixel_size * SNAP_DISTANCE_PIXELS);
 
   vec2 OffsetPosition = vec2(0.0, 0.0);
   if (a_VertexPosition.x == 0.0)
-    OffsetPosition = point1;
+    OffsetPosition = pointx;
   else if (a_VertexPosition.x == 1.0)
-    OffsetPosition = point2;
+    OffsetPosition = pointy;
   else if (a_VertexPosition.x == 2.0)
-    OffsetPosition = point3;
+    OffsetPosition = pointz;
 
   // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_ContourOffset);
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
