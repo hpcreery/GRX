@@ -2,6 +2,7 @@ import { Modal, ActionIcon, Accordion, Text, Anchor, Table, Paper, TableData, Kb
 import { useDisclosure } from "@mantine/hooks"
 import { IconUserQuestion } from "@tabler/icons-react"
 import { actions } from "@src/contexts/Spotlight"
+import EngineStats from "./toolbar/EngineStats"
 
 export default function InfoModal(): JSX.Element | null {
   const [helpModalOpen, { open, close }] = useDisclosure(false)
@@ -39,14 +40,14 @@ export default function InfoModal(): JSX.Element | null {
         <Title order={5}>About:</Title>
         <Paper shadow="xs" p="sm" withBorder>
           <Text>
-            GRX is a GPU-Accelerated, free, and open source software for viewing EDA Manufacturing Artwork files. Currently supporting Gerber, NC, GDSII, and DXF file
-            formats.
+            GRX is a GPU-Accelerated, free, and open source software for viewing EDA Manufacturing Artwork files. Currently supporting Gerber, NC,
+            GDSII, and DXF file formats.
           </Text>
         </Paper>
         <Space h="lg" />
         <Title order={5}>Keyboard Shortcuts:</Title>
         <Paper shadow="xs" p="0" withBorder>
-          <Table data={tableData} captionSide="top" verticalSpacing="sm" />
+          <Table data={tableData} captionSide="top" verticalSpacing="xs" />
         </Paper>
         <Space h="lg" />
         <Accordion variant="contained" defaultValue="customization">
@@ -56,7 +57,13 @@ export default function InfoModal(): JSX.Element | null {
               <Table data={tableData} captionSide="top" verticalSpacing="sm" />
             </Accordion.Panel>
           </Accordion.Item> */}
-          <Accordion.Item value="Contributors" key="4">
+          <Accordion.Item value="Stats for Nerds" key="1">
+            <Accordion.Control>Stats for Nerds</Accordion.Control>
+            <Accordion.Panel>
+              <EngineStats />
+            </Accordion.Panel>
+          </Accordion.Item>
+          <Accordion.Item value="Contributors" key="0">
             <Accordion.Control>Contributors</Accordion.Control>
             <Accordion.Panel>
               Built by{" "}
@@ -66,28 +73,6 @@ export default function InfoModal(): JSX.Element | null {
               and{" "}
               <Anchor href="https://github.com/phcreery" target="_blank">
                 Peyton Creery
-              </Anchor>
-              .
-            </Accordion.Panel>
-          </Accordion.Item>
-          <Accordion.Item value="Software Toolchain" key="1">
-            <Accordion.Control>Software Toolchain</Accordion.Control>
-            <Accordion.Panel>
-              GRX is built with{" "}
-              <Anchor href="https://electronjs.org/" target="_blank">
-                Electron
-              </Anchor>
-              ,{" "}
-              <Anchor href="https://reactjs.org/" target="_blank">
-                React
-              </Anchor>
-              ,{" "}
-              <Anchor href="https://mantine.dev/" target="_blank">
-                Maintine
-              </Anchor>
-              , and{" "}
-              <Anchor href="http://regl.party/" target="_blank">
-                REGL
               </Anchor>
               .
             </Accordion.Panel>
