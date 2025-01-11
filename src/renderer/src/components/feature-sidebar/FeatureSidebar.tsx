@@ -202,8 +202,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
                       sourceLayer: selection.sourceLayer,
                       units: selection.units,
                       shape: child.shape,
-                      distance: selection.distance,
-                      direction: selection.direction,
+                      snapPoint: selection.snapPoint,
                       children: [],
                     })}
                     <Divider my="sm" />
@@ -415,8 +414,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
                   sourceLayer: selection.sourceLayer,
                   units: selection.units,
                   shape: child.shape,
-                  distance: selection.distance,
-                  direction: selection.direction,
+                  snapPoint: selection.snapPoint,
                   children: [],
                 })}
                 <Divider my="sm" />

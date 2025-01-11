@@ -768,27 +768,22 @@ export class RenderEngineBackend {
 
     let closest: ShapeDistance | undefined = undefined
     this.world((context) => {
-      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2)
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const layerSelection = layer.queryDistance(pointer, this.settings.SNAP_MODE, context)
         for (const select of layerSelection) {
-          // if (select.distance >= 0.01 / scale) continue
           if (closest == undefined) {
             closest = select
             continue
           }
-          if (Math.abs(select.distance) < Math.abs(closest.distance)) {
+          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, (closest as ShapeDistance).snapPoint)) {
             closest = select
           }
-          // closest = select
         }
       }
     })
     if (closest == undefined) return pointer
-    const newPointer = vec2.create()
-    vec2.sub(newPointer, pointer, vec2.scale(vec2.create(), (closest as ShapeDistance).direction, (closest as ShapeDistance).distance))
-    return newPointer
+    return (closest as ShapeDistance).snapPoint
   }
 
   private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {

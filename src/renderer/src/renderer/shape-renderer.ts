@@ -64,8 +64,7 @@ interface ShapeRendererCommonContext {
 }
 
 export type ShapeDistance = {
-  distance: number
-  direction: vec2
+  snapPoint: vec2
   shape: Shapes.Shape
   children: ShapeDistance[]
 }
@@ -297,16 +296,38 @@ export class ShapeRenderer {
     return this
   }
 
+  /**
+   * Converts the pointer applying the current transform
+   * Does not mutate the original pointer, returns a new pointer
+   * @param pointer vec2 - the pointer to transform
+   * @returns vec2 - the transformed pointer
+   */
   protected transformPointer(pointer: vec2): vec2 {
     const pointerTransform = new ShapeTransform()
     Object.assign(pointerTransform, this.transform)
     pointerTransform.update(mat3.create())
-    return vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
+    const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
+    return newPointer
+  }
+
+  /**
+   * Converts the point applying the current transform
+   * Mutates the original direction
+   * @param point vec2 - the point to transform
+   * @returns vec2 - the transformed point
+   */
+  protected transformPoint(point: vec2): vec2 {
+    const directionTransform = new ShapeTransform()
+    Object.assign(directionTransform, this.transform)
+    directionTransform.update(mat3.create())
+    vec2.transformMat3(point, point, directionTransform.matrix)
+    return point
   }
 
   public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
+    const transformedPointer = this.transformPointer(pointer)
     context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
       console.error("Too many features to query")
@@ -351,13 +372,13 @@ export class ShapeRenderer {
       })
     }
 
-    renderDistance(pointer, this.distanceQueryRaw)
+    renderDistance(transformedPointer, this.distanceQueryRaw)
     const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
     const epsilons = 1 / scale
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
+    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
+    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
+    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
+    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
 
@@ -366,7 +387,8 @@ export class ShapeRenderer {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      const distance = distData[i]
+      let distance = distData[i]
+      distance *= this.transform.scale
 
       // const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
       const direction = vec2.fromValues(
@@ -374,11 +396,16 @@ export class ShapeRenderer {
         this.distanceUpQueryRaw[i] - this.distanceDownQueryRaw[i],
       )
       vec2.normalize(direction, direction)
+      // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
+      vec2.scale(direction, direction, 1 / this.transform.scale)
+
+      const nearestPoint = vec2.create()
+      vec2.sub(nearestPoint, transformedPointer, vec2.scale(vec2.create(), direction, distance))
+      this.transformPoint(nearestPoint)
 
       distances.push({
         shape: this.image[i / 4],
-        distance,
-        direction,
+        snapPoint: nearestPoint,
         children: [],
       })
       if (closestIndex == undefined) {
@@ -393,27 +420,34 @@ export class ShapeRenderer {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
         macro.renderer.transform.index = 0
-        const newPointer = macro.renderer.transformPointer(pointer)
-        const macroFeatures = macro.renderer.queryDistance(newPointer, snapMode, context)
+        const macroFeatures = macro.renderer.queryDistance(transformedPointer, snapMode, context)
         if (macroFeatures.length > 0) {
-          const closest = macroFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
+          macroFeatures.map((measurement) => this.transformPoint(measurement.snapPoint))
+          const closest = macroFeatures.reduce((prev, current) => {
+            const prevDist = vec2.distance(pointer, prev.snapPoint)
+            const currentDist = vec2.distance(pointer, current.snapPoint)
+            return prevDist < currentDist ? prev : current
+          })
           distances.push({
             shape: record,
-            distance: closest.distance,
-            direction: closest.direction,
+            snapPoint: closest.snapPoint,
             children: macroFeatures,
           })
         }
       })
     })
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, snapMode, context)
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, snapMode, context)
       if (stepAndRepeatFeatures.length > 0) {
-        const closest = stepAndRepeatFeatures.reduce((prev, current) => (prev.distance < current.distance ? prev : current))
+        stepAndRepeatFeatures.map((measurement) => this.transformPoint(measurement.snapPoint))
+        const closest = stepAndRepeatFeatures.reduce((prev, current) => {
+          const prevDist = vec2.distance(pointer, prev.snapPoint)
+          const currentDist = vec2.distance(pointer, current.snapPoint)
+          return prevDist < currentDist ? prev : current
+        })
         distances.push({
           shape: stepAndRepeat.record,
-          distance: closest.distance,
-          direction: closest.direction,
+          snapPoint: closest.snapPoint,
           children: stepAndRepeatFeatures,
         })
       }
@@ -580,10 +614,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length
       this.transform.index = 0
-
-      const newPointer = this.transformPointer(pointer)
-
-      const nestedFeatures = super.queryDistance(newPointer, snapMode, context)
+      const nestedFeatures = super.queryDistance(pointer, snapMode, context)
       features.push(...nestedFeatures)
     })
     return features
