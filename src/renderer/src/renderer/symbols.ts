@@ -342,12 +342,16 @@ export class PolygonSymbol extends StandardSymbol {
 }
 
 // THESE ARE SUDO-SYMBOLS THAT ARE MADE UP OF OTHER PRIMARY SYMBOLS
-export class RoundThermalSymbol extends StandardSymbol {
+export class RoundedRoundThermalSymbol extends StandardSymbol {
   constructor(
-    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap" | "round"> &
+    symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap"> &
       Partial<{ id: string; attributes: AttributeCollection }>,
   ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal, ...symbol })
+    super({
+      symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal,
+      round: 1,
+      ...symbol,
+    })
   }
 }
 
@@ -356,7 +360,11 @@ export class SquaredRoundThermalSymbol extends StandardSymbol {
     symbol: Pick<TStandardSymbol, "outer_dia" | "inner_dia" | "angle" | "num_spokes" | "gap"> &
       Partial<{ id: string; attributes: AttributeCollection }>,
   ) {
-    super({ symbol: STANDARD_SYMBOLS_MAP.Square_Circle_Thermal, ...symbol })
+    super({
+      symbol: STANDARD_SYMBOLS_MAP.Circle_Thermal,
+      round: 0,
+      ...symbol,
+    })
   }
 }
 
