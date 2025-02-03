@@ -83,6 +83,7 @@ export interface RenderTransform {
   zoom: number
   position: vec2
   velocity: vec2
+  timestamp: Date
   dragging: boolean
   matrix: mat3
   matrixInverse: mat3
@@ -197,6 +198,7 @@ export class RenderEngineBackend {
     zoom: 1,
     position: [0, 0],
     velocity: [0, 0],
+    timestamp: new Date(),
     dragging: false,
     matrix: mat3.create(),
     matrixInverse: mat3.create(),
@@ -462,7 +464,6 @@ export class RenderEngineBackend {
     const { dragging } = this.transform
     if (this.transform.velocity[0] === 0 && this.transform.velocity[1] === 0) return
     if (dragging) return
-    // const vel_rounded = this.transform.velocity.map((v) => Math.round(v)) as vec2
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
     this.transform.update()
@@ -471,7 +472,6 @@ export class RenderEngineBackend {
       this.transform.velocity[1] = 0
     } else {
       setTimeout(() => this.toss(), this.settings.MSPFRAME)
-      // setTimeout(this.toss.bind(this), this.SETTINGS.MSPFRAME)
     }
   }
 
@@ -480,6 +480,7 @@ export class RenderEngineBackend {
     this.transform.velocity = [x, y]
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     this.transform.update()
+    this.transform.timestamp = new Date()
   }
 
   public grabViewport(): void {
@@ -489,6 +490,11 @@ export class RenderEngineBackend {
 
   public releaseViewport(): void {
     this.transform.dragging = false
+    const currentTimestamp = new Date()
+    const timeDiff = currentTimestamp.getTime() - this.transform.timestamp.getTime()
+    if (timeDiff > this.settings.MSPFRAME * 10) {
+      this.transform.velocity = [0, 0]
+    }
     this.toss()
   }
 
