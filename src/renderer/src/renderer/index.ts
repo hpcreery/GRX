@@ -1,10 +1,8 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine?worker"
-import type { GridRenderProps, QueryFeature, RenderEngineBackend, RenderSettings, RenderProps } from "./engine"
+import type { GridRenderProps, QuerySelection, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
 import { AddLayerProps } from "./plugins"
-
-import font from "./text/glyph/font.png?arraybuffer"
-import { fontInfo } from "./text/glyph/font"
+import { PointerMode, SnapMode } from "./types"
 
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
@@ -23,7 +21,8 @@ interface PointerCoordinates {
 }
 
 export interface PointerSettings {
-  mode: "move" | "select" | "measure"
+  // mode: "move" | "select" | "measure"
+  mode: PointerMode
 }
 
 export const PointerEvents = {
@@ -47,6 +46,8 @@ export class RenderEngine {
         this.MSPFRAME = 1000 / value
       },
       OUTLINE_MODE: false,
+      SKELETON_MODE: false,
+      SNAP_MODE: SnapMode.EDGE,
       COLOR_BLEND: "Contrast",
       BACKGROUND_COLOR: [0, 0, 0, 0],
       MAX_ZOOM: 1000,
@@ -93,14 +94,17 @@ export class RenderEngine {
   )
   public pointerSettings: PointerSettings = new Proxy(
     {
-      mode: "move",
+      mode: PointerMode.MOVE,
     },
     {
       set: (target, name, value): boolean => {
         if (name === "mode") {
-          if (value === "move") this.CONTAINER.style.cursor = "grab"
-          if (value === "select") this.CONTAINER.style.cursor = "crosshair"
-          if (value === "measure") this.CONTAINER.style.cursor = "crosshair"
+          if (value === PointerMode.MOVE) this.CONTAINER.style.cursor = "grab"
+          if (value === PointerMode.SELECT) this.CONTAINER.style.cursor = "crosshair"
+          if (value === PointerMode.MEASURE) {
+            this.CONTAINER.style.cursor = "crosshair"
+            this.settings.SHOW_DATUMS = true
+          }
         }
         target[name] = value
         return true
@@ -160,27 +164,31 @@ export class RenderEngine {
     })
   }
 
-  public getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-    // Get the mouse position relative to the canvas
-    const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-    return [e.clientX - offsetX, height - (e.clientY - offsetY)]
-  }
-
-  public async getMouseNormalizedWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
-    const { width, height } = this.CONTAINER.getBoundingClientRect()
-    const mouse_element_pos = this.getMouseCanvasCoordinates(e)
-
-    // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
-    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
-
-    return mouse_normalize_pos
-  }
-
   public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
+    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+
+    // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
+    // but rather the coordinates of the world
+    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+      // Get the mouse position relative to the canvas
+      // const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
+      return [e.clientX - offsetX, height - (e.clientY - offsetY)]
+    }
+
+    function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
+      // const { width, height } = this.CONTAINER.getBoundingClientRect()
+      const mouse_element_pos = getMouseCanvasCoordinates(e)
+
+      // Normalize the mouse position to the canvas
+      const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
+      // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+      // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+      return mouse_normalize_pos
+    }
+
     const backend = await this.backend
-    return backend.getWorldPosition(...(await this.getMouseNormalizedWorldCoordinates(e)))
+    return backend.getWorldPosition(...getMouseNormalizedWorldCoordinates(e))
   }
 
   public async zoomFit(): Promise<void> {
@@ -216,30 +224,36 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      const [x, y] = await this.getMouseWorldCoordinates(e)
       this.pointerCache.push(e)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         this.CONTAINER.style.cursor = "grabbing"
         await backend.grabViewport()
-      } else if (this.pointerSettings.mode === "select") {
+      } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         this.CONTAINER.style.cursor = "wait"
-        const [x, y] = this.getMouseCanvasCoordinates(e)
         const features = await backend.select([x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
-          new CustomEvent<QueryFeature[]>(PointerEvents.POINTER_SELECT, {
+          new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
           }),
         )
         this.CONTAINER.style.cursor = "crosshair"
-      } else if (this.pointerSettings.mode === "measure") {
+      } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         this.CONTAINER.style.cursor = "crosshair"
         const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        backend.addMeasurement([x1, y1])
+        const currentMeasurement = await backend.getCurrentMeasurement()
+        if (currentMeasurement != null) {
+          backend.finishMeasurement([x1, y1])
+        } else {
+          backend.addMeasurement([x1, y1])
+        }
       }
     }
     this.CONTAINER.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === "move") {
+      // const [x, y] = await this.getMouseWorldCoordinates(e)
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         this.CONTAINER.style.cursor = "grab"
         await backend.releaseViewport()
       }
@@ -247,27 +261,27 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         await backend.releaseViewport()
       }
       removePointerCache(e)
     }
     this.CONTAINER.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         await backend.releaseViewport()
       }
       removePointerCache(e)
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+      const [x, y] = await this.getMouseWorldCoordinates(e)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
 
-      if (this.pointerSettings.mode === "measure") {
+      if (this.pointerSettings.mode === PointerMode.MEASURE) {
         this.CONTAINER.style.cursor = "crosshair"
-        const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        backend.updateMeasurement([x1, y1])
+        backend.updateMeasurement([x, y])
       }
 
       if (!(await backend.isDragging())) {
@@ -275,7 +289,7 @@ export class RenderEngine {
         return
       }
 
-      if (this.pointerSettings.mode === "move") {
+      if (this.pointerSettings.mode === PointerMode.MOVE) {
         // If more than 2 pointers are down, check for pinch gestures
         if (this.pointerCache.length >= 2) {
           const p1 = this.pointerCache[0]
@@ -345,30 +359,6 @@ export class RenderEngine {
     backend.render(props)
   }
 
-  /**
-   * Send the glyph data to the engine
-   * This has now been deprecated in favor of using the font renderer
-   * Will be removed in the future
-   * @deprecated
-   */
-  // @ts-ignore - unused
-  private sendGlyphData(): void {
-    const canvas = document.createElement("canvas")
-    const context = canvas.getContext("2d")
-    if (!context) throw new Error("Could not get 2d context")
-    canvas.width = fontInfo.textureWidth
-    canvas.height = fontInfo.textureHeight
-    const image = new Image()
-    image.onload = (): void => {
-      context.drawImage(image, 0, 0)
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height)
-      this.backend.then((engine) => {
-        engine.initializeGlyphRenderer(imageData.data)
-      })
-    }
-    image.src = URL.createObjectURL(new Blob([font]))
-  }
-
   private sendFontData(): void {
     const f = new FontFace("cozette", `url(${cozetteFont})`)
     f.load().then((font) => {
@@ -376,21 +366,21 @@ export class RenderEngine {
       const canvas = document.createElement("canvas")
       const context = canvas.getContext("2d")
       if (!context) throw new Error("Could not get 2d context")
-      canvas.width = cozetteFontInfo.textureWidth
-      canvas.height = cozetteFontInfo.textureHeight
-      context.font = "13px cozette"
+      canvas.width = cozetteFontInfo.textureSize[0]
+      canvas.height = cozetteFontInfo.textureSize[1]
+      context.font = `${cozetteFontInfo.fontSize[1]}px cozette`
       context.fillStyle = "white"
       context.textBaseline = "top"
-      context.lineWidth = 2
+      context.lineWidth = 3
       context.strokeStyle = "black"
-      const characters = Object.keys(cozetteFontInfo.glyphInfos)
+      const characters = Object.keys(cozetteFontInfo.characterLocation)
       for (let i = 0; i < characters.length; i++) {
         const char = characters[i]
-        context.strokeText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
-        context.fillText(char, cozetteFontInfo.glyphInfos[char].x, cozetteFontInfo.glyphInfos[char].y)
+        context.strokeText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
+        context.fillText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
       }
 
-      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureWidth, cozetteFontInfo.textureHeight)
+      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0], cozetteFontInfo.textureSize[1])
       this.backend.then((engine) => {
         engine.initializeFontRenderer(imageData.data)
       })
@@ -406,12 +396,17 @@ export class RenderEngine {
   }
 
   public downloadImage(): void {
-    const canvasUrl = this.canvasGL.toDataURL("image/jpeg", 1)
+    const canvasUrl = this.canvasGL.toDataURL("image/png", 1)
     const createEl = document.createElement("a")
     createEl.href = canvasUrl
-    createEl.download = "grx-screenshot.jpeg"
+    createEl.download = "grx-screenshot.png"
     createEl.click()
     createEl.remove()
+  }
+
+  public async getStats(): Promise<Stats> {
+    const backend = await this.backend
+    return backend.getStats()
   }
 
   public async destroy(): Promise<void> {

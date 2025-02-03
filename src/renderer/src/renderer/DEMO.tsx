@@ -1,22 +1,24 @@
-import React from "react"
+import React, { useMemo } from "react"
 import "../App.css"
 import * as Symbols from "./symbols"
 import * as Shapes from "./shapes"
 import { RenderEngine } from "."
-import { Button, Switch, Box } from "@mantine/core"
+import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
+import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
+import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
-// import gdsiiFile from '@lib/gdsii/testdata/inv.gds2?arraybuffer'
+// import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
-// import cmp from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?raw'
-// import drd from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?raw'
-// import gko from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?raw'
-// import plc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?raw'
-// import pls from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?raw'
-// import sol from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?raw'
-// import stc from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?raw'
-// import sts from '@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?raw'
+// import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
+// import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
+// import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
+// import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
+// import pls from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?arraybuffer"
+// import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
+// import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
+// import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
 // import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
@@ -46,12 +48,13 @@ new Array<number>(100).fill(0).map((_, i) => {
       //   inner_dia: 0,
 
       // }),
-      symbol: new Symbols.RoundedRoundThermalSymbol({
+      symbol: new Symbols.CircleThermalSymbol({
         inner_dia: 0.005,
         outer_dia: 0.01,
         angle: 20,
         gap: 0.001,
         num_spokes: 2,
+        round: 1,
       }),
       // The symbol with index <sym_num> is enlarged or shrunk by factor <resize_factor>.
       // Polarity. 0 = negative, 1 = positive
@@ -241,35 +244,35 @@ new Array<number>(N_SURFACES).fill(0).map((_, i) => {
   )
 })
 
-SURFACE_RECORDS_ARRAY.push(
-  new Shapes.Surface({
-    polarity: 1,
-  }).addContour(
-    new Shapes.Contour({
-      poly_type: 1,
-      // Start point.
-      xs: -1,
-      ys: 0,
-    }).addSegments([
-      // new Shapes.Contour_Line_Segment({
-      //   x: 0.02 + i * 0.1,
-      //   y: -0.02 + i * 0.1,
-      // }),
-      new Shapes.Contour_Arc_Segment({
-        x: 0,
-        y: -1,
-        xc: 0,
-        yc: 0,
-        // computer the center coordinates of the Shapes.Arc with a radius of 0.1
-        clockwise: 0,
-      }),
-      new Shapes.Contour_Line_Segment({
-        x: -1,
-        y: 0,
-      }),
-    ]),
-  ),
-)
+// SURFACE_RECORDS_ARRAY.push(
+//   new Shapes.Surface({
+//     polarity: 1,
+//   }).addContour(
+//     new Shapes.Contour({
+//       poly_type: 1,
+//       // Start point.
+//       xs: -1,
+//       ys: 0,
+//     }).addSegments([
+//       // new Shapes.Contour_Line_Segment({
+//       //   x: 0.02 + i * 0.1,
+//       //   y: -0.02 + i * 0.1,
+//       // }),
+//       new Shapes.Contour_Arc_Segment({
+//         x: 0,
+//         y: -1,
+//         xc: 0,
+//         yc: 0,
+//         // computer the center coordinates of the Shapes.Arc with a radius of 0.1
+//         clockwise: 0,
+//       }),
+//       new Shapes.Contour_Line_Segment({
+//         x: -1,
+//         y: 0,
+//       }),
+//     ]),
+//   ),
+// )
 
 const SURFACE_ARC_TEST: Shapes.Surface[] = []
 
@@ -487,8 +490,8 @@ new Array<number>(Symbols.STANDARD_SYMBOLS.length).fill(0).map((_, i) => {
 //   })
 
 const round_sym = new Symbols.RoundSymbol({
-  outer_dia: 1,
-  inner_dia: 0.9,
+  outer_dia: 0.1,
+  inner_dia: 0,
 })
 
 SYMBOLS.push(round_sym)
@@ -1184,7 +1187,8 @@ DATUMS.push(
 function REGLApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [engine, setEngine] = React.useState<RenderEngine>()
-  const [_outlineMode, setOutlineMode] = React.useState<boolean>(true)
+  const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
+  const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
 
   React.useEffect(() => {
@@ -1231,17 +1235,17 @@ function REGLApp(): JSX.Element {
     //   ]
     // })
 
-    Engine.addLayer({
-      name: "pads",
-      // transform: {
-      //   datum: [0.5, 0],
-      //   scale: 1,
-      //   rotation: 0,
-      //   mirror: 1,
-      // },
-      image: SQUARE_GRID,
-      units: "mm",
-    })
+    // Engine.addLayer({
+    //   name: "pads",
+    //   // transform: {
+    //   //   datum: [0.5, 0],
+    //   //   scale: 1,
+    //   //   rotation: 0,
+    //   //   mirror: 1,
+    //   // },
+    //   image: SQUARE_GRID,
+    //   units: "mm",
+    // })
 
     // Engine.addLayer({
     //   name: '+/- lines',
@@ -1299,16 +1303,6 @@ function REGLApp(): JSX.Element {
     //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     // })
 
-    // Engine.addLayer({
-    //   name: 'brush lines',
-    //   image: LINE_RECORDS_ARRAY_POS,
-    //   units: 'mm'
-    // })
-
-    // Engine.addLayer({
-    //   name: 'brush arcs',
-    //   image: ARC_BRUSH_RECORDS_ARRAY_POS,
-    //   units: 'mm'
     // })
 
     // setTimeout(() => {
@@ -1352,11 +1346,11 @@ function REGLApp(): JSX.Element {
     //   image: [...SURFACE_RECORDS_ARRAY, ...ARC_RECORDS_ARRAY]
     // })
 
-    Engine.addLayer({
-      name: "datums",
-      image: DATUMS,
-      units: "mm",
-    })
+    // Engine.addLayer({
+    //   name: "datums",
+    //   image: DATUMS,
+    //   units: "mm",
+    // })
 
     // Engine.addLayer({
     //   name: 'validation',
@@ -1369,61 +1363,61 @@ function REGLApp(): JSX.Element {
     // })
 
     // Engine.addFile({
-    //   file: cmp,
-    //   format: 'rs274x',
+    //   buffer: cmp,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'cmp',
-    //   }
+    //     name: "cmp",
+    //   },
     // })
     // Engine.addFile({
-    //   file: drd,
-    //   format: 'rs274x',
+    //   buffer: drd,
+    //   format: "nc",
     //   props: {
-    //     name: 'drd',
-    //   }
+    //     name: "drd",
+    //   },
     // })
     // Engine.addFile({
-    //   file: gko,
-    //   format: 'rs274x',
+    //   buffer: gko,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'gko',
-    //   }
+    //     name: "gko",
+    //   },
     // })
     // Engine.addFile({
-    //   file: plc,
-    //   format: 'rs274x',
+    //   buffer: plc,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'plc',
+    //     name: "plc",
     //     visible: true,
-    //   }
+    //   },
     // })
     // Engine.addFile({
-    //   file: pls,
-    //   format: 'rs274x',
+    //   buffer: pls,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'pls',
-    //   }
+    //     name: "pls",
+    //   },
     // })
     // Engine.addFile({
-    //   file: stc,
-    //   format: 'rs274x',
+    //   buffer: stc,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'stc',
-    //   }
+    //     name: "stc",
+    //   },
     // })
     // Engine.addFile({
-    //   file: sts,
-    //   format: 'rs274x',
+    //   buffer: sts,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'sts',
-    //   }
+    //     name: "sts",
+    //   },
     // })
     // Engine.addFile({
-    //   file: sol,
-    //   format: 'rs274x',
+    //   buffer: sol,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'sol',
-    //   }
+    //     name: "sol",
+    //   },
     // })
 
     // Engine.addLayer({
@@ -1464,11 +1458,12 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    // Engine.addLayer({
-    //   name: 'surfaces',
-    //   image: SURFACE_RECORDS_ARRAY,
-    //   units: 'mm'
-    // })
+    Engine.addLayer({
+      name: "surfaces",
+      visible: false,
+      image: SURFACE_RECORDS_ARRAY,
+      units: "mm",
+    })
 
     // Engine.addFile({
     //   file: gtl_mm,
@@ -1479,16 +1474,16 @@ function REGLApp(): JSX.Element {
     // })
 
     // Engine.addLayer({
-    //   name: 'surface test',
+    //   name: "surface test",
     //   image: SURFACE_ARC_TEST,
-    //   units: 'mm'
+    //   units: "mm",
     // })
 
     // Engine.addFile({
     //   buffer: gdsiiFile,
-    //   format: 'gdsii',
+    //   format: "gdsii",
     //   props: {
-    //     name: 'gdsii',
+    //     name: "gdsii",
     //   },
     //   // units: 'mm'
     // })
@@ -1517,6 +1512,569 @@ function REGLApp(): JSX.Element {
     //   // transform.position[1] = 3
     //   transform.update()
     // }))
+
+    // Engine.addLayer({
+    //   name: "Small Lines",
+    //   visible: true,
+    //   units: "mm",
+    //   image: [
+    //     new Shapes.Line({
+    //       xs: 0,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 0,
+    //       symbol: new Symbols.StandardSymbol({
+    //         id: "polyline-line",
+    //         symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    //         outer_dia: 0.003,
+    //       }),
+    //       polarity: 1,
+    //     }),
+    //     new Shapes.Line({
+    //       xs: 1,
+    //       ys: 0,
+    //       xe: 1,
+    //       ye: 1,
+    //       symbol: new Symbols.StandardSymbol({
+    //         id: "polyline-line",
+    //         symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+    //         outer_dia: 0.03,
+    //       }),
+    //       polarity: 1,
+    //     }),
+    //   ],
+    // })
+
+    Engine.addLayer({
+      name: "Poly Lines",
+      visible: true,
+      units: "mm",
+      image: [
+        new Shapes.PolyLine({
+          xs: 0,
+          ys: 0,
+          // xe: 1,
+          // ye: 0,
+          // symbol: new Symbols.StandardSymbol({
+          //   id: "polyline-line",
+          //   symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+          //   outer_dia: 0.003,
+          // }),
+          polarity: 1,
+          width: 0.005,
+          pathtype: "round",
+          cornertype: "round",
+          lines: [
+            {
+              x: 1,
+              y: 0,
+            },
+            {
+              x: 1,
+              y: 1,
+            },
+            {
+              x: 0,
+              y: 1,
+            },
+            {
+              x: 0,
+              y: 0,
+            },
+          ],
+        }),
+      ],
+    })
+
+    Engine.addLayer({
+      name: "Lines",
+      visible: false,
+      units: "cm",
+      image: [
+        new Shapes.Line({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          // symbol: new Symbols.SquareSymbol({
+          //   width: 0.1,
+          //   height: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.NullSymbol({}),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 1,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 1,
+          ys: 1,
+          xe: 0,
+          ye: 1,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 1,
+          xe: 0,
+          ye: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+        new Shapes.Line({
+          xs: 0,
+          ys: 1,
+          xe: 1,
+          ye: 0,
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 0.1,
+          //   inner_dia: 0,
+          // }),
+          symbol: new Symbols.SquareSymbol({
+            width: 0.1,
+            height: 0.1,
+            inner_dia: 0,
+          }),
+          polarity: 1,
+        }),
+      ],
+    })
+
+    Engine.addLayer({
+      name: "Arcs",
+      visible: false,
+      units: "cm",
+      image: [
+        new Shapes.Arc({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 0,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 1,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          xc: 1,
+          yc: 0.5,
+          clockwise: 1,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 0,
+          ys: 0,
+          xe: 1,
+          ye: 0,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 0,
+          xe: 1,
+          ye: 1,
+          xc: 1,
+          yc: 0.5,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 0,
+          ys: 0,
+          xe: 0.5,
+          ye: 0.5,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 0.5,
+          ys: 0.5,
+          xe: 1,
+          ye: 0,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 0,
+          xe: 0.5,
+          ye: 0.5,
+          xc: 0.5,
+          yc: 0,
+          clockwise: 0,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+        new Shapes.Arc({
+          xs: 1,
+          ys: 1,
+          xe: 1,
+          ye: 1,
+          xc: 0.5,
+          yc: 0.5,
+          clockwise: 1,
+          symbol: round_sym,
+          polarity: 1,
+        }),
+      ],
+    })
+
+    Engine.addLayer({
+      name: "circle",
+      units: "cm",
+      visible: false,
+      image: [
+        new Shapes.Pad({
+          x: 0,
+          y: 5,
+          rotation: 0,
+          resize_factor: 1.0,
+          mirror_x: 0,
+          mirror_y: 0,
+          symbol: new Symbols.RectangleSymbol({
+            width: 2,
+            height: 1,
+            inner_dia: 0.5,
+          }),
+        }),
+        new Shapes.Pad({
+          x: 0,
+          y: 0,
+          rotation: 10,
+          resize_factor: 2.0,
+          mirror_x: 0,
+          mirror_y: 1,
+          // symbol: new Symbols.NullSymbol({}),
+          // symbol: new Symbols.RoundSymbol({
+          //   outer_dia: 1,
+          //   inner_dia: 0.5,
+          // }),
+          symbol: new Symbols.RectangleSymbol({
+            width: 2,
+            height: 1,
+            inner_dia: 0.5,
+          }),
+          // symbol: new Symbols.RoundedRectangleSymbol({
+          //   width: 2,
+          //   height: 1,
+          //   corner_radius: 0.2,
+          //   inner_dia: 0.5,
+          //   corners: 1,
+          // }),
+          // symbol: new Symbols.OvalSymbol({
+          //   width: 2,
+          //   height: 1,
+          //   inner_dia: 0.5,
+          // }),
+          // symbol: new Symbols.ChamferedRectangleSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   inner_dia: 0,
+          // }),
+          // symbol: new Symbols.DiamondSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   inner_dia: 0.5,
+          // }),
+          // symbol: new Symbols.OctagonSymbol({
+          //   width: 2.0,
+          //   height: 2.0,
+          //   corner_radius: 0.5,
+          //   inner_dia: 0.5,
+          // }),
+          // symbol: new Symbols.RoundDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          // }),
+          // symbol: new Symbols.SquareDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 0.8,
+          // }),
+          // symbol: new Symbols.RoundedSquareDonutSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.8,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          // }),
+          // symbol: new Symbols.RectangleDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   line_width: 0.1,
+          // }),
+          // symbol: new Symbols.RoundedRectangleDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   line_width: 0.1,
+          //   inner_dia: 0.0,
+          // }),
+          // symbol: new Symbols.OvalDonutSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   line_width: 0.1,
+          // }),
+          // symbol: new Symbols.HorizontalHexagonSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          // }),
+          // symbol: new Symbols.VerticalHexagonSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          // }),
+          // symbol: new Symbols.ButterflySymbol({
+          //   outer_dia: 2.0,
+          // }),
+          // symbol: new Symbols.SquareButterflySymbol({
+          //   width: 2.0,
+          // }),
+          // symbol: new Symbols.TriangleSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          // }),
+          // symbol: new Symbols.HalfOvalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          // }),
+
+          // symbol: new Symbols.CircleThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.8,
+          //   gap: 0.2,
+          //   angle: 10,
+          //   num_spokes: 4,
+          //   round: 1,
+          // }),
+
+          // symbol: new Symbols.RectangleThermalSymbol({
+          //   width: 1.8,
+          //   height: 1.8,
+          //   line_width: 0.1,
+          //   gap: 0.2,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   corners: 0,
+          //   corner_radius: 0,
+          //   round: 1,
+          // }),
+
+          // symbol: new Symbols.RectangleThermalOpenCornersSymbol({
+          //   width: 2.8,
+          //   height: 1.8,
+          //   line_width: 0.1,
+          //   gap: 0.2,
+          //   angle: 20,
+          //   num_spokes: 4,
+          // }),
+
+          // symbol: new Symbols.SquareCircleThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.8,
+          //   gap: 0.2,
+          //   angle: 10,
+          //   num_spokes: 4,
+          // }),
+
+          // symbol: new Symbols.ConstrainedRectangleThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.2,
+          //   angle: 45,
+          //   num_spokes: 2,
+          //   line_width: 0.1,
+          //   corners: 0,
+          //   corner_radius: 0,
+          //   round: 1,
+          // }),
+
+          // symbol: new Symbols.SquareThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.4,
+          //   angle: 0,
+          //   num_spokes: 5,
+          // }),
+          // symbol: new Symbols.OpenCornersSquareThermalSymbol({
+          //   outer_dia: 2.0,
+          //   gap: 0.4,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   line_width: 0.5,
+          // }),
+          // symbol: new Symbols.LineThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.1,
+          //   angle: 45,
+          //   num_spokes: 4,
+          // }),
+          // symbol: new Symbols.SquareRoundThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.0,
+          //   gap: 0.4,
+          //   angle: 10,
+          //   num_spokes: 1,
+          // }),
+          // symbol: new Symbols.RectangularThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.2,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   line_width: 0.1,
+          //   round: 1,
+          // }),
+          // symbol: new Symbols.RectangularThermalOpenCornersSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.3,
+          //   angle: 45,
+          //   line_width: 0.1,
+          //   num_spokes: 4,
+          // }),
+          // symbol: new Symbols.RoundedSquareThermalSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.5,
+          //   corner_radius: 0.4,
+          //   corners: 15,
+          //   gap: 0.4,
+          //   angle: 29,
+          //   num_spokes: 0,
+          //   round: 1,
+          // }),
+          // symbol: new Symbols.RoundedSquareThermalOpenCornersSymbol({
+          //   outer_dia: 2.0,
+          //   inner_dia: 1.9,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   gap: 0.4,
+          //   angle: 45,
+          //   num_spokes: 4,
+          //   // line_width: 0.1,
+          // }),
+          // symbol: new Symbols.RoundedRectangularThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   corner_radius: 0.2,
+          //   corners: 1,
+          //   angle: 45,
+          //   num_spokes: 5,
+          //   line_width: 0.1,
+          //   gap: 0.1,
+          //   round: 0,
+          // }),
+          // symbol: new Symbols.OvalThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.1,
+          //   angle: 0,
+          //   num_spokes: 4,
+          //   line_width: 0.1,
+          //   round: 1,
+          // }),
+          // symbol: new Symbols.OblongThermalSymbol({
+          //   width: 2.0,
+          //   height: 1.0,
+          //   gap: 0.1,
+          //   angle: 90,
+          //   num_spokes: 2,
+          //   line_width: 0.1,
+          //   round: 0,
+          // }),
+
+          // symbol: new Symbols.MoireGerberSymbol({
+          //   outer_dia: 2.0,
+          //   ring_width: 0.1,
+          //   ring_gap: 0.1,
+          //   num_rings: 2,
+          //   line_width: 0.1,
+          //   line_length: 2.1,
+          //   angle: 0,
+          // }),
+
+          // symbol: new Symbols.MoireODBSymbol({
+          //   ring_width: 0.1,
+          //   ring_gap: 0.1,
+          //   num_rings: 3,
+          //   line_width: 0.1,
+          //   line_length: 2.0,
+          //   angle: 20,
+          // }),
+        }),
+      ],
+    })
 
     Engine.render({
       force: true,
@@ -1553,8 +2111,9 @@ function REGLApp(): JSX.Element {
             width: "100px",
           }}
         >
-          <StatsWidget />
-          <MouseCoordinates engine={engine} />
+          {/* <StatsWidget /> */}
+          <REGLStatsWidget engine={engine} />
+          <MouseCoordinates engine={engine} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
@@ -1590,6 +2149,19 @@ function REGLApp(): JSX.Element {
               )
             }}
           />
+          Skeleton Mode
+          <Switch
+            defaultChecked={engine.settings.SKELETON_MODE}
+            onChange={(e): void => {
+              engine.settings.SKELETON_MODE = e.target.checked
+              setSkeletonMode(e.target.checked)
+              engine.backend.then((backend) =>
+                backend.getLayers().then((layers) => {
+                  setLayers(layers)
+                }),
+              )
+            }}
+          />
           {/* Grid Toggle
           <Switch
             defaultChecked={engine.settings.OUTLINE_MODE}
@@ -1610,6 +2182,15 @@ function REGLApp(): JSX.Element {
               engine.settings.ZOOM_TO_CURSOR = e.target.checked
             }}
           />
+          Mouse Mode
+          <SegmentedControl
+            // data={["move", "select", "measure"] as const}
+            // onChange={(mode) => (engine.pointerSettings.mode = mode as "select" | "move" | "measure")}
+            data={[...POINTER_MODES]}
+            onChange={(mode) => (engine.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)}
+          />
+          Snap Mode
+          <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => (engine.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)} />
           {layers.map((layer, i) => {
             return (
               <div key={i}>
@@ -1630,38 +2211,111 @@ function REGLApp(): JSX.Element {
   )
 }
 
-function StatsWidget(): JSX.Element {
+// function StatsWidget(): JSX.Element {
+//   const [fps, setFPS] = React.useState<number>(0)
+//   const [avgFPS, setAvgFPS] = React.useState<number>(0)
+//   const [memory, setMemory] = React.useState<number>(0)
+
+//   let totalFPS = 0
+//   const frameTimes: number[] = []
+//   let frameCursor = 0
+//   const maxFrames = 100
+//   let numFrames = 0
+
+//   let then = performance.now()
+//   function updateFPS(now: number): void {
+//     now *= 0.001
+//     const deltaTime = now - then
+//     then = now
+//     const fps = 1 / deltaTime
+//     setFPS(Math.round(fps))
+//     totalFPS += fps - (frameTimes[frameCursor] || 0)
+//     frameTimes[frameCursor++] = fps
+//     numFrames = Math.max(numFrames, frameCursor)
+//     frameCursor %= maxFrames
+//     const avgFPS = totalFPS / numFrames
+//     setAvgFPS(Math.round(avgFPS))
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
+//     setMemory(Math.round(memoryUsed))
+//     requestAnimationFrame(updateFPS)
+//   }
+
+//   React.useEffect(() => {
+//     requestAnimationFrame(updateFPS)
+//   }, [])
+
+//   return (
+//     <div
+//       style={{
+//         position: "absolute",
+//         top: 0,
+//         right: 0,
+//         padding: 10,
+//         background: "rgba(0,0,0,0.5)",
+//         color: "white",
+//         fontFamily: "monospace",
+//         fontSize: 12,
+//         pointerEvents: "none",
+//         zIndex: 100,
+//         userSelect: "none",
+//       }}
+//     >
+//       <div>FPS: {fps}</div>
+//       <div>Avg FPS: {avgFPS}</div>
+//       <div>Memory: {memory} MB</div>
+//     </div>
+//   )
+// }
+
+function REGLStatsWidget(props: { engine: RenderEngine }): JSX.Element {
+  const [count, setCount] = React.useState<number>(0)
+  const [cpuTime, setCPUTime] = React.useState<number>(0)
+  const [gpuTime, setGPUTime] = React.useState<number>(0)
+  const [averageGPUTime, setAverageGPUTime] = React.useState<number>(0)
+  const [averageCPUTime, setAverageCPUTime] = React.useState<number>(0)
   const [fps, setFPS] = React.useState<number>(0)
-  const [avgFPS, setAvgFPS] = React.useState<number>(0)
-  const [memory, setMemory] = React.useState<number>(0)
+  const [gpuFPS, setGPUFPS] = React.useState<number>(0)
+  const [textureSize, setTextureSize] = React.useState<number>(0)
+  const [bufferSize, setBufferSize] = React.useState<number>(0)
+  const [renderBufferSize, setRenderBufferSize] = React.useState<number>(0)
+  const [bufferCount, setBufferCount] = React.useState<number>(0)
+  const [textureCount, setTextureCount] = React.useState<number>(0)
+  const [shaderCount, setShaderCount] = React.useState<number>(0)
+  const [framebufferCount, setFramebufferCount] = React.useState<number>(0)
+  const [elementsCount, setElementsCount] = React.useState<number>(0)
 
-  let totalFPS = 0
-  const frameTimes: number[] = []
-  let frameCursor = 0
-  const maxFrames = 100
-  let numFrames = 0
+  const round = (value: number, precision: number): number => {
+    const multiplier = Math.pow(10, precision || 0)
+    return Math.round(value * multiplier) / multiplier
+  }
 
-  let then = performance.now()
-  function updateFPS(now: number): void {
-    now *= 0.001
-    const deltaTime = now - then
-    then = now
-    const fps = 1 / deltaTime
-    setFPS(Math.round(fps))
-    totalFPS += fps - (frameTimes[frameCursor] || 0)
-    frameTimes[frameCursor++] = fps
-    numFrames = Math.max(numFrames, frameCursor)
-    frameCursor %= maxFrames
-    const avgFPS = totalFPS / numFrames
-    setAvgFPS(Math.round(avgFPS))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const memoryUsed = (window.performance as any).memory.usedJSHeapSize / 1048576
-    setMemory(Math.round(memoryUsed))
-    requestAnimationFrame(updateFPS)
+  const update = async (): Promise<void> => {
+    const precision = 3
+    const stats = await props.engine.getStats()
+    // console.log(stats)
+    const averageGPU = stats.world.gpuTime / stats.world.count
+    setAverageGPUTime(round(averageGPU, precision))
+    const averageCPU = stats.world.cpuTime / stats.world.count
+    setAverageCPUTime(round(averageCPU, precision))
+    setCount(stats.world.count)
+    setCPUTime(round(stats.world.cpuTime, precision))
+    setGPUTime(round(stats.world.gpuTime, precision))
+    setFPS(Math.round(1000 / ((stats.world.cpuTime + stats.world.gpuTime) / stats.world.count)))
+    setGPUFPS(Math.round(1000 / (stats.world.gpuTime / stats.world.count)))
+    setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
+    setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
+    setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
+    setBufferCount(stats.regl.bufferCount)
+    setTextureCount(stats.regl.textureCount)
+    setShaderCount(stats.regl.shaderCount)
+    setFramebufferCount(stats.regl.framebufferCount)
+    setElementsCount(stats.regl.elementsCount)
+    requestAnimationFrame(update)
   }
 
   React.useEffect(() => {
-    requestAnimationFrame(updateFPS)
+    requestAnimationFrame(update)
   }, [])
 
   return (
@@ -1678,11 +2332,24 @@ function StatsWidget(): JSX.Element {
         pointerEvents: "none",
         zIndex: 100,
         userSelect: "none",
+        minWidth: 250,
       }}
     >
-      <div>FPS: {fps}</div>
-      <div>Avg FPS: {avgFPS}</div>
-      <div>Memory: {memory} MB</div>
+      <div>Frame Count: {count}</div>
+      <div>Total CPU Time: {cpuTime}ms</div>
+      <div>Total GPU Time: {gpuTime}ms</div>
+      <div>Avg CPU Time: {averageCPUTime}ms</div>
+      <div>Avg GPU Time: {averageGPUTime}ms</div>
+      <div>Theoretical FPS: {fps}</div>
+      <div>GPU FPS: {gpuFPS}</div>
+      <div>Texture Size: {textureSize}MB</div>
+      <div>Buffer Size: {bufferSize}MB</div>
+      <div>Render Buffer Size: {renderBufferSize}MB</div>
+      <div>Buffer Count: {bufferCount}</div>
+      <div>Texture Count: {textureCount}</div>
+      <div>Shader Count: {shaderCount}</div>
+      <div>Framebuffer Count: {framebufferCount}</div>
+      <div>Elements Count: {elementsCount}</div>
     </div>
   )
 }
@@ -1690,9 +2357,12 @@ function StatsWidget(): JSX.Element {
 function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   const [mouse, setMouse] = React.useState({ x: "0", y: "0" })
 
-  props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
-    setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
-  })
+  useMemo(() => {
+    props.engine.pointer.addEventListener(PointerEvents.POINTER_HOVER, (e) => {
+      setMouse({ x: (e as PointerEvent).detail.x.toFixed(3), y: (e as PointerEvent).detail.y.toFixed(3) })
+    })
+  }, [props.engine])
+
   return (
     <div
       style={{

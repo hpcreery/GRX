@@ -2,12 +2,17 @@ precision highp float;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
+#pragma glslify: import('../modules/structs/SnapModes.glsl')
+uniform SnapModes u_SnapModes;
+uniform int u_SnapMode;
+
 // COMMON UNIFORMS
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
+uniform bool u_SkeletonMode;
 uniform vec3 u_Color;
 uniform float u_Alpha;
 uniform vec2 u_PointerPosition;
@@ -68,7 +73,7 @@ float sdfSegment(vec2 p, vec2 a, vec2 b) {
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (dist * float(u_OutlineMode) > pixel_size) {
+  if (dist * float(u_OutlineMode || u_SkeletonMode) > pixel_size) {
     discard;
   }
   return dist;
@@ -138,49 +143,80 @@ void main() {
   // 0     | 1      | 0
   // 1     | 0      | 0
   // 1     | 1      | 1
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = u_Alpha * max(float(u_OutlineMode), polarity);
+  vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
+  float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
+  if (u_QueryMode) {
+    FragCoord = u_PointerPosition;
+  }
+
   float dist = surfaceDistMain(FragCoord);
 
+
   if (u_QueryMode) {
-    vec2 PointerPosition = transformLocation(u_PointerPosition);
-    // float PointerDist = surfaceDistMain(PointerPosition);
+    // vec2 pointx = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    // vec2 pointy = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    // vec2 pointz = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
 
-    vec2 point1 = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
-    vec2 point2 = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
-    vec2 point3 = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    // resize the triangle to make it easier to snap
+    float indx = mod(v_Indicies.x, v_QtyVerts);
+    float indy = mod(v_Indicies.y, v_QtyVerts);
+    float indz = mod(v_Indicies.z, v_QtyVerts);
+    float indx1 = mod(v_Indicies.x + 1.0, v_QtyVerts);
+    float indy1 = mod(v_Indicies.y + 1.0, v_QtyVerts);
+    float indz1 = mod(v_Indicies.z + 1.0, v_QtyVerts);
+    float indx2 = mod(v_Indicies.x - 1.0, v_QtyVerts);
+    float indy2 = mod(v_Indicies.y - 1.0, v_QtyVerts);
+    float indz2 = mod(v_Indicies.z - 1.0, v_QtyVerts);
+    vec2 pointx = getVertexPosition(indx * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointy = getVertexPosition(indy * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointz = getVertexPosition(indz * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointx1 = getVertexPosition(indx1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointy1 = getVertexPosition(indy1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointz1 = getVertexPosition(indz1 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointx2 = getVertexPosition(indx2 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointy2 = getVertexPosition(indy2 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 pointz2 = getVertexPosition(indz2 * 2.0 + v_ContourOffset + v_SurfaceOffset);
+    vec2 directionx = normalize(normalize(abs(normalize(pointx1) - normalize(pointx))) + normalize(abs(normalize(pointx2) - normalize(pointx))));
+    vec2 directiony = normalize(normalize(abs(normalize(pointy1) - normalize(pointy))) + normalize(abs(normalize(pointy2) - normalize(pointy))));
+    vec2 directionz = normalize(normalize(abs(normalize(pointz1) - normalize(pointz))) + normalize(abs(normalize(pointz2) - normalize(pointz))));
+    vec2 centroid = (pointx + pointy + pointz) / 3.0;
+    float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+    float pixel_size = u_PixelSize / scale;
+    directionx = directionx * sign(pointx - centroid);
+    directiony = directiony * sign(pointy - centroid);
+    directionz = directionz * sign(pointz - centroid);
+    pointx = pointx + directionx * (pixel_size * SNAP_DISTANCE_PIXELS);
+    pointy = pointy + directiony * (pixel_size * SNAP_DISTANCE_PIXELS);
+    pointz = pointz + directionz * (pixel_size * SNAP_DISTANCE_PIXELS);
 
-    if (pointInTriangle(PointerPosition, point1, point2, point3)) {
-      if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-        gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-        return;
-      } else {
-        discard;
+
+    if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
+      if (u_SnapMode == u_SnapModes.EDGE) {
+        if (pointInTriangle(FragCoord, pointx, pointy, pointz)) {
+          // vec2 direction = normalize(vec2(
+          //     (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
+          //     (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
+          // ));
+          // the first value is the distance to the border of the shape
+          // the second value is the direction of the border of the shape
+          // the third value is the indicator of a measurement
+          // gl_FragColor = vec4(-dist, -direction, 1.0);
+          gl_FragColor = vec4(-dist, 0.0, 0.0, 1.0);
+          return;
+        } else {
+          discard;
+        }
       }
+      discard;
     } else {
       discard;
     }
   }
 
 
-
-
-  // ** DEBUG **
-  // vec3 col = (dist > 0.0) ? vec3(0.9, 0.6, 0.3) : vec3(0.65, 0.85, 1.0);
-  // col *= 1.0 - exp(-3.0*abs(dist * 0.01 / pixel_size));
-  // col *= 0.8 + 0.25*cos(dist / pixel_size);
-  // // col = mix( col, vec3(1.0), 1.0-smoothstep(0.0,pixel_size,abs(dist)) );
-  // if (dist > 0.0 && dist < pixel_size) {
-  //   col = vec3(1.0, 1.0, 1.0);
-  // }
-  // gl_FragColor = vec4(col, 1.0);
-  // return;
-
-
+  #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);
   gl_FragColor = vec4(color, alpha);
-
-  // gl_FragColor = vec4(1.0,1.0,1.0,1.0);
 }

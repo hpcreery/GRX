@@ -6,17 +6,16 @@ import {
   IconHexagonPlus,
   // IconHexagonOff,
 } from "@tabler/icons-react"
-import { ColorBlend, ColorBlends } from "@src/renderer/engine"
+import { ColorBlend } from "@src/renderer/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
-import { EditorConfigProvider } from '@src/contexts/EditorContext'
+import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
-interface EngineSettingsProps {
-}
+interface EngineSettingsProps {}
 
 export default function EngineSettings(_props: EngineSettingsProps): JSX.Element | null {
   const { renderEngine } = useContext(EditorConfigProvider)
-  const [colorBlend, setColorBlend] = useLocalStorage<ColorBlends>({
+  const [colorBlend, setColorBlend] = useLocalStorage<ColorBlend>({
     key: "engine:COLOR_BLEND",
     defaultValue: renderEngine.settings.COLOR_BLEND,
   })
@@ -73,7 +72,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
     <>
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Color Blend</Text>
-        <Select clearable={false} data={Object.values(ColorBlend)} value={colorBlend} onChange={(val) => val && setColorBlend(val as ColorBlends)} />
+        <Select clearable={false} data={Object.values(ColorBlend)} value={colorBlend} onChange={(val) => val && setColorBlend(val as ColorBlend)} />
       </Flex>
       <Divider my="sm" />
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
