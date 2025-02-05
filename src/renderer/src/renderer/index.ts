@@ -120,14 +120,34 @@ export class RenderEngine {
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
     this.CONTAINER.style.cursor = "grab"
+
     this.canvasGL = this.createCanvas()
     this.canvas2D = this.createCanvas()
+
+    // setup observer to watch for changes to canvas size
+    const observer = new MutationObserver((mutationsList) => {
+      for (const mutation of mutationsList) {
+        if (mutation.type === "attributes") {
+          console.log("Attribute changed:", mutation.target.getAttribute("width"))
+        }
+      }
+    })
+    const config = { attributes: true }
+    observer.observe(this.canvas2D, config)
+    observer.observe(this.canvasGL, config)
+
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
     const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
+
+    const dpr = window.devicePixelRatio
+
     this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
       width: this.canvasGL.width,
       height: this.canvasGL.height,
+      // width: this.canvasGL.width * dpr,
+      // height: this.canvasGL.height * dpr,
+      dpr: dpr,
     })
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
@@ -146,21 +166,33 @@ export class RenderEngine {
     const canvas = document.createElement("canvas")
     canvas.width = this.CONTAINER.clientWidth
     canvas.height = this.CONTAINER.clientHeight
-    // canvas.style.width = String(this.CONTAINER.clientWidth)
-    // canvas.style.height = String(this.CONTAINER.clientHeight)
+    // canvas.width = this.CONTAINER.clientWidth * window.devicePixelRatio
+    // canvas.height = this.CONTAINER.clientHeight * window.devicePixelRatio
+
+    canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
+    canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
     canvas.style.position = "absolute"
+    console.log("createCanvas", JSON.stringify(canvas.style.width))
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
 
   private resize(): void {
-    const { clientWidth: width, clientHeight: height } = this.CONTAINER
-    // this.canvas2D.style.width = String(width)
-    // this.canvas2D.style.height = String(height)
-    // this.canvasGL.style.width = String(width)
-    // this.canvasGL.style.height = String(height)
+    const width = this.CONTAINER.clientWidth
+    const height = this.CONTAINER.clientHeight
+    const dpr = window.devicePixelRatio
+
+    this.canvas2D.style.width = String(width) + "px"
+    this.canvas2D.style.height = String(height) + "px"
+    this.canvasGL.style.width = String(width) + "px"
+    this.canvasGL.style.height = String(height) + "px"
+    console.log("resize", JSON.stringify(this.canvas2D.style.width))
+
     this.backend.then((engine) => {
-      engine.resize(width, height)
+      // engine.resize(width, height)
+      // engine.resize(width * dpr, height * dpr)
+      engine.resize(width, height, dpr)
+      // engine.resize(width, height, 1)
     })
   }
 
