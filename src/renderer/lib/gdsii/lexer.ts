@@ -5,7 +5,7 @@ import messages from "./messages"
 // LEXER
 
 // Generator for complete records from a GDSII stream file.
-export function record_reader(stream: ArrayBuffer): RecordToken[] {
+export function recordReader(stream: ArrayBuffer): RecordToken[] {
   let i = 0
   const tokens: RecordToken[] = []
   while (i < stream.byteLength) {

@@ -6,7 +6,7 @@
 // import gdsiiFile from './testdata/GdsIITests_test.gds?url' // broken boundaries, paths with different ends
 // import gdsiiFile from './testdata/GdsIITests_circles.gds?url'
 
-import { record_reader } from "./lexer"
+import { recordReader } from "./lexer"
 import { parse } from "./parser"
 import { convert } from "./converter"
 
@@ -23,7 +23,7 @@ export async function plugin(
 ): Promise<void> {
   messages.setSender(addMessage, "GDSII")
   messages.clear()
-  const tokens = record_reader(buffer)
+  const tokens = recordReader(buffer)
   const bnf = parse(tokens)
   const layerHierarchy = convert(bnf)
 

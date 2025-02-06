@@ -177,12 +177,9 @@ float lineDist(vec2 coord) {
 }
 
 vec2 transformLocation(vec2 pixel_coord) {
-  vec2 center_location = (v_Start_Location + v_End_Location) / 2.0;
-  vec2 normal_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 transformed_position = u_InverseTransform * vec3(normal_coord, 1.0);
-  vec2 offset_postition = transformed_position.xy;
-  vec2 true_coord = offset_postition;
-  return true_coord;
+  vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
+  vec3 transformed_position = u_InverseTransform * vec3(normal_frag_coord, 1.0);
+  return transformed_position.xy;
 }
 
 void main() {

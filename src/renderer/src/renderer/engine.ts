@@ -55,6 +55,7 @@ export interface RenderEngineBackendConfig {
   attributes?: WebGLContextAttributes | undefined
   width: number
   height: number
+  dpr: number
 }
 
 export interface RenderSettings {
@@ -184,6 +185,10 @@ export class RenderEngineBackend {
     width: number
     height: number
   }
+  public renderBox: {
+    width: number
+    height: number
+  }
 
   public pointer: Pointer = {
     x: 0,
@@ -274,11 +279,15 @@ export class RenderEngineBackend {
       width,
       height,
     }
+    this.renderBox = {
+      width: width * dpr,
+      height: height * dpr,
+    }
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
     this.ctx = offscreenCanvas2D.getContext("2d")!
-
     // this.ctx.scale(dpr, dpr)
+
     console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
 
     this.regl = REGL({
@@ -308,13 +317,13 @@ export class RenderEngineBackend {
         settings: this.settings,
         transformMatrix: () => this.transform.matrix,
         transform: this.transform,
-        resolution: () => [this.viewBox.width, this.viewBox.height],
+        resolution: () => [this.renderBox.width, this.renderBox.height],
       },
 
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        u_Resolution: () => [this.viewBox.width, this.viewBox.height],
+        u_Resolution: () => [this.renderBox.width, this.renderBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
@@ -456,10 +465,12 @@ export class RenderEngineBackend {
   public resize(width: number, height: number, dpr: number): void {
     this.viewBox.width = width
     this.viewBox.height = height
-    this.offscreenCanvasGL.width = width * dpr
-    this.offscreenCanvasGL.height = height * dpr
-    this.offscreenCanvas2D.width = width * dpr
-    this.offscreenCanvas2D.height = height * dpr
+    this.renderBox.width = width * dpr
+    this.renderBox.height = height * dpr
+    this.offscreenCanvasGL.width = this.renderBox.width
+    this.offscreenCanvasGL.height = this.renderBox.height
+    this.offscreenCanvas2D.width = this.renderBox.width
+    this.offscreenCanvas2D.height = this.renderBox.height
     this.regl.poll()
     this.updateTransform()
     this.render({
@@ -558,9 +569,9 @@ export class RenderEngineBackend {
   }
 
   public getWorldPosition(x: number, y: number): [number, number] {
-    const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
-    const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
-    return [mouse[0], mouse[1]]
+    const mousePosViewbox: vec2 = [x * 2 - 1, y * 2 - 1]
+    const mousePos = vec2.transformMat3(vec2.create(), mousePosViewbox, this.transform.matrixInverse)
+    return [mousePos[0], mousePos[1]]
   }
 
   public async sendMessage(data: MessageData): Promise<void> {

@@ -124,18 +124,6 @@ export class RenderEngine {
     this.canvasGL = this.createCanvas()
     this.canvas2D = this.createCanvas()
 
-    // setup observer to watch for changes to canvas size
-    const observer = new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        if (mutation.type === "attributes") {
-          console.log("Attribute changed:", mutation.target.getAttribute("width"))
-        }
-      }
-    })
-    const config = { attributes: true }
-    observer.observe(this.canvas2D, config)
-    observer.observe(this.canvasGL, config)
-
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
     const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
 
@@ -145,8 +133,6 @@ export class RenderEngine {
       attributes,
       width: this.canvasGL.width,
       height: this.canvasGL.height,
-      // width: this.canvasGL.width * dpr,
-      // height: this.canvasGL.height * dpr,
       dpr: dpr,
     })
     this.sendFontData()
@@ -166,8 +152,6 @@ export class RenderEngine {
     const canvas = document.createElement("canvas")
     canvas.width = this.CONTAINER.clientWidth
     canvas.height = this.CONTAINER.clientHeight
-    // canvas.width = this.CONTAINER.clientWidth * window.devicePixelRatio
-    // canvas.height = this.CONTAINER.clientHeight * window.devicePixelRatio
 
     canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
     canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
@@ -189,10 +173,7 @@ export class RenderEngine {
     console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
-      // engine.resize(width, height)
-      // engine.resize(width * dpr, height * dpr)
       engine.resize(width, height, dpr)
-      // engine.resize(width, height, 1)
     })
   }
 
@@ -341,7 +322,7 @@ export class RenderEngine {
           }
           backend.moveViewport(e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(e.movementX, e.movementY)
+          await backend.moveViewport(e.movementX * window.devicePixelRatio, e.movementY * window.devicePixelRatio)
         }
       }
     }
