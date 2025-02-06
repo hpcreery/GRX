@@ -25,7 +25,7 @@ export function parse(tokens: RecordToken[]): TREE.GDSIIBNF {
   for (const [_index, token] of tokens.entries()) {
     const recordDefinition = GDSII.RecordDefinitions[token.recordType]
     if (!recordDefinition || (!recordDefinition.parse && typeof recordDefinition.parse !== "function")) {
-      messages.warn(`Parser: RecordDefinition ${recordDefinition} (${token.recordType}) does not have a parse function`)
+      messages.warn(`Parser: RecordDefinition ${JSON.stringify(recordDefinition)} (${token.recordType}) does not have a parse function`)
       continue
     }
     recordDefinition.parse(parserState, token.data as number[])
