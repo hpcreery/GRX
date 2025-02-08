@@ -25,6 +25,11 @@ export interface PointerSettings {
   mode: PointerMode
 }
 
+export interface CanvasSettings {
+  hidpi: boolean
+  dpr: number
+}
+
 export const PointerEvents = {
   POINTER_DOWN: "pointerdown",
   POINTER_UP: "pointerup",
@@ -111,6 +116,27 @@ export class RenderEngine {
       },
     },
   )
+
+  public canvasSettings: CanvasSettings = new Proxy(
+    {
+      hidpi: false,
+
+      get dpr(): number {
+        return this.hidpi ? window.devicePixelRatio : 1
+      },
+    },
+    {
+      set: (target, name, value): boolean => {
+        if (name === "hidpi") {
+          console.log("hidpi", value)
+          this.resize()
+        }
+        target[name] = value
+        return true
+      },
+    },
+  )
+
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
@@ -127,13 +153,11 @@ export class RenderEngine {
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
     const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
 
-    const dpr = window.devicePixelRatio
-
     this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
       width: this.canvasGL.width,
       height: this.canvasGL.height,
-      dpr: dpr,
+      dpr: this.canvasSettings.dpr,
     })
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
@@ -164,7 +188,6 @@ export class RenderEngine {
   private resize(): void {
     const width = this.CONTAINER.clientWidth
     const height = this.CONTAINER.clientHeight
-    const dpr = window.devicePixelRatio
 
     this.canvas2D.style.width = String(width) + "px"
     this.canvas2D.style.height = String(height) + "px"
@@ -173,7 +196,7 @@ export class RenderEngine {
     console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
-      engine.resize(width, height, dpr)
+      engine.resize(width, height, this.canvasSettings.dpr)
     })
   }
 
@@ -228,11 +251,13 @@ export class RenderEngine {
 
     this.CONTAINER.onwheel = async (e): Promise<void> => {
       const settings = await backend.settings
+      const moveScale = this.canvasSettings.dpr
+
       const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, e.deltaY)
+        backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(width / 2, height / 2, e.deltaY)
+        backend.zoomAtPoint(width / 2, height / 2, e.deltaY * moveScale)
       }
     }
     this.CONTAINER.onpointerdown = async (e): Promise<void> => {
@@ -288,12 +313,13 @@ export class RenderEngine {
     }
     this.CONTAINER.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
-      const [x, y] = await this.getMouseWorldCoordinates(e)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
+      const moveScale = this.canvasSettings.dpr
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         this.CONTAINER.style.cursor = "crosshair"
+        const [x, y] = await this.getMouseWorldCoordinates(e)
         backend.updateMeasurement([x, y])
       }
 
@@ -312,17 +338,17 @@ export class RenderEngine {
             p1.clientX + p1.movementX - (p2.clientX + p2.movementX),
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
-          const zoomFactor = (startDistance - endDistance) / this.pointerCache.length
+          const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
           const settings = await backend.settings
           const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint(e.x - offsetX, e.y - offsetY, zoomFactor)
+            backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
             backend.zoomAtPoint(width / 2, height / 2, zoomFactor)
           }
           backend.moveViewport(e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(e.movementX * window.devicePixelRatio, e.movementY * window.devicePixelRatio)
+          await backend.moveViewport(e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }

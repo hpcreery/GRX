@@ -185,10 +185,6 @@ export class RenderEngineBackend {
     width: number
     height: number
   }
-  public renderBox: {
-    width: number
-    height: number
-  }
 
   public pointer: Pointer = {
     x: 0,
@@ -276,10 +272,6 @@ export class RenderEngineBackend {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.offscreenCanvas2D = offscreenCanvas2D
     this.viewBox = {
-      width,
-      height,
-    }
-    this.renderBox = {
       width: width * dpr,
       height: height * dpr,
     }
@@ -317,13 +309,13 @@ export class RenderEngineBackend {
         settings: this.settings,
         transformMatrix: () => this.transform.matrix,
         transform: this.transform,
-        resolution: () => [this.renderBox.width, this.renderBox.height],
+        resolution: () => [this.viewBox.width, this.viewBox.height],
       },
 
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        u_Resolution: () => [this.renderBox.width, this.renderBox.height],
+        u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
         u_OutlineMode: () => this.settings.OUTLINE_MODE,
@@ -463,14 +455,12 @@ export class RenderEngineBackend {
   }
 
   public resize(width: number, height: number, dpr: number): void {
-    this.viewBox.width = width
-    this.viewBox.height = height
-    this.renderBox.width = width * dpr
-    this.renderBox.height = height * dpr
-    this.offscreenCanvasGL.width = this.renderBox.width
-    this.offscreenCanvasGL.height = this.renderBox.height
-    this.offscreenCanvas2D.width = this.renderBox.width
-    this.offscreenCanvas2D.height = this.renderBox.height
+    this.viewBox.width = width * dpr
+    this.viewBox.height = height * dpr
+    this.offscreenCanvasGL.width = this.viewBox.width
+    this.offscreenCanvasGL.height = this.viewBox.height
+    this.offscreenCanvas2D.width = this.viewBox.width
+    this.offscreenCanvas2D.height = this.viewBox.height
     this.regl.poll()
     this.updateTransform()
     this.render({
