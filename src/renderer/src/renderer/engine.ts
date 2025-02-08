@@ -55,6 +55,7 @@ export interface RenderEngineBackendConfig {
   attributes?: WebGLContextAttributes | undefined
   width: number
   height: number
+  dpr: number
 }
 
 export interface RenderSettings {
@@ -267,20 +268,23 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, width, height }: RenderEngineBackendConfig) {
+  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, width, height, dpr }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.offscreenCanvas2D = offscreenCanvas2D
     this.viewBox = {
-      width,
-      height,
+      width: width * dpr,
+      height: height * dpr,
     }
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
     this.ctx = offscreenCanvas2D.getContext("2d")!
+    // this.ctx.scale(dpr, dpr)
+
     console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
 
     this.regl = REGL({
       gl,
+      pixelRatio: dpr,
       extensions: [
         "angle_instanced_arrays",
         "OES_texture_float",
@@ -450,13 +454,13 @@ export class RenderEngineBackend {
     initializeFontRenderer(this.regl, fontData)
   }
 
-  public resize(width: number, height: number): void {
-    this.viewBox.width = width
-    this.viewBox.height = height
-    this.offscreenCanvasGL.width = width
-    this.offscreenCanvasGL.height = height
-    this.offscreenCanvas2D.width = width
-    this.offscreenCanvas2D.height = height
+  public resize(width: number, height: number, dpr: number): void {
+    this.viewBox.width = width * dpr
+    this.viewBox.height = height * dpr
+    this.offscreenCanvasGL.width = this.viewBox.width
+    this.offscreenCanvasGL.height = this.viewBox.height
+    this.offscreenCanvas2D.width = this.viewBox.width
+    this.offscreenCanvas2D.height = this.viewBox.height
     this.regl.poll()
     this.updateTransform()
     this.render({
@@ -555,9 +559,9 @@ export class RenderEngineBackend {
   }
 
   public getWorldPosition(x: number, y: number): [number, number] {
-    const mouse_viewbox_pos: vec2 = [x * 2 - 1, y * 2 - 1]
-    const mouse = vec2.transformMat3(vec2.create(), mouse_viewbox_pos, this.transform.matrixInverse)
-    return [mouse[0], mouse[1]]
+    const mousePosViewbox: vec2 = [x * 2 - 1, y * 2 - 1]
+    const mousePos = vec2.transformMat3(vec2.create(), mousePosViewbox, this.transform.matrixInverse)
+    return [mousePos[0], mousePos[1]]
   }
 
   public async sendMessage(data: MessageData): Promise<void> {
@@ -963,6 +967,42 @@ export class RenderEngineBackend {
       this.measurements.render(context)
       this.overlay(() => this.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
+
+    // let path1 = new Path2D()
+    // path1.rect(100, 100, 1000, 1000)
+    // let path2 = new Path2D(path1)
+    // path2.moveTo(2200, 600)
+    // path2.arc(1700, 600, 500, 0, 2 * Math.PI)
+    // this.ctx.stroke(path2)
+
+    // let p = new Path2D("M100 100 h 800 v 800 h -800 Z")
+    // this.ctx.fill(p)
+
+    // for (const layer of this.layers) {
+    //   if (!layer.visible) continue
+    //   for (const shape of layer.image) {
+    //     const path = this.shapeToElement(shape)
+    //     console.log(path)
+    //     this.ctx.stroke(path)
+    //   }
+    // }
+  }
+
+  private shapeToElement(shape: Shapes.Shape): Path2D {
+    const path = new Path2D()
+    switch (shape.type) {
+      case FeatureTypeIdentifier.LINE:
+        path.moveTo(shape.xs, shape.ys)
+        path.lineTo(shape.xe, shape.ye)
+        break
+      case FeatureTypeIdentifier.POLYLINE:
+        path.moveTo(shape.xs, shape.ys)
+        for (let i = 0; i < shape.lines.length; i++) {
+          path.lineTo(shape.lines[i].x, shape.lines[i].y)
+        }
+        break
+    }
+    return path
   }
 
   public getStats(): Stats {
