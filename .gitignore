@@ -4,6 +4,6 @@ out
 *.log*
 
 # Shader Builds
-src/renderer/src/shaders/build
+src/renderer/src/renderer/shaders/build
 
 .DS_Store

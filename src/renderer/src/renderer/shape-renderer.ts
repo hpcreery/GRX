@@ -399,13 +399,13 @@ export class ShapeRenderer {
       // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
       vec2.scale(direction, direction, 1 / this.transform.scale)
 
-      const nearestPoint = vec2.create()
-      vec2.sub(nearestPoint, transformedPointer, vec2.scale(vec2.create(), direction, distance))
-      this.transformPoint(nearestPoint)
+      const snapPoint = vec2.create()
+      vec2.sub(snapPoint, transformedPointer, vec2.scale(vec2.create(), direction, distance))
+      this.transformPoint(snapPoint)
 
       distances.push({
         shape: this.image[i / 4],
-        snapPoint: nearestPoint,
+        snapPoint,
         children: [],
       })
       if (closestIndex == undefined) {

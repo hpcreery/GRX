@@ -23,8 +23,8 @@
     "build:all": "npm run build && electron-builder --win --mac --linux --config",
     "build:prepare": "electron-builder install-app-deps && husky install",
     "create:icons": "electron-icon-builder --input=build/icon.png --output=build --flatten && mv build/icons/* build && rm -rf build/icons",
-    "build:shaders": "node src/renderer/src/shaders/build.js",
-    "build:shaders:watch": "node src/renderer/src/shaders/watch.js",
+    "build:shaders": "node src/renderer/src/renderer/shaders/build.js",
+    "build:shaders:watch": "node src/renderer/src/renderer/shaders/watch.js",
     "build:chevrotain:types": "tsx src/renderer/lib/nc/chevrotain-parser/gen_dts_signature.js",
     "test": "vitest",
     "coverage": "vitest run --coverage"
