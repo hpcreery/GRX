@@ -1,11 +1,11 @@
 <div align="center">
-  <a title="GRX" href="https://grx.creery.org">
+  <a title="GRX" href="https://grx.electronicloud.app/">
     <img src="./resources/icon.png" width="120" height="120">
   </a>
   <h1>GRX</h1>
   <p>GPU-Accelerated Web Based EDA Manufacturing Artwork Viewer</p>
-  <a title="GRX" href="https://grx.creery.org">
-    <img src="https://img.shields.io/website?label=grx.creery.org&url=https%3A%2F%2Fgrx.creery.org%2F">
+  <a title="GRX" href="https://grx.electronicloud.app/">
+    <img src="https://img.shields.io/website?label=grx.electronicloud.app&url=https%3A%2F%2Fgrx.electronicloud.app%2F">
   </a>
   <img src="https://img.shields.io/github/package-json/v/hpcreery/grx">
   <img src="https://img.shields.io/github/actions/workflow/status/hpcreery/grx/release.yml">
