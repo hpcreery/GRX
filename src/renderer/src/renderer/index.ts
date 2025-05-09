@@ -1,9 +1,10 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine?worker"
-import type { GridRenderProps, QuerySelection, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
+import type { QuerySelection, RenderEngineBackend, RenderProps, Stats } from "./engine"
 import { AddLayerProps } from "./plugins"
 import { PointerMode, SnapMode } from "./types"
 
+import type { GridRenderProps, RenderSettings } from "./settings"
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
 
@@ -63,10 +64,8 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
-          engine.settings[name] = value
-          engine.render({
-            force: true,
-          })
+          // engine.settings[name] = value
+          engine.setSettings({ [name]: value })
         })
         target[name] = value
         return true
@@ -87,10 +86,8 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
-          engine.grid[name] = value
-          engine.render({
-            force: true,
-          })
+          // engine.grid[name] = value
+          engine.setGrid({ [name]: value })
         })
         target[name] = value
         return true
@@ -159,9 +156,24 @@ export class RenderEngine {
       height: this.canvasGL.height,
       dpr: this.canvasSettings.dpr,
     })
+    this.backend.then((backend) => {
+      this.CONTAINER.childNodes.forEach(async (node) => {
+        // change cursor style of each child node
+        // node.style.cursor = "grab"
+        if (node instanceof HTMLElement) {
+          // node.style.cursor = "crosshair"
+          const step = node.getAttribute("step")
+          // console.log("Step", step)
+          if (step) {
+            await backend.addStep(step, node.getBoundingClientRect())
+            await this.addControls(node)
+          }
+        }
+      })
+    })
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    this.addControls()
+    // this.addControls(this.CONTAINER)
     this.render({
       force: true,
     })
@@ -180,8 +192,13 @@ export class RenderEngine {
     canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
     canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
     canvas.style.position = "absolute"
-    console.log("createCanvas", JSON.stringify(canvas.style.width))
+    canvas.style.border = "1px solid white"
+    canvas.style.position = "abolute"
+    canvas.style.top = "0px"
+    canvas.style.left = "0px"
+    // console.log("createCanvas", JSON.stringify(canvas.style.width))
     this.CONTAINER.appendChild(canvas)
+    // this.CONTAINER.prepend(canvas)
     return canvas
   }
 
@@ -193,49 +210,30 @@ export class RenderEngine {
     this.canvas2D.style.height = String(height) + "px"
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
-    console.log("resize", JSON.stringify(this.canvas2D.style.width))
+    // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
       engine.resize(width, height, this.canvasSettings.dpr)
     })
   }
 
-  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
-    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
-
-    // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
-    // but rather the coordinates of the world
-    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-      // Get the mouse position relative to the canvas
-      // const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-      return [e.clientX - offsetX, height - (e.clientY - offsetY)]
-    }
-
-    function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
-      // const { width, height } = this.CONTAINER.getBoundingClientRect()
-      const mouse_element_pos = getMouseCanvasCoordinates(e)
-
-      // Normalize the mouse position to the canvas
-      const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
-      // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-      // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
-
-      return mouse_normalize_pos
-    }
-
+  public async zoomFit(step: string): Promise<void> {
     const backend = await this.backend
-    return backend.getWorldPosition(...getMouseNormalizedWorldCoordinates(e))
+    backend.zoomFit(step)
   }
 
-  public async zoomFit(): Promise<void> {
+  private async addControls(element: HTMLElement): Promise<void> {
+    const step = element.getAttribute("step")
+    if (!step) {
+      throw new Error("Element must have a 'step' attribute")
+    }
     const backend = await this.backend
-    backend.zoomFit()
-  }
-
-  private async addControls(): Promise<void> {
-    const backend = await this.backend
-    const sendPointerEvent = async (mouse: MouseEvent, event_type: (typeof PointerEvents)[keyof typeof PointerEvents]): Promise<void> => {
-      const [x, y] = await this.getMouseWorldCoordinates(mouse)
+    const sendPointerEvent = async (
+      element: HTMLElement,
+      mouse: MouseEvent,
+      event_type: (typeof PointerEvents)[keyof typeof PointerEvents],
+    ): Promise<void> => {
+      const [x, y] = await getMouseWorldCoordinates(element, mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
           detail: { x, y },
@@ -243,88 +241,133 @@ export class RenderEngine {
       )
     }
 
+    const getMouseWorldCoordinates = async (element: HTMLElement, e: MouseEvent): Promise<[number, number]> => {
+      const step = element.getAttribute("step")
+      if (!step) {
+        throw new Error("Element must have a 'step' attribute")
+      }
+      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+
+      // console.log(offsetX, offsetY, width, height)
+
+      // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
+      // but rather the coordinates of the world
+      function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+        // Get the mouse position relative to the canvas
+        return [e.clientX - offsetX, height - (e.clientY - offsetY)]
+      }
+
+      function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
+        // const { width, height } = this.CONTAINER.getBoundingClientRect()
+        const mouse_element_pos = getMouseCanvasCoordinates(e)
+        // console.log(mouse_element_pos)
+
+        // Normalize the mouse position to the canvas
+        const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
+        // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+        // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+        return mouse_normalize_pos
+      }
+
+      const backend = await this.backend
+      return backend.getWorldPosition(step, ...getMouseNormalizedWorldCoordinates(e))
+    }
+
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
       // Remove this event from the target's cache
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId)
       this.pointerCache.splice(index, 1)
     }
+    const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+    const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: _containerHeight } = this.CONTAINER.getBoundingClientRect()
+    const viewbox = element.getBoundingClientRect()
+    viewbox.y = _containerHeight - viewbox.bottom + containerOffsetY
+    viewbox.x = viewbox.x - containerOffsetX
+    await backend.updateViewBox(step, viewbox)
 
-    this.CONTAINER.onwheel = async (e): Promise<void> => {
-      const settings = await backend.settings
+    element.onwheel = async (e): Promise<void> => {
+      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+      const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: _containerHeight } = this.CONTAINER.getBoundingClientRect()
+
+      // const viewbox = element.getBoundingClientRect()
+      // viewbox.y = _containerHeight - viewbox.bottom + containerOffsetY
+      // viewbox.x = viewbox.x - containerOffsetX
+      // await backend.updateViewBox(step, viewbox)
+      const settings = await backend.getSettings()
       const moveScale = this.canvasSettings.dpr
 
-      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        backend.zoomAtPoint(step, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(width / 2, height / 2, e.deltaY * moveScale)
+        backend.zoomAtPoint(step, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
       }
     }
-    this.CONTAINER.onpointerdown = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
-      const [x, y] = await this.getMouseWorldCoordinates(e)
+    element.onpointerdown = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
+      const [x, y] = await getMouseWorldCoordinates(element, e)
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        this.CONTAINER.style.cursor = "grabbing"
-        await backend.grabViewport()
+        element.style.cursor = "grabbing"
+        await backend.grabViewport(step)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
-        this.CONTAINER.style.cursor = "wait"
-        const features = await backend.select([x, y])
+        element.style.cursor = "wait"
+        const features = await backend.select(step, [x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
           }),
         )
-        this.CONTAINER.style.cursor = "crosshair"
+        element.style.cursor = "crosshair"
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
-        this.CONTAINER.style.cursor = "crosshair"
-        const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        const currentMeasurement = await backend.getCurrentMeasurement()
+        element.style.cursor = "crosshair"
+        const [x1, y1] = await getMouseWorldCoordinates(element, e)
+        const currentMeasurement = await backend.getCurrentMeasurement(step)
         if (currentMeasurement != null) {
-          backend.finishMeasurement([x1, y1])
+          backend.finishMeasurement(step, [x1, y1])
         } else {
-          backend.addMeasurement([x1, y1])
+          backend.addMeasurement(step, [x1, y1])
         }
       }
     }
-    this.CONTAINER.onpointerup = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointerup = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        this.CONTAINER.style.cursor = "grab"
-        await backend.releaseViewport()
+        element.style.cursor = "grab"
+        await backend.releaseViewport(step)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointercancel = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointercancel = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport()
+        await backend.releaseViewport(step)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointerleave = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointerleave = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport()
+        await backend.releaseViewport(step)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointermove = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+    element.onpointermove = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
       const moveScale = this.canvasSettings.dpr
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
-        this.CONTAINER.style.cursor = "crosshair"
-        const [x, y] = await this.getMouseWorldCoordinates(e)
-        backend.updateMeasurement([x, y])
+        element.style.cursor = "crosshair"
+        const [x, y] = await getMouseWorldCoordinates(element, e)
+        backend.updateMeasurement(step, [x, y])
       }
 
-      if (!(await backend.isDragging())) {
-        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+      if (!(await backend.isDragging(step))) {
+        await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
 
@@ -339,58 +382,58 @@ export class RenderEngine {
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
-          const settings = await backend.settings
-          const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+          const settings = await backend.getSettings()
+          const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            backend.zoomAtPoint(step, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            backend.zoomAtPoint(width / 2, height / 2, zoomFactor)
+            backend.zoomAtPoint(step, width / 2, height / 2, zoomFactor)
           }
-          backend.moveViewport(e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          backend.moveViewport(step, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(e.movementX * moveScale, e.movementY * moveScale)
+          await backend.moveViewport(step, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
-    this.CONTAINER.onkeydown = async (e): Promise<void> => {
+    element.onkeydown = async (e): Promise<void> => {
       // if (e.key === 'Escape') {
       //   await backend.cancelMeasurement()
       //   this.pointerSettings.mode = 'move'
-      //   this.CONTAINER.style.cursor = 'grab'
+      //   element.style.cursor = 'grab'
       // }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await backend.isDragging()
+        const isDragging = await backend.isDragging(step)
         if (isDragging) return
         this.backend.then((engine) => {
-          engine.grabViewport()
+          engine.grabViewport(step)
           switch (e.key) {
             case "ArrowUp":
-              engine.moveViewport(0, 10)
+              engine.moveViewport(step, 0, 10)
               break
             case "ArrowDown":
-              engine.moveViewport(0, -10)
+              engine.moveViewport(step, 0, -10)
               break
             case "ArrowLeft":
-              engine.moveViewport(10, 0)
+              engine.moveViewport(step, 10, 0)
               break
             case "ArrowRight":
-              engine.moveViewport(-10, 0)
+              engine.moveViewport(step, -10, 0)
               break
           }
-          engine.releaseViewport()
+          engine.releaseViewport(step)
         })
       }
     }
   }
 
-  public async addLayer(params: AddLayerProps): Promise<void> {
+  public async addLayer(step: string, params: AddLayerProps): Promise<void> {
     const backend = await this.backend
-    backend.addLayer(params)
+    backend.addLayer(step, params)
   }
 
-  public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  public async addFile(step: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
-    backend.addFile(params)
+    backend.addFile(step, params)
   }
 
   public async render(props: RenderProps): Promise<void> {
@@ -453,6 +496,22 @@ export class RenderEngine {
     backend.destroy()
     ComWorker[Comlink.releaseProxy]()
     Worker.terminate()
+
+    this.CONTAINER.childNodes.forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.onwheel = null
+        node.onmousedown = null
+        node.onmouseup = null
+        node.onmousemove = null
+        node.onresize = null
+        node.onpointerdown = null
+        node.onpointerup = null
+        node.onpointermove = null
+        node.onpointercancel = null
+        node.onpointerleave = null
+        node.remove()
+      }
+    })
 
     this.CONTAINER.innerHTML = ""
     this.CONTAINER.onwheel = null

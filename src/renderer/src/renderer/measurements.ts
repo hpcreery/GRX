@@ -1,10 +1,11 @@
 import REGL from "regl"
 import { vec2 } from "gl-matrix"
-import { WorldContext } from "./engine"
+import { UniverseContext } from "./engine"
 import type { Units } from "./types"
 import { getUnitsConversion } from "./utils"
 import { RendererProps, ShapeRenderer } from "./shape-renderer"
 import * as Shapes from "./shapes"
+import { WorldContext } from "./step"
 
 // import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
 // import SimpleMeasurementVert from "@src/shaders/src/Measurements/SimpleMeasurement.vert"
@@ -105,7 +106,7 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,

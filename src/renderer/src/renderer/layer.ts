@@ -2,10 +2,12 @@ import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
 import { Units, BoundingBox, SnapMode } from "./types"
 
-import type { WorldContext } from "./engine"
+import type { UniverseContext } from "./engine"
 import { getUnitsConversion, UID } from "./utils"
+import { settings, origin, grid } from "./settings"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
+import { WorldContext } from "./step"
 
 export interface LayerProps {
   name: string
@@ -45,7 +47,7 @@ export default class LayerRenderer extends ShapeRenderer {
    */
   public units: "mm" | "inch" | "mil" | "cm" | number = "mm"
 
-  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
 
@@ -79,7 +81,7 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
+    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, UniverseContext & WorldContext>({
       depth: {
         enable: true,
         mask: true,
@@ -104,7 +106,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
+  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
     this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
     // const newPointer = vec2.clone(pointer)
@@ -121,7 +123,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return measurements
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
@@ -130,6 +132,8 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
+        // this.drawCollections.renderOrigin()
+        // this.drawCollections.renderGrid(grid)
         const initScale = this.transform.scale
         this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
         super.render(context)

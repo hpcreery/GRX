@@ -19,7 +19,7 @@ import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 // import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
-// import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
+import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 // import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
@@ -1192,6 +1192,7 @@ function REGLApp(): JSX.Element {
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
 
   React.useEffect(() => {
+    if (engine) return
     const Engine = new RenderEngine({
       container: containerRef.current,
       attributes: {
@@ -1432,13 +1433,14 @@ function REGLApp(): JSX.Element {
     //   visible: false
     // })
 
-    // Engine.addFile({
-    //   file: nested_aperture_macro,
-    //   format: 'rs274x',
+    // Engine.addFile("box1", {
+    //   buffer: nested_aperture_macro,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'nested_aperture_macro',
-    //     units: 'inch'
-    //   }
+    //     name: "nested_aperture_macro",
+    //     units: "inch",
+    //     visible: true,
+    //   },
     // })
 
     // Engine.addFile({
@@ -1458,9 +1460,9 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "surfaces",
-      visible: false,
+      visible: true,
       image: SURFACE_RECORDS_ARRAY,
       units: "mm",
     })
@@ -1545,7 +1547,7 @@ function REGLApp(): JSX.Element {
     //   ],
     // })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Poly Lines",
       visible: true,
       units: "mm",
@@ -1586,7 +1588,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Lines",
       visible: false,
       units: "cm",
@@ -1691,7 +1693,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Arcs",
       visible: false,
       units: "cm",
@@ -1787,7 +1789,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "circle",
       units: "cm",
       visible: false,
@@ -2097,14 +2099,49 @@ function REGLApp(): JSX.Element {
         ref={containerRef}
         id="container-element"
         style={{
-          width: "100%",
-          height: "100%",
+          // background: "white",
+          width: "90%",
+          height: "90%",
           position: "absolute",
           top: 0,
           left: 0,
-          zIndex: 0,
+          // zIndex: 0,
+          margin: "10px",
+          border: "1px solid green",
         }}
-      />
+      >
+        <div
+          // step="box1"
+          {...{ step: "box1" }}
+          style={{
+            width: "300px",
+            height: "300px",
+            border: "1px solid red",
+            cursor: "crosshair",
+            pointerEvents: "all",
+            position: "relative",
+            zIndex: 1,
+            // position: "relative",
+            // top: 0,
+            // left: 0,
+            // zIndex: 0,
+          }}
+        />
+        <div
+          // step="box2"
+          {...{ step: "box2" }}
+          style={{
+            width: "300px",
+            height: "300px",
+            border: "1px solid yellow",
+            position: "relative",
+            zIndex: 2,
+            // top: 0,
+            // left: 0,
+            // zIndex: 0,
+          }}
+        />
+      </div>
       {engine ? (
         <Box
           style={{
@@ -2117,9 +2154,9 @@ function REGLApp(): JSX.Element {
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
-              backend.getLayers().then((layers) => {
+              backend.getLayers("box1").then((layers) => {
                 setLayers(layers)
-                layers.map((l) => backend.setLayerProps(l.id, { color: [Math.random(), Math.random(), Math.random()] }))
+                layers.map((l) => backend.setLayerProps("box1", l.id, { color: [Math.random(), Math.random(), Math.random()] }))
               })
             }}
           >
@@ -2127,12 +2164,12 @@ function REGLApp(): JSX.Element {
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-              engine.zoomFit()
+              engine.zoomFit("box1")
             }}
           >
             Zoom Fit
           </Button>
-          <Button onClick={async (): Promise<void> => engine.backend.then((engine) => engine.setTransform({ position: [0, 0], zoom: 16 }))}>
+          <Button onClick={async (): Promise<void> => engine.backend.then((engine) => engine.setTransform("box1", { position: [0, 0], zoom: 16 }))}>
             (0,0)
           </Button>
           <br />
@@ -2143,7 +2180,7 @@ function REGLApp(): JSX.Element {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
               engine.backend.then((backend) =>
-                backend.getLayers().then((layers) => {
+                backend.getLayers("box1").then((layers) => {
                   setLayers(layers)
                 }),
               )
@@ -2156,7 +2193,7 @@ function REGLApp(): JSX.Element {
               engine.settings.SKELETON_MODE = e.target.checked
               setSkeletonMode(e.target.checked)
               engine.backend.then((backend) =>
-                backend.getLayers().then((layers) => {
+                backend.getLayers("box1").then((layers) => {
                   setLayers(layers)
                 }),
               )
@@ -2199,7 +2236,7 @@ function REGLApp(): JSX.Element {
                   defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const backend = await engine.backend
-                    backend.setLayerProps(layer.id || layer.name, { visible: e.target.checked })
+                    backend.setLayerProps("box1", layer.id || layer.name, { visible: e.target.checked })
                   }}
                 />
               </div>
@@ -2294,15 +2331,15 @@ function REGLStatsWidget(props: { engine: RenderEngine }): JSX.Element {
     const precision = 3
     const stats = await props.engine.getStats()
     // console.log(stats)
-    const averageGPU = stats.world.gpuTime / stats.world.count
+    const averageGPU = stats.universe.gpuTime / stats.universe.count
     setAverageGPUTime(round(averageGPU, precision))
-    const averageCPU = stats.world.cpuTime / stats.world.count
+    const averageCPU = stats.universe.cpuTime / stats.universe.count
     setAverageCPUTime(round(averageCPU, precision))
-    setCount(stats.world.count)
-    setCPUTime(round(stats.world.cpuTime, precision))
-    setGPUTime(round(stats.world.gpuTime, precision))
-    setFPS(Math.round(1000 / ((stats.world.cpuTime + stats.world.gpuTime) / stats.world.count)))
-    setGPUFPS(Math.round(1000 / (stats.world.gpuTime / stats.world.count)))
+    setCount(stats.universe.count)
+    setCPUTime(round(stats.universe.cpuTime, precision))
+    setGPUTime(round(stats.universe.gpuTime, precision))
+    setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
+    setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))

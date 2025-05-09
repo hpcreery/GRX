@@ -1,5 +1,5 @@
 import REGL from "regl"
-import { WorldContext } from "./engine"
+import { UniverseContext } from "./engine"
 import { DatumPoint, DatumText } from "./shapes"
 import { vec2, vec3 } from "gl-matrix"
 
@@ -28,7 +28,7 @@ export class TextRenderer {
     this.ctx.fillText(text, x, y)
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext): void {
     this.texts.forEach((text) => {
       this.resetFontStyle()
       const transform = vec3.create()
@@ -75,7 +75,7 @@ export class PointRenderer {
     this.ctx.stroke()
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext): void {
     this.texts.forEach((text) => {
       const transform = vec3.create()
       vec3.transformMat3(transform, vec3.fromValues(text.x, text.y, 1), context.transform.matrix)

@@ -77,3 +77,10 @@ export const PointerMode = {
 export const POINTER_MODES = toValues(PointerMode)
 export const POINTER_MODES_MAP = toMap(POINTER_MODES)
 export type PointerMode = keyof typeof POINTER_MODES_MAP
+
+export interface ViewBox {
+  width: number
+  height: number
+  x: number
+  y: number
+}

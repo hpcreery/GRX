@@ -29,15 +29,15 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
   const update = async (): Promise<void> => {
     const precision = 3
     const stats = await renderEngine.getStats()
-    const averageGPU = stats.world.gpuTime / stats.world.count
+    const averageGPU = stats.universe.gpuTime / stats.universe.count
     setAverageGPUTime(round(averageGPU, precision))
-    const averageCPU = stats.world.cpuTime / stats.world.count
+    const averageCPU = stats.universe.cpuTime / stats.universe.count
     setAverageCPUTime(round(averageCPU, precision))
-    setCount(stats.world.count)
-    setCPUTime(round(stats.world.cpuTime, precision))
-    setGPUTime(round(stats.world.gpuTime, precision))
-    setFPS(Math.round(1000 / ((stats.world.cpuTime + stats.world.gpuTime) / stats.world.count)))
-    setGPUFPS(Math.round(1000 / (stats.world.gpuTime / stats.world.count)))
+    setCount(stats.universe.count)
+    setCPUTime(round(stats.universe.cpuTime, precision))
+    setGPUTime(round(stats.universe.gpuTime, precision))
+    setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
+    setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
