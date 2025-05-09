@@ -14,6 +14,10 @@
 
 ![preview](/resources/screenshot-v3.1-dark.png)
 
+<div align="center">
+ <h2><a href="https://grx.electronicloud.app/">🔗 Put it to the test!</a></h2>
+</div>
+
 ## About
 
 GRX is designed to be an easy to use online manufacturing artwork data exchange viewer. Under the hood, GRX uses WebGL for rendering at the best performance and WebWorkers for parsing on multiple cores, even isolating the Main DOM thread from the WebGL renderer thread.
