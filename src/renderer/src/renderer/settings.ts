@@ -80,3 +80,5 @@ export interface OriginRenderProps {
 export const origin: OriginRenderProps = {
   enabled: true,
 }
+
+export const dpr: number = 1

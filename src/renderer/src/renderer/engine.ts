@@ -29,9 +29,7 @@ export interface UniverseContext {}
 
 export interface RenderEngineBackendConfig {
   attributes?: WebGLContextAttributes | undefined
-  width: number
-  height: number
-  dpr: number
+  container: DOMRect
 }
 
 export interface RenderTransform {
@@ -98,11 +96,7 @@ export class RenderEngineBackend {
   public offscreenCanvasGL: OffscreenCanvas
   public offscreenCanvas2D: OffscreenCanvas
 
-  public viewBox: {
-    width: number
-    height: number
-    dpr: number
-  }
+  public boundingBox: DOMRect
 
   public pointer: Pointer = {
     x: 0,
@@ -124,13 +118,15 @@ export class RenderEngineBackend {
   public steps: Map<string, StepRenderer> = new Map()
   // public steps: StepRenderer[] = []
 
-  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, width, height, dpr }: RenderEngineBackendConfig) {
+  private renderNowInterval: boolean = true
+
+  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.offscreenCanvas2D = offscreenCanvas2D
-    this.viewBox = {
-      width: width * dpr,
-      height: height * dpr,
-      dpr,
+    this.boundingBox = {
+      ...container,
+      // width: container.width * dpr,
+      // height: container.height * dpr,
     }
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
@@ -141,7 +137,7 @@ export class RenderEngineBackend {
 
     RenderEngineBackend.regl = REGL({
       gl,
-      pixelRatio: dpr,
+      pixelRatio: 1,
       extensions: [
         "angle_instanced_arrays",
         "OES_texture_float",
@@ -163,16 +159,12 @@ export class RenderEngineBackend {
 
     this.universe = RenderEngineBackend.regl<UniverseUniforms, UniverseAttributes, UniverseProps, UniverseContext>({})
 
-    this.render({
-      force: true,
-    })
+    this.render()
   }
 
   public setSettings(newSettings: Partial<RenderSettings>): void {
     Object.assign(settings, newSettings)
-    this.render({
-      force: true,
-    })
+    this.render()
   }
 
   public getSettings(): RenderSettings {
@@ -181,80 +173,70 @@ export class RenderEngineBackend {
 
   public setGrid(newGrid: Partial<GridRenderProps>): void {
     Object.assign(grid, newGrid)
-    this.render({
-      force: true,
-    })
+    this.render()
   }
 
   public getGrid(): GridRenderProps {
     return grid
   }
 
-  public addStep(name: string, view: ViewBox): void {
-    this.steps.set(
-      name,
-      new StepRenderer({
-        regl: RenderEngineBackend.regl,
-        ctx: RenderEngineBackend.ctx,
-        dpr: this.viewBox.dpr,
-        // width: this.viewBox.width,
-        // height: this.viewBox.height,
-        // x: 0,
-        // y: 0,
-        ...view,
-      }),
-    )
+  public renderDispatch = (): void => this.render()
+
+  public addStep(name: string, viewBox: DOMRect): void {
+    const newStep = new StepRenderer({
+      regl: RenderEngineBackend.regl,
+      ctx: RenderEngineBackend.ctx,
+      viewBox,
+    })
+    newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
+    this.steps.set(name, newStep)
+    this.render()
   }
 
-  public resize(width: number, height: number, dpr: number): void {
-    this.viewBox.width = width * dpr
-    this.viewBox.height = height * dpr
-    this.offscreenCanvasGL.width = this.viewBox.width
-    this.offscreenCanvasGL.height = this.viewBox.height
-    this.offscreenCanvas2D.width = this.viewBox.width
-    this.offscreenCanvas2D.height = this.viewBox.height
+  public updateBoundingBox(box: DOMRect): void {
+    // this.boundingBox.width = box.width * dpr
+    // this.boundingBox.height = box.height * dpr
+    this.boundingBox = box
+    this.offscreenCanvasGL.width = this.boundingBox.width
+    this.offscreenCanvasGL.height = this.boundingBox.height
+    this.offscreenCanvas2D.width = this.boundingBox.width
+    this.offscreenCanvas2D.height = this.boundingBox.height
     RenderEngineBackend.regl.poll()
     // this.updateTransform()
-    this.render({
-      force: true,
-    })
   }
 
   public updateViewBox(step: string, viewBox: DOMRect): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    // this.viewBox = viewBox
+    // viewBox.y = containerHeight - viewBox.bottom + containerOffsetY
+    // viewBox.x = viewBox.x - containerOffsetX
+    viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
+    viewBox.x = viewBox.x - this.boundingBox.x
     this.steps.get(step)!.updateViewBox(viewBox)
-    this.render()
   }
 
   public toss(step: string): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.toss()
-    this.render()
   }
 
   public moveViewport(step: string, x: number, y: number): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.moveViewport(x, y)
-    this.render()
   }
 
   public grabViewport(step: string): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.grabViewport()
-    this.render()
   }
 
   public releaseViewport(step: string): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.releaseViewport()
-    this.render()
   }
 
   public zoom(step: string, x: number, y: number, s: number): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.zoom(x, y, s)
-    this.render()
   }
 
   public isDragging(step: string): boolean {
@@ -266,14 +248,12 @@ export class RenderEngineBackend {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     // return this.steps.get(step)!.updateTransform()
     const transform = this.steps.get(step)!.updateTransform()
-    this.render()
     return transform
   }
 
   public zoomAtPoint(step: string, x: number, y: number, s: number): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     this.steps.get(step)!.zoomAtPoint(x, y, s)
-    this.render()
   }
 
   public getWorldPosition(step: string, x: number, y: number): [number, number] {
@@ -322,7 +302,6 @@ export class RenderEngineBackend {
     this.universe((_context) => {
       this.steps.get(step)!.setTransform(transform)
     })
-    this.render()
   }
 
   public removeLayer(step: string, id: string): void {
@@ -330,7 +309,6 @@ export class RenderEngineBackend {
     this.universe((_context) => {
       this.steps.get(step)!.removeLayer(id)
     })
-    this.render()
   }
 
   public moveLayer(step: string, from: number, to: number): void {
@@ -338,7 +316,6 @@ export class RenderEngineBackend {
     this.universe((_context) => {
       this.steps.get(step)!.moveLayer(from, to)
     })
-    this.render()
   }
 
   public setLayerProps(step: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
@@ -346,7 +323,6 @@ export class RenderEngineBackend {
     this.universe((_context) => {
       this.steps.get(step)!.setLayerProps(id, props)
     })
-    this.render()
   }
 
   public setLayerTransform(step: string, id: string, transform: Partial<Transform>): void {
@@ -354,7 +330,6 @@ export class RenderEngineBackend {
     this.universe((_context) => {
       this.steps.get(step)!.setLayerTransform(id, transform)
     })
-    this.render()
   }
 
   public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
@@ -443,32 +418,22 @@ export class RenderEngineBackend {
 
   // public clearMeasurements(): void {
   //   this.measurements.clearMeasurements()
-  //   this.render({
-  //     force: true,
-  //     updateLayers: false,
-  //   })
   // }
 
   // public setMeasurementUnits(units: Units): void {
   //   this.measurements.setMeasurementUnits(units)
-  //   this.render({
-  //     force: true,
-  //     updateLayers: false,
-  //   })
   // }
 
-  public render(props: RenderProps = RenderEngineBackend.defaultRenderProps): void {
+  public render(): void {
     // RenderEngineBackend.regl.poll()
-    // RenderEngineBackend.regl.clear({
-    //   color: [0, 0, 0, 0],
-    //   depth: 1,
-    // })
-    // RenderEngineBackend.ctx.clearRect(0, 0, RenderEngineBackend.viewBox.width, RenderEngineBackend.viewBox.height)
+    // if (this.renderNowInterval == false) return
+    setTimeout(() => (this.renderNowInterval = true), settings.MSPFRAME)
     this.universe((_context) => {
       this.steps.forEach((step) => {
-        step.render(props)
+        step.render()
       })
     })
+    this.renderNowInterval = false
   }
 
   public getStats(): Stats {

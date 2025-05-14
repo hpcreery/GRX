@@ -37,8 +37,13 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
 }
 
-export function toValues<T extends string>(map: { [key in T]: string }): T[] {
+// eslint-disable-next-line
+export function toValues<T extends string>(map: { [key in T]: any }): T[] {
   return Object.keys(map) as T[]
+}
+
+export function toEnum<T extends string>(arr: readonly T[]): { [key in T]: key } {
+  return Object.fromEntries(arr.map((key) => [key, key])) as { [key in T]: key }
 }
 
 export type Binary = 0 | 1

@@ -2107,7 +2107,7 @@ function REGLApp(): JSX.Element {
           left: 0,
           // zIndex: 0,
           margin: "10px",
-          border: "1px solid green",
+          border: "0px solid green",
         }}
       >
         <div
@@ -2116,7 +2116,7 @@ function REGLApp(): JSX.Element {
           style={{
             width: "300px",
             height: "300px",
-            border: "1px solid red",
+            border: "10px solid red",
             cursor: "crosshair",
             pointerEvents: "all",
             position: "relative",
@@ -2133,11 +2133,11 @@ function REGLApp(): JSX.Element {
           style={{
             width: "300px",
             height: "300px",
-            border: "1px solid yellow",
+            border: "10px solid yellow",
             position: "relative",
             zIndex: 2,
-            // top: 0,
-            // left: 0,
+            top: 10,
+            left: 100,
             // zIndex: 0,
           }}
         />

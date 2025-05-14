@@ -125,7 +125,6 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         if (name === "hidpi") {
-          console.log("hidpi", value)
           this.resize()
         }
         target[name] = value
@@ -152,9 +151,8 @@ export class RenderEngine {
 
     this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
       attributes,
-      width: this.canvasGL.width,
-      height: this.canvasGL.height,
-      dpr: this.canvasSettings.dpr,
+      container: this.CONTAINER.getBoundingClientRect(),
+      // dpr: this.canvasSettings.dpr,
     })
     this.backend.then((backend) => {
       this.CONTAINER.childNodes.forEach(async (node) => {
@@ -173,16 +171,26 @@ export class RenderEngine {
     })
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    // this.addControls(this.CONTAINER)
-    this.render({
-      force: true,
+    new IntersectionObserver(() => console.log("intersect"), {
+      root: this.CONTAINER,
     })
+    // this.addControls(this.CONTAINER)
+    this.render()
   }
 
   public async onLoad(cb: () => void): Promise<void> {
     await this.backend
     cb()
   }
+
+  // private updateViewboxes() {
+  //   // const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+  //   const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: containerHeight } = this.CONTAINER.getBoundingClientRect()
+  //   const viewbox = element.getBoundingClientRect()
+  //   viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
+  //   viewbox.x = viewbox.x - containerOffsetX
+  //   await backend.updateViewBox(step, viewbox)
+  // }
 
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas")
@@ -196,15 +204,14 @@ export class RenderEngine {
     canvas.style.position = "abolute"
     canvas.style.top = "0px"
     canvas.style.left = "0px"
-    // console.log("createCanvas", JSON.stringify(canvas.style.width))
     this.CONTAINER.appendChild(canvas)
-    // this.CONTAINER.prepend(canvas)
     return canvas
   }
 
   private resize(): void {
-    const width = this.CONTAINER.clientWidth
-    const height = this.CONTAINER.clientHeight
+    // const width = this.CONTAINER.clientWidth
+    // const height = this.CONTAINER.clientHeight
+    const { width, height } = this.CONTAINER.getBoundingClientRect()
 
     this.canvas2D.style.width = String(width) + "px"
     this.canvas2D.style.height = String(height) + "px"
@@ -213,7 +220,18 @@ export class RenderEngine {
     // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
-      engine.resize(width, height, this.canvasSettings.dpr)
+      engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
+    })
+
+    this.backend.then((backend) => {
+      this.CONTAINER.childNodes.forEach(async (node) => {
+        if (node instanceof HTMLElement) {
+          const step = node.getAttribute("step")
+          if (step) {
+            await backend.updateViewBox(step, node.getBoundingClientRect())
+          }
+        }
+      })
     })
   }
 
@@ -279,21 +297,18 @@ export class RenderEngine {
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === ev.pointerId)
       this.pointerCache.splice(index, 1)
     }
-    const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-    const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: _containerHeight } = this.CONTAINER.getBoundingClientRect()
-    const viewbox = element.getBoundingClientRect()
-    viewbox.y = _containerHeight - viewbox.bottom + containerOffsetY
-    viewbox.x = viewbox.x - containerOffsetX
-    await backend.updateViewBox(step, viewbox)
+
+    // const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+    // const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: containerHeight } = this.CONTAINER.getBoundingClientRect()
+    // const viewbox = element.getBoundingClientRect()
+    // viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
+    // viewbox.x = viewbox.x - containerOffsetX
+    // await backend.updateViewBox(step, viewbox)
+
+    await backend.updateViewBox(step, element.getBoundingClientRect())
 
     element.onwheel = async (e): Promise<void> => {
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-      const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: _containerHeight } = this.CONTAINER.getBoundingClientRect()
-
-      // const viewbox = element.getBoundingClientRect()
-      // viewbox.y = _containerHeight - viewbox.bottom + containerOffsetY
-      // viewbox.x = viewbox.x - containerOffsetX
-      // await backend.updateViewBox(step, viewbox)
       const settings = await backend.getSettings()
       const moveScale = this.canvasSettings.dpr
 
@@ -436,9 +451,9 @@ export class RenderEngine {
     backend.addFile(step, params)
   }
 
-  public async render(props: RenderProps): Promise<void> {
+  public async render(): Promise<void> {
     const backend = await this.backend
-    backend.render(props)
+    backend.render()
   }
 
   private sendFontData(): void {

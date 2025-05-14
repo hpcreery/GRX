@@ -14,6 +14,8 @@ import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "./settings"
 import { settings, origin, grid } from "./settings"
 import ShapeTransform from "./transform"
+import { TypedEventTarget } from "typescript-event-target"
+import { toEnum, toValues } from "./types"
 
 export interface WorldProps {}
 
@@ -52,11 +54,12 @@ export interface WorldContext {
 
 export interface RenderEngineBackendConfig {
   attributes?: WebGLContextAttributes | undefined
-  width: number
-  height: number
-  x: number
-  y: number
-  dpr: number
+  // width: number
+  // height: number
+  // x: number
+  // y: number
+  viewBox: DOMRect
+  // dpr: number
   ctx: OffscreenCanvasRenderingContext2D
   regl: REGL.Regl
 }
@@ -84,13 +87,11 @@ export interface LayerInfo {
   transform: Transform
 }
 
-export const EngineEvents = {
-  RENDER: "RENDER",
-  LAYERS_CHANGED: "LAYERS_CHANGED",
-  MESSAGE: "MESSAGE",
-} as const
-
-export type TEngineEvents = (typeof EngineEvents)[keyof typeof EngineEvents]
+interface EngineEventsMap {
+  RENDER: Event
+  LAYERS_CHANGED: Event
+  MESSAGE: MessageEvent<MessageData>
+}
 
 export const MessageLevel = {
   INFO: "blue",
@@ -150,7 +151,7 @@ export class StepRenderer {
 
   // public transform2: ShapeTransform = new ShapeTransform()
 
-  private dirty = true
+  private changePending = true
 
   // ** make layers a proxy so that we can call render when a property is updated
   // public layers: LayerRenderer[] = new Proxy([], {
@@ -176,17 +177,19 @@ export class StepRenderer {
 
   public parsers: PluginsDefinition = {}
 
-  public eventTarget = new EventTarget()
+  public eventTarget = new TypedEventTarget<EngineEventsMap>()
 
   private utilitiesRenderer: UtilitiesRenderer
 
-  constructor({ width, height, x, y, dpr, regl, ctx }: RenderEngineBackendConfig) {
+  constructor({ viewBox, regl, ctx }: RenderEngineBackendConfig) {
     // this.viewBox = {
     //   width: width * dpr,
     //   height: height * dpr,
     //   x: x * dpr,
     //   y: y * dpr,
     // }
+
+    this.viewBox = viewBox
 
     this.regl = regl
     this.ctx = ctx
@@ -289,9 +292,10 @@ export class StepRenderer {
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   // public initializeFontRenderer(fontData: Uint8ClampedArray): void {
@@ -299,31 +303,27 @@ export class StepRenderer {
   // }
 
   public updateViewBox(newViewBox: DOMRect): void {
-    this.viewBox.x = newViewBox.left
-    this.viewBox.y = newViewBox.top
-    this.viewBox.width = newViewBox.width
-    this.viewBox.height = newViewBox.height
-    // this.viewBox = newViewBox
-    // this.regl.poll()
-    // this.updateTransform()
+    this.viewBox = newViewBox
     // this.render({
     //   force: true,
     // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
-  public resize(width: number, height: number, dpr: number): void {
-    this.viewBox.width = width * dpr
-    this.viewBox.height = height * dpr
-    // this.offscreenCanvasGL.width = this.viewBox.width
-    // this.offscreenCanvasGL.height = this.viewBox.height
-    // this.offscreenCanvas2D.width = this.viewBox.width
-    // this.offscreenCanvas2D.height = this.viewBox.height
-    this.regl.poll()
-    this.updateTransform()
-    this.render({
-      force: true,
-    })
-  }
+  // public resize(width: number, height: number, dpr: number): void {
+  //   this.viewBox.width = width * dpr
+  //   this.viewBox.height = height * dpr
+  //   // this.offscreenCanvasGL.width = this.viewBox.width
+  //   // this.offscreenCanvasGL.height = this.viewBox.height
+  //   // this.offscreenCanvas2D.width = this.viewBox.width
+  //   // this.offscreenCanvas2D.height = this.viewBox.height
+  //   this.regl.poll()
+  //   this.updateTransform()
+  //   // this.render({
+  //   //   force: true,
+  //   // })
+  //   this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  // }
 
   public toss(): void {
     const { dragging } = this.transform
@@ -396,7 +396,8 @@ export class StepRenderer {
     // this.transform2.update(this.transform.matrix)
 
     // logMatrix(this.transform.matrix)
-    this.render()
+    // this.render()
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
@@ -427,8 +428,9 @@ export class StepRenderer {
   }
 
   public async sendMessage(data: MessageData): Promise<void> {
-    this.eventTarget.dispatchEvent(
-      new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
+    this.eventTarget.dispatchTypedEvent(
+      "MESSAGE",
+      new MessageEvent<MessageData>("MESSAGE", {
         data,
       }),
     )
@@ -441,10 +443,12 @@ export class StepRenderer {
       ctx: this.ctx,
     })
     this.layers.push(layer)
-    this.render({
-      force: true,
-    })
-    this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
+    console.log("layer added")
   }
 
   public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
@@ -483,7 +487,7 @@ export class StepRenderer {
         if (index != -1) {
           this.layersQueue.splice(index, 1)
         }
-        this.eventTarget.dispatchEvent(new Event(EngineEvents.LAYERS_CHANGED))
+        this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
         this.sendMessage({ level: MessageLevel.INFO, title: "File Loaded", message: "File loaded successfully" })
       }
     } else {
@@ -536,9 +540,10 @@ export class StepRenderer {
     const index = this.layers.findIndex((layer) => layer.id === id)
     if (index === -1) return
     this.layers.splice(index, 1)
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public moveLayer(from: number, to: number): void {
@@ -549,21 +554,23 @@ export class StepRenderer {
     const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer, props)
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public setLayerTransform(id: string, transform: Partial<Transform>): void {
     const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer.transform, transform)
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
-  public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
+  public addEventCallback(event: keyof EngineEventsMap, listener: (data: MessageData | null) => void): void {
     function runCallback(e: Event | MessageEvent): void {
       if (e instanceof MessageEvent) {
         listener(e.data)
@@ -629,9 +636,10 @@ export class StepRenderer {
         this.selections.push(newSelectionLayer)
       }
     })
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     return selection
   }
 
@@ -683,9 +691,10 @@ export class StepRenderer {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      this.render({
-        force: true,
-      })
+      // this.render({
+      //   force: true,
+      // })
+      this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     }
   }
 
@@ -738,9 +747,10 @@ export class StepRenderer {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom })
     }
-    this.render({
-      force: true,
-    })
+    // this.render({
+    //   force: true,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   // public startLoading(): void {
@@ -754,21 +764,24 @@ export class StepRenderer {
   public addMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.addMeasurement(pointSnap)
-    this.render()
+    // this.render()
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public updateMeasurement(point: vec2): void {
     this.measurements.updateMeasurement(point)
-    this.render({
-      force: true,
-      updateLayers: false,
-    })
+    // this.render({
+    //   force: true,
+    //   updateLayers: false,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public finishMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.finishMeasurement(pointSnap)
-    this.render()
+    // this.render()
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public getMeasurements(): { point1: vec2; point2: vec2 }[] {
@@ -781,42 +794,36 @@ export class StepRenderer {
 
   public clearMeasurements(): void {
     this.measurements.clearMeasurements()
-    this.render({
-      force: true,
-      updateLayers: false,
-    })
+    // this.render({
+    //   force: true,
+    //   updateLayers: false,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public setMeasurementUnits(units: Units): void {
     this.measurements.setMeasurementUnits(units)
-    this.render({
-      force: true,
-      updateLayers: false,
-    })
+    // this.render({
+    //   force: true,
+    //   updateLayers: false,
+    // })
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
-  public render(props: StepRendererProps = StepRenderer.defaultRenderProps): void {
-    const { force, updateLayers } = { ...StepRenderer.defaultRenderProps, ...props }
+  public render(): void {
+    // const { force, updateLayers } = { ...StepRenderer.defaultRenderProps, ...props }
     // if (!this.dirty && !force) return
     // if (this.loadingFrame.enabled) return
-    if (updateLayers) this.dirty = false
+    // if (updateLayers) this.changePending = false
     // this.regl.poll()
-    // this.regl.clear({
-    //   color: [0, 0, 0, 0],
-    //   depth: 1,
-    // })
-    // this.ctx.clearRect(0, 0, this.viewBox.width, this.viewBox.height)
-    const { x, y, width, height } = this.viewBox
-    // this.ctx.clearRect(x, y, width, height)
 
-    setTimeout(() => (this.dirty = true), settings.MSPFRAME)
-    // this.regl._gl.enable(this.regl._gl.SCISSOR_TEST)
-    // this.regl._gl.scissor(x, y, width, height)
+    // setTimeout(() => (this.dirty = true), settings.MSPFRAME)
+    // if (!this.changePending) return
     this.world((context) => {
-      // this.regl.clear({
-      //   color: [0, 0, 0, 0],
-      //   depth: 1,
-      // })
+      this.regl.clear({
+        color: [0, 0, 0, 0],
+        depth: 1,
+      })
 
       // if (origin.enabled) this.drawCollections.renderOrigin()
       // if (grid.enabled) this.drawCollections.renderGrid(grid)
@@ -825,7 +832,9 @@ export class StepRenderer {
 
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        updateLayers && layer.render(context)
+        // layer.dirty
+        // updateLayers && layer.render(context)
+        layer.render(context)
         this.drawCollections.blend(() => {
           if (settings.COLOR_BLEND == ColorBlend.OVERLAY) {
             this.drawCollections.overlayBlendFunc(() => this.drawCollections.renderToScreen({ renderTexture: layer.framebuffer }))
@@ -841,7 +850,6 @@ export class StepRenderer {
       this.measurements.render(context)
       this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
-    // this.regl._gl.disable(this.regl._gl.SCISSOR_TEST)
   }
 
   // private shapeToElement(shape: Shapes.Shape): Path2D {
