@@ -1,5 +1,5 @@
-import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend } from "./types"
-import { mat3, vec2, vec3, vec4 } from "gl-matrix"
+import { SnapMode, ColorBlend } from "./types"
+import { vec4 } from "gl-matrix"
 
 // GENERAL SETTINGS
 export interface RenderSettings {

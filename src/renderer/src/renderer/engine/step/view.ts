@@ -1,7 +1,7 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
 import LayerRenderer, { LayerRendererProps } from "./layer/layer"
-import { initializeFontRenderer, ReglRenderers, TLoadedReglRenderers } from "../../collections"
+import { ReglRenderers, TLoadedReglRenderers } from "./layer/collections"
 import * as Shapes from "./layer/shapes/shapes"
 import * as Comlink from "comlink"
 import plugins from "../plugins"
@@ -9,13 +9,12 @@ import type { Plugin, PluginsDefinition, AddLayerProps } from "../plugins"
 import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
 import { UID } from "../utils"
-import { SimpleMeasurement } from "../../measurements"
+import { SimpleMeasurement } from "./measurements"
 import { ShapeDistance } from "./layer/shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, grid } from "../settings"
 import ShapeTransform from "../transform"
 import { TypedEventTarget } from "typescript-event-target"
-import { toEnum, toValues } from "../types"
 
 export interface WorldProps {}
 

@@ -4,7 +4,6 @@ import { Units, BoundingBox, SnapMode } from "../../types"
 
 import type { UniverseContext } from "../../engine"
 import { getUnitsConversion, UID } from "../../utils"
-import { settings, origin, grid } from "../../settings"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
 import { WorldContext } from "../view"

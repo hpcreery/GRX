@@ -5,8 +5,8 @@ import { AddLayerProps } from "./engine/plugins"
 import { PointerMode, SnapMode } from "./engine/types"
 
 import type { GridRenderProps, RenderSettings } from "./engine/settings"
-import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
-import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
+import cozetteFont from "./engine/step/layer/shapes/text/cozette/CozetteVector.ttf?url"
+import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shapes/text/cozette/font"
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)

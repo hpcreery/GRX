@@ -5,9 +5,9 @@ import * as Symbols from "./shapes/symbols/symbols"
 import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "../../types"
 import ShapeTransform from "../../transform"
 
-import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "../../../collections"
+import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
-import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "../../../collections"
+import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
 import type { UniverseContext } from "../../engine"
 import { getScaleMat3 } from "../../utils"
@@ -15,7 +15,7 @@ import { WorldContext } from "../view"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
-import { settings, grid, origin } from "../../settings"
+import { settings } from "../../settings"
 
 interface CommonAttributes {}
 
@@ -223,7 +223,7 @@ export class ShapeRenderer {
         color: [0, 0, 0, 0],
       },
       uniforms: {
-        u_Color: (context: UniverseContext) => {
+        u_Color: (_context: UniverseContext) => {
           return [1 - settings.BACKGROUND_COLOR[2], 1 - settings.BACKGROUND_COLOR[1], 1 - settings.BACKGROUND_COLOR[0]]
         },
         u_Alpha: () => 1,
