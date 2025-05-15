@@ -1,6 +1,6 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "./types"
-import { Transform } from './transform'
-import * as Symbols from "./symbols"
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "./../../../types"
+import { Transform } from "../../../transform"
+import * as Symbols from "./symbols/symbols"
 import { vec2 } from "gl-matrix"
 
 export const PAD_RECORD_PARAMETERS = ["index", "x", "y", "sym_num", "resize_factor", "polarity", "rotation", "mirror_x", "mirror_y"] as const

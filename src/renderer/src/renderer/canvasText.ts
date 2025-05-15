@@ -1,5 +1,5 @@
 import REGL from "regl"
-import { UniverseContext } from "./engine"
+import { UniverseContext } from "./engine/engine"
 import { vec2, vec3 } from "gl-matrix"
 
 interface TextUnit {

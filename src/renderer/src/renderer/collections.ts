@@ -1,9 +1,9 @@
 import REGL from "regl"
-import * as Shapes from "./shapes"
-import * as Symbols from "./symbols"
+import * as Shapes from "./engine/step/layer/shapes/shapes"
+import * as Symbols from "./engine/step/layer/shapes/symbols/symbols"
 import { glFloatSize } from "./constants"
-import { FeatureTypeIdentifier, Binary } from "./types"
-import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
+import { FeatureTypeIdentifier, Binary } from "./engine/types"
+import { MacroRenderer, StepAndRepeatRenderer } from "./engine/step/layer/shape-renderer"
 
 import PadFrag from "./shaders/src/Pad.frag"
 import PadVert from "./shaders/src/Pad.vert"
@@ -23,17 +23,17 @@ import OriginFrag from "./shaders/src/Origin.frag"
 // import LoadingFrag from "./shaders/src/Loading/Winding.frag"
 import FullScreenQuad from "./shaders/src/FullScreenQuad.vert"
 
-import { GridRenderProps, OriginRenderProps } from "./settings"
+import { GridRenderProps, OriginRenderProps } from "./engine/settings"
 
-import { UniverseContext } from "./engine"
+import { UniverseContext } from "./engine/engine"
 import { vec2, vec4 } from "gl-matrix"
 
-import { settings } from "./settings"
+import { settings } from "./engine/settings"
 
 import earcut from "earcut"
 
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
-import { WorldContext } from "./step"
+import { WorldContext } from "./engine/step/view"
 
 const {
   LINE_RECORD_PARAMETERS,

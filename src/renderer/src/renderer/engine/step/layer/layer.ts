@@ -1,13 +1,13 @@
 import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
-import { Units, BoundingBox, SnapMode } from "./types"
+import { Units, BoundingBox, SnapMode } from "../../types"
 
-import type { UniverseContext } from "./engine"
-import { getUnitsConversion, UID } from "./utils"
-import { settings, origin, grid } from "./settings"
+import type { UniverseContext } from "../../engine"
+import { getUnitsConversion, UID } from "../../utils"
+import { settings, origin, grid } from "../../settings"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
-import { WorldContext } from "./step"
+import { WorldContext } from "../view"
 
 export interface LayerProps {
   name: string

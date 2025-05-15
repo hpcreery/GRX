@@ -1,21 +1,21 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shapes"
-import * as Symbols from "./symbols"
-import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "./types"
-import ShapeTransform from "./transform"
+import * as Shapes from "./shapes/shapes"
+import * as Symbols from "./shapes/symbols/symbols"
+import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "../../types"
+import ShapeTransform from "../../transform"
 
-import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
+import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "../../../collections"
 
-import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
+import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "../../../collections"
 
-import type { UniverseContext } from "./engine"
-import { getScaleMat3 } from "./utils"
-import { WorldContext } from "./step"
+import type { UniverseContext } from "../../engine"
+import { getScaleMat3 } from "../../utils"
+import { WorldContext } from "../view"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
-import { settings, grid, origin } from "./settings"
+import { settings, grid, origin } from "../../settings"
 
 interface CommonAttributes {}
 

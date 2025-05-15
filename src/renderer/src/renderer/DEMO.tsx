@@ -1,12 +1,12 @@
 import React, { useMemo } from "react"
 import "../App.css"
-import * as Symbols from "./symbols"
-import * as Shapes from "./shapes"
+import * as Symbols from "./engine/step/layer/shapes/symbols/symbols"
+import * as Shapes from "./engine/step/layer/shapes/shapes"
 import { RenderEngine } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
-import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
-import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
+import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
+import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
@@ -25,7 +25,7 @@ import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/
 // import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
 // import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
 
-import { LayerRendererProps } from "./layer"
+import { LayerRendererProps } from "./engine/step/layer/layer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -2078,9 +2078,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.render({
-      force: true,
-    })
+    Engine.render()
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 
@@ -2111,12 +2109,12 @@ function REGLApp(): JSX.Element {
         }}
       >
         <div
-          // step="box1"
-          {...{ step: "box1" }}
+          // view="box1"
+          {...{ view: "box1" }}
           style={{
             width: "300px",
             height: "300px",
-            border: "10px solid red",
+            border: "1px solid red",
             cursor: "crosshair",
             pointerEvents: "all",
             position: "relative",
@@ -2128,12 +2126,12 @@ function REGLApp(): JSX.Element {
           }}
         />
         <div
-          // step="box2"
-          {...{ step: "box2" }}
+          // view="box2"
+          {...{ view: "box2" }}
           style={{
             width: "300px",
             height: "300px",
-            border: "10px solid yellow",
+            border: "1px solid yellow",
             position: "relative",
             zIndex: 2,
             top: 10,

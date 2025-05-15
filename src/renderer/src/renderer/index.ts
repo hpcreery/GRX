@@ -1,10 +1,10 @@
 import * as Comlink from "comlink"
-import EngineWorker from "./engine?worker"
-import type { QuerySelection, RenderEngineBackend, RenderProps, Stats } from "./engine"
-import { AddLayerProps } from "./plugins"
-import { PointerMode, SnapMode } from "./types"
+import EngineWorker from "./engine/engine?worker"
+import type { QuerySelection, RenderEngineBackend, RenderProps, Stats } from "./engine/engine"
+import { AddLayerProps } from "./engine/plugins"
+import { PointerMode, SnapMode } from "./engine/types"
 
-import type { GridRenderProps, RenderSettings } from "./settings"
+import type { GridRenderProps, RenderSettings } from "./engine/settings"
 import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
 
@@ -101,12 +101,15 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         if (name === "mode") {
-          if (value === PointerMode.MOVE) this.CONTAINER.style.cursor = "grab"
-          if (value === PointerMode.SELECT) this.CONTAINER.style.cursor = "crosshair"
-          if (value === PointerMode.MEASURE) {
-            this.CONTAINER.style.cursor = "crosshair"
-            this.settings.SHOW_DATUMS = true
-          }
+          const views = this.getViews()
+          views.forEach((viewElement) => {
+            if (value === PointerMode.MOVE) viewElement.style.cursor = "grab"
+            if (value === PointerMode.SELECT) viewElement.style.cursor = "crosshair"
+            if (value === PointerMode.MEASURE) {
+              viewElement.style.cursor = "crosshair"
+              this.settings.SHOW_DATUMS = true
+            }
+          })
         }
         target[name] = value
         return true
@@ -141,7 +144,8 @@ export class RenderEngine {
   public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     this.CONTAINER = container
-    this.CONTAINER.style.cursor = "grab"
+    this.CONTAINER.style.cursor = "auto"
+    // this.CONTAINER.style.pointerEvents = "none"
 
     this.canvasGL = this.createCanvas()
     this.canvas2D = this.createCanvas()
@@ -155,27 +159,31 @@ export class RenderEngine {
       // dpr: this.canvasSettings.dpr,
     })
     this.backend.then((backend) => {
-      this.CONTAINER.childNodes.forEach(async (node) => {
-        // change cursor style of each child node
-        // node.style.cursor = "grab"
-        if (node instanceof HTMLElement) {
-          // node.style.cursor = "crosshair"
-          const step = node.getAttribute("step")
-          // console.log("Step", step)
-          if (step) {
-            await backend.addStep(step, node.getBoundingClientRect())
-            await this.addControls(node)
-          }
-        }
+      const views = this.getViews()
+      views.forEach(async (viewElement) => {
+        const viewName = viewElement.getAttribute("view")!
+        await backend.addView(viewName, viewElement.getBoundingClientRect())
+        await this.addControls(viewElement)
+        new MutationObserver(() => console.log("mutate")).observe(viewElement, { characterData: true })
+        // }
       })
     })
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    new IntersectionObserver(() => console.log("intersect"), {
-      root: this.CONTAINER,
-    })
     // this.addControls(this.CONTAINER)
     this.render()
+  }
+
+  public getViews(): HTMLElement[] {
+    const views = this.CONTAINER.querySelectorAll("[view]")
+    const HTMLViews: HTMLElement[] = []
+    views.forEach((viewElement) => {
+      if (!(viewElement instanceof HTMLElement)) return
+      const viewName = viewElement.getAttribute("view")
+      if (viewName == null) return
+      HTMLViews.push(viewElement)
+    })
+    return HTMLViews
   }
 
   public async onLoad(cb: () => void): Promise<void> {
@@ -189,7 +197,7 @@ export class RenderEngine {
   //   const viewbox = element.getBoundingClientRect()
   //   viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
   //   viewbox.x = viewbox.x - containerOffsetX
-  //   await backend.updateViewBox(step, viewbox)
+  //   await backend.updateViewBox(view, viewbox)
   // }
 
   private createCanvas(): HTMLCanvasElement {
@@ -224,26 +232,23 @@ export class RenderEngine {
     })
 
     this.backend.then((backend) => {
-      this.CONTAINER.childNodes.forEach(async (node) => {
-        if (node instanceof HTMLElement) {
-          const step = node.getAttribute("step")
-          if (step) {
-            await backend.updateViewBox(step, node.getBoundingClientRect())
-          }
-        }
+      const views = this.getViews()
+      views.forEach(async (node) => {
+        const view = node.getAttribute("view")!
+        await backend.updateViewBox(view, node.getBoundingClientRect())
       })
     })
   }
 
-  public async zoomFit(step: string): Promise<void> {
+  public async zoomFit(view: string): Promise<void> {
     const backend = await this.backend
-    backend.zoomFit(step)
+    backend.zoomFit(view)
   }
 
   private async addControls(element: HTMLElement): Promise<void> {
-    const step = element.getAttribute("step")
-    if (!step) {
-      throw new Error("Element must have a 'step' attribute")
+    const viewName = element.getAttribute("view")
+    if (!viewName) {
+      throw new Error("Element must have a 'view' attribute")
     }
     const backend = await this.backend
     const sendPointerEvent = async (
@@ -260,9 +265,9 @@ export class RenderEngine {
     }
 
     const getMouseWorldCoordinates = async (element: HTMLElement, e: MouseEvent): Promise<[number, number]> => {
-      const step = element.getAttribute("step")
-      if (!step) {
-        throw new Error("Element must have a 'step' attribute")
+      const viewName = element.getAttribute("view")
+      if (!viewName) {
+        throw new Error("Element must have a 'view' attribute")
       }
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
 
@@ -289,7 +294,7 @@ export class RenderEngine {
       }
 
       const backend = await this.backend
-      return backend.getWorldPosition(step, ...getMouseNormalizedWorldCoordinates(e))
+      return backend.getWorldPosition(viewName, ...getMouseNormalizedWorldCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -298,14 +303,9 @@ export class RenderEngine {
       this.pointerCache.splice(index, 1)
     }
 
-    // const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-    // const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: containerHeight } = this.CONTAINER.getBoundingClientRect()
-    // const viewbox = element.getBoundingClientRect()
-    // viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
-    // viewbox.x = viewbox.x - containerOffsetX
-    // await backend.updateViewBox(step, viewbox)
+    await backend.updateViewBox(viewName, element.getBoundingClientRect())
 
-    await backend.updateViewBox(step, element.getBoundingClientRect())
+    element.style.cursor = "grab"
 
     element.onwheel = async (e): Promise<void> => {
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
@@ -313,9 +313,9 @@ export class RenderEngine {
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint(step, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        backend.zoomAtPoint(viewName, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(step, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
+        backend.zoomAtPoint(viewName, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -324,10 +324,10 @@ export class RenderEngine {
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
-        await backend.grabViewport(step)
+        await backend.grabViewport(viewName)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await backend.select(step, [x, y])
+        const features = await backend.select(viewName, [x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -338,11 +338,11 @@ export class RenderEngine {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x1, y1] = await getMouseWorldCoordinates(element, e)
-        const currentMeasurement = await backend.getCurrentMeasurement(step)
+        const currentMeasurement = await backend.getCurrentMeasurement(viewName)
         if (currentMeasurement != null) {
-          backend.finishMeasurement(step, [x1, y1])
+          backend.finishMeasurement(viewName, [x1, y1])
         } else {
-          backend.addMeasurement(step, [x1, y1])
+          backend.addMeasurement(viewName, [x1, y1])
         }
       }
     }
@@ -351,23 +351,26 @@ export class RenderEngine {
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grab"
-        await backend.releaseViewport(step)
+        await backend.releaseViewport(viewName)
       }
       removePointerCache(e)
     }
     element.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(step)
+        await backend.releaseViewport(viewName)
       }
       removePointerCache(e)
     }
     element.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(step)
+        await backend.releaseViewport(viewName)
       }
       removePointerCache(e)
+    }
+    element.onpointerenter = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
     }
     element.onpointermove = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_MOVE)
@@ -378,10 +381,10 @@ export class RenderEngine {
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x, y] = await getMouseWorldCoordinates(element, e)
-        backend.updateMeasurement(step, [x, y])
+        backend.updateMeasurement(viewName, [x, y])
       }
 
-      if (!(await backend.isDragging(step))) {
+      if (!(await backend.isDragging(viewName))) {
         await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
@@ -400,13 +403,13 @@ export class RenderEngine {
           const settings = await backend.getSettings()
           const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint(step, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            backend.zoomAtPoint(viewName, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            backend.zoomAtPoint(step, width / 2, height / 2, zoomFactor)
+            backend.zoomAtPoint(viewName, width / 2, height / 2, zoomFactor)
           }
-          backend.moveViewport(step, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          backend.moveViewport(viewName, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(step, e.movementX * moveScale, e.movementY * moveScale)
+          await backend.moveViewport(viewName, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
@@ -416,39 +419,40 @@ export class RenderEngine {
       //   this.pointerSettings.mode = 'move'
       //   element.style.cursor = 'grab'
       // }
+      console.log(e, viewName)
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await backend.isDragging(step)
+        const isDragging = await backend.isDragging(viewName)
         if (isDragging) return
         this.backend.then((engine) => {
-          engine.grabViewport(step)
+          engine.grabViewport(viewName)
           switch (e.key) {
             case "ArrowUp":
-              engine.moveViewport(step, 0, 10)
+              engine.moveViewport(viewName, 0, 10)
               break
             case "ArrowDown":
-              engine.moveViewport(step, 0, -10)
+              engine.moveViewport(viewName, 0, -10)
               break
             case "ArrowLeft":
-              engine.moveViewport(step, 10, 0)
+              engine.moveViewport(viewName, 10, 0)
               break
             case "ArrowRight":
-              engine.moveViewport(step, -10, 0)
+              engine.moveViewport(viewName, -10, 0)
               break
           }
-          engine.releaseViewport(step)
+          engine.releaseViewport(viewName)
         })
       }
     }
   }
 
-  public async addLayer(step: string, params: AddLayerProps): Promise<void> {
+  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
     const backend = await this.backend
-    backend.addLayer(step, params)
+    backend.addLayer(view, params)
   }
 
-  public async addFile(step: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
-    backend.addFile(step, params)
+    backend.addFile(view, params)
   }
 
   public async render(): Promise<void> {

@@ -1,13 +1,13 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import { LayerRendererProps } from "./layer"
-import { initializeFontRenderer, initializeRenderers } from "./collections"
+import { LayerRendererProps } from "./step/layer/layer"
+import { initializeFontRenderer, initializeRenderers } from "../collections"
 import * as Comlink from "comlink"
 import type { PluginsDefinition, AddLayerProps } from "./plugins"
 import { type Units, type ViewBox } from "./types"
 import ShapeTransform, { Transform } from "./transform"
-import { ShapeDistance } from "./shape-renderer"
-import { StepRenderer } from "./step"
+import { ShapeDistance } from "./step/layer/shape-renderer"
+import { ViewRenderer } from "./step/view"
 import type { RenderSettings, GridRenderProps } from "./settings"
 import { settings, grid } from "./settings"
 
@@ -115,7 +115,7 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  public steps: Map<string, StepRenderer> = new Map()
+  public steps: Map<string, ViewRenderer> = new Map()
   // public steps: StepRenderer[] = []
 
   private renderNowInterval: boolean = true
@@ -182,8 +182,8 @@ export class RenderEngineBackend {
 
   public renderDispatch = (): void => this.render()
 
-  public addStep(name: string, viewBox: DOMRect): void {
-    const newStep = new StepRenderer({
+  public addView(name: string, viewBox: DOMRect): void {
+    const newStep = new ViewRenderer({
       regl: RenderEngineBackend.regl,
       ctx: RenderEngineBackend.ctx,
       viewBox,
