@@ -1,5 +1,5 @@
 import REGL from "regl"
-import * as Shapes from "./shape/symbol"
+import * as Shapes from "./shape/shape"
 import * as Symbols from "./shape/symbol/symbol"
 import { glFloatSize } from "../../constants"
 import { FeatureTypeIdentifier, Binary } from "../../types"

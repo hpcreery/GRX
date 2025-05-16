@@ -32,7 +32,7 @@ export const CCW = "ccw"
 
 export type ArcDirection = typeof CW | typeof CCW
 
-import * as Shapes from "@src/renderer/engine/step/layer/shape/symbol"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
 import { ApertureTransform } from "../aperture-transform-store"
 import { vec2 } from "gl-matrix"
 

@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { UniverseContext } from "../engine"
-import { DatumPoint, DatumText } from "./layer/shape/symbol"
+import { DatumPoint, DatumText } from "./layer/shape/shape"
 import { vec2, vec3 } from "gl-matrix"
 import { WorldContext } from "./view"
 

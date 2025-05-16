@@ -4,7 +4,7 @@ import { UniverseContext } from "../engine"
 // import type { Units } from "../types"
 import { getUnitsConversion } from "../utils"
 import { RendererProps, ShapeRenderer } from "./layer/shape-renderer"
-import * as Shapes from "./layer/shape/symbol"
+import * as Shapes from "./layer/shape/shape"
 import { WorldContext } from "./view"
 import { measurementSettings } from "@src/renderer/engine/settings"
 

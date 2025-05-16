@@ -1,5 +1,5 @@
 import { ISymbolRecord, FeatureTypeIdentifier, toMap, BoundingBox, AttributeCollection } from "../../../../types"
-import { Shape, getBoundingBoxOfShape } from "../symbol"
+import { Shape, getBoundingBoxOfShape } from "../shape"
 import { malloc } from "../../../../utils"
 import { vec2 } from "gl-matrix"
 

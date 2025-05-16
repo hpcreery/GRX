@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shape/symbol"
+import * as Shapes from "./shape/shape"
 import * as Symbols from "./shape/symbol/symbol"
 import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "../../types"
 import ShapeTransform from "../../transform"

@@ -1,7 +1,7 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule } from "chevrotain"
 import { generateCstDts } from "chevrotain"
 import * as Cst from "./nccst"
-import * as Shapes from "@src/renderer/engine/step/layer/shape/symbol"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
 import * as Symbols from "@src/renderer/engine/step/layer/shape/symbol/symbol"
 
 import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from "@src/renderer/engine/types"

@@ -20,7 +20,7 @@ import * as Tree from "../tree"
 import type { MacroTool } from "../tool-store"
 
 import * as Symbols from "@src/renderer/engine/step/layer/shape/symbol/symbol"
-import * as Shapes from "@src/renderer/engine/step/layer/shape/symbol"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
 
 type VariableValues = Record<string, number>
 
