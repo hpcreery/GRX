@@ -1,14 +1,14 @@
 import React from "react"
 import { Flex, Textarea } from "@mantine/core"
-import { Shape } from "@src/renderer/shapes"
+import { Shape } from "@src/renderer/engine/step/layer/shapes/shapes"
 import { parser, NCLexer, NCToShapesVisitor } from "./parser/parser"
-import { CstNode } from 'chevrotain'
+import { CstNode } from "chevrotain"
 
 const drill = `T01`
 
 export default function NCDemo(): JSX.Element {
   const [input, setInput] = React.useState<string>(drill)
-  const [parsed, setParsed] = React.useState<CstNode>({name: '', children: {}})
+  const [parsed, setParsed] = React.useState<CstNode>({ name: "", children: {} })
   const [shapes, setShapes] = React.useState<Shape[]>([])
   const [error, setError] = React.useState<string | undefined>(undefined)
 
@@ -31,12 +31,12 @@ export default function NCDemo(): JSX.Element {
       console.log(result)
       if (parser.errors.length > 0) {
         parser.errors.forEach((e) => console.error("PARSER ERROR: ", e.message))
-        setError(parser.errors.map((e, i) => "[ PARSER ERROR " + (i+1) + ":" + e.message + " ]").join("\n") + "\n")
+        setError(parser.errors.map((e, i) => "[ PARSER ERROR " + (i + 1) + ":" + e.message + " ]").join("\n") + "\n")
       } else {
         setError(undefined)
       }
     } catch (err) {
-      setParsed({name: '', children: {}})
+      setParsed({ name: "", children: {} })
       setError(String(err))
     }
   }, [input])

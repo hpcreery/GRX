@@ -3,7 +3,7 @@ import DxfParser from "dxf-parser"
 import * as converter from "./converter"
 
 import * as Comlink from "comlink"
-import { AddLayerProps } from "@src/renderer/plugins"
+import { AddLayerProps } from "@src/renderer/engine/plugins"
 
 // import file from './testdata/noentities.dxf?url'
 

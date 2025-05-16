@@ -164,7 +164,7 @@ export class RenderEngine {
         const viewName = viewElement.getAttribute("view")!
         await backend.addView(viewName, viewElement.getBoundingClientRect())
         await this.addControls(viewElement)
-        new MutationObserver(() => console.log("mutate")).observe(viewElement, { characterData: true })
+        // new MutationObserver(() => console.log("mutate")).observe(viewElement, { characterData: true })
         // }
       })
     })
@@ -172,6 +172,7 @@ export class RenderEngine {
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     // this.addControls(this.CONTAINER)
     this.render()
+    this.pollViews()
   }
 
   public getViews(): HTMLElement[] {
@@ -243,6 +244,13 @@ export class RenderEngine {
   public async zoomFit(view: string): Promise<void> {
     const backend = await this.backend
     backend.zoomFit(view)
+  }
+
+  public async pollViews(): Promise<void> {
+    // const views = this.getViews()
+    // setTimeout
+    this.resize()
+    requestAnimationFrame((t) => this.pollViews())
   }
 
   private async addControls(element: HTMLElement): Promise<void> {

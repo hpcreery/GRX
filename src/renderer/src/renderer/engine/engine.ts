@@ -207,8 +207,6 @@ export class RenderEngineBackend {
 
   public updateViewBox(step: string, viewBox: DOMRect): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    // viewBox.y = containerHeight - viewBox.bottom + containerOffsetY
-    // viewBox.x = viewBox.x - containerOffsetX
     viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
     viewBox.x = viewBox.x - this.boundingBox.x
     this.steps.get(step)!.updateViewBox(viewBox)

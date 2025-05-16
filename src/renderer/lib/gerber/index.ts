@@ -1,6 +1,6 @@
 import { plot } from "./plotter/src"
 import { parse } from "@hpcreery/tracespace-parser"
-import { AddLayerProps } from "@src/renderer/plugins"
+import { AddLayerProps } from "@src/renderer/engine/plugins"
 import * as Comlink from "comlink"
 
 export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {

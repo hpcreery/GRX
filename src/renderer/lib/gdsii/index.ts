@@ -13,7 +13,7 @@ import { convert } from "./converter"
 import messages from "./messages"
 
 import * as Comlink from "comlink"
-import { AddLayerProps } from "@src/renderer/plugins"
+import { AddLayerProps } from "@src/renderer/engine/plugins"
 
 export async function plugin(
   buffer: ArrayBuffer,

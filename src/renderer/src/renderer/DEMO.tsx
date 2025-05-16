@@ -11,7 +11,7 @@ import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
-// import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
+import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
 // import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
 // import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
@@ -23,7 +23,7 @@ import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 // import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
-// import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
+// import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
 import { LayerRendererProps } from "./engine/step/layer/layer"
 
@@ -1467,13 +1467,13 @@ function REGLApp(): JSX.Element {
       units: "mm",
     })
 
-    // Engine.addFile({
-    //   file: gtl_mm,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'gtl_mm',
-    //   }
-    // })
+    Engine.addFile("box2", {
+      buffer: cmp,
+      format: "rs274x",
+      props: {
+        name: "cmp",
+      },
+    })
 
     // Engine.addLayer({
     //   name: "surface test",
@@ -2085,6 +2085,53 @@ function REGLApp(): JSX.Element {
     setEngine(Engine)
     // Engine.SUPERTEST()
 
+    function dragElement(elmnt) {
+      var pos1 = 0,
+        pos2 = 0,
+        pos3 = 0,
+        pos4 = 0
+      if (document.getElementById(elmnt.id + "header")) {
+        // if present, the header is where you move the DIV from:
+        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown
+      } else {
+        // otherwise, move the DIV from anywhere inside the DIV:
+        elmnt.onmousedown = dragMouseDown
+      }
+
+      function dragMouseDown(e) {
+        e = e || window.event
+        e.preventDefault()
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX
+        pos4 = e.clientY
+        document.onmouseup = closeDragElement
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag
+      }
+
+      function elementDrag(e) {
+        e = e || window.event
+        e.preventDefault()
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX
+        pos2 = pos4 - e.clientY
+        pos3 = e.clientX
+        pos4 = e.clientY
+        // set the element's new position:
+        elmnt.style.top = elmnt.offsetTop - pos2 + "px"
+        elmnt.style.left = elmnt.offsetLeft - pos1 + "px"
+      }
+
+      function closeDragElement() {
+        // stop moving when mouse button is released:
+        document.onmouseup = null
+        document.onmousemove = null
+      }
+    }
+
+    dragElement(document.getElementById("window1"))
+    dragElement(document.getElementById("window2"))
+
     return (): void => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
       Engine.destroy()
@@ -2109,36 +2156,80 @@ function REGLApp(): JSX.Element {
         }}
       >
         <div
-          // view="box1"
-          {...{ view: "box1" }}
+          id="window1"
           style={{
-            width: "300px",
-            height: "300px",
-            border: "1px solid red",
-            cursor: "crosshair",
-            pointerEvents: "all",
-            position: "relative",
-            zIndex: 1,
-            // position: "relative",
-            // top: 0,
-            // left: 0,
-            // zIndex: 0,
+            position: "absolute",
+            backgroundColor: "black",
+            border: "1px solid #d3d3d3",
+            textAlign: "center",
           }}
-        />
+        >
+          <div
+            id="window1header"
+            style={{
+              position: "relative",
+              padding: "3px",
+              cursor: "move",
+              zIndex: 1,
+              backgroundColor: "#2196F3",
+              color: "#fff",
+            }}
+          >
+            box1
+          </div>
+          <div
+            // view="box1"
+            {...{ view: "box1" }}
+            style={{
+              width: "300px",
+              height: "300px",
+              // border: "1px solid red",
+              // cursor: "crosshair",
+              pointerEvents: "all",
+              position: "relative",
+              zIndex: 2,
+              // position: "relative",
+              // top: 0,
+              // left: 0,
+              // zIndex: 0,
+            }}
+          />
+        </div>
         <div
-          // view="box2"
-          {...{ view: "box2" }}
+          id="window2"
           style={{
-            width: "300px",
-            height: "300px",
-            border: "1px solid yellow",
-            position: "relative",
-            zIndex: 2,
-            top: 10,
-            left: 100,
-            // zIndex: 0,
+            position: "absolute",
+            backgroundColor: "black",
+            border: "1px solid #d3d3d3",
+            textAlign: "center",
           }}
-        />
+        >
+          <div
+            id="window2header"
+            style={{
+              position: "relative",
+              padding: "3px",
+              cursor: "move",
+              zIndex: 1,
+              backgroundColor: "#2196F3",
+              color: "#fff",
+            }}
+          >
+            box2
+          </div>
+          <div
+            // view="box2"
+            {...{ view: "box2" }}
+            style={{
+              width: "300px",
+              height: "300px",
+              // border: "1px solid yellow",
+              position: "relative",
+              zIndex: 2,
+              // zIndex: 0,
+            }}
+          />
+        </div>
       </div>
       {engine ? (
         <Box

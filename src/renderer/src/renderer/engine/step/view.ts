@@ -302,11 +302,15 @@ export class ViewRenderer {
   // }
 
   public updateViewBox(newViewBox: DOMRect): void {
+    let newRender = false
+    for (const key in this.viewBox) {
+      if (newViewBox[key] !== this.viewBox[key]) {
+        newRender = true
+        break
+      }
+    }
     this.viewBox = newViewBox
-    // this.render({
-    //   force: true,
-    // })
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    if (newRender) this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   // public resize(width: number, height: number, dpr: number): void {

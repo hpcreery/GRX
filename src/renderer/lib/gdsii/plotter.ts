@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix"
 import * as TREE from "./gdsii_tree"
-import * as Shapes from "../../src/renderer/shapes"
+import * as Shapes from "@src/renderer/engine/step/layer/shapes/shapes"
 import { GDSIIHierarchy } from "./types"
 import messages from "./messages"
 

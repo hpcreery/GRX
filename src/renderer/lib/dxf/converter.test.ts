@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest"
 import DxfParser from "dxf-parser"
 import * as converter from "./converter"
-import * as Shapes from "../../src/renderer/shapes"
-import { FeatureTypeIdentifiers, FeatureTypeIdentifier } from "../../src/renderer/types"
+import * as Shapes from "@src/renderer/engine/step/layer/shapes/shapes"
+import { FeatureTypeIdentifiers, FeatureTypeIdentifier } from "@src/renderer/engine/types"
 
 const EPSILON = 0.0001
 
