@@ -1,12 +1,12 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
-import type { QuerySelection, RenderEngineBackend, RenderProps, Stats } from "./engine/engine"
+import type { QuerySelection, RenderEngineBackend, Stats } from "./engine/engine"
 import { AddLayerProps } from "./engine/plugins"
 import { PointerMode, SnapMode } from "./engine/types"
 
-import type { GridRenderProps, RenderSettings } from "./engine/settings"
-import cozetteFont from "./engine/step/layer/shapes/text/cozette/CozetteVector.ttf?url"
-import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shapes/text/cozette/font"
+import type { GridSettings, RenderSettings } from "./engine/settings"
+import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
+import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -72,7 +72,7 @@ export class RenderEngine {
       },
     },
   )
-  public grid: GridRenderProps = new Proxy(
+  public grid: GridSettings = new Proxy(
     {
       enabled: true,
       color: [0.2, 0.2, 0.2, 0.5],
@@ -209,10 +209,10 @@ export class RenderEngine {
     canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
     canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
     canvas.style.position = "absolute"
-    canvas.style.border = "1px solid white"
-    canvas.style.position = "abolute"
+    // canvas.style.border = "1px solid white"
     canvas.style.top = "0px"
     canvas.style.left = "0px"
+    canvas.style.pointerEvents = "none"
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
@@ -224,8 +224,10 @@ export class RenderEngine {
 
     this.canvas2D.style.width = String(width) + "px"
     this.canvas2D.style.height = String(height) + "px"
+    // this.canvas2D.style.zIndex = "-1"
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
+    // this.canvasGL.style.zIndex = "1"
     // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
@@ -250,7 +252,7 @@ export class RenderEngine {
     // const views = this.getViews()
     // setTimeout
     this.resize()
-    requestAnimationFrame((t) => this.pollViews())
+    requestAnimationFrame(() => this.pollViews())
   }
 
   private async addControls(element: HTMLElement): Promise<void> {

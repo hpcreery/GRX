@@ -2,7 +2,7 @@ import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
 import LayerRenderer, { LayerRendererProps } from "./layer/layer"
 import { ReglRenderers, TLoadedReglRenderers } from "./layer/collections"
-import * as Shapes from "./layer/shapes/shapes"
+import * as Shapes from "./layer/shape/symbol"
 import * as Comlink from "comlink"
 import plugins from "../plugins"
 import type { Plugin, PluginsDefinition, AddLayerProps } from "../plugins"
@@ -12,7 +12,7 @@ import { UID } from "../utils"
 import { SimpleMeasurement } from "./measurements"
 import { ShapeDistance } from "./layer/shape-renderer"
 import type { RenderSettings } from "../settings"
-import { settings, origin, grid } from "../settings"
+import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
 import { TypedEventTarget } from "typescript-event-target"
 
@@ -150,7 +150,7 @@ export class ViewRenderer {
 
   // public transform2: ShapeTransform = new ShapeTransform()
 
-  private changePending = true
+  // private changePending = true
 
   // ** make layers a proxy so that we can call render when a property is updated
   // public layers: LayerRenderer[] = new Proxy([], {
@@ -181,29 +181,12 @@ export class ViewRenderer {
   private utilitiesRenderer: UtilitiesRenderer
 
   constructor({ viewBox, regl, ctx }: RenderEngineBackendConfig) {
-    // this.viewBox = {
-    //   width: width * dpr,
-    //   height: height * dpr,
-    //   x: x * dpr,
-    //   y: y * dpr,
-    // }
-
     this.viewBox = viewBox
 
     this.regl = regl
     this.ctx = ctx
 
     this.utilitiesRenderer = new UtilitiesRenderer(regl)
-
-    // this.updateViewBox({
-    //   width,
-    //   height,
-    //   x,
-    //   y,
-    // })
-    // this.regl.clear({
-    //   depth: 0,
-    // })
 
     this.world = this.regl<WorldUniforms, WorldAttributes, WorldProps, WorldContext>({
       context: {
@@ -291,42 +274,20 @@ export class ViewRenderer {
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
-  // public initializeFontRenderer(fontData: Uint8ClampedArray): void {
-  //   initializeFontRenderer(this.regl, fontData)
-  // }
-
   public updateViewBox(newViewBox: DOMRect): void {
-    let newRender = false
+    let viewBoxChanged = false
     for (const key in this.viewBox) {
       if (newViewBox[key] !== this.viewBox[key]) {
-        newRender = true
+        viewBoxChanged = true
         break
       }
     }
     this.viewBox = newViewBox
-    if (newRender) this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    if (viewBoxChanged) this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
-
-  // public resize(width: number, height: number, dpr: number): void {
-  //   this.viewBox.width = width * dpr
-  //   this.viewBox.height = height * dpr
-  //   // this.offscreenCanvasGL.width = this.viewBox.width
-  //   // this.offscreenCanvasGL.height = this.viewBox.height
-  //   // this.offscreenCanvas2D.width = this.viewBox.width
-  //   // this.offscreenCanvas2D.height = this.viewBox.height
-  //   this.regl.poll()
-  //   this.updateTransform()
-  //   // this.render({
-  //   //   force: true,
-  //   // })
-  //   this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
-  // }
 
   public toss(): void {
     const { dragging } = this.transform
@@ -335,7 +296,6 @@ export class ViewRenderer {
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
     this.transform.update()
-    // this.transform2.update(this.transform.matrix)
     if (Math.abs(this.transform.velocity[0]) < 0.05 && Math.abs(this.transform.velocity[1]) < 0.05) {
       this.transform.velocity[0] = 0
       this.transform.velocity[1] = 0
@@ -349,7 +309,6 @@ export class ViewRenderer {
     this.transform.velocity = [x, y]
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     this.transform.update()
-    // this.transform2.update(this.transform.matrix)
     this.transform.timestamp = new Date()
   }
 
@@ -383,7 +342,7 @@ export class ViewRenderer {
   public updateTransform(): void {
     // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
     const { zoom, position } = this.transform
-    const { width, height, x, y } = this.viewBox
+    const { width, height } = this.viewBox
     mat3.projection(this.transform.matrix, width, height)
     mat3.translate(this.transform.matrix, this.transform.matrix, position)
     mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
@@ -396,10 +355,7 @@ export class ViewRenderer {
 
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
-    // this.transform2.update(this.transform.matrix)
-
     // logMatrix(this.transform.matrix)
-    // this.render()
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -446,9 +402,6 @@ export class ViewRenderer {
       ctx: this.ctx,
     })
     this.layers.push(layer)
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
     console.log("layer added")
@@ -543,9 +496,6 @@ export class ViewRenderer {
     const index = this.layers.findIndex((layer) => layer.id === id)
     if (index === -1) return
     this.layers.splice(index, 1)
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -557,9 +507,6 @@ export class ViewRenderer {
     const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer, props)
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -567,9 +514,6 @@ export class ViewRenderer {
     const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return
     Object.assign(layer.transform, transform)
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -639,9 +583,6 @@ export class ViewRenderer {
         this.selections.push(newSelectionLayer)
       }
     })
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     return selection
   }
@@ -694,9 +635,6 @@ export class ViewRenderer {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      // this.render({
-      //   force: true,
-      // })
       this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     }
   }
@@ -750,9 +688,6 @@ export class ViewRenderer {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom })
     }
-    // this.render({
-    //   force: true,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -767,23 +702,17 @@ export class ViewRenderer {
   public addMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.addMeasurement(pointSnap)
-    // this.render()
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public updateMeasurement(point: vec2): void {
     this.measurements.updateMeasurement(point)
-    // this.render({
-    //   force: true,
-    //   updateLayers: false,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
   public finishMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.finishMeasurement(pointSnap)
-    // this.render()
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
@@ -797,21 +726,13 @@ export class ViewRenderer {
 
   public clearMeasurements(): void {
     this.measurements.clearMeasurements()
-    // this.render({
-    //   force: true,
-    //   updateLayers: false,
-    // })
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
-  public setMeasurementUnits(units: Units): void {
-    this.measurements.setMeasurementUnits(units)
-    // this.render({
-    //   force: true,
-    //   updateLayers: false,
-    // })
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
-  }
+  // public setMeasurementUnits(units: Units): void {
+  //   this.measurements.setMeasurementUnits(units)
+  //   this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  // }
 
   public render(): void {
     // const { force, updateLayers } = { ...StepRenderer.defaultRenderProps, ...props }
@@ -1027,7 +948,7 @@ class UtilitiesRenderer extends BaseFrameBufferRenderer {
     super.render(context, () => {
       this.renderGrid(() => {
         if (origin.enabled) this.drawCollections.renderOrigin()
-        if (grid.enabled) this.drawCollections.renderGrid(grid)
+        if (gridSettings.enabled) this.drawCollections.renderGrid(gridSettings)
       })
     })
   }

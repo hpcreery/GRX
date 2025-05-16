@@ -6,7 +6,7 @@ import {
   IconHexagonPlus,
   // IconHexagonOff,
 } from "@tabler/icons-react"
-import { ColorBlend } from "@src/renderer/types"
+import { ColorBlend } from "@src/renderer/engine/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"

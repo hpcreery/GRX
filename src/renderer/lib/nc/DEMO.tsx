@@ -1,6 +1,6 @@
 import React from "react"
 import { Flex, Textarea } from "@mantine/core"
-import { Shape } from "@src/renderer/engine/step/layer/shapes/shapes"
+import { Shape } from "@src/renderer/engine/step/layer/shape/symbol"
 import { parser, NCLexer, NCToShapesVisitor } from "./parser/parser"
 import { CstNode } from "chevrotain"
 

@@ -4,7 +4,7 @@ import { vec2, vec3 } from "gl-matrix"
 import { Vector4 } from "./vec"
 
 import * as DxfParser from "dxf-parser"
-import * as Shapes from "@src/renderer/engine/step/layer/shapes/shapes"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/symbol"
 
 import { NURBSCurve } from "./curves/NURBSCurve"
 

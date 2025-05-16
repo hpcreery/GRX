@@ -1,5 +1,13 @@
-import { SnapMode, ColorBlend } from "./types"
+import { SnapMode, ColorBlend, Units } from "./types"
 import { vec4 } from "gl-matrix"
+
+export interface MeasurementSettings {
+  units: Units
+}
+
+export const measurementSettings: MeasurementSettings = {
+  units: "mm",
+}
 
 // GENERAL SETTINGS
 export interface RenderSettings {
@@ -36,7 +44,7 @@ export const settings: RenderSettings = {
 }
 
 // GRID SETTINGS
-export interface GridRenderProps {
+export interface GridSettings {
   enabled: boolean
   color: vec4
   spacing_x: number
@@ -47,7 +55,7 @@ export interface GridRenderProps {
   type: "dots" | "lines"
 }
 
-export const grid: GridRenderProps = {
+export const gridSettings: GridSettings = {
   enabled: true,
   color: [0.2, 0.2, 0.2, 0.5],
   spacing_x: 1,

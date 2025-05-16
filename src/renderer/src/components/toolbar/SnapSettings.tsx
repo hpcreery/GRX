@@ -1,7 +1,7 @@
 import { useEffect, useContext } from "react"
 import { Kbd, SegmentedControl } from "@mantine/core"
 import { IconPointerPin } from "@tabler/icons-react"
-import { SnapMode, SNAP_MODES } from "@src/renderer/types"
+import { SnapMode, SNAP_MODES } from "@src/renderer/engine/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"

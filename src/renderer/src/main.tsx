@@ -52,9 +52,9 @@ function Main(): JSX.Element | null {
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
-          {/* <App /> */}
+          <App />
           {/* <NCDemo/> */}
-          <REGLApp />
+          {/* <REGLApp /> */}
         </ContextMenuProvider>
       </MantineProvider>
     </ThemeConfigProvider.Provider>

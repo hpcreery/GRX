@@ -30,7 +30,7 @@ import { useContextMenu } from "mantine-contextmenu"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { actions } from "@src/contexts/Spotlight"
 import { menuItems } from "@src/contexts/EditorContext"
-import { PointerMode } from "@src/renderer/types"
+import { PointerMode } from "@src/renderer/engine/types"
 import SnapSettings from "./SnapSettings"
 
 interface ToolbarProps {}
@@ -55,7 +55,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       icon: <IconTrashX stroke={1.5} size={18} color={theme.colors.red[7]} />,
       onClick: async (): Promise<void> => {
         const backend = await renderEngine.backend
-        backend.clearMeasurements()
+        backend.clearMeasurements("main")
       },
     })
     actions.push({
@@ -132,7 +132,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       description: "Delete and remove all measurements",
       onClick: async (): Promise<void> => {
         const backend = await renderEngine.backend
-        backend.clearMeasurements()
+        backend.clearMeasurements("main")
       },
       leftSection: <IconTrashX />,
       // rightSection: <Kbd>A</Kbd>
@@ -213,7 +213,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "f",
       (): void => {
-        renderEngine.zoomFit()
+        renderEngine.zoomFit("main")
       },
     ],
   ])
@@ -225,13 +225,13 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: async (): Promise<void> => {
         const backend = await renderEngine.backend
-        backend.clearMeasurements()
+        backend.clearMeasurements("main")
       },
     },
   ]
 
   React.useEffect(() => {
-    renderEngine.backend.then((backend) => backend.setMeasurementUnits(units))
+    renderEngine.backend.then((backend) => backend.setMeasurementSettings({ units }))
   }, [])
 
   return (
@@ -299,7 +299,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderEngine.zoomFit()
+                  renderEngine.zoomFit("main")
                 }}
               >
                 <IconZoomReset size={18} />

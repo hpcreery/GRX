@@ -1,8 +1,8 @@
 import { useState, useEffect, useContext } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
-import { Binary } from "@src/renderer/types"
-import { TransformOrder } from "@src/renderer/transform"
-import type { LayerInfo } from "@src/renderer/engine"
+import { Binary } from "@src/renderer/engine/types"
+import { TransformOrder } from "@src/renderer/engine/transform"
+import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec2 } from "gl-matrix"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
@@ -12,7 +12,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { IconGripHorizontal } from "@tabler/icons-react"
-import { getUnitsConversion } from "@src/renderer/utils"
+import { getUnitsConversion } from "@src/renderer/engine/utils"
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
 export interface LayerTransformProps {
@@ -73,7 +73,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   useEffect(() => {
     renderEngine.backend.then((backend) => {
-      backend.getLayers().then((layers: LayerInfo[]) => {
+      backend.getLayers("main").then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.id === props.layerID) {
             setLayerName(layer.name)
@@ -99,10 +99,10 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   useEffect(() => {
     renderEngine.backend.then((backend) => {
-      backend.getLayers().then((layers: LayerInfo[]) => {
+      backend.getLayers("main").then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.id === props.layerID) {
-            backend.setLayerTransform(layer.id, {
+            backend.setLayerTransform("main", layer.id, {
               datum: vec2.fromValues(datumX, datumY),
               rotation: rotation,
               scale: scale,

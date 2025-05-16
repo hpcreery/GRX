@@ -8,8 +8,8 @@ import { type Units } from "./types"
 import { Transform } from "./transform"
 import { ShapeDistance } from "./step/layer/shape-renderer"
 import { ViewRenderer } from "./step/view"
-import type { RenderSettings, GridRenderProps } from "./settings"
-import { settings, grid } from "./settings"
+import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
+import { settings, gridSettings, measurementSettings } from "./settings"
 
 export interface UniverseProps {}
 
@@ -118,7 +118,7 @@ export class RenderEngineBackend {
   public steps: Map<string, ViewRenderer> = new Map()
   // public steps: StepRenderer[] = []
 
-  private renderNowInterval: boolean = true
+  private renderNowInterval: NodeJS.Timeout | null = null
 
   constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
@@ -171,13 +171,22 @@ export class RenderEngineBackend {
     return settings
   }
 
-  public setGrid(newGrid: Partial<GridRenderProps>): void {
-    Object.assign(grid, newGrid)
+  public setGrid(newGrid: Partial<GridSettings>): void {
+    Object.assign(gridSettings, newGrid)
     this.render()
   }
 
-  public getGrid(): GridRenderProps {
-    return grid
+  public getGrid(): GridSettings {
+    return gridSettings
+  }
+
+  public getMeasurementSettings(): MeasurementSettings {
+    return measurementSettings
+  }
+
+  public setMeasurementSettings(newSettings: Partial<MeasurementSettings>): void {
+    Object.assign(measurementSettings, newSettings)
+    this.render()
   }
 
   public renderDispatch = (): void => this.render()
@@ -196,12 +205,22 @@ export class RenderEngineBackend {
   public updateBoundingBox(box: DOMRect): void {
     // this.boundingBox.width = box.width * dpr
     // this.boundingBox.height = box.height * dpr
+    let boxChanged = false
+    for (const key in this.boundingBox) {
+      if (box[key] !== this.boundingBox[key]) {
+        boxChanged = true
+        break
+      }
+    }
     this.boundingBox = box
     this.offscreenCanvasGL.width = this.boundingBox.width
     this.offscreenCanvasGL.height = this.boundingBox.height
     this.offscreenCanvas2D.width = this.boundingBox.width
     this.offscreenCanvas2D.height = this.boundingBox.height
     RenderEngineBackend.regl.poll()
+    if (boxChanged) {
+      this.render()
+    }
     // this.updateTransform()
   }
 
@@ -279,55 +298,37 @@ export class RenderEngineBackend {
 
   public getLayers(step: string): LayerInfo[] {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    let layers: LayerInfo[] = []
-    this.universe((_context) => {
-      layers = this.steps.get(step)!.getLayers()
-    })
-    return layers
+    return this.steps.get(step)!.getLayers()
   }
 
   public getTransform(step: string): Partial<RenderTransform> {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    let transform: Partial<RenderTransform> = {}
-    this.universe((_context) => {
-      transform = this.steps.get(step)!.getTransform()
-    })
-    return transform
+    return this.steps.get(step)!.getTransform()
   }
 
   public setTransform(step: string, transform: Partial<RenderTransform>): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.setTransform(transform)
-    })
+    this.steps.get(step)!.setTransform(transform)
   }
 
   public removeLayer(step: string, id: string): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.removeLayer(id)
-    })
+    this.steps.get(step)!.removeLayer(id)
   }
 
   public moveLayer(step: string, from: number, to: number): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.moveLayer(from, to)
-    })
+    this.steps.get(step)!.moveLayer(from, to)
   }
 
   public setLayerProps(step: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.setLayerProps(id, props)
-    })
+    this.steps.get(step)!.setLayerProps(id, props)
   }
 
   public setLayerTransform(step: string, id: string, transform: Partial<Transform>): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.setLayerTransform(id, transform)
-    })
+    this.steps.get(step)!.setLayerTransform(id, transform)
   }
 
   public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
@@ -414,24 +415,34 @@ export class RenderEngineBackend {
     return this.steps.get(step)!.getCurrentMeasurement()
   }
 
-  // public clearMeasurements(): void {
-  //   this.measurements.clearMeasurements()
-  // }
+  public clearMeasurements(step: string): void {
+    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
+    return this.steps.get(step)!.clearMeasurements()
+  }
 
-  // public setMeasurementUnits(units: Units): void {
-  //   this.measurements.setMeasurementUnits(units)
-  // }
+  public getLayersQueue(step: string): {
+    name: string
+    id: string
+  }[] {
+    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
+    return this.steps.get(step)!.layersQueue
+  }
 
   public render(): void {
     // RenderEngineBackend.regl.poll()
     // if (this.renderNowInterval == false) return
-    setTimeout(() => (this.renderNowInterval = true), settings.MSPFRAME)
-    this.universe((_context) => {
-      this.steps.forEach((step) => {
-        step.render()
+    // this.renderNowInterval = false
+
+    if (this.renderNowInterval != null) return
+
+    this.renderNowInterval = setTimeout(() => {
+      this.renderNowInterval = null
+      this.universe((_context) => {
+        this.steps.forEach((step) => {
+          step.render()
+        })
       })
-    })
-    this.renderNowInterval = false
+    }, settings.MSPFRAME)
   }
 
   public getStats(): Stats {

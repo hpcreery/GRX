@@ -1,6 +1,6 @@
 import REGL from "regl"
-import * as Shapes from "./shapes/shapes"
-import * as Symbols from "./shapes/symbols/symbols"
+import * as Shapes from "./shape/symbol"
+import * as Symbols from "./shape/symbol/symbol"
 import { glFloatSize } from "../../constants"
 import { FeatureTypeIdentifier, Binary } from "../../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
@@ -23,7 +23,7 @@ import OriginFrag from "./../../shaders/src/Origin.frag"
 // import LoadingFrag from "./../../shaders/src/Loading/Winding.frag"
 import FullScreenQuad from "./../../shaders/src/FullScreenQuad.vert"
 
-import { GridRenderProps, OriginRenderProps } from "../../settings"
+import { GridSettings, OriginRenderProps } from "../../settings"
 
 import { UniverseContext } from "../../engine"
 import { vec2, vec4 } from "gl-matrix"
@@ -32,7 +32,7 @@ import { settings } from "../../settings"
 
 import earcut from "earcut"
 
-import { fontInfo as cozetteFontInfo } from "./shapes/text/cozette/font"
+import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { WorldContext } from "../view"
 
 const {
@@ -226,7 +226,7 @@ export interface TLoadedReglRenderers {
   overlayBlendFunc: REGL.DrawCommand
   contrastBlendFunc: REGL.DrawCommand
   overlay: REGL.DrawCommand
-  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridRenderProps>
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings>
   renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps>
 }
 
@@ -243,7 +243,7 @@ export interface TReglRenderers {
   overlayBlendFunc: REGL.DrawCommand | undefined
   contrastBlendFunc: REGL.DrawCommand | undefined
   overlay: REGL.DrawCommand | undefined
-  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridRenderProps> | undefined
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings> | undefined
   renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps> | undefined
 }
 
@@ -749,14 +749,14 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<DatumAttachments, "length">("length"),
   })
 
-  ReglRenderers.renderGrid = regl<GridRenderUniforms, Record<string, never>, GridRenderProps, UniverseContext & WorldContext>({
+  ReglRenderers.renderGrid = regl<GridRenderUniforms, Record<string, never>, GridSettings, UniverseContext & WorldContext>({
     vert: FullScreenQuad,
     frag: GridFrag,
     uniforms: {
-      u_Color: (_context: REGL.DefaultContext, props: GridRenderProps) => props.color,
-      u_Spacing: (_context: REGL.DefaultContext, props: GridRenderProps) => [props.spacing_x, props.spacing_y],
-      u_Offset: (_context: REGL.DefaultContext, props: GridRenderProps) => [props.offset_x, props.offset_y],
-      u_Type: (_context: REGL.DefaultContext, props: GridRenderProps) => props._type,
+      u_Color: (_context: REGL.DefaultContext, props: GridSettings) => props.color,
+      u_Spacing: (_context: REGL.DefaultContext, props: GridSettings) => [props.spacing_x, props.spacing_y],
+      u_Offset: (_context: REGL.DefaultContext, props: GridSettings) => [props.offset_x, props.offset_y],
+      u_Type: (_context: REGL.DefaultContext, props: GridSettings) => props._type,
     },
   })
 

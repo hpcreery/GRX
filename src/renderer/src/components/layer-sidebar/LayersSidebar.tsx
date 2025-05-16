@@ -3,11 +3,11 @@ import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select
 import { Dropzone, FileWithPath as FileWithFormat, FileWithPath } from "@mantine/dropzone"
 import { IconFileX, IconFileVector, IconContrast, IconContrastOff, IconClearAll } from "@tabler/icons-react"
 import LayerListItem from "./LayerListItem"
-import type { LayerInfo } from "@src/renderer/engine"
+import type { LayerInfo } from "@src/renderer/engine/engine"
 import * as Comlink from "comlink"
 
-import { pluginList, plugins } from "@src/renderer/plugins"
-import { EngineEvents } from "@src/renderer/engine"
+import { pluginList, plugins } from "@src/renderer/engine/plugins"
+import { EngineEvents } from "@src/renderer/engine/engine"
 import { useContextMenu } from "mantine-contextmenu"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
@@ -15,7 +15,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 
-import { Resizable } from 're-resizable';
+import { Resizable } from "re-resizable"
 
 import { useLocalStorage } from "@mantine/hooks"
 
@@ -79,7 +79,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     layers.forEach(async (layer) => {
       const backend = await renderEngine.backend
       if (!backend) return
-      await backend.removeLayer(layer.id)
+      await backend.removeLayer("main", layer.id)
       setLayers([])
       setRenderID(0)
     })
@@ -88,8 +88,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   useEffect(() => {
     renderEngine.backend.then(async (backend) => {
       const reg = async (): Promise<void> => {
-        renderEngine.zoomFit()
-        return registerLayers(await backend.getLayers(), await backend.layersQueue)
+        renderEngine.zoomFit("main")
+        return registerLayers(await backend.getLayers("main"), await backend.getLayersQueue("main"))
       }
       reg()
       backend.addEventCallback(EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
@@ -110,7 +110,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     remove: async (file: UploadFile): Promise<void> => {
       const backend = await renderEngine.backend
       if (!backend) return
-      await backend.removeLayer(file.id)
+      await backend.removeLayer("main", file.id)
       setLayers(layers.filter((l) => l.id !== file.id))
       return
     },
@@ -118,7 +118,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       layers.forEach(async (layer) => {
         const backend = await renderEngine.backend
         if (!backend) return
-        await backend.setLayerProps(layer.id, { visible: false })
+        await backend.setLayerProps("main", layer.id, { visible: false })
         setRenderID(renderID + 1)
       })
     },
@@ -126,7 +126,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       layers.forEach(async (layer) => {
         const backend = await renderEngine.backend
         if (!backend) return
-        await backend.setLayerProps(layer.id, { visible: true })
+        await backend.setLayerProps("main", layer.id, { visible: true })
         setRenderID(renderID + 1)
       })
     },
@@ -170,7 +170,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       renderEngine.backend.then(async (backend) => {
         const oldIndex = layers.findIndex((item) => item.id === active.id)
         const newIndex = layers.findIndex((item) => item.id === over.id)
-        await backend.moveLayer(oldIndex, newIndex)
+        await backend.moveLayer("main", oldIndex, newIndex)
       })
       setLayers((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)
@@ -276,54 +276,49 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         style={{
           pointerEvents: "all",
         }}
->
-      <Card
-        onContextMenu={showContextMenu(contextItems)}
-        radius="md"
-        withBorder
-        style={{
-          width: '-webkit-fill-available',
-          height: "-webkit-fill-available",
-          margin: 10,
-          marginRight: 0,
-          pointerEvents: "all",
-          overflowY: "auto",
-          overflowX: "hidden",
-        }}
-        mod={["transparent"]}
-        padding={4}
       >
-        <ScrollArea className="scroll-area-sidebar" type="scroll" scrollbars="y" h={"100%"} w={"100%"}>
-          <Group grow pb={4}>
-            <FileButton onChange={uploadFiles} accept="*" multiple>
-              {(props): JSX.Element => (
-                <Button variant="default" {...props} radius="sm">
-                  Upload Artwork
-                </Button>
-              )}
-            </FileButton>
-          </Group>
-          <Stack
-            justify="flex-start"
-            style={{
-              "--stack-gap": "4px",
-            }}
-          >
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}
+        <Card
+          onContextMenu={showContextMenu(contextItems)}
+          radius="md"
+          withBorder
+          style={{
+            width: "-webkit-fill-available",
+            height: "-webkit-fill-available",
+            margin: 10,
+            marginRight: 0,
+            pointerEvents: "all",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+          mod={["transparent"]}
+          padding={4}
+        >
+          <ScrollArea className="scroll-area-sidebar" type="scroll" scrollbars="y" h={"100%"} w={"100%"}>
+            <Group grow pb={4}>
+              <FileButton onChange={uploadFiles} accept="*" multiple>
+                {(props): JSX.Element => (
+                  <Button variant="default" {...props} radius="sm">
+                    Upload Artwork
+                  </Button>
+                )}
+              </FileButton>
+            </Group>
+            <Stack
+              justify="flex-start"
+              style={{
+                "--stack-gap": "4px",
+              }}
             >
-              <SortableContext items={layers} strategy={verticalListSortingStrategy}>
-                {layers.map((layer) => (
-                  <LayerListItem key={layer.id + renderID} file={layer} actions={actions} />
-                ))}
-              </SortableContext>
-            </DndContext>
-          </Stack>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+                <SortableContext items={layers} strategy={verticalListSortingStrategy}>
+                  {layers.map((layer) => (
+                    <LayerListItem key={layer.id + renderID} file={layer} actions={actions} />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </Stack>
 
-          {/* {layers.length > 0 && (
+            {/* {layers.length > 0 && (
             <Group grow pt={5}>
               <Button
                 color="red"
@@ -335,8 +330,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
               </Button>
             </Group>
           )} */}
-        </ScrollArea>
-      </Card>
+          </ScrollArea>
+        </Card>
       </Resizable>
     </div>
   )

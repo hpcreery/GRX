@@ -9,7 +9,7 @@ import { createGraphicPlotter, GraphicPlotter } from "./graphic-plotter"
 import { createTransformStore, ApertureTransform, TransformStore } from "./aperture-transform-store"
 import { IMAGE } from "./tree"
 import type { ImageTree } from "./tree"
-import * as Shapes from "@src/renderer/engine/step/layer/shapes/shapes"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/symbol"
 
 export * from "./tree"
 export * from "./tool-store"

@@ -141,7 +141,17 @@ export default function App(): JSX.Element | null {
           }}
           onContextMenu={showContextMenu(menuItems)}
           ref={elementRef}
-        />
+        >
+          <div
+            {...{ view: "main" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              pointerEvents: "all",
+              position: "relative",
+            }}
+          />
+        </div>
       </Skeleton>
     </>
   )

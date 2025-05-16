@@ -18,7 +18,8 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
   })
 
   React.useEffect(() => {
-    renderEngine.backend.then((backend) => backend.setMeasurementUnits(units))
+    // renderEngine.backend.then((backend) => backend.setMeasurementUnits(units))
+    renderEngine.backend.then((backend) => backend.setMeasurementSettings({ units }))
   }, [units])
   React.useEffect(() => {
     renderEngine.canvasSettings.hidpi = useHiDPI

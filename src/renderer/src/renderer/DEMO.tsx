@@ -1,7 +1,7 @@
 import React, { useMemo } from "react"
 import "../App.css"
-import * as Symbols from "./engine/step/layer/shapes/symbols/symbols"
-import * as Shapes from "./engine/step/layer/shapes/shapes"
+import * as Symbols from "./engine/step/layer/shape/symbol/symbol"
+import * as Shapes from "./engine/step/layer/shape/symbol"
 import { RenderEngine } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
@@ -2145,14 +2145,13 @@ function REGLApp(): JSX.Element {
         id="container-element"
         style={{
           // background: "white",
-          width: "90%",
-          height: "90%",
+          width: "100%",
+          height: "100%",
           position: "absolute",
           top: 0,
           left: 0,
-          // zIndex: 0,
-          margin: "10px",
-          border: "0px solid green",
+          // margin: "10px",
+          // border: "0px solid green",
         }}
       >
         <div
@@ -2170,7 +2169,6 @@ function REGLApp(): JSX.Element {
               position: "relative",
               padding: "3px",
               cursor: "move",
-              zIndex: 1,
               backgroundColor: "#2196F3",
               color: "#fff",
             }}
@@ -2183,15 +2181,8 @@ function REGLApp(): JSX.Element {
             style={{
               width: "300px",
               height: "300px",
-              // border: "1px solid red",
-              // cursor: "crosshair",
               pointerEvents: "all",
               position: "relative",
-              zIndex: 2,
-              // position: "relative",
-              // top: 0,
-              // left: 0,
-              // zIndex: 0,
             }}
           />
         </div>
@@ -2210,7 +2201,6 @@ function REGLApp(): JSX.Element {
               position: "relative",
               padding: "3px",
               cursor: "move",
-              zIndex: 1,
               backgroundColor: "#2196F3",
               color: "#fff",
             }}
@@ -2218,15 +2208,11 @@ function REGLApp(): JSX.Element {
             box2
           </div>
           <div
-            // view="box2"
             {...{ view: "box2" }}
             style={{
               width: "300px",
               height: "300px",
-              // border: "1px solid yellow",
               position: "relative",
-              zIndex: 2,
-              // zIndex: 0,
             }}
           />
         </div>

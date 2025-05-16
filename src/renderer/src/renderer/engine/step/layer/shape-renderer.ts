@@ -1,7 +1,7 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shapes/shapes"
-import * as Symbols from "./shapes/symbols/symbols"
+import * as Shapes from "./shape/symbol"
+import * as Symbols from "./shape/symbol/symbol"
 import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "../../types"
 import ShapeTransform from "../../transform"
 
@@ -472,8 +472,6 @@ export class ShapeRenderer {
       this.dirty = false
     }
     this.commonConfig(() => {
-      // if (origin.enabled) this.drawCollections.renderOrigin()
-      // if (grid.enabled) this.drawCollections.renderGrid(grid)
       this.drawPrimitives(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
@@ -482,8 +480,8 @@ export class ShapeRenderer {
     context.transformMatrix = origMatrix
   }
 
-  private drawDatums(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    if (context.settings.SHOW_DATUMS === false) return
+  private drawDatums(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (settings.SHOW_DATUMS === false) return
     this.datumConfig(() => {
       this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
       this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.datumLines)
