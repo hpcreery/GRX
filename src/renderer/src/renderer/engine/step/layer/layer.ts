@@ -6,7 +6,7 @@ import type { UniverseContext } from "../../engine"
 import { getUnitsConversion, UID } from "../../utils"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
-import { WorldContext } from "../view"
+import { WorldContext } from "../step"
 
 export interface LayerProps {
   name: string

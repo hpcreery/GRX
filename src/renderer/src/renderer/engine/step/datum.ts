@@ -2,8 +2,11 @@ import REGL from "regl"
 import { UniverseContext } from "../engine"
 import { DatumPoint, DatumText } from "./layer/shape/shape"
 import { vec2, vec3 } from "gl-matrix"
-import { WorldContext } from "./view"
+import { WorldContext } from "./step"
 
+/**
+ * @deprecated Use Shaer version instead
+ */
 export class TextRenderer {
   private ctx: OffscreenCanvasRenderingContext2D
   public texts: DatumText[] = []
@@ -48,6 +51,9 @@ export class TextRenderer {
   }
 }
 
+/**
+ * @deprecated Use Shaer version instead
+ */
 export class PointRenderer {
   private ctx: OffscreenCanvasRenderingContext2D
   public texts: DatumPoint[] = []

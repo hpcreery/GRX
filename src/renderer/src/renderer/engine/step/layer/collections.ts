@@ -33,7 +33,7 @@ import { settings } from "../../settings"
 import earcut from "earcut"
 
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
-import { WorldContext } from "../view"
+import { WorldContext } from "../step"
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -1383,11 +1383,9 @@ export class MacroShaderCollection {
     }
   >()
   private regl: REGL.Regl
-  private ctx: OffscreenCanvasRenderingContext2D
-  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
-    const { regl, ctx } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
-    this.ctx = ctx
   }
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
@@ -1423,7 +1421,6 @@ export class MacroShaderCollection {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
-              ctx: this.ctx,
               image: record.symbol.shapes,
               flatten: record.symbol.flatten,
             }),
@@ -1447,12 +1444,10 @@ export class MacroShaderCollection {
 export class StepAndRepeatCollection {
   public steps: StepAndRepeatRenderer[] = []
   private regl: REGL.Regl
-  private ctx: OffscreenCanvasRenderingContext2D
 
-  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
-    const { regl, ctx } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
-    this.ctx = ctx
   }
 
   public refresh(image: Shapes.Shape[]): this {
@@ -1464,7 +1459,6 @@ export class StepAndRepeatCollection {
       this.steps.push(
         new StepAndRepeatRenderer({
           regl: this.regl,
-          ctx: this.ctx,
           record: record,
         }),
       )

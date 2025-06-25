@@ -213,7 +213,9 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "f",
       (): void => {
-        renderEngine.zoomFit("main")
+        renderEngine.backend.then(async (backend) => {
+          backend.zoomFit("main")
+        })
       },
     ],
   ])
@@ -299,7 +301,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderEngine.zoomFit("main")
+                  const backend = await renderEngine.backend
+                  backend.zoomFit("main")
                 }}
               >
                 <IconZoomReset size={18} />

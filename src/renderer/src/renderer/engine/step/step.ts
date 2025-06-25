@@ -52,6 +52,7 @@ export interface WorldContext {
 // }
 
 export interface RenderEngineBackendConfig {
+  id?: string
   attributes?: WebGLContextAttributes | undefined
   // width: number
   // height: number
@@ -59,7 +60,7 @@ export interface RenderEngineBackendConfig {
   // y: number
   viewBox: DOMRect
   // dpr: number
-  ctx: OffscreenCanvasRenderingContext2D
+  // ctx: OffscreenCanvasRenderingContext2D
   regl: REGL.Regl
 }
 
@@ -111,7 +112,7 @@ export interface QuerySelection extends ShapeDistance {
   units: Units
 }
 
-export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
+export type StepRendererProps = Partial<typeof StepRenderer.defaultRenderProps>
 
 export interface MessageData {
   level: TMessageLevel
@@ -119,7 +120,8 @@ export interface MessageData {
   message: string
 }
 
-export class ViewRenderer {
+export class StepRenderer {
+  public id: string
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public viewBox: ViewBox = {
@@ -165,7 +167,7 @@ export class ViewRenderer {
   public selections: LayerRenderer[] = []
   public layersQueue: { name: string; id: string }[] = []
 
-  public ctx: OffscreenCanvasRenderingContext2D
+  // public ctx: OffscreenCanvasRenderingContext2D
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
@@ -180,11 +182,12 @@ export class ViewRenderer {
 
   private utilitiesRenderer: UtilitiesRenderer
 
-  constructor({ viewBox, regl, ctx }: RenderEngineBackendConfig) {
+  constructor({ viewBox, regl, id }: RenderEngineBackendConfig) {
+    this.id = id || UID()
     this.viewBox = viewBox
 
     this.regl = regl
-    this.ctx = ctx
+    // this.ctx = ctx
 
     this.utilitiesRenderer = new UtilitiesRenderer(regl)
 
@@ -268,7 +271,7 @@ export class ViewRenderer {
     // this.measurements = new SimpleMeasurement(this.regl, this.ctx)
     this.measurements = new SimpleMeasurement({
       regl: this.regl,
-      ctx: this.ctx,
+      // ctx: this.ctx,
     })
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
@@ -399,7 +402,7 @@ export class ViewRenderer {
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl,
-      ctx: this.ctx,
+      // ctx: this.ctx,
     })
     this.layers.push(layer)
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
@@ -569,7 +572,7 @@ export class ViewRenderer {
         }
         const newSelectionLayer = new LayerRenderer({
           regl: this.regl,
-          ctx: this.ctx,
+          // ctx: this.ctx,
           color: [0.5, 0.5, 0.5],
           alpha: 0.7,
           units: layer.units,

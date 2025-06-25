@@ -11,7 +11,7 @@ import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection 
 
 import type { UniverseContext } from "../../engine"
 import { getScaleMat3 } from "../../utils"
-import { WorldContext } from "../view"
+import { WorldContext } from "../step"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -50,7 +50,6 @@ interface DatumConfigUniforms {
 
 export interface RendererProps {
   regl: REGL.Regl
-  ctx: OffscreenCanvasRenderingContext2D
 }
 
 export interface ShapeProps {
@@ -74,7 +73,6 @@ export type ShapeDistance = {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  public ctx: OffscreenCanvasRenderingContext2D
   public dirty = false
   // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
   // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
@@ -112,7 +110,6 @@ export class ShapeRenderer {
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
-    this.ctx = props.ctx
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
@@ -127,11 +124,9 @@ export class ShapeRenderer {
     })
     this.macroCollection = new MacroShaderCollection({
       regl: this.regl,
-      ctx: this.ctx,
     })
     this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
-      ctx: this.ctx,
     })
     this.datumCollection = new DatumShaderCollection({
       regl: this.regl,
@@ -591,7 +586,6 @@ export class MacroRenderer extends ShapeRenderer {
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
-  ctx: OffscreenCanvasRenderingContext2D
   record: Shapes.StepAndRepeat
 }
 
@@ -600,7 +594,6 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   constructor(props: StepAndRepeatRendererProps) {
     super({
       regl: props.regl,
-      ctx: props.ctx,
       image: props.record.shapes,
     })
     this.record = props.record

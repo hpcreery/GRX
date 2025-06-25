@@ -7,7 +7,7 @@ import type { PluginsDefinition, AddLayerProps } from "./plugins"
 import { type Units } from "./types"
 import { Transform } from "./transform"
 import { ShapeDistance } from "./step/layer/shape-renderer"
-import { ViewRenderer } from "./step/view"
+import { StepRenderer } from "./step/step"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
 
@@ -94,7 +94,7 @@ export class RenderEngineBackend {
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public offscreenCanvasGL: OffscreenCanvas
-  public offscreenCanvas2D: OffscreenCanvas
+  // public offscreenCanvas2D: OffscreenCanvas
 
   public boundingBox: DOMRect
 
@@ -104,8 +104,7 @@ export class RenderEngineBackend {
     down: false,
   }
 
-  public static ctx: OffscreenCanvasRenderingContext2D
-  public static regl: REGL.Regl
+  public regl: REGL.Regl
   private universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
 
   // public loadingFrame: LoadingAnimation
@@ -115,14 +114,14 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  public steps: Map<string, ViewRenderer> = new Map()
+  public steps: Map<string, StepRenderer> = new Map()
   // public steps: StepRenderer[] = []
 
   private renderNowInterval: NodeJS.Timeout | null = null
 
-  constructor(offscreenCanvasGL: OffscreenCanvas, offscreenCanvas2D: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
+  constructor(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
-    this.offscreenCanvas2D = offscreenCanvas2D
+    // this.offscreenCanvas2D = offscreenCanvas2D
     this.boundingBox = {
       ...container,
       // width: container.width * dpr,
@@ -130,12 +129,10 @@ export class RenderEngineBackend {
     }
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
-    RenderEngineBackend.ctx = offscreenCanvas2D.getContext("2d")!
-    // this.ctx.scale(dpr, dpr)
 
     console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
 
-    RenderEngineBackend.regl = REGL({
+    this.regl = REGL({
       gl,
       pixelRatio: 1,
       extensions: [
@@ -149,15 +146,15 @@ export class RenderEngineBackend {
       ],
       profile: true,
     })
-    console.log("WEBGL LIMITS", RenderEngineBackend.regl.limits)
+    console.log("WEBGL LIMITS", this.regl.limits)
 
-    initializeRenderers(RenderEngineBackend.regl)
+    initializeRenderers(this.regl)
 
-    RenderEngineBackend.regl.clear({
+    this.regl.clear({
       depth: 0,
     })
 
-    this.universe = RenderEngineBackend.regl<UniverseUniforms, UniverseAttributes, UniverseProps, UniverseContext>({})
+    this.universe = this.regl<UniverseUniforms, UniverseAttributes, UniverseProps, UniverseContext>({})
 
     this.render()
   }
@@ -192,15 +189,24 @@ export class RenderEngineBackend {
   public renderDispatch = (): void => this.render()
 
   public addView(name: string, viewBox: DOMRect): void {
-    const newStep = new ViewRenderer({
-      regl: RenderEngineBackend.regl,
-      ctx: RenderEngineBackend.ctx,
+    const newStep = new StepRenderer({
+      regl: this.regl,
       viewBox,
     })
     newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
     this.steps.set(name, newStep)
     this.render()
   }
+
+  // public addStep(name: string, viewBox: DOMRect): void {
+  //   const newStep = new ViewRenderer({
+  //     regl: this.regl,
+  //     viewBox,
+  //   })
+  //   newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
+  //   this.steps.set(name, newStep)
+  //   this.render()
+  // }
 
   public updateBoundingBox(box: DOMRect): void {
     // this.boundingBox.width = box.width * dpr
@@ -215,9 +221,7 @@ export class RenderEngineBackend {
     this.boundingBox = box
     this.offscreenCanvasGL.width = this.boundingBox.width
     this.offscreenCanvasGL.height = this.boundingBox.height
-    this.offscreenCanvas2D.width = this.boundingBox.width
-    this.offscreenCanvas2D.height = this.boundingBox.height
-    RenderEngineBackend.regl.poll()
+    this.regl.poll()
     if (boxChanged) {
       this.render()
     }
@@ -344,26 +348,20 @@ export class RenderEngineBackend {
 
   public sample(step: string, x: number, y: number): void {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.universe((_context) => {
-      this.steps.get(step)!.sample(x, y)
-    })
+    this.steps.get(step)!.sample(x, y)
   }
 
   public select(step: string, pointer: vec2): QuerySelection[] {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     let selection: QuerySelection[] = []
-    this.universe((_context) => {
-      selection = this.steps.get(step)!.select(pointer)
-    })
+    selection = this.steps.get(step)!.select(pointer)
     return selection
   }
 
   public snap(step: string, pointer: vec2): vec2 {
     if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
     let snapped: vec2 = pointer
-    this.universe((_context) => {
-      snapped = this.steps.get(step)!.snap(pointer)
-    })
+    snapped = this.steps.get(step)!.snap(pointer)
     return snapped
   }
 
@@ -429,12 +427,7 @@ export class RenderEngineBackend {
   }
 
   public render(): void {
-    // RenderEngineBackend.regl.poll()
-    // if (this.renderNowInterval == false) return
-    // this.renderNowInterval = false
-
-    if (this.renderNowInterval != null) return
-
+    if (this.renderNowInterval) return
     this.renderNowInterval = setTimeout(() => {
       this.renderNowInterval = null
       this.universe((_context) => {
@@ -448,36 +441,34 @@ export class RenderEngineBackend {
   public getStats(): Stats {
     return {
       regl: {
-        totalTextureSize: RenderEngineBackend.regl.stats.getTotalTextureSize ? RenderEngineBackend.regl.stats!.getTotalTextureSize() : -1,
-        totalBufferSize: RenderEngineBackend.regl.stats.getTotalBufferSize ? RenderEngineBackend.regl.stats!.getTotalBufferSize() : -1,
-        totalRenderbufferSize: RenderEngineBackend.regl.stats.getTotalRenderbufferSize
-          ? RenderEngineBackend.regl.stats!.getTotalRenderbufferSize()
-          : -1,
-        maxUniformsCount: RenderEngineBackend.regl.stats.getMaxUniformsCount ? RenderEngineBackend.regl.stats!.getMaxUniformsCount() : -1,
-        maxAttributesCount: RenderEngineBackend.regl.stats.getMaxAttributesCount ? RenderEngineBackend.regl.stats!.getMaxAttributesCount() : -1,
-        bufferCount: RenderEngineBackend.regl.stats.bufferCount,
-        elementsCount: RenderEngineBackend.regl.stats.elementsCount,
-        framebufferCount: RenderEngineBackend.regl.stats.framebufferCount,
-        shaderCount: RenderEngineBackend.regl.stats.shaderCount,
-        textureCount: RenderEngineBackend.regl.stats.textureCount,
-        cubeCount: RenderEngineBackend.regl.stats.cubeCount,
-        renderbufferCount: RenderEngineBackend.regl.stats.renderbufferCount,
-        maxTextureUnits: RenderEngineBackend.regl.stats.maxTextureUnits,
-        vaoCount: RenderEngineBackend.regl.stats.vaoCount,
+        totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
+        totalBufferSize: this.regl.stats.getTotalBufferSize ? this.regl.stats!.getTotalBufferSize() : -1,
+        totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
+        maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
+        maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
+        bufferCount: this.regl.stats.bufferCount,
+        elementsCount: this.regl.stats.elementsCount,
+        framebufferCount: this.regl.stats.framebufferCount,
+        shaderCount: this.regl.stats.shaderCount,
+        textureCount: this.regl.stats.textureCount,
+        cubeCount: this.regl.stats.cubeCount,
+        renderbufferCount: this.regl.stats.renderbufferCount,
+        maxTextureUnits: this.regl.stats.maxTextureUnits,
+        vaoCount: this.regl.stats.vaoCount,
       },
       universe: this.universe.stats,
     }
   }
 
   public initializeFontRenderer(fontData: Uint8ClampedArray): void {
-    initializeFontRenderer(RenderEngineBackend.regl, fontData)
+    initializeFontRenderer(this.regl, fontData)
   }
 
   public destroy(): void {
     this.steps.forEach((step) => {
       step.destroy()
     })
-    RenderEngineBackend.regl.destroy()
+    this.regl.destroy()
   }
 }
 

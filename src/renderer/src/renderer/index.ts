@@ -12,7 +12,7 @@ const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
 export interface RenderEngineFrontendConfig {
-  container: HTMLElement
+  container?: HTMLElement
   attributes?: WebGLContextAttributes | undefined
 }
 
@@ -101,8 +101,7 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         if (name === "mode") {
-          const views = this.getViews()
-          views.forEach((viewElement) => {
+          this.managedViews.forEach((viewElement) => {
             if (value === PointerMode.MOVE) viewElement.style.cursor = "grab"
             if (value === PointerMode.SELECT) viewElement.style.cursor = "crosshair"
             if (value === PointerMode.MEASURE) {
@@ -136,46 +135,75 @@ export class RenderEngine {
     },
   )
 
+  public managedViews: HTMLElement[] = []
+
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvasGL: HTMLCanvasElement
-  public canvas2D: HTMLCanvasElement
+  // public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
+    if (container == null) {
+      container = document.createElement("div")
+      container.style.cursor = "auto"
+      // container.style.zIndex = "100"
+      container.style.top = "0px"
+      container.style.left = "0px"
+      container.style.width = "100vw"
+      container.style.height = "100vh"
+      container.style.pointerEvents = "none"
+      container.style.position = "absolute"
+      // document.append(container)
+      document.body.append(container)
+    }
     this.CONTAINER = container
-    this.CONTAINER.style.cursor = "auto"
-    // this.CONTAINER.style.pointerEvents = "none"
 
     this.canvasGL = this.createCanvas()
-    this.canvas2D = this.createCanvas()
+    // this.canvas2D = this.createCanvas()
 
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
-    const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
+    // const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
 
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
       attributes,
       container: this.CONTAINER.getBoundingClientRect(),
       // dpr: this.canvasSettings.dpr,
     })
-    this.backend.then((backend) => {
-      const views = this.getViews()
-      views.forEach(async (viewElement) => {
-        const viewName = viewElement.getAttribute("view")!
-        await backend.addView(viewName, viewElement.getBoundingClientRect())
-        await this.addControls(viewElement)
-        // new MutationObserver(() => console.log("mutate")).observe(viewElement, { characterData: true })
-        // }
-      })
-    })
+
+    this.pollEmbeddedViews()
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    // this.addControls(this.CONTAINER)
     this.render()
     this.pollViews()
   }
 
-  public getViews(): HTMLElement[] {
+  private pollEmbeddedViews(): void {
+    this.backend.then((backend) => {
+      const views = this.getEmbeddedViews()
+      views.forEach(async (viewElement) => {
+        const viewName = viewElement.getAttribute("view")!
+        await backend.addView(viewName, viewElement.getBoundingClientRect())
+        await this.addControls(viewElement)
+        this.managedViews.push(viewElement)
+      })
+    })
+  }
+
+  public addManagedView(view: HTMLElement, name: string): void {
+    view.setAttribute("view", name)
+    this.managedViews.push(view)
+    this.backend.then(async (backend) => {
+      await backend.addView(name, view.getBoundingClientRect())
+      await this.addControls(view)
+    })
+  }
+
+  public removeManagedView(view: HTMLElement): void {
+    this.managedViews.splice(this.managedViews.indexOf(view), 1)
+  }
+
+  public getEmbeddedViews(): HTMLElement[] {
     const views = this.CONTAINER.querySelectorAll("[view]")
     const HTMLViews: HTMLElement[] = []
     views.forEach((viewElement) => {
@@ -213,18 +241,14 @@ export class RenderEngine {
     canvas.style.top = "0px"
     canvas.style.left = "0px"
     canvas.style.pointerEvents = "none"
+    canvas.style.zIndex = "100"
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
 
   private resize(): void {
-    // const width = this.CONTAINER.clientWidth
-    // const height = this.CONTAINER.clientHeight
     const { width, height } = this.CONTAINER.getBoundingClientRect()
 
-    this.canvas2D.style.width = String(width) + "px"
-    this.canvas2D.style.height = String(height) + "px"
-    // this.canvas2D.style.zIndex = "-1"
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
     // this.canvasGL.style.zIndex = "1"
@@ -235,18 +259,18 @@ export class RenderEngine {
     })
 
     this.backend.then((backend) => {
-      const views = this.getViews()
-      views.forEach(async (node) => {
+      // const views = this.getEmbeddedViews().concat(this.managedViews)
+      this.managedViews.forEach(async (node) => {
         const view = node.getAttribute("view")!
         await backend.updateViewBox(view, node.getBoundingClientRect())
       })
     })
   }
 
-  public async zoomFit(view: string): Promise<void> {
-    const backend = await this.backend
-    backend.zoomFit(view)
-  }
+  // public async zoomFit(view: string): Promise<void> {
+  //   const backend = await this.backend
+  //   backend.zoomFit(view)
+  // }
 
   public async pollViews(): Promise<void> {
     // const views = this.getViews()
@@ -429,7 +453,6 @@ export class RenderEngine {
       //   this.pointerSettings.mode = 'move'
       //   element.style.cursor = 'grab'
       // }
-      console.log(e, viewName)
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         const isDragging = await backend.isDragging(viewName)
         if (isDragging) return
@@ -455,11 +478,17 @@ export class RenderEngine {
     }
   }
 
+  /**
+   * @deprecated will move to backend datamodel
+   */
   public async addLayer(view: string, params: AddLayerProps): Promise<void> {
     const backend = await this.backend
     backend.addLayer(view, params)
   }
 
+  /**
+   * @deprecated will move to backend datamodel
+   */
   public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
     backend.addFile(view, params)
@@ -506,6 +535,9 @@ export class RenderEngine {
     })
   }
 
+  /**
+   * TODO: Make download image only download a certain view
+   */
   public downloadImage(): void {
     const canvasUrl = this.canvasGL.toDataURL("image/png", 1)
     const createEl = document.createElement("a")

@@ -1184,8 +1184,10 @@ DATUMS.push(
 //   polarity: 1,
 // })
 
-function REGLApp(): JSX.Element {
+function DemoApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
+  const box1Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
+  const box2Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [engine, setEngine] = React.useState<RenderEngine>()
   const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
@@ -1194,7 +1196,8 @@ function REGLApp(): JSX.Element {
   React.useEffect(() => {
     if (engine) return
     const Engine = new RenderEngine({
-      container: containerRef.current,
+      // container: containerRef.current,
+
       attributes: {
         antialias: false,
       },
@@ -1204,6 +1207,11 @@ function REGLApp(): JSX.Element {
     Engine.settings.SHOW_DATUMS = true
     // Engine.settings.FPS = 30
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
+
+    console.log(box1Ref.current)
+
+    Engine.addManagedView(box2Ref.current, "box2")
+    Engine.addManagedView(box1Ref.current, "box1")
 
     // Engine.addLayer({
     //   name: 'origin',
@@ -2085,21 +2093,20 @@ function REGLApp(): JSX.Element {
     setEngine(Engine)
     // Engine.SUPERTEST()
 
-    function dragElement(elmnt) {
-      var pos1 = 0,
+    function dragElement(elmnt: HTMLElement): void {
+      let pos1 = 0,
         pos2 = 0,
         pos3 = 0,
         pos4 = 0
       if (document.getElementById(elmnt.id + "header")) {
         // if present, the header is where you move the DIV from:
-        document.getElementById(elmnt.id + "header").onmousedown = dragMouseDown
+        document.getElementById(elmnt.id + "header")!.onmousedown = dragMouseDown
       } else {
         // otherwise, move the DIV from anywhere inside the DIV:
         elmnt.onmousedown = dragMouseDown
       }
 
-      function dragMouseDown(e) {
-        e = e || window.event
+      function dragMouseDown(e: MouseEvent): void {
         e.preventDefault()
         // get the mouse cursor position at startup:
         pos3 = e.clientX
@@ -2109,8 +2116,7 @@ function REGLApp(): JSX.Element {
         document.onmousemove = elementDrag
       }
 
-      function elementDrag(e) {
-        e = e || window.event
+      function elementDrag(e: MouseEvent): void {
         e.preventDefault()
         // calculate the new cursor position:
         pos1 = pos3 - e.clientX
@@ -2122,15 +2128,15 @@ function REGLApp(): JSX.Element {
         elmnt.style.left = elmnt.offsetLeft - pos1 + "px"
       }
 
-      function closeDragElement() {
+      function closeDragElement(): void {
         // stop moving when mouse button is released:
         document.onmouseup = null
         document.onmousemove = null
       }
     }
 
-    dragElement(document.getElementById("window1"))
-    dragElement(document.getElementById("window2"))
+    dragElement(document.getElementById("window1")!)
+    dragElement(document.getElementById("window2")!)
 
     return (): void => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
@@ -2145,6 +2151,8 @@ function REGLApp(): JSX.Element {
         id="container-element"
         style={{
           // background: "white",
+          // pointerEvents: "none",
+          // zIndex: 100,
           width: "100%",
           height: "100%",
           position: "absolute",
@@ -2153,69 +2161,70 @@ function REGLApp(): JSX.Element {
           // margin: "10px",
           // border: "0px solid green",
         }}
+      ></div>
+      <div
+        id="window2"
+        style={{
+          position: "absolute",
+          backgroundColor: "black",
+          border: "1px solid #d3d3d3",
+          textAlign: "center",
+        }}
       >
         <div
-          id="window1"
+          id="window2header"
           style={{
-            position: "absolute",
-            backgroundColor: "black",
-            border: "1px solid #d3d3d3",
-            textAlign: "center",
+            position: "relative",
+            padding: "3px",
+            cursor: "move",
+            backgroundColor: "#2196F3",
+            color: "#fff",
           }}
         >
-          <div
-            id="window1header"
-            style={{
-              position: "relative",
-              padding: "3px",
-              cursor: "move",
-              backgroundColor: "#2196F3",
-              color: "#fff",
-            }}
-          >
-            box1
-          </div>
-          <div
-            // view="box1"
-            {...{ view: "box1" }}
-            style={{
-              width: "300px",
-              height: "300px",
-              pointerEvents: "all",
-              position: "relative",
-            }}
-          />
+          box2
         </div>
         <div
-          id="window2"
+          {...{ view: "box2" }}
+          ref={box2Ref}
           style={{
-            position: "absolute",
-            backgroundColor: "black",
-            border: "1px solid #d3d3d3",
-            textAlign: "center",
+            width: "300px",
+            height: "300px",
+            position: "relative",
+          }}
+        />
+      </div>
+      <div
+        id="window1"
+        style={{
+          position: "absolute",
+          backgroundColor: "black",
+          border: "1px solid #d3d3d3",
+          textAlign: "center",
+        }}
+      >
+        <div
+          id="window1header"
+          style={{
+            position: "relative",
+            padding: "3px",
+            cursor: "move",
+            backgroundColor: "#2196F3",
+            color: "#fff",
           }}
         >
-          <div
-            id="window2header"
-            style={{
-              position: "relative",
-              padding: "3px",
-              cursor: "move",
-              backgroundColor: "#2196F3",
-              color: "#fff",
-            }}
-          >
-            box2
-          </div>
-          <div
-            {...{ view: "box2" }}
-            style={{
-              width: "300px",
-              height: "300px",
-              position: "relative",
-            }}
-          />
+          box1
         </div>
+        <div
+          ref={box1Ref}
+          // view="box1"
+          // {...{ view: "box1" }}
+          style={{
+            width: "300px",
+            height: "300px",
+            pointerEvents: "all",
+            position: "relative",
+          }}
+        />
       </div>
       {engine ? (
         <Box
@@ -2239,7 +2248,9 @@ function REGLApp(): JSX.Element {
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-              engine.zoomFit("box1")
+              engine.backend.then((backend) => {
+                backend.zoomFit("box1")
+              })
             }}
           >
             Zoom Fit
@@ -2498,4 +2509,4 @@ function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   )
 }
 
-export default REGLApp
+export default DemoApp

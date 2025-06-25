@@ -5,7 +5,7 @@ import { UniverseContext } from "../engine"
 import { getUnitsConversion } from "../utils"
 import { RendererProps, ShapeRenderer } from "./layer/shape-renderer"
 import * as Shapes from "./layer/shape/shape"
-import { WorldContext } from "./view"
+import { WorldContext } from "./step"
 import { measurementSettings } from "@src/renderer/engine/settings"
 
 // import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
