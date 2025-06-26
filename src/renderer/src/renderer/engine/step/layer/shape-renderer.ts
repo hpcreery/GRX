@@ -484,6 +484,8 @@ export class ShapeRenderer {
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
       if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
       this.drawCollections.drawDatums(this.datumCollection.attachment)
+    // Enable Surface Datums
+      // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
     })
   }
 
@@ -491,7 +493,8 @@ export class ShapeRenderer {
     if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
     if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0 && context.settings.OUTLINE_MODE != true) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
     this.drawSurfaceWithHoles(context)
   }
 

@@ -863,12 +863,16 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
+  public surfacesDatum: DatumShaderCollection
+
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
     this.regl = regl
     this.symbolsCollection = new SymbolShaderCollection({
       regl,
     })
+    this.surfacesDatum = new DatumShaderCollection({ regl })
+
     this.shapes = {
       pads: [],
       lines: [],
@@ -1001,6 +1005,61 @@ export class ShapesShaderCollection {
         this.shapes.datumPoints.push(record)
       }
     })
+
+    const surfaceOutlineSymbol = new Symbols.NullSymbol({
+      id: "surface-outline-symbol",
+    })
+
+    const surfaceDatums: Shapes.DatumPoint[] = []
+
+    this.symbolsCollection.add(surfaceOutlineSymbol)
+    // const surfaceOutlineShapes: Shapes.Shape[] = []
+    this.shapes.surfaces.forEach((surface) => {
+      surface.index
+      surface.contours.forEach((contour) => {
+        let xs = contour.xs
+        let ys = contour.ys
+        contour.segments.forEach((segment) => {
+          if (segment.type === FeatureTypeIdentifier.LINESEGMENT) {
+            this.shapes.lines.push(
+              new Shapes.Line({
+                xs: xs,
+                ys: ys,
+                xe: segment.x,
+                ye: segment.y,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          } else {
+            this.shapes.arcs.push(
+              new Shapes.Arc({
+                xs: xs,
+                ys: ys,
+                xc: segment.xc,
+                yc: segment.yc,
+                xe: segment.x,
+                ye: segment.y,
+                clockwise: segment.clockwise,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          }
+          // surfaceDatums.push(new Shapes.DatumPoint({
+          //   x: segment.x,
+          //   y: segment.y,
+          // }))
+          // this.shapes.pads.push(new Shapes.Pad({
+          //   x: segment.x,
+          //   y: segment.y,
+          //   symbol: surfaceOutlineSymbol,
+          // }))
+          xs = segment.x
+          ys = segment.y
+        })
+      })
+    })
+
+    this.surfacesDatum.refresh(surfaceDatums)
 
     this.shapes.pads.forEach((record) => {
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
