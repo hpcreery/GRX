@@ -94,7 +94,6 @@ export class RenderEngineBackend {
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public offscreenCanvasGL: OffscreenCanvas
-  // public offscreenCanvas2D: OffscreenCanvas
 
   public boundingBox: DOMRect
 
@@ -121,7 +120,6 @@ export class RenderEngineBackend {
 
   constructor(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
-    // this.offscreenCanvas2D = offscreenCanvas2D
     this.boundingBox = {
       ...container,
       // width: container.width * dpr,

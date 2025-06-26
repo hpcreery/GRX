@@ -60,7 +60,6 @@ export interface RenderEngineBackendConfig {
   // y: number
   viewBox: DOMRect
   // dpr: number
-  // ctx: OffscreenCanvasRenderingContext2D
   regl: REGL.Regl
 }
 
@@ -167,7 +166,6 @@ export class StepRenderer {
   public selections: LayerRenderer[] = []
   public layersQueue: { name: string; id: string }[] = []
 
-  // public ctx: OffscreenCanvasRenderingContext2D
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
 
