@@ -1210,8 +1210,8 @@ function DemoApp(): JSX.Element {
 
     console.log(box1Ref.current)
 
-    Engine.addManagedView(box2Ref.current, "box2")
-    Engine.addManagedView(box1Ref.current, "box1")
+    Engine.addManagedView(box2Ref.current, "box2", "box2")
+    Engine.addManagedView(box1Ref.current, "box1", "box1")
 
     // Engine.addLayer({
     //   name: 'origin',

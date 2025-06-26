@@ -38,9 +38,9 @@ export default class LayerRenderer extends ShapeRenderer {
   public name: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
-  public context = "misc"
-  public type = "document"
-  public format = "raw"
+  // public context = "misc"
+  // public type = "document"
+  // public format = "raw"
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
@@ -62,21 +62,21 @@ export default class LayerRenderer extends ShapeRenderer {
     if (props.alpha !== undefined) {
       this.alpha = props.alpha
     }
-    if (props.context !== undefined) {
-      this.context = props.context
-    }
-    if (props.type !== undefined) {
-      this.type = props.type
-    }
     if (props.visible !== undefined) {
       this.visible = props.visible
     }
     if (props.id !== undefined) {
       this.id = props.id
     }
-    if (props.format !== undefined) {
-      this.format = props.format
-    }
+    // if (props.context !== undefined) {
+    //   this.context = props.context
+    // }
+    // if (props.type !== undefined) {
+    //   this.type = props.type
+    // }
+    // if (props.format !== undefined) {
+    //   this.format = props.format
+    // }
 
     this.framebuffer = this.regl.framebuffer()
 

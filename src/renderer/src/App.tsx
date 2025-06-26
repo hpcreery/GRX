@@ -143,6 +143,7 @@ export default function App(): JSX.Element | null {
           ref={elementRef}
         >
           <div
+            id="main"
             {...{ view: "main" }}
             style={{
               width: "100%",

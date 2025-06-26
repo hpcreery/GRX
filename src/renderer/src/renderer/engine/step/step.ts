@@ -51,13 +51,9 @@ export interface WorldContext {
 //   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
 // }
 
-export interface RenderEngineBackendConfig {
+export interface StepRendererConfig {
   id?: string
-  attributes?: WebGLContextAttributes | undefined
-  // width: number
-  // height: number
-  // x: number
-  // y: number
+  name: string
   viewBox: DOMRect
   // dpr: number
   regl: REGL.Regl
@@ -78,12 +74,12 @@ export interface LayerInfo {
   name: string
   id: string
   color: vec3
-  context: string
-  type: string
   units: Units
   visible: boolean
-  format: string
   transform: Transform
+  // format: string
+  // context: string
+  // type: string
 }
 
 interface EngineEventsMap {
@@ -120,7 +116,8 @@ export interface MessageData {
 }
 
 export class StepRenderer {
-  public id: string
+  public id: string = UID()
+  public name: string
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public viewBox: ViewBox = {
@@ -180,8 +177,9 @@ export class StepRenderer {
 
   private utilitiesRenderer: UtilitiesRenderer
 
-  constructor({ viewBox, regl, id }: RenderEngineBackendConfig) {
+  constructor({ viewBox, regl, id, name }: StepRendererConfig) {
     this.id = id || UID()
+    this.name = name
     this.viewBox = viewBox
 
     this.regl = regl
@@ -459,11 +457,11 @@ export class StepRenderer {
         name: layer.name,
         id: layer.id,
         color: layer.color,
-        context: layer.context,
-        type: layer.type,
         units: layer.units,
         visible: layer.visible,
-        format: layer.format,
+        // context: layer.context,
+        // type: layer.type,
+        // format: layer.format,
         transform: layer.transform,
       }
     })

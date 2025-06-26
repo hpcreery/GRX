@@ -53,8 +53,8 @@ function Main(): JSX.Element | null {
           <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
           <App />
-          {/* <NCDemo /> */}
           {/* <DemoApp /> */}
+          {/* <NCDemo /> */}
         </ContextMenuProvider>
       </MantineProvider>
     </ThemeConfigProvider.Provider>

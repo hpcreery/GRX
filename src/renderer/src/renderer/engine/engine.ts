@@ -47,11 +47,11 @@ export interface LayerInfo {
   name: string
   id: string
   color: vec3
-  context: string
-  type: string
+  // context: string
+  // type: string
   units: Units
   visible: boolean
-  format: string
+  // format: string
   transform: Transform
 }
 
@@ -113,7 +113,7 @@ export class RenderEngineBackend {
 
   public eventTarget = new EventTarget()
 
-  public steps: Map<string, StepRenderer> = new Map()
+  public views: Map<string, StepRenderer> = new Map()
   // public steps: StepRenderer[] = []
 
   private renderNowInterval: NodeJS.Timeout | null = null
@@ -186,13 +186,15 @@ export class RenderEngineBackend {
 
   public renderDispatch = (): void => this.render()
 
-  public addView(name: string, viewBox: DOMRect): void {
+  public addView(id: string, name: string, viewBox: DOMRect): void {
     const newStep = new StepRenderer({
       regl: this.regl,
       viewBox,
+      name,
+      id
     })
     newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
-    this.steps.set(name, newStep)
+    this.views.set(id, newStep)
     this.render()
   }
 
@@ -226,58 +228,58 @@ export class RenderEngineBackend {
     // this.updateTransform()
   }
 
-  public updateViewBox(step: string, viewBox: DOMRect): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
+  public updateViewBox(view: string, viewBox: DOMRect): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
     viewBox.x = viewBox.x - this.boundingBox.x
-    this.steps.get(step)!.updateViewBox(viewBox)
+    this.views.get(view)!.updateViewBox(viewBox)
   }
 
-  public toss(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.toss()
+  public toss(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.toss()
   }
 
-  public moveViewport(step: string, x: number, y: number): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.moveViewport(x, y)
+  public moveViewport(view: string, x: number, y: number): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.moveViewport(x, y)
   }
 
-  public grabViewport(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.grabViewport()
+  public grabViewport(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.grabViewport()
   }
 
-  public releaseViewport(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.releaseViewport()
+  public releaseViewport(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.releaseViewport()
   }
 
-  public zoom(step: string, x: number, y: number, s: number): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.zoom(x, y, s)
+  public zoom(view: string, x: number, y: number, s: number): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.zoom(x, y, s)
   }
 
-  public isDragging(step: string): boolean {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.isDragging()
+  public isDragging(view: string): boolean {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.isDragging()
   }
 
-  public updateTransform(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    // return this.steps.get(step)!.updateTransform()
-    const transform = this.steps.get(step)!.updateTransform()
+  public updateTransform(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    // return this.steps.get(view)!.updateTransform()
+    const transform = this.views.get(view)!.updateTransform()
     return transform
   }
 
-  public zoomAtPoint(step: string, x: number, y: number, s: number): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.zoomAtPoint(x, y, s)
+  public zoomAtPoint(view: string, x: number, y: number, s: number): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.zoomAtPoint(x, y, s)
   }
 
-  public getWorldPosition(step: string, x: number, y: number): [number, number] {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.getWorldPosition(x, y)
+  public getWorldPosition(view: string, x: number, y: number): [number, number] {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getWorldPosition(x, y)
   }
 
   public async sendMessage(data: MessageData): Promise<void> {
@@ -288,49 +290,49 @@ export class RenderEngineBackend {
     )
   }
 
-  public async addLayer(step: string, params: AddLayerProps): Promise<void> {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.addLayer(params)
+  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.addLayer(params)
   }
 
-  public async addFile(step: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.addFile(params)
+  public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.addFile(params)
   }
 
-  public getLayers(step: string): LayerInfo[] {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.getLayers()
+  public getLayers(view: string): LayerInfo[] {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getLayers()
   }
 
-  public getTransform(step: string): Partial<RenderTransform> {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.getTransform()
+  public getTransform(view: string): Partial<RenderTransform> {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getTransform()
   }
 
-  public setTransform(step: string, transform: Partial<RenderTransform>): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.setTransform(transform)
+  public setTransform(view: string, transform: Partial<RenderTransform>): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.setTransform(transform)
   }
 
-  public removeLayer(step: string, id: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.removeLayer(id)
+  public removeLayer(view: string, id: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.removeLayer(id)
   }
 
-  public moveLayer(step: string, from: number, to: number): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.moveLayer(from, to)
+  public moveLayer(view: string, from: number, to: number): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.moveLayer(from, to)
   }
 
-  public setLayerProps(step: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.setLayerProps(id, props)
+  public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.setLayerProps(id, props)
   }
 
-  public setLayerTransform(step: string, id: string, transform: Partial<Transform>): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.setLayerTransform(id, transform)
+  public setLayerTransform(view: string, id: string, transform: Partial<Transform>): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.setLayerTransform(id, transform)
   }
 
   public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
@@ -344,38 +346,38 @@ export class RenderEngineBackend {
     this.eventTarget.addEventListener(event, runCallback)
   }
 
-  public sample(step: string, x: number, y: number): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.sample(x, y)
+  public sample(view: string, x: number, y: number): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.sample(x, y)
   }
 
-  public select(step: string, pointer: vec2): QuerySelection[] {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
+  public select(view: string, pointer: vec2): QuerySelection[] {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     let selection: QuerySelection[] = []
-    selection = this.steps.get(step)!.select(pointer)
+    selection = this.views.get(view)!.select(pointer)
     return selection
   }
 
-  public snap(step: string, pointer: vec2): vec2 {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
+  public snap(view: string, pointer: vec2): vec2 {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     let snapped: vec2 = pointer
-    snapped = this.steps.get(step)!.snap(pointer)
+    snapped = this.views.get(view)!.snap(pointer)
     return snapped
   }
 
-  public clearSelection(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.clearSelection()
+  public clearSelection(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.clearSelection()
   }
 
-  public setPointer(step: string, mouse: Partial<Pointer>): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.setPointer(mouse)
+  public setPointer(view: string, mouse: Partial<Pointer>): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.setPointer(mouse)
   }
 
-  public async zoomFit(step: string): Promise<void> {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.zoomFit()
+  public async zoomFit(view: string): Promise<void> {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.zoomFit()
   }
 
   // public startLoading(): void {
@@ -386,42 +388,42 @@ export class RenderEngineBackend {
   //   this.loadingFrame.stop()
   // }
 
-  public addMeasurement(step: string, point: vec2): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.addMeasurement(point)
+  public addMeasurement(view: string, point: vec2): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.addMeasurement(point)
   }
 
-  public updateMeasurement(step: string, point: vec2): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.updateMeasurement(point)
+  public updateMeasurement(view: string, point: vec2): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.updateMeasurement(point)
   }
 
-  public finishMeasurement(step: string, point: vec2): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    this.steps.get(step)!.finishMeasurement(point)
+  public finishMeasurement(view: string, point: vec2): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.finishMeasurement(point)
   }
 
-  public getMeasurements(step: string): { point1: vec2; point2: vec2 }[] {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.getMeasurements()
+  public getMeasurements(view: string): { point1: vec2; point2: vec2 }[] {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getMeasurements()
   }
 
-  public getCurrentMeasurement(step: string): { point1: vec2; point2: vec2 } | null {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.getCurrentMeasurement()
+  public getCurrentMeasurement(view: string): { point1: vec2; point2: vec2 } | null {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getCurrentMeasurement()
   }
 
-  public clearMeasurements(step: string): void {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.clearMeasurements()
+  public clearMeasurements(view: string): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.clearMeasurements()
   }
 
-  public getLayersQueue(step: string): {
+  public getLayersQueue(view: string): {
     name: string
     id: string
   }[] {
-    if (!this.steps.has(step)) throw new Error(`Step ${step} not found`)
-    return this.steps.get(step)!.layersQueue
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.layersQueue
   }
 
   public render(): void {
@@ -429,8 +431,8 @@ export class RenderEngineBackend {
     this.renderNowInterval = setTimeout(() => {
       this.renderNowInterval = null
       this.universe((_context) => {
-        this.steps.forEach((step) => {
-          step.render()
+        this.views.forEach((view) => {
+          view.render()
         })
       })
     }, settings.MSPFRAME)
@@ -463,8 +465,8 @@ export class RenderEngineBackend {
   }
 
   public destroy(): void {
-    this.steps.forEach((step) => {
-      step.destroy()
+    this.views.forEach((view) => {
+      view.destroy()
     })
     this.regl.destroy()
   }

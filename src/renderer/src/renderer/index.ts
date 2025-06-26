@@ -7,6 +7,7 @@ import { PointerMode, SnapMode } from "./engine/types"
 import type { GridSettings, RenderSettings } from "./engine/settings"
 import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
+import { UID } from './engine/utils'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -182,19 +183,32 @@ export class RenderEngine {
     this.backend.then((backend) => {
       const views = this.getEmbeddedViews()
       views.forEach(async (viewElement) => {
-        const viewName = viewElement.getAttribute("view")!
-        await backend.addView(viewName, viewElement.getBoundingClientRect())
+        const viewName = viewElement.getAttribute("view")
+        if (viewName == null) {
+          return
+        }
+        if (viewElement.id == undefined || viewElement.id === "") {
+          viewElement.id = UID()
+        }
+        const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
+        if (viewExists) return
+        await backend.addView(viewElement.id, viewName, viewElement.getBoundingClientRect())
         await this.addControls(viewElement)
         this.managedViews.push(viewElement)
       })
     })
   }
 
-  public addManagedView(view: HTMLElement, name: string): void {
+  public addManagedView(view: HTMLElement, name: string, id: string = UID()): void {
     view.setAttribute("view", name)
+    if (view.id == null || view.id === "") {
+      view.id = id
+    } else {
+      id = view.id
+    }
     this.managedViews.push(view)
     this.backend.then(async (backend) => {
-      await backend.addView(name, view.getBoundingClientRect())
+      await backend.addView(id, name, view.getBoundingClientRect())
       await this.addControls(view)
     })
   }
@@ -259,10 +273,8 @@ export class RenderEngine {
     })
 
     this.backend.then((backend) => {
-      // const views = this.getEmbeddedViews().concat(this.managedViews)
       this.managedViews.forEach(async (node) => {
-        const view = node.getAttribute("view")!
-        await backend.updateViewBox(view, node.getBoundingClientRect())
+        await backend.updateViewBox(node.id, node.getBoundingClientRect())
       })
     })
   }
@@ -280,9 +292,8 @@ export class RenderEngine {
   }
 
   private async addControls(element: HTMLElement): Promise<void> {
-    const viewName = element.getAttribute("view")
-    if (!viewName) {
-      throw new Error("Element must have a 'view' attribute")
+    if (!element.id) {
+      throw new Error("Element must have a 'id' attribute")
     }
     const backend = await this.backend
     const sendPointerEvent = async (
@@ -299,9 +310,8 @@ export class RenderEngine {
     }
 
     const getMouseWorldCoordinates = async (element: HTMLElement, e: MouseEvent): Promise<[number, number]> => {
-      const viewName = element.getAttribute("view")
-      if (!viewName) {
-        throw new Error("Element must have a 'view' attribute")
+      if (!element.id) {
+        throw new Error("Element must have a 'id' attribute")
       }
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
 
@@ -328,7 +338,7 @@ export class RenderEngine {
       }
 
       const backend = await this.backend
-      return backend.getWorldPosition(viewName, ...getMouseNormalizedWorldCoordinates(e))
+      return backend.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -337,7 +347,7 @@ export class RenderEngine {
       this.pointerCache.splice(index, 1)
     }
 
-    await backend.updateViewBox(viewName, element.getBoundingClientRect())
+    await backend.updateViewBox(element.id, element.getBoundingClientRect())
 
     element.style.cursor = "grab"
 
@@ -347,9 +357,9 @@ export class RenderEngine {
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint(viewName, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(viewName, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
+        backend.zoomAtPoint(element.id, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -358,10 +368,10 @@ export class RenderEngine {
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
-        await backend.grabViewport(viewName)
+        await backend.grabViewport(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await backend.select(viewName, [x, y])
+        const features = await backend.select(element.id, [x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -372,11 +382,11 @@ export class RenderEngine {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x1, y1] = await getMouseWorldCoordinates(element, e)
-        const currentMeasurement = await backend.getCurrentMeasurement(viewName)
+        const currentMeasurement = await backend.getCurrentMeasurement(element.id)
         if (currentMeasurement != null) {
-          backend.finishMeasurement(viewName, [x1, y1])
+          backend.finishMeasurement(element.id, [x1, y1])
         } else {
-          backend.addMeasurement(viewName, [x1, y1])
+          backend.addMeasurement(element.id, [x1, y1])
         }
       }
     }
@@ -385,21 +395,21 @@ export class RenderEngine {
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grab"
-        await backend.releaseViewport(viewName)
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
     element.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(viewName)
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
     element.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(viewName)
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
@@ -415,10 +425,10 @@ export class RenderEngine {
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x, y] = await getMouseWorldCoordinates(element, e)
-        backend.updateMeasurement(viewName, [x, y])
+        backend.updateMeasurement(element.id, [x, y])
       }
 
-      if (!(await backend.isDragging(viewName))) {
+      if (!(await backend.isDragging(element.id))) {
         await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
@@ -437,13 +447,13 @@ export class RenderEngine {
           const settings = await backend.getSettings()
           const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint(viewName, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            backend.zoomAtPoint(viewName, width / 2, height / 2, zoomFactor)
+            backend.zoomAtPoint(element.id, width / 2, height / 2, zoomFactor)
           }
-          backend.moveViewport(viewName, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          backend.moveViewport(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(viewName, e.movementX * moveScale, e.movementY * moveScale)
+          await backend.moveViewport(element.id, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
@@ -454,25 +464,25 @@ export class RenderEngine {
       //   element.style.cursor = 'grab'
       // }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await backend.isDragging(viewName)
+        const isDragging = await backend.isDragging(element.id)
         if (isDragging) return
         this.backend.then((engine) => {
-          engine.grabViewport(viewName)
+          engine.grabViewport(element.id)
           switch (e.key) {
             case "ArrowUp":
-              engine.moveViewport(viewName, 0, 10)
+              engine.moveViewport(element.id, 0, 10)
               break
             case "ArrowDown":
-              engine.moveViewport(viewName, 0, -10)
+              engine.moveViewport(element.id, 0, -10)
               break
             case "ArrowLeft":
-              engine.moveViewport(viewName, 10, 0)
+              engine.moveViewport(element.id, 10, 0)
               break
             case "ArrowRight":
-              engine.moveViewport(viewName, -10, 0)
+              engine.moveViewport(element.id, -10, 0)
               break
           }
-          engine.releaseViewport(viewName)
+          engine.releaseViewport(element.id)
         })
       }
     }
