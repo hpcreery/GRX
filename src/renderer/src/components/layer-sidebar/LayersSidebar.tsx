@@ -45,12 +45,12 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     const newLayers: UploadFile[] = []
     rendererLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: layer.format })
+      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: 'raw' })
       newLayers.push(newfile)
     })
     loadingLayers.forEach(async (layer) => {
       const file = new File([], layer.name)
-      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: "" })
+      const newfile: UploadFile = Object.assign(file, { id: layer.id, format: 'raw' })
       newLayers.push(newfile)
     })
     setLayers(newLayers)
@@ -88,7 +88,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   useEffect(() => {
     renderEngine.backend.then(async (backend) => {
       const reg = async (): Promise<void> => {
-        renderEngine.zoomFit("main")
+        renderEngine.backend.then(backend => backend.zoomFit("main"))
         return registerLayers(await backend.getLayers("main"), await backend.getLayersQueue("main"))
       }
       reg()
