@@ -363,6 +363,7 @@ export class RenderEngine {
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
+      if (e.button !== 0) return // Only handle left mouse button
       sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
       const [x, y] = await getMouseWorldCoordinates(element, e)
       this.pointerCache.push(e)
