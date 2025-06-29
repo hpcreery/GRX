@@ -43,7 +43,8 @@ export function getUnitsConversion(units: Units): number {
   }
 }
 
-export const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+// export const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+export const UID = (): string => crypto.randomUUID()
 
 // https://stackoverflow.com/questions/4361242/extract-rotation-scale-values-from-2d-transformation-matrix
 export function getScaleMat3(matrix: mat3): number {

@@ -1,17 +1,19 @@
 import * as Comlink from "comlink"
-import EngineWorker from "./engine?worker"
-import type { GridRenderProps, QuerySelection, RenderEngineBackend, RenderSettings, RenderProps, Stats } from "./engine"
-import { AddLayerProps } from "./plugins"
-import { PointerMode, SnapMode } from "./types"
+import EngineWorker from "./engine/engine?worker"
+import type { QuerySelection, RenderEngineBackend, Stats } from "./engine/engine"
+import { AddLayerProps } from "./engine/plugins"
+import { PointerMode, SnapMode } from "./engine/types"
 
-import cozetteFont from "./text/cozette/CozetteVector.ttf?url"
-import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
+import type { GridSettings, RenderSettings } from "./engine/settings"
+import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
+import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
+import { UID } from './engine/utils'
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
 
 export interface RenderEngineFrontendConfig {
-  container: HTMLElement
+  container?: HTMLElement
   attributes?: WebGLContextAttributes | undefined
 }
 
@@ -63,17 +65,15 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
-          engine.settings[name] = value
-          engine.render({
-            force: true,
-          })
+          // engine.settings[name] = value
+          engine.setSettings({ [name]: value })
         })
         target[name] = value
         return true
       },
     },
   )
-  public grid: GridRenderProps = new Proxy(
+  public grid: GridSettings = new Proxy(
     {
       enabled: true,
       color: [0.2, 0.2, 0.2, 0.5],
@@ -87,10 +87,8 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
-          engine.grid[name] = value
-          engine.render({
-            force: true,
-          })
+          // engine.grid[name] = value
+          engine.setGrid({ [name]: value })
         })
         target[name] = value
         return true
@@ -104,12 +102,14 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         if (name === "mode") {
-          if (value === PointerMode.MOVE) this.CONTAINER.style.cursor = "grab"
-          if (value === PointerMode.SELECT) this.CONTAINER.style.cursor = "crosshair"
-          if (value === PointerMode.MEASURE) {
-            this.CONTAINER.style.cursor = "crosshair"
-            this.settings.SHOW_DATUMS = true
-          }
+          this.managedViews.forEach((viewElement) => {
+            if (value === PointerMode.MOVE) viewElement.style.cursor = "grab"
+            if (value === PointerMode.SELECT) viewElement.style.cursor = "crosshair"
+            if (value === PointerMode.MEASURE) {
+              viewElement.style.cursor = "crosshair"
+              this.settings.SHOW_DATUMS = true
+            }
+          })
         }
         target[name] = value
         return true
@@ -128,7 +128,6 @@ export class RenderEngine {
     {
       set: (target, name, value): boolean => {
         if (name === "hidpi") {
-          console.log("hidpi", value)
           this.resize()
         }
         target[name] = value
@@ -137,40 +136,112 @@ export class RenderEngine {
     },
   )
 
+  public managedViews: HTMLElement[] = []
+
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
   public backend: Promise<Comlink.Remote<RenderEngineBackend>>
   public canvasGL: HTMLCanvasElement
-  public canvas2D: HTMLCanvasElement
+  // public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
+    if (container == null) {
+      container = document.createElement("div")
+      container.style.cursor = "auto"
+      // container.style.zIndex = "100"
+      container.style.top = "0px"
+      container.style.left = "0px"
+      container.style.width = "100vw"
+      container.style.height = "100vh"
+      container.style.pointerEvents = "none"
+      container.style.position = "absolute"
+      // document.append(container)
+      document.body.append(container)
+    }
     this.CONTAINER = container
-    this.CONTAINER.style.cursor = "grab"
 
     this.canvasGL = this.createCanvas()
-    this.canvas2D = this.createCanvas()
+    // this.canvas2D = this.createCanvas()
 
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
-    const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
+    // const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
 
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), Comlink.transfer(offscreenCanvas2D, [offscreenCanvas2D]), {
+    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
       attributes,
-      width: this.canvasGL.width,
-      height: this.canvasGL.height,
-      dpr: this.canvasSettings.dpr,
+      container: this.CONTAINER.getBoundingClientRect(),
+      // dpr: this.canvasSettings.dpr,
     })
+
+    this.pollEmbeddedViews()
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    this.addControls()
-    this.render({
-      force: true,
+    this.render()
+    this.pollViews()
+  }
+
+  private pollEmbeddedViews(): void {
+    this.backend.then((backend) => {
+      const views = this.getEmbeddedViews()
+      views.forEach(async (viewElement) => {
+        const viewName = viewElement.getAttribute("view")
+        if (viewName == null) {
+          return
+        }
+        if (viewElement.id == undefined || viewElement.id === "") {
+          viewElement.id = UID()
+        }
+        const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
+        if (viewExists) return
+        await backend.addView(viewElement.id, viewName, viewElement.getBoundingClientRect())
+        await this.addControls(viewElement)
+        this.managedViews.push(viewElement)
+      })
     })
+  }
+
+  public addManagedView(view: HTMLElement, name: string, id: string = UID()): void {
+    view.setAttribute("view", name)
+    if (view.id == null || view.id === "") {
+      view.id = id
+    } else {
+      id = view.id
+    }
+    this.managedViews.push(view)
+    this.backend.then(async (backend) => {
+      await backend.addView(id, name, view.getBoundingClientRect())
+      await this.addControls(view)
+    })
+  }
+
+  public removeManagedView(view: HTMLElement): void {
+    this.managedViews.splice(this.managedViews.indexOf(view), 1)
+  }
+
+  public getEmbeddedViews(): HTMLElement[] {
+    const views = this.CONTAINER.querySelectorAll("[view]")
+    const HTMLViews: HTMLElement[] = []
+    views.forEach((viewElement) => {
+      if (!(viewElement instanceof HTMLElement)) return
+      const viewName = viewElement.getAttribute("view")
+      if (viewName == null) return
+      HTMLViews.push(viewElement)
+    })
+    return HTMLViews
   }
 
   public async onLoad(cb: () => void): Promise<void> {
     await this.backend
     cb()
   }
+
+  // private updateViewboxes() {
+  //   // const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+  //   const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: containerHeight } = this.CONTAINER.getBoundingClientRect()
+  //   const viewbox = element.getBoundingClientRect()
+  //   viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
+  //   viewbox.x = viewbox.x - containerOffsetX
+  //   await backend.updateViewBox(view, viewbox)
+  // }
 
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas")
@@ -180,67 +251,94 @@ export class RenderEngine {
     canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
     canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
     canvas.style.position = "absolute"
-    console.log("createCanvas", JSON.stringify(canvas.style.width))
+    // canvas.style.border = "1px solid white"
+    canvas.style.top = "0px"
+    canvas.style.left = "0px"
+    canvas.style.pointerEvents = "none"
+    canvas.style.zIndex = "100"
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
 
   private resize(): void {
-    const width = this.CONTAINER.clientWidth
-    const height = this.CONTAINER.clientHeight
+    const { width, height } = this.CONTAINER.getBoundingClientRect()
 
-    this.canvas2D.style.width = String(width) + "px"
-    this.canvas2D.style.height = String(height) + "px"
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
-    console.log("resize", JSON.stringify(this.canvas2D.style.width))
+    // this.canvasGL.style.zIndex = "1"
+    // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.backend.then((engine) => {
-      engine.resize(width, height, this.canvasSettings.dpr)
+      engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
+    })
+
+    this.backend.then((backend) => {
+      this.managedViews.forEach(async (node) => {
+        await backend.updateViewBox(node.id, node.getBoundingClientRect())
+      })
     })
   }
 
-  public async getMouseWorldCoordinates(e: MouseEvent): Promise<[number, number]> {
-    const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+  // public async zoomFit(view: string): Promise<void> {
+  //   const backend = await this.backend
+  //   backend.zoomFit(view)
+  // }
 
-    // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
-    // but rather the coordinates of the world
-    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-      // Get the mouse position relative to the canvas
-      // const { x: offsetX, y: offsetY, height } = this.CONTAINER.getBoundingClientRect()
-      return [e.clientX - offsetX, height - (e.clientY - offsetY)]
-    }
-
-    function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
-      // const { width, height } = this.CONTAINER.getBoundingClientRect()
-      const mouse_element_pos = getMouseCanvasCoordinates(e)
-
-      // Normalize the mouse position to the canvas
-      const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
-      // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-      // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
-
-      return mouse_normalize_pos
-    }
-
-    const backend = await this.backend
-    return backend.getWorldPosition(...getMouseNormalizedWorldCoordinates(e))
+  public async pollViews(): Promise<void> {
+    // const views = this.getViews()
+    // setTimeout
+    this.resize()
+    requestAnimationFrame(() => this.pollViews())
   }
 
-  public async zoomFit(): Promise<void> {
+  private async addControls(element: HTMLElement): Promise<void> {
+    if (!element.id) {
+      throw new Error("Element must have a 'id' attribute")
+    }
     const backend = await this.backend
-    backend.zoomFit()
-  }
-
-  private async addControls(): Promise<void> {
-    const backend = await this.backend
-    const sendPointerEvent = async (mouse: MouseEvent, event_type: (typeof PointerEvents)[keyof typeof PointerEvents]): Promise<void> => {
-      const [x, y] = await this.getMouseWorldCoordinates(mouse)
+    const sendPointerEvent = async (
+      element: HTMLElement,
+      mouse: MouseEvent,
+      event_type: (typeof PointerEvents)[keyof typeof PointerEvents],
+    ): Promise<void> => {
+      const [x, y] = await getMouseWorldCoordinates(element, mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
           detail: { x, y },
         }),
       )
+    }
+
+    const getMouseWorldCoordinates = async (element: HTMLElement, e: MouseEvent): Promise<[number, number]> => {
+      if (!element.id) {
+        throw new Error("Element must have a 'id' attribute")
+      }
+      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+
+      // console.log(offsetX, offsetY, width, height)
+
+      // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
+      // but rather the coordinates of the world
+      function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+        // Get the mouse position relative to the canvas
+        return [e.clientX - offsetX, height - (e.clientY - offsetY)]
+      }
+
+      function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
+        // const { width, height } = this.CONTAINER.getBoundingClientRect()
+        const mouse_element_pos = getMouseCanvasCoordinates(e)
+        // console.log(mouse_element_pos)
+
+        // Normalize the mouse position to the canvas
+        const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
+        // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+        // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+        return mouse_normalize_pos
+      }
+
+      const backend = await this.backend
+      return backend.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -249,82 +347,90 @@ export class RenderEngine {
       this.pointerCache.splice(index, 1)
     }
 
-    this.CONTAINER.onwheel = async (e): Promise<void> => {
-      const settings = await backend.settings
+    await backend.updateViewBox(element.id, element.getBoundingClientRect())
+
+    element.style.cursor = "grab"
+
+    element.onwheel = async (e): Promise<void> => {
+      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+      const settings = await backend.getSettings()
       const moveScale = this.canvasSettings.dpr
 
-      const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(width / 2, height / 2, e.deltaY * moveScale)
+        backend.zoomAtPoint(element.id, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
       }
     }
-    this.CONTAINER.onpointerdown = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
-      const [x, y] = await this.getMouseWorldCoordinates(e)
+    element.onpointerdown = async (e): Promise<void> => {
+      if (e.button !== 0) return // Only handle left mouse button
+      sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
+      const [x, y] = await getMouseWorldCoordinates(element, e)
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        this.CONTAINER.style.cursor = "grabbing"
-        await backend.grabViewport()
+        element.style.cursor = "grabbing"
+        await backend.grabViewport(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
-        this.CONTAINER.style.cursor = "wait"
-        const features = await backend.select([x, y])
+        element.style.cursor = "wait"
+        const features = await backend.select(element.id, [x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
           }),
         )
-        this.CONTAINER.style.cursor = "crosshair"
+        element.style.cursor = "crosshair"
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
-        this.CONTAINER.style.cursor = "crosshair"
-        const [x1, y1] = await this.getMouseWorldCoordinates(e)
-        const currentMeasurement = await backend.getCurrentMeasurement()
+        element.style.cursor = "crosshair"
+        const [x1, y1] = await getMouseWorldCoordinates(element, e)
+        const currentMeasurement = await backend.getCurrentMeasurement(element.id)
         if (currentMeasurement != null) {
-          backend.finishMeasurement([x1, y1])
+          backend.finishMeasurement(element.id, [x1, y1])
         } else {
-          backend.addMeasurement([x1, y1])
+          backend.addMeasurement(element.id, [x1, y1])
         }
       }
     }
-    this.CONTAINER.onpointerup = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointerup = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        this.CONTAINER.style.cursor = "grab"
-        await backend.releaseViewport()
+        element.style.cursor = "grab"
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointercancel = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointercancel = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport()
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointerleave = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_UP)
+    element.onpointerleave = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport()
+        await backend.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
-    this.CONTAINER.onpointermove = async (e): Promise<void> => {
-      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
+    element.onpointerenter = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
+    }
+    element.onpointermove = async (e): Promise<void> => {
+      sendPointerEvent(element, e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
       const moveScale = this.canvasSettings.dpr
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
-        this.CONTAINER.style.cursor = "crosshair"
-        const [x, y] = await this.getMouseWorldCoordinates(e)
-        backend.updateMeasurement([x, y])
+        element.style.cursor = "crosshair"
+        const [x, y] = await getMouseWorldCoordinates(element, e)
+        backend.updateMeasurement(element.id, [x, y])
       }
 
-      if (!(await backend.isDragging())) {
-        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
+      if (!(await backend.isDragging(element.id))) {
+        await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
 
@@ -339,63 +445,69 @@ export class RenderEngine {
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
-          const settings = await backend.settings
-          const { x: offsetX, y: offsetY, width, height } = this.CONTAINER.getBoundingClientRect()
+          const settings = await backend.getSettings()
+          const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint((e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            backend.zoomAtPoint(width / 2, height / 2, zoomFactor)
+            backend.zoomAtPoint(element.id, width / 2, height / 2, zoomFactor)
           }
-          backend.moveViewport(e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          backend.moveViewport(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(e.movementX * moveScale, e.movementY * moveScale)
+          await backend.moveViewport(element.id, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
-    this.CONTAINER.onkeydown = async (e): Promise<void> => {
+    element.onkeydown = async (e): Promise<void> => {
       // if (e.key === 'Escape') {
       //   await backend.cancelMeasurement()
       //   this.pointerSettings.mode = 'move'
-      //   this.CONTAINER.style.cursor = 'grab'
+      //   element.style.cursor = 'grab'
       // }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await backend.isDragging()
+        const isDragging = await backend.isDragging(element.id)
         if (isDragging) return
         this.backend.then((engine) => {
-          engine.grabViewport()
+          engine.grabViewport(element.id)
           switch (e.key) {
             case "ArrowUp":
-              engine.moveViewport(0, 10)
+              engine.moveViewport(element.id, 0, 10)
               break
             case "ArrowDown":
-              engine.moveViewport(0, -10)
+              engine.moveViewport(element.id, 0, -10)
               break
             case "ArrowLeft":
-              engine.moveViewport(10, 0)
+              engine.moveViewport(element.id, 10, 0)
               break
             case "ArrowRight":
-              engine.moveViewport(-10, 0)
+              engine.moveViewport(element.id, -10, 0)
               break
           }
-          engine.releaseViewport()
+          engine.releaseViewport(element.id)
         })
       }
     }
   }
 
-  public async addLayer(params: AddLayerProps): Promise<void> {
+  /**
+   * @deprecated will move to backend datamodel
+   */
+  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
     const backend = await this.backend
-    backend.addLayer(params)
+    backend.addLayer(view, params)
   }
 
-  public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  /**
+   * @deprecated will move to backend datamodel
+   */
+  public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
-    backend.addFile(params)
+    backend.addFile(view, params)
   }
 
-  public async render(props: RenderProps): Promise<void> {
+  public async render(): Promise<void> {
     const backend = await this.backend
-    backend.render(props)
+    backend.render()
   }
 
   private sendFontData(): void {
@@ -434,6 +546,9 @@ export class RenderEngine {
     })
   }
 
+  /**
+   * TODO: Make download image only download a certain view
+   */
   public downloadImage(): void {
     const canvasUrl = this.canvasGL.toDataURL("image/png", 1)
     const createEl = document.createElement("a")
@@ -453,6 +568,22 @@ export class RenderEngine {
     backend.destroy()
     ComWorker[Comlink.releaseProxy]()
     Worker.terminate()
+
+    this.CONTAINER.childNodes.forEach((node) => {
+      if (node instanceof HTMLElement) {
+        node.onwheel = null
+        node.onmousedown = null
+        node.onmouseup = null
+        node.onmousemove = null
+        node.onresize = null
+        node.onpointerdown = null
+        node.onpointerup = null
+        node.onpointermove = null
+        node.onpointercancel = null
+        node.onpointerleave = null
+        node.remove()
+      }
+    })
 
     this.CONTAINER.innerHTML = ""
     this.CONTAINER.onwheel = null

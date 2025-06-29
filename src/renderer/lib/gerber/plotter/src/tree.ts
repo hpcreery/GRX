@@ -2,7 +2,7 @@ import type { Parent } from "unist"
 
 import type { UnitsType } from "@hpcreery/tracespace-parser"
 
-import * as Shapes from "@src/renderer/shapes"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
 
 export type { Polarity } from "@hpcreery/tracespace-parser"
 

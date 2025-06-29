@@ -1,17 +1,17 @@
 import React, { useMemo } from "react"
 import "../App.css"
-import * as Symbols from "./symbols"
-import * as Shapes from "./shapes"
+import * as Symbols from "./engine/step/layer/shape/symbol/symbol"
+import * as Shapes from "./engine/step/layer/shape/shape"
 import { RenderEngine } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
-import { SNAP_MODES, SNAP_MODES_MAP } from "./types"
-import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
+import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
+import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
-// import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
+import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
 // import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
 // import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
@@ -19,13 +19,13 @@ import { POINTER_MODES, POINTER_MODES_MAP } from "./types"
 // import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
-// import nested_aperture_macro from '@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?raw'
+// import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 // import gtl_in from '@lib/gerber/testdata/boards/mini_linux_board_inch/Gerber_TopLayer.GTL?raw'
-// import gtl_mm from '@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?raw'
+// import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
-import { LayerRendererProps } from "./layer"
+import { LayerRendererProps } from "./engine/step/layer/layer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1184,16 +1184,20 @@ DATUMS.push(
 //   polarity: 1,
 // })
 
-function REGLApp(): JSX.Element {
+function DemoApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
+  const box1Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
+  const box2Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [engine, setEngine] = React.useState<RenderEngine>()
   const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
 
   React.useEffect(() => {
+    if (engine) return
     const Engine = new RenderEngine({
-      container: containerRef.current,
+      // container: containerRef.current,
+
       attributes: {
         antialias: false,
       },
@@ -1203,6 +1207,11 @@ function REGLApp(): JSX.Element {
     Engine.settings.SHOW_DATUMS = true
     // Engine.settings.FPS = 30
     // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
+
+    console.log(box1Ref.current)
+
+    Engine.addManagedView(box2Ref.current, "box2", "box2")
+    Engine.addManagedView(box1Ref.current, "box1", "box1")
 
     // Engine.addLayer({
     //   name: 'origin',
@@ -1432,13 +1441,14 @@ function REGLApp(): JSX.Element {
     //   visible: false
     // })
 
-    // Engine.addFile({
-    //   file: nested_aperture_macro,
-    //   format: 'rs274x',
+    // Engine.addFile("box1", {
+    //   buffer: nested_aperture_macro,
+    //   format: "rs274x",
     //   props: {
-    //     name: 'nested_aperture_macro',
-    //     units: 'inch'
-    //   }
+    //     name: "nested_aperture_macro",
+    //     units: "inch",
+    //     visible: true,
+    //   },
     // })
 
     // Engine.addFile({
@@ -1458,20 +1468,20 @@ function REGLApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "surfaces",
-      visible: false,
+      visible: true,
       image: SURFACE_RECORDS_ARRAY,
       units: "mm",
     })
 
-    // Engine.addFile({
-    //   file: gtl_mm,
-    //   format: 'rs274x',
-    //   props: {
-    //     name: 'gtl_mm',
-    //   }
-    // })
+    Engine.addFile("box2", {
+      buffer: cmp,
+      format: "rs274x",
+      props: {
+        name: "cmp",
+      },
+    })
 
     // Engine.addLayer({
     //   name: "surface test",
@@ -1545,7 +1555,7 @@ function REGLApp(): JSX.Element {
     //   ],
     // })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Poly Lines",
       visible: true,
       units: "mm",
@@ -1586,7 +1596,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Lines",
       visible: false,
       units: "cm",
@@ -1691,7 +1701,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "Arcs",
       visible: false,
       units: "cm",
@@ -1787,7 +1797,7 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.addLayer({
+    Engine.addLayer("box1", {
       name: "circle",
       units: "cm",
       visible: false,
@@ -2076,14 +2086,57 @@ function REGLApp(): JSX.Element {
       ],
     })
 
-    Engine.render({
-      force: true,
-    })
+    Engine.render()
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 
     setEngine(Engine)
     // Engine.SUPERTEST()
+
+    function dragElement(elmnt: HTMLElement): void {
+      let pos1 = 0,
+        pos2 = 0,
+        pos3 = 0,
+        pos4 = 0
+      if (document.getElementById(elmnt.id + "header")) {
+        // if present, the header is where you move the DIV from:
+        document.getElementById(elmnt.id + "header")!.onmousedown = dragMouseDown
+      } else {
+        // otherwise, move the DIV from anywhere inside the DIV:
+        elmnt.onmousedown = dragMouseDown
+      }
+
+      function dragMouseDown(e: MouseEvent): void {
+        e.preventDefault()
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX
+        pos4 = e.clientY
+        document.onmouseup = closeDragElement
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag
+      }
+
+      function elementDrag(e: MouseEvent): void {
+        e.preventDefault()
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX
+        pos2 = pos4 - e.clientY
+        pos3 = e.clientX
+        pos4 = e.clientY
+        // set the element's new position:
+        elmnt.style.top = elmnt.offsetTop - pos2 + "px"
+        elmnt.style.left = elmnt.offsetLeft - pos1 + "px"
+      }
+
+      function closeDragElement(): void {
+        // stop moving when mouse button is released:
+        document.onmouseup = null
+        document.onmousemove = null
+      }
+    }
+
+    dragElement(document.getElementById("window1")!)
+    dragElement(document.getElementById("window2")!)
 
     return (): void => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
@@ -2097,14 +2150,82 @@ function REGLApp(): JSX.Element {
         ref={containerRef}
         id="container-element"
         style={{
+          // background: "white",
+          // pointerEvents: "none",
+          // zIndex: 100,
           width: "100%",
           height: "100%",
           position: "absolute",
           top: 0,
           left: 0,
-          zIndex: 0,
+          // margin: "10px",
+          // border: "0px solid green",
         }}
-      />
+      ></div>
+      <div
+        id="window2"
+        style={{
+          position: "absolute",
+          backgroundColor: "black",
+          border: "1px solid #d3d3d3",
+          textAlign: "center",
+        }}
+      >
+        <div
+          id="window2header"
+          style={{
+            position: "relative",
+            padding: "3px",
+            cursor: "move",
+            backgroundColor: "#2196F3",
+            color: "#fff",
+          }}
+        >
+          box2
+        </div>
+        <div
+          {...{ view: "box2" }}
+          ref={box2Ref}
+          style={{
+            width: "300px",
+            height: "300px",
+            position: "relative",
+          }}
+        />
+      </div>
+      <div
+        id="window1"
+        style={{
+          position: "absolute",
+          backgroundColor: "black",
+          border: "1px solid #d3d3d3",
+          textAlign: "center",
+        }}
+      >
+        <div
+          id="window1header"
+          style={{
+            position: "relative",
+            padding: "3px",
+            cursor: "move",
+            backgroundColor: "#2196F3",
+            color: "#fff",
+          }}
+        >
+          box1
+        </div>
+        <div
+          ref={box1Ref}
+          // view="box1"
+          // {...{ view: "box1" }}
+          style={{
+            width: "300px",
+            height: "300px",
+            pointerEvents: "all",
+            position: "relative",
+          }}
+        />
+      </div>
       {engine ? (
         <Box
           style={{
@@ -2117,9 +2238,9 @@ function REGLApp(): JSX.Element {
           <Button
             onClick={async (): Promise<void> => {
               const backend = await engine.backend
-              backend.getLayers().then((layers) => {
+              backend.getLayers("box1").then((layers) => {
                 setLayers(layers)
-                layers.map((l) => backend.setLayerProps(l.id, { color: [Math.random(), Math.random(), Math.random()] }))
+                layers.map((l) => backend.setLayerProps("box1", l.id, { color: [Math.random(), Math.random(), Math.random()] }))
               })
             }}
           >
@@ -2127,12 +2248,14 @@ function REGLApp(): JSX.Element {
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-              engine.zoomFit()
+              engine.backend.then((backend) => {
+                backend.zoomFit("box1")
+              })
             }}
           >
             Zoom Fit
           </Button>
-          <Button onClick={async (): Promise<void> => engine.backend.then((engine) => engine.setTransform({ position: [0, 0], zoom: 16 }))}>
+          <Button onClick={async (): Promise<void> => engine.backend.then((engine) => engine.setTransform("box1", { position: [0, 0], zoom: 16 }))}>
             (0,0)
           </Button>
           <br />
@@ -2143,7 +2266,7 @@ function REGLApp(): JSX.Element {
               engine.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
               engine.backend.then((backend) =>
-                backend.getLayers().then((layers) => {
+                backend.getLayers("box1").then((layers) => {
                   setLayers(layers)
                 }),
               )
@@ -2156,7 +2279,7 @@ function REGLApp(): JSX.Element {
               engine.settings.SKELETON_MODE = e.target.checked
               setSkeletonMode(e.target.checked)
               engine.backend.then((backend) =>
-                backend.getLayers().then((layers) => {
+                backend.getLayers("box1").then((layers) => {
                   setLayers(layers)
                 }),
               )
@@ -2199,7 +2322,7 @@ function REGLApp(): JSX.Element {
                   defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const backend = await engine.backend
-                    backend.setLayerProps(layer.id || layer.name, { visible: e.target.checked })
+                    backend.setLayerProps("box1", layer.id || layer.name, { visible: e.target.checked })
                   }}
                 />
               </div>
@@ -2294,15 +2417,15 @@ function REGLStatsWidget(props: { engine: RenderEngine }): JSX.Element {
     const precision = 3
     const stats = await props.engine.getStats()
     // console.log(stats)
-    const averageGPU = stats.world.gpuTime / stats.world.count
+    const averageGPU = stats.universe.gpuTime / stats.universe.count
     setAverageGPUTime(round(averageGPU, precision))
-    const averageCPU = stats.world.cpuTime / stats.world.count
+    const averageCPU = stats.universe.cpuTime / stats.universe.count
     setAverageCPUTime(round(averageCPU, precision))
-    setCount(stats.world.count)
-    setCPUTime(round(stats.world.cpuTime, precision))
-    setGPUTime(round(stats.world.gpuTime, precision))
-    setFPS(Math.round(1000 / ((stats.world.cpuTime + stats.world.gpuTime) / stats.world.count)))
-    setGPUFPS(Math.round(1000 / (stats.world.gpuTime / stats.world.count)))
+    setCount(stats.universe.count)
+    setCPUTime(round(stats.universe.cpuTime, precision))
+    setGPUTime(round(stats.universe.gpuTime, precision))
+    setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
+    setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
@@ -2386,4 +2509,4 @@ function MouseCoordinates(props: { engine: RenderEngine }): JSX.Element {
   )
 }
 
-export default REGLApp
+export default DemoApp

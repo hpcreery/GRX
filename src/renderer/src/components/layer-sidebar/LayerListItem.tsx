@@ -19,7 +19,7 @@ import {
   IconGripVertical,
 } from "@tabler/icons-react"
 import { ContextMenuContent, ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
-import type { LayerInfo } from "@src/renderer/engine"
+import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec3 } from "gl-matrix"
 import LayerTransform from "./transform/LayerTransform"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
@@ -52,7 +52,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   async function changeColor(color: vec3): Promise<void> {
     const renderer = await renderEngine.backend
     if (!renderer) return
-    await renderer.setLayerProps(file.id, { color })
+    await renderer.setLayerProps("main", file.id, { color })
     setColor(color)
   }
 
@@ -185,10 +185,10 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     const renderer = await renderEngine.backend
     if (!renderer) return
     if (visible) {
-      renderer.setLayerProps(file.id, { visible: false })
+      renderer.setLayerProps("main", file.id, { visible: false })
       setVisible(false)
     } else {
-      renderer.setLayerProps(file.id, { visible: true })
+      renderer.setLayerProps("main", file.id, { visible: true })
       setVisible(true)
     }
   }
@@ -260,6 +260,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   ]
 
   function registerLayers(rendererLayers: LayerInfo[]): void {
+    console.log("registerlayers", rendererLayers, file.id)
     const thisLayer = rendererLayers.find((l) => l.id === file.id)
     if (thisLayer) {
       setColor(thisLayer.color)
@@ -271,7 +272,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
 
   useEffect(() => {
     renderEngine.backend.then(async (renderer) => {
-      const layers = await renderer.getLayers()
+      const layers = await renderer.getLayers("main")
       registerLayers(layers)
       if (layers.find((l) => l.id === file.id)) {
         setLoading(false)
@@ -304,12 +305,12 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       reader.onload = async (_e): Promise<void> => {
         if (reader.result !== null && reader.result !== undefined) {
           try {
-            await renderer.addFile({
+            await renderer.addFile("main", {
               format: file.format,
               buffer: reader.result as ArrayBuffer,
               props: {
                 name: file.name,
-                // id: file.id
+                id: file.id,
               },
             })
             // notifications.show({
@@ -327,7 +328,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
               autoClose: 5000,
             })
           }
-          registerLayers(await renderer.getLayers())
+          registerLayers(await renderer.getLayers("main"))
         } else {
           notifications.show({
             title: "File upload failed",

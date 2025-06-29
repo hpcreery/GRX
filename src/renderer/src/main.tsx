@@ -5,7 +5,7 @@ import { Notifications } from "@mantine/notifications"
 import { useLocalStorage } from "@mantine/hooks"
 import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
-// import REGLApp from "./renderer/DEMO"
+// import DemoApp from "./renderer/demo"
 // import NCDemo from '@lib/nc/DEMO'
 
 import { Spotlight } from "@mantine/spotlight"
@@ -53,8 +53,8 @@ function Main(): JSX.Element | null {
           <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
           <App />
-          {/* <NCDemo/> */}
-          {/* <REGLApp /> */}
+          {/* <DemoApp /> */}
+          {/* <NCDemo /> */}
         </ContextMenuProvider>
       </MantineProvider>
     </ThemeConfigProvider.Provider>

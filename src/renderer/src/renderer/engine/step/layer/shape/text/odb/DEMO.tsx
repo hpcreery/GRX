@@ -1,6 +1,6 @@
 import React from "react"
 import { Flex, Textarea } from "@mantine/core"
-import { Shape } from "@src/renderer/shapes"
+import { Shape } from "@src/renderer/engine/step/layer/shape/shape"
 import { parser, SHXLexer, SHXToShapesVisitor } from "./parser"
 
 const drill = `T01`

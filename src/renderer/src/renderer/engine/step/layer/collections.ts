@@ -1,29 +1,39 @@
 import REGL from "regl"
-import * as Shapes from "./shapes"
-import * as Symbols from "./symbols"
-import { glFloatSize } from "./constants"
-import { FeatureTypeIdentifier, Binary } from "./types"
+import * as Shapes from "./shape/shape"
+import * as Symbols from "./shape/symbol/symbol"
+import { glFloatSize } from "../../constants"
+import { FeatureTypeIdentifier, Binary } from "../../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 
-import PadFrag from "./shaders/src/Pad.frag"
-import PadVert from "./shaders/src/Pad.vert"
-import LineFrag from "./shaders/src/Line.frag"
-import LineVert from "./shaders/src/Line.vert"
-import ArcFrag from "./shaders/src/Arc.frag"
-import ArcVert from "./shaders/src/Arc.vert"
-import SurfaceFrag from "./shaders/src/Surface.frag"
-import SurfaceVert from "./shaders/src/Surface.vert"
-import GlyphtextFrag from "./shaders/src/GlyphText.frag"
-import GlyphtextVert from "./shaders/src/GlyphText.vert"
-import DatumFrag from "./shaders/src/Datum.frag"
-import DatumVert from "./shaders/src/Datum.vert"
+import PadFrag from "./../../shaders/src/Pad.frag"
+import PadVert from "./../../shaders/src/Pad.vert"
+import LineFrag from "./../../shaders/src/Line.frag"
+import LineVert from "./../../shaders/src/Line.vert"
+import ArcFrag from "./../../shaders/src/Arc.frag"
+import ArcVert from "./../../shaders/src/Arc.vert"
+import SurfaceFrag from "./../../shaders/src/Surface.frag"
+import SurfaceVert from "./../../shaders/src/Surface.vert"
+import GlyphtextFrag from "./../../shaders/src/GlyphText.frag"
+import GlyphtextVert from "./../../shaders/src/GlyphText.vert"
+import DatumFrag from "./../../shaders/src/Datum.frag"
+import DatumVert from "./../../shaders/src/Datum.vert"
 
-import { WorldContext } from "./engine"
-import { vec2 } from "gl-matrix"
+import GridFrag from "./../../shaders/src/Grid.frag"
+import OriginFrag from "./../../shaders/src/Origin.frag"
+// import LoadingFrag from "./../../shaders/src/Loading/Winding.frag"
+import FullScreenQuad from "./../../shaders/src/FullScreenQuad.vert"
+
+import { GridSettings, OriginRenderProps } from "../../settings"
+
+import { UniverseContext } from "../../engine"
+import { vec2, vec4 } from "gl-matrix"
+
+import { settings } from "../../settings"
 
 import earcut from "earcut"
 
-import { fontInfo as cozetteFontInfo } from "./text/cozette/font"
+import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
+import { WorldContext } from "../step"
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -182,6 +192,17 @@ export interface ScreenRenderUniforms {
   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
 }
 
+interface GridRenderUniforms {
+  u_Spacing: vec2
+  u_Offset: vec2
+  u_Type: number
+  u_Color: vec4
+}
+
+interface OriginRenderUniforms {
+  u_Color: vec4
+}
+
 interface TShaderAttachment {
   pads: PadAttachments
   lines: LineAttachments
@@ -193,25 +214,37 @@ interface TShaderAttachment {
   datumArcs: ArcAttachments
 }
 export interface TLoadedReglRenderers {
-  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments>
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments>
-  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments>
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments>
-  drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments>
-  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments>
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments>
+  drawPads: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, PadAttachments>
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, ArcAttachments>
+  drawLines: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, LineAttachments>
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, SurfaceAttachments>
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, DatumAttachments>
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, DatumTextAttachments>
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, FrameBufferRenderAttachments>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+  blend: REGL.DrawCommand
+  overlayBlendFunc: REGL.DrawCommand
+  contrastBlendFunc: REGL.DrawCommand
+  overlay: REGL.DrawCommand
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings>
+  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps>
 }
 
 export interface TReglRenderers {
-  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
-  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
-  drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments> | undefined
-  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
+  drawPads: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, PadAttachments> | undefined
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, ArcAttachments> | undefined
+  drawLines: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, LineAttachments> | undefined
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, SurfaceAttachments> | undefined
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, DatumAttachments> | undefined
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, DatumTextAttachments> | undefined
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, FrameBufferRenderAttachments> | undefined
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
+  blend: REGL.DrawCommand | undefined
+  overlayBlendFunc: REGL.DrawCommand | undefined
+  contrastBlendFunc: REGL.DrawCommand | undefined
+  overlay: REGL.DrawCommand | undefined
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings> | undefined
+  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps> | undefined
 }
 
 export const ReglRenderers: TReglRenderers = {
@@ -223,6 +256,12 @@ export const ReglRenderers: TReglRenderers = {
   drawDatumText: undefined,
   drawFrameBuffer: undefined,
   renderToScreen: undefined,
+  blend: undefined,
+  overlayBlendFunc: undefined,
+  contrastBlendFunc: undefined,
+  overlay: undefined,
+  renderGrid: undefined,
+  renderOrigin: undefined,
 }
 
 export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
@@ -241,7 +280,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
     DatumTextAttributes,
     DatumTextAttachments,
     Record<string, never>,
-    REGL.DefaultContext & WorldContext
+    REGL.DefaultContext & UniverseContext & WorldContext
   >({
     frag: GlyphtextFrag,
     vert: GlyphtextVert,
@@ -289,7 +328,13 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
 }
 
 export function initializeRenderers(regl: REGL.Regl): void {
-  ReglRenderers.drawPads = regl<PadUniforms, PadAttributes, PadAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
+  ReglRenderers.drawPads = regl<
+    PadUniforms,
+    PadAttributes,
+    PadAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & UniverseContext & WorldContext
+  >({
     frag: PadFrag,
     vert: PadVert,
 
@@ -356,7 +401,13 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<PadAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawArcs = regl<ArcUniforms, ArcAttributes, ArcAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
+  ReglRenderers.drawArcs = regl<
+    ArcUniforms,
+    ArcAttributes,
+    ArcAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & UniverseContext & WorldContext
+  >({
     frag: ArcFrag,
 
     vert: ArcVert,
@@ -417,7 +468,13 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<ArcAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawLines = regl<LineUniforms, LineAttributes, LineAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
+  ReglRenderers.drawLines = regl<
+    LineUniforms,
+    LineAttributes,
+    LineAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & UniverseContext & WorldContext
+  >({
     frag: LineFrag,
 
     vert: LineVert,
@@ -469,7 +526,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     SurfaceAttributes,
     SurfaceAttachments,
     Record<string, never>,
-    REGL.DefaultContext & WorldContext
+    REGL.DefaultContext & UniverseContext & WorldContext
   >({
     frag: SurfaceFrag,
 
@@ -556,7 +613,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     FrameBufferRendeAttributes,
     FrameBufferRenderAttachments,
     Record<string, never>,
-    REGL.DefaultContext & WorldContext
+    REGL.DefaultContext & UniverseContext & WorldContext
   >({
     vert: `
   precision highp float;
@@ -628,7 +685,13 @@ export function initializeRenderers(regl: REGL.Regl): void {
       uniform sampler2D u_RenderTexture;
       varying vec2 v_UV;
       void main () {
-        gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+
+        // gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        if (color.a == 0.0) {
+          discard;
+        }
+        gl_FragColor = color;
       }
     `,
 
@@ -661,7 +724,13 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
   })
 
-  ReglRenderers.drawDatums = regl<DatumUniforms, DatumAttributes, DatumAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
+  ReglRenderers.drawDatums = regl<
+    DatumUniforms,
+    DatumAttributes,
+    DatumAttachments,
+    Record<string, never>,
+    REGL.DefaultContext & UniverseContext & WorldContext
+  >({
     frag: DatumFrag,
 
     vert: DatumVert,
@@ -678,6 +747,90 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
 
     instances: regl.prop<DatumAttachments, "length">("length"),
+  })
+
+  ReglRenderers.renderGrid = regl<GridRenderUniforms, Record<string, never>, GridSettings, UniverseContext & WorldContext>({
+    vert: FullScreenQuad,
+    frag: GridFrag,
+    uniforms: {
+      u_Color: (_context: REGL.DefaultContext, props: GridSettings) => props.color,
+      u_Spacing: (_context: REGL.DefaultContext, props: GridSettings) => [props.spacing_x, props.spacing_y],
+      u_Offset: (_context: REGL.DefaultContext, props: GridSettings) => [props.offset_x, props.offset_y],
+      u_Type: (_context: REGL.DefaultContext, props: GridSettings) => props._type,
+    },
+  })
+
+  ReglRenderers.renderOrigin = regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, UniverseContext & WorldContext>({
+    vert: FullScreenQuad,
+    frag: OriginFrag,
+    uniforms: {
+      u_Color: () => {
+        const color = vec4.create()
+        vec4.subtract(color, [1, 1, 1, 1], settings.BACKGROUND_COLOR)
+        color[3] = 1
+        return color
+      },
+    },
+  })
+
+  ReglRenderers.blend = regl({
+    blend: {
+      enable: true,
+
+      // func: {
+      //   srcRGB:"one minus dst color",
+      //   srcAlpha: "one",
+      //   dstRGB: "one minus src color",
+      //   dstAlpha: "one",
+      // },
+
+      equation: {
+        rgb: "add",
+        alpha: "add",
+      },
+      color: [0, 0, 0, 0.1],
+    },
+  })
+
+  ReglRenderers.overlayBlendFunc = regl({
+    blend: {
+      func: {
+        srcRGB: "src color",
+        srcAlpha: "one",
+        dstRGB: "one minus src color",
+        dstAlpha: "one",
+      },
+    },
+  })
+
+  ReglRenderers.contrastBlendFunc = regl({
+    blend: {
+      func: {
+        srcRGB: "one minus dst color",
+        srcAlpha: "one",
+        dstRGB: "one minus src color",
+        dstAlpha: "one",
+      },
+    },
+  })
+
+  ReglRenderers.overlay = regl({
+    blend: {
+      enable: true,
+
+      func: {
+        srcRGB: "src alpha",
+        srcAlpha: "src alpha",
+        dstRGB: "one minus src alpha",
+        dstAlpha: "one minus src alpha",
+      },
+
+      equation: {
+        rgb: "add",
+        alpha: "add",
+      },
+      color: [0, 0, 0, 0.1],
+    },
   })
 }
 
@@ -710,12 +863,18 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
+  // public surfacesDatum: DatumShaderCollection
+  public surfaceEdges: ShapesShaderCollection | undefined
+
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
     this.regl = regl
     this.symbolsCollection = new SymbolShaderCollection({
       regl,
     })
+    // this.surfacesDatum = new DatumShaderCollection({ regl })
+    this.surfaceEdges = undefined
+
     this.shapes = {
       pads: [],
       lines: [],
@@ -848,6 +1007,74 @@ export class ShapesShaderCollection {
         this.shapes.datumPoints.push(record)
       }
     })
+
+    if (this.shapes.surfaces.length > 0) {
+      this.surfaceEdges = new ShapesShaderCollection({
+        regl: this.regl,
+      })
+      this.surfaceEdges.symbolsCollection = this.symbolsCollection
+
+
+    const surfaceOutlineSymbol = new Symbols.NullSymbol({
+      id: "surface-outline-symbol",
+    })
+
+    // const surfaceDatums: Shapes.DatumPoint[] = []
+
+    this.symbolsCollection.add(surfaceOutlineSymbol)
+    // this.shapes.surfaceEdges.symbolsCollection.add(surfaceOutlineSymbol)
+    const surfaceOutlineShapes: Shapes.Shape[] = []
+    this.shapes.surfaces.forEach((surface) => {
+      surface.index
+      surface.contours.forEach((contour) => {
+        let xs = contour.xs
+        let ys = contour.ys
+        contour.segments.forEach((segment) => {
+          if (segment.type === FeatureTypeIdentifier.LINESEGMENT) {
+            surfaceOutlineShapes.push(
+              new Shapes.Line({
+                xs: xs,
+                ys: ys,
+                xe: segment.x,
+                ye: segment.y,
+                // index: -1,
+                index: surface.index,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          } else {
+            surfaceOutlineShapes.push(
+              new Shapes.Arc({
+                xs: xs,
+                ys: ys,
+                xc: segment.xc,
+                yc: segment.yc,
+                xe: segment.x,
+                ye: segment.y,
+                clockwise: segment.clockwise,
+                // index: -1,
+                index: surface.index,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          }
+          // surfaceDatums.push(new Shapes.DatumPoint({
+          //   x: segment.x,
+          //   y: segment.y,
+          // }))
+          // this.shapes.pads.push(new Shapes.Pad({
+          //   x: segment.x,
+          //   y: segment.y,
+          //   symbol: surfaceOutlineSymbol,
+          // }))
+          xs = segment.x
+          ys = segment.y
+        })
+      })
+    })
+    this.surfaceEdges.refresh(surfaceOutlineShapes)
+    // this.surfacesDatum.refresh(surfaceDatums)
+  }
 
     this.shapes.pads.forEach((record) => {
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
@@ -1230,11 +1457,9 @@ export class MacroShaderCollection {
     }
   >()
   private regl: REGL.Regl
-  private ctx: OffscreenCanvasRenderingContext2D
-  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
-    const { regl, ctx } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
-    this.ctx = ctx
   }
 
   protected makeUnique(symbol: Symbols.MacroSymbol): string {
@@ -1270,7 +1495,6 @@ export class MacroShaderCollection {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
-              ctx: this.ctx,
               image: record.symbol.shapes,
               flatten: record.symbol.flatten,
             }),
@@ -1294,12 +1518,10 @@ export class MacroShaderCollection {
 export class StepAndRepeatCollection {
   public steps: StepAndRepeatRenderer[] = []
   private regl: REGL.Regl
-  private ctx: OffscreenCanvasRenderingContext2D
 
-  constructor(props: { regl: REGL.Regl; ctx: OffscreenCanvasRenderingContext2D }) {
-    const { regl, ctx } = props
+  constructor(props: { regl: REGL.Regl }) {
+    const { regl } = props
     this.regl = regl
-    this.ctx = ctx
   }
 
   public refresh(image: Shapes.Shape[]): this {
@@ -1311,7 +1533,6 @@ export class StepAndRepeatCollection {
       this.steps.push(
         new StepAndRepeatRenderer({
           regl: this.regl,
-          ctx: this.ctx,
           record: record,
         }),
       )

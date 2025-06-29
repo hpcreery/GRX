@@ -1,8 +1,12 @@
 import REGL from "regl"
-import { WorldContext } from "./engine"
-import { DatumPoint, DatumText } from "./shapes"
+import { UniverseContext } from "../engine"
+import { DatumPoint, DatumText } from "./layer/shape/shape"
 import { vec2, vec3 } from "gl-matrix"
+import { WorldContext } from "./step"
 
+/**
+ * @deprecated Use Shaer version instead
+ */
 export class TextRenderer {
   private ctx: OffscreenCanvasRenderingContext2D
   public texts: DatumText[] = []
@@ -28,7 +32,7 @@ export class TextRenderer {
     this.ctx.fillText(text, x, y)
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.texts.forEach((text) => {
       this.resetFontStyle()
       const transform = vec3.create()
@@ -47,6 +51,9 @@ export class TextRenderer {
   }
 }
 
+/**
+ * @deprecated Use Shaer version instead
+ */
 export class PointRenderer {
   private ctx: OffscreenCanvasRenderingContext2D
   public texts: DatumPoint[] = []
@@ -75,7 +82,7 @@ export class PointRenderer {
     this.ctx.stroke()
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.texts.forEach((text) => {
       const transform = vec3.create()
       vec3.transformMat3(transform, vec3.fromValues(text.x, text.y, 1), context.transform.matrix)

@@ -1,10 +1,12 @@
 import REGL from "regl"
 import { vec2 } from "gl-matrix"
-import { WorldContext } from "./engine"
-import type { Units } from "./types"
-import { getUnitsConversion } from "./utils"
-import { RendererProps, ShapeRenderer } from "./shape-renderer"
-import * as Shapes from "./shapes"
+import { UniverseContext } from "../engine"
+// import type { Units } from "../types"
+import { getUnitsConversion } from "../utils"
+import { RendererProps, ShapeRenderer } from "./layer/shape-renderer"
+import * as Shapes from "./layer/shape/shape"
+import { WorldContext } from "./step"
+import { measurementSettings } from "@src/renderer/engine/settings"
 
 // import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
 // import SimpleMeasurementVert from "@src/shaders/src/Measurements/SimpleMeasurement.vert"
@@ -22,7 +24,6 @@ export class SimpleMeasurement extends ShapeRenderer {
   public measurements: { point1: vec2; point2: vec2 }[] = []
   public currentMeasurement: { point1: vec2; point2: vec2 } | null = null
   public framebuffer: REGL.Framebuffer2D
-  public units: Units = "mm"
   constructor(props: RendererProps) {
     super({ ...props, image: [] })
     this.framebuffer = this.regl.framebuffer()
@@ -34,12 +35,12 @@ export class SimpleMeasurement extends ShapeRenderer {
     allMeasurements.forEach((measurement) => {
       const [x1, y1] = measurement.point1
       const [x2, y2] = measurement.point2
-      const length = Math.hypot(x1 - x2, y1 - y2) * getUnitsConversion(this.units)
-      const x = Math.abs(x1 - x2) * getUnitsConversion(this.units)
-      const y = Math.abs(y1 - y2) * getUnitsConversion(this.units)
+      const length = Math.hypot(x1 - x2, y1 - y2) * getUnitsConversion(measurementSettings.units)
+      const x = Math.abs(x1 - x2) * getUnitsConversion(measurementSettings.units)
+      const y = Math.abs(y1 - y2) * getUnitsConversion(measurementSettings.units)
       this.image.push(
         new Shapes.DatumText({
-          text: `↙${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
+          text: `↙${parseFloat(length.toFixed(4))}${typeof measurementSettings.units == "string" ? measurementSettings.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
           x: (x1 + x2) / 2,
           y: (y1 + y2) / 2,
           attributes: {
@@ -100,12 +101,12 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  public setMeasurementUnits(units: Units): void {
-    this.units = units
-    this.refresh()
-  }
+  // public setMeasurementUnits(units: Units): void {
+  //   this.units = units
+  //   this.refresh()
+  // }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,

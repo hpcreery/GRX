@@ -1,10 +1,10 @@
 import { Lexer, createToken, CstParser, CstNode, ParserMethod, IToken, Rule } from "chevrotain"
 import { generateCstDts } from "chevrotain"
 import * as Cst from "./nccst"
-import * as Shapes from "@src/renderer/shapes"
-import * as Symbols from "@src/renderer/symbols"
+import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
+import * as Symbols from "@src/renderer/engine/step/layer/shape/symbol/symbol"
 
-import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from "@src/renderer/types"
+import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from "@src/renderer/engine/types"
 import {
   Format,
   ZeroSuppression,
@@ -19,7 +19,7 @@ import {
   PossiblePoints,
 } from "./types"
 import * as Constants from "./constants"
-import { getUnitsConversion } from '@src/renderer/utils'
+import { getUnitsConversion } from "@src/renderer/engine/utils"
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),
@@ -633,8 +633,6 @@ class NCParser extends CstParser {
       this.SUBRULE(this.coordinate)
     })
 
-
-
     this.performSelfAnalysis()
   }
 }
@@ -761,9 +759,9 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     const str = ctx.T[0].image
     const tool = str.slice(0, 3)
     const compensationIndex = str.slice(3)
-    this.state.currentTool = this.toolStore[String(Number(tool.slice(1,3)))] ?? defaultTool
+    this.state.currentTool = this.toolStore[String(Number(tool.slice(1, 3)))] ?? defaultTool
     if (compensationIndex !== "") {
-      this.state.cutterCompensation = this.compensationStore[String(Number(compensationIndex.slice(1,3)))] ?? 0
+      this.state.cutterCompensation = this.compensationStore[String(Number(compensationIndex.slice(1, 3)))] ?? 0
     } else {
       this.state.cutterCompensation = this.state.currentTool.outer_dia
     }
@@ -787,7 +785,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       attributes,
     })
     this.state.currentTool = tool
-    this.toolStore[String(Number(ctx.T[0].image.slice(1,3)))] = tool
+    this.toolStore[String(Number(ctx.T[0].image.slice(1, 3)))] = tool
   }
 
   toolDia(ctx: Cst.ToolDiaCstChildren): number {
@@ -877,7 +875,9 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
     if (ctx.arcCenter) this.visit(ctx.arcCenter)
     if (ctx.arcRadius) this.visit(ctx.arcRadius)
-    const lastFeature = this.result.findLast((shape) => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC || shape.type == FeatureTypeIdentifier.PAD)
+    const lastFeature = this.result.findLast(
+      (shape) => shape.type == FeatureTypeIdentifier.LINE || shape.type == FeatureTypeIdentifier.ARC || shape.type == FeatureTypeIdentifier.PAD,
+    )
     if (this.state.mode == Constants.DRILL) {
       if (lastFeature != undefined) {
         this.result.push(
@@ -1625,7 +1625,6 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         }),
       )
     }
-
   }
 
   parseCoordinate(coordinate: string): number {

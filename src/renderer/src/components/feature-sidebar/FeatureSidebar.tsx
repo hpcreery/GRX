@@ -15,13 +15,13 @@ import {
   IconArrowUpBar,
   IconNorthStar,
 } from "@tabler/icons-react"
-import { LayerInfo, QuerySelection } from "@src/renderer/engine"
+import { LayerInfo, QuerySelection } from "@src/renderer/engine/engine"
 import classes from "./FeatureSidebar.module.css"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { getUnitsConversion } from "@src/renderer/utils"
+import { getUnitsConversion } from "@src/renderer/engine/utils"
 import chroma from "chroma-js"
-import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/symbols"
-import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/types"
+import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/engine/step/layer/shape/symbol/symbol"
+import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/engine/types"
 import { menuItems } from "@src/contexts/EditorContext"
 
 interface ToolbarProps {}
@@ -111,8 +111,8 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
   function clearSelection(): void {
     setMounted(false)
     renderEngine.backend.then(async (engine) => {
-      await engine.clearSelection()
-      await engine.render({ force: true })
+      await engine.clearSelection("main")
+      await engine.render()
     })
   }
 
@@ -127,7 +127,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
         setMounted(false)
       }
       renderEngine.backend.then((backend) => {
-        backend.getLayers().then((layers) => {
+        backend.getLayers("main").then((layers) => {
           setLayers(layers)
         })
       })

@@ -2,11 +2,10 @@ import React, { useEffect } from "react"
 import { EditorConfigProvider } from "../../contexts/EditorContext"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput } from "@mantine/core"
-import { getUnitsConversion } from "@src/renderer/utils"
+import { getUnitsConversion } from "@src/renderer/engine/utils"
 import { vec4 } from "gl-matrix"
 
-interface GridSettingsProps {
-}
+interface GridSettingsProps {}
 
 export default function GridSettings(_props: GridSettingsProps): JSX.Element | null {
   const { units, renderEngine } = React.useContext(EditorConfigProvider)

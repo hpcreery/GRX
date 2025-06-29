@@ -1,6 +1,7 @@
 import REGL from "regl"
-import { WorldContext } from "./engine"
+import { UniverseContext } from "../../../../engine"
 import { vec2, vec3 } from "gl-matrix"
+import { WorldContext } from "../../../step"
 
 interface TextUnit {
   text: string
@@ -40,7 +41,7 @@ export class TextRenderer {
     this.ctx.fillText(text, x, y)
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     this.texts.forEach((text) => {
       this.resetFontStyle()
       if (text.font) this.ctx.font = text.font

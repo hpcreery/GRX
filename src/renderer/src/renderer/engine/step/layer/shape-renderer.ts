@@ -1,18 +1,21 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shapes"
-import * as Symbols from "./symbols"
-import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "./types"
-import ShapeTransform from "./transform"
+import * as Shapes from "./shape/shape"
+import * as Symbols from "./shape/symbol/symbol"
+import { BoundingBox, FeatureTypeIdentifier, SnapMode, SNAP_MODES_MAP } from "../../types"
+import ShapeTransform from "../../transform"
 
 import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
 import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
 
-import type { WorldContext } from "./engine"
-import { getScaleMat3 } from "./utils"
+import type { UniverseContext } from "../../engine"
+import { getScaleMat3 } from "../../utils"
+import { WorldContext } from "../step"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
+
+import { settings } from "../../settings"
 
 interface CommonAttributes {}
 
@@ -47,7 +50,6 @@ interface DatumConfigUniforms {
 
 export interface RendererProps {
   regl: REGL.Regl
-  ctx: OffscreenCanvasRenderingContext2D
 }
 
 export interface ShapeProps {
@@ -71,7 +73,6 @@ export type ShapeDistance = {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  public ctx: OffscreenCanvasRenderingContext2D
   public dirty = false
   // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
   // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
@@ -92,9 +93,9 @@ export class ShapeRenderer {
     return this.image.length
   }
 
-  protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
-  protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
+  protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
+  protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected drawCollections: TLoadedReglRenderers
   public surfaceFrameBuffer: REGL.Framebuffer2D
   public queryFrameBuffer: REGL.Framebuffer2D
@@ -109,7 +110,6 @@ export class ShapeRenderer {
 
   constructor(props: ShapeRendererProps) {
     this.regl = props.regl
-    this.ctx = props.ctx
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
@@ -124,11 +124,9 @@ export class ShapeRenderer {
     })
     this.macroCollection = new MacroShaderCollection({
       regl: this.regl,
-      ctx: this.ctx,
     })
     this.stepAndRepeatCollection = new StepAndRepeatCollection({
       regl: this.regl,
-      ctx: this.ctx,
     })
     this.datumCollection = new DatumShaderCollection({
       regl: this.regl,
@@ -147,7 +145,7 @@ export class ShapeRenderer {
       CommonAttributes,
       Record<string, never>,
       ShapeRendererCommonContext,
-      REGL.DefaultContext & WorldContext
+      REGL.DefaultContext & UniverseContext
     >({
       depth: {
         enable: true,
@@ -161,8 +159,8 @@ export class ShapeRenderer {
       },
       context: {
         transformMatrix: () => this.transform.matrix,
-        prevQtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
-        qtyFeaturesRef: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) =>
+        prevQtyFeaturesRef: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
+        qtyFeaturesRef: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) =>
           this.qtyFeatures * (context.qtyFeaturesRef ?? 1),
       },
       uniforms: {
@@ -173,10 +171,10 @@ export class ShapeRenderer {
           this.shapeCollection.symbolsCollection.texture.width,
           this.shapeCollection.symbolsCollection.texture.height,
         ],
-        u_IndexOffset: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => {
+        u_IndexOffset: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) => {
           return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
-        u_QtyFeatures: (context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>) => {
+        u_QtyFeatures: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) => {
           return context.qtyFeaturesRef ?? 0
         },
         u_Polarity: () => this.transform.polarity,
@@ -186,7 +184,7 @@ export class ShapeRenderer {
       },
     })
 
-    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext, REGL.DefaultContext & WorldContext>({
+    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext, REGL.DefaultContext & UniverseContext>({
       uniforms: {
         u_QueryMode: true,
         u_Color: [1, 1, 1],
@@ -196,7 +194,7 @@ export class ShapeRenderer {
       },
     })
 
-    this.datumConfig = this.regl<DatumConfigUniforms, Record<string, never>, Record<string, never>, WorldContext>({
+    this.datumConfig = this.regl<DatumConfigUniforms, Record<string, never>, Record<string, never>, UniverseContext>({
       depth: {
         enable: false,
         mask: true,
@@ -220,8 +218,8 @@ export class ShapeRenderer {
         color: [0, 0, 0, 0],
       },
       uniforms: {
-        u_Color: (context: WorldContext) => {
-          return [1 - context.settings.BACKGROUND_COLOR[2], 1 - context.settings.BACKGROUND_COLOR[1], 1 - context.settings.BACKGROUND_COLOR[0]]
+        u_Color: (_context: UniverseContext) => {
+          return [1 - settings.BACKGROUND_COLOR[2], 1 - settings.BACKGROUND_COLOR[1], 1 - settings.BACKGROUND_COLOR[0]]
         },
         u_Alpha: () => 1,
       },
@@ -240,7 +238,7 @@ export class ShapeRenderer {
     })
   }
 
-  private drawMacros(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     this.macroCollection.macros.forEach((macro) => {
       macro.records.forEach((record) => {
         macro.renderer.updateTransformFromPad(record)
@@ -250,14 +248,19 @@ export class ShapeRenderer {
     return this
   }
 
-  private drawStepAndRepeats(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
       stepAndRepeat.render(context)
     })
     return this
   }
 
-  private drawSurfaceWithHoles(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    return this
+  }
+
+  private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     if (this.shapeCollection.shaderAttachment.surfacesWithHoles.length === 0) return this
     this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     this.shapeCollection.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
@@ -324,7 +327,7 @@ export class ShapeRenderer {
     return point
   }
 
-  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
+  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     const transformedPointer = this.transformPointer(pointer)
@@ -358,6 +361,8 @@ export class ShapeRenderer {
         this.commonConfig(() => {
           this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
             this.drawPrimitives(context)
+            this.drawSufaces(context)
+            this.drawSurfaceWithHoles(context)
             this.drawDatums(context)
           })
         })
@@ -387,6 +392,12 @@ export class ShapeRenderer {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
+      console.log("distance query", {
+        i: i / 4,
+        bit: distData[i + 3],
+        distance: distData[i],
+        shape: this.image[i / 4],
+      })
       let distance = distData[i]
       distance *= this.transform.scale
 
@@ -456,7 +467,7 @@ export class ShapeRenderer {
     return distances
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -470,15 +481,20 @@ export class ShapeRenderer {
     }
     this.commonConfig(() => {
       this.drawPrimitives(context)
+      if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
+        this.drawSufaces(context)
+        this.drawSurfaceWithHoles(context)
+      }
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
+      this.drawSufaceEdges(context)
     })
     context.transformMatrix = origMatrix
   }
 
-  private drawDatums(context: REGL.DefaultContext & WorldContext): void {
-    if (context.settings.SHOW_DATUMS === false) return
+  private drawDatums(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (settings.SHOW_DATUMS === false) return
     this.datumConfig(() => {
       this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
       this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.datumLines)
@@ -486,15 +502,25 @@ export class ShapeRenderer {
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
       if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
       this.drawCollections.drawDatums(this.datumCollection.attachment)
+      // Enable Surface Datums
+      // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
     })
   }
 
-  private drawPrimitives(context: REGL.DefaultContext & WorldContext): void {
+  private drawPrimitives(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
     if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-    this.drawSurfaceWithHoles(context)
+    // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
+    // if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    // this.drawSurfaceWithHoles(context)
+  }
+
+  private drawSufaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeCollection.surfaceEdges) {
+      this.drawCollections.drawLines(this.shapeCollection.surfaceEdges.shaderAttachment.lines)
+      this.drawCollections.drawArcs(this.shapeCollection.surfaceEdges.shaderAttachment.arcs)
+    }
   }
 
   public getBoundingBox(): BoundingBox {
@@ -557,7 +583,7 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.mirror_y = pad.mirror_y
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     if (this.flatten === false) {
       super.render(context)
       return
@@ -588,7 +614,6 @@ export class MacroRenderer extends ShapeRenderer {
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
-  ctx: OffscreenCanvasRenderingContext2D
   record: Shapes.StepAndRepeat
 }
 
@@ -597,7 +622,6 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   constructor(props: StepAndRepeatRendererProps) {
     super({
       regl: props.regl,
-      ctx: props.ctx,
       image: props.record.shapes,
     })
     this.record = props.record
@@ -607,7 +631,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   public queryDistance(
     pointer: vec2,
     snapMode: SnapMode,
-    context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>,
+    context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>,
   ): ShapeDistance[] {
     const features: ShapeDistance[] = []
     this.record.repeats.forEach((repeat) => {
@@ -620,7 +644,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     return features
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     this.record.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.record.repeats.length

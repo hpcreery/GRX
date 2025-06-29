@@ -10,13 +10,13 @@ import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme }
 import { EditorConfigProvider } from "./contexts/EditorContext"
 import { ThemeConfigProvider } from "./contexts/ThemeContext"
 import { FeatureSidebar } from "./components/feature-sidebar/FeatureSidebar"
-import { EngineEvents, MessageData } from "./renderer/engine"
+import { EngineEvents, MessageData } from "./renderer/engine/engine"
 import * as Comlink from "comlink"
 import { notifications } from "@mantine/notifications"
 import { useContextMenu } from "mantine-contextmenu"
 import { menuItems } from "./contexts/EditorContext"
 import { useLocalStorage } from "@mantine/hooks"
-import { Units } from "./renderer/types"
+import { Units } from "./renderer/engine/types"
 import { IconPhotoDown } from "@tabler/icons-react"
 
 export default function App(): JSX.Element | null {
@@ -141,7 +141,18 @@ export default function App(): JSX.Element | null {
           }}
           onContextMenu={showContextMenu(menuItems)}
           ref={elementRef}
-        />
+        >
+          <div
+            id="main"
+            {...{ view: "main" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              pointerEvents: "all",
+              position: "relative",
+            }}
+          />
+        </div>
       </Skeleton>
     </>
   )
