@@ -255,6 +255,11 @@ export class ShapeRenderer {
     return this
   }
 
+  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    return this
+  }
+
   private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
     if (this.shapeCollection.shaderAttachment.surfacesWithHoles.length === 0) return this
     this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
@@ -356,6 +361,8 @@ export class ShapeRenderer {
         this.commonConfig(() => {
           this.queryConfig({ pointer, snapMode: SNAP_MODES_MAP[snapMode] }, () => {
             this.drawPrimitives(context)
+            this.drawSufaces(context)
+            this.drawSurfaceWithHoles(context)
             this.drawDatums(context)
           })
         })
@@ -385,6 +392,12 @@ export class ShapeRenderer {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
+      console.log("distance query", {
+        i: i / 4,
+        bit: distData[i + 3],
+        distance: distData[i],
+        shape: this.image[i / 4],
+      })
       let distance = distData[i]
       distance *= this.transform.scale
 
@@ -468,9 +481,14 @@ export class ShapeRenderer {
     }
     this.commonConfig(() => {
       this.drawPrimitives(context)
+      if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
+        this.drawSufaces(context)
+        this.drawSurfaceWithHoles(context)
+      }
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
+      this.drawSufaceEdges(context)
     })
     context.transformMatrix = origMatrix
   }
@@ -484,18 +502,25 @@ export class ShapeRenderer {
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
       if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
       this.drawCollections.drawDatums(this.datumCollection.attachment)
-    // Enable Surface Datums
+      // Enable Surface Datums
       // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
     })
   }
 
-  private drawPrimitives(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  private drawPrimitives(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
     if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
     if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
     // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0 && context.settings.OUTLINE_MODE != true) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-    this.drawSurfaceWithHoles(context)
+    // if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
+    // this.drawSurfaceWithHoles(context)
+  }
+
+  private drawSufaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeCollection.surfaceEdges) {
+      this.drawCollections.drawLines(this.shapeCollection.surfaceEdges.shaderAttachment.lines)
+      this.drawCollections.drawArcs(this.shapeCollection.surfaceEdges.shaderAttachment.arcs)
+    }
   }
 
   public getBoundingBox(): BoundingBox {

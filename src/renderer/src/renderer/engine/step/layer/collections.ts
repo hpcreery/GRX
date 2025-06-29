@@ -863,7 +863,8 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
-  public surfacesDatum: DatumShaderCollection
+  // public surfacesDatum: DatumShaderCollection
+  public surfaceEdges: ShapesShaderCollection | undefined
 
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
@@ -871,7 +872,8 @@ export class ShapesShaderCollection {
     this.symbolsCollection = new SymbolShaderCollection({
       regl,
     })
-    this.surfacesDatum = new DatumShaderCollection({ regl })
+    // this.surfacesDatum = new DatumShaderCollection({ regl })
+    this.surfaceEdges = undefined
 
     this.shapes = {
       pads: [],
@@ -1006,14 +1008,22 @@ export class ShapesShaderCollection {
       }
     })
 
+    if (this.shapes.surfaces.length > 0) {
+      this.surfaceEdges = new ShapesShaderCollection({
+        regl: this.regl,
+      })
+      this.surfaceEdges.symbolsCollection = this.symbolsCollection
+
+
     const surfaceOutlineSymbol = new Symbols.NullSymbol({
       id: "surface-outline-symbol",
     })
 
-    const surfaceDatums: Shapes.DatumPoint[] = []
+    // const surfaceDatums: Shapes.DatumPoint[] = []
 
     this.symbolsCollection.add(surfaceOutlineSymbol)
-    // const surfaceOutlineShapes: Shapes.Shape[] = []
+    // this.shapes.surfaceEdges.symbolsCollection.add(surfaceOutlineSymbol)
+    const surfaceOutlineShapes: Shapes.Shape[] = []
     this.shapes.surfaces.forEach((surface) => {
       surface.index
       surface.contours.forEach((contour) => {
@@ -1021,17 +1031,19 @@ export class ShapesShaderCollection {
         let ys = contour.ys
         contour.segments.forEach((segment) => {
           if (segment.type === FeatureTypeIdentifier.LINESEGMENT) {
-            this.shapes.lines.push(
+            surfaceOutlineShapes.push(
               new Shapes.Line({
                 xs: xs,
                 ys: ys,
                 xe: segment.x,
                 ye: segment.y,
+                // index: -1,
+                index: surface.index,
                 symbol: surfaceOutlineSymbol,
               }),
             )
           } else {
-            this.shapes.arcs.push(
+            surfaceOutlineShapes.push(
               new Shapes.Arc({
                 xs: xs,
                 ys: ys,
@@ -1040,6 +1052,8 @@ export class ShapesShaderCollection {
                 xe: segment.x,
                 ye: segment.y,
                 clockwise: segment.clockwise,
+                // index: -1,
+                index: surface.index,
                 symbol: surfaceOutlineSymbol,
               }),
             )
@@ -1058,8 +1072,9 @@ export class ShapesShaderCollection {
         })
       })
     })
-
-    this.surfacesDatum.refresh(surfaceDatums)
+    this.surfaceEdges.refresh(surfaceOutlineShapes)
+    // this.surfacesDatum.refresh(surfaceDatums)
+  }
 
     this.shapes.pads.forEach((record) => {
       if (record.symbol.type != FeatureTypeIdentifier.SYMBOL_DEFINITION) {
