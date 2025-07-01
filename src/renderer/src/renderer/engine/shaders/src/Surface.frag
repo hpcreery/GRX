@@ -209,6 +209,16 @@ void main() {
           discard;
         }
       }
+      if (u_SnapMode == u_SnapModes.OFF || u_SnapMode == u_SnapModes.CENTER) {
+        // If snap mode is off, just return 0 distance
+        // If snap mode is center, also return 0, not yet able to compute the center of a contour
+        if (pointInTriangle(FragCoord, pointx, pointy, pointz)) {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+          return;
+        } else {
+          discard;
+        }
+      }
       discard;
     } else {
       discard;

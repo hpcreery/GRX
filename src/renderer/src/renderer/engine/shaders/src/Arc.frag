@@ -300,6 +300,11 @@ void main() {
         gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
         return;
       }
+      if (u_SnapMode == u_SnapModes.OFF) {
+        // If snap mode is off, just return 0 distance
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+      }
       discard;
     } else {
       discard;

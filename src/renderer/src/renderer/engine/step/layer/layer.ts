@@ -105,12 +105,12 @@ export default class LayerRenderer extends ShapeRenderer {
     return boundingBox
   }
 
-  public queryDistance(pointer: vec2, snapMode: SnapMode, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
+  public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
     this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
     // const newPointer = vec2.clone(pointer)
     // vec2.scale(newPointer, newPointer, getUnitsConversion(this.units))
-    const measurements = super.queryDistance(pointer, snapMode, context)
+    const measurements = super.queryDistance(pointer, context)
     this.transform.scale = initScale
     // const fixDistance = (measurements: ShapeDistance[]): void => {
     //   for (const measurement of measurements) {

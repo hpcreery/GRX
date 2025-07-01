@@ -203,8 +203,7 @@ export class StepRenderer {
         u_PixelSize: 2,
         u_OutlineMode: () => settings.OUTLINE_MODE,
         u_SkeletonMode: () => settings.SKELETON_MODE,
-        // u_SnapMode: () => this.settings.SNAP_MODE,
-        u_SnapMode: SNAP_MODES_MAP.OFF,
+        u_SnapMode: () => SNAP_MODES_MAP[settings.SNAP_MODE],
         u_PointerPosition: (_context: REGL.DefaultContext) => [this.pointer.x, this.pointer.y],
         u_PointerDown: (_context: REGL.DefaultContext) => this.pointer.down,
         u_QueryMode: false,
@@ -552,7 +551,7 @@ export class StepRenderer {
       // const epsilons = 100 / scale
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const distances = layer.queryDistance(pointer, SnapMode.EDGE, context)
+        const distances = layer.queryDistance(pointer, context)
         // const layerSelection = distances.filter((shape) => shape.distance <= 0)
         for (const select of distances) {
           // if (select.distance >= epsilons) continue
@@ -593,7 +592,7 @@ export class StepRenderer {
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        const layerSelection = layer.queryDistance(pointer, settings.SNAP_MODE, context)
+        const layerSelection = layer.queryDistance(pointer, context)
         for (const select of layerSelection) {
           if (closest == undefined) {
             closest = select
