@@ -933,6 +933,9 @@ class UtilitiesRenderer extends BaseFrameBufferRenderer {
   constructor(regl: REGL.Regl) {
     super(regl)
     this.renderGrid = this.regl({
+      uniforms: {
+        u_BackgroundColor: () => settings.BACKGROUND_COLOR,
+      },
       depth: {
         enable: true,
         mask: true,

@@ -141,6 +141,7 @@ export class RenderEngineBackend {
         "EXT_blend_minmax",
         // "WEBGL_color_buffer_float",
         "EXT_disjoint_timer_query",
+        "OES_standard_derivatives"
       ],
       profile: true,
     })
