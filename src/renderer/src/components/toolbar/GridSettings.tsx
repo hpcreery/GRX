@@ -1,21 +1,45 @@
 import React, { useEffect } from "react"
 import { EditorConfigProvider } from "../../contexts/EditorContext"
 import chroma from "chroma-js"
-import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput } from "@mantine/core"
+import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput, Button, Space } from "@mantine/core"
 import { getUnitsConversion } from "@src/renderer/engine/utils"
 import { vec4 } from "gl-matrix"
+import { useLocalStorage } from "@mantine/hooks"
+import { gridSettings } from "@src/renderer/engine/settings"
 
 interface GridSettingsProps {}
+const defaultGridSettings = JSON.parse(JSON.stringify(gridSettings))
 
 export default function GridSettings(_props: GridSettingsProps): JSX.Element | null {
   const { units, renderEngine } = React.useContext(EditorConfigProvider)
-  const [spacingX, setSpacingX] = React.useState<number>(renderEngine.grid.spacing_x)
-  const [spacingY, setSpacingY] = React.useState<number>(renderEngine.grid.spacing_y)
-  const [offsetX, setOffsetX] = React.useState<number>(renderEngine.grid.offset_x)
-  const [offsetY, setOffsetY] = React.useState<number>(renderEngine.grid.offset_y)
-  const [enabled, setEnabled] = React.useState<boolean>(renderEngine.grid.enabled)
-  const [type, setType] = React.useState<"lines" | "dots">(renderEngine.grid.type)
-  const [color, setColor] = React.useState<vec4>(renderEngine.grid.color)
+  const [spacingX, setSpacingX] = useLocalStorage<number>({
+    key: "engine:grid:spacing_x",
+    defaultValue: renderEngine.grid.spacing_x,
+  })
+  const [spacingY, setSpacingY] = useLocalStorage<number>({
+    key: "engine:grid:spacing_y",
+    defaultValue: renderEngine.grid.spacing_y,
+  })
+  const [offsetX, setOffsetX] = useLocalStorage<number>({
+    key: "engine:grid:offset_x",
+    defaultValue: renderEngine.grid.offset_x,
+  })
+  const [offsetY, setOffsetY] = useLocalStorage<number>({
+    key: "engine:grid:offset_y",
+    defaultValue: renderEngine.grid.offset_y,
+  })
+  const [enabled, setEnabled] = useLocalStorage<boolean>({
+    key: "engine:grid:enabled",
+    defaultValue: renderEngine.grid.enabled,
+  })
+  const [type, setType] = useLocalStorage<"lines" | "dots">({
+    key: "engine:grid:type",
+    defaultValue: renderEngine.grid.type,
+  })
+  const [color, setColor] = useLocalStorage<vec4>({
+    key: "engine:grid:color",
+    defaultValue: renderEngine.grid.color,
+  })
 
   useEffect(() => {
     renderEngine.grid.spacing_x = spacingX
@@ -108,6 +132,23 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
           value={chroma.gl(color[0], color[1], color[2], color[3]).hex()}
           onChange={(val): void => setColor(chroma(val).gl())}
         />
+      </Flex>
+      <Space h="md" />
+      <Flex align="center" style={{ width: "100%" }} justify="space-between">
+        <Button
+          fullWidth
+          onClick={(): void => {
+            setSpacingX(defaultGridSettings.spacing_x)
+            setSpacingY(defaultGridSettings.spacing_y)
+            setOffsetX(defaultGridSettings.offset_x)
+            setOffsetY(defaultGridSettings.offset_y)
+            setEnabled(defaultGridSettings.enabled)
+            setType(defaultGridSettings.type)
+            setColor(defaultGridSettings.color)
+          }}
+        >
+          Reset
+        </Button>
       </Flex>
     </>
   )

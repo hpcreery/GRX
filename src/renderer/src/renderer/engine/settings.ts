@@ -57,7 +57,7 @@ export interface GridSettings {
 
 export const gridSettings: GridSettings = {
   enabled: true,
-  color: [0.2, 0.2, 0.2, 0.5],
+  color: [0.5, 0.5, 0.5, 1.0],
   spacing_x: 1,
   spacing_y: 1,
   offset_x: 0,
