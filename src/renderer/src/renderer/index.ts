@@ -2,12 +2,13 @@ import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
 import type { QuerySelection, RenderEngineBackend, Stats } from "./engine/engine"
 import { AddLayerProps } from "./engine/plugins"
-import { PointerMode, SnapMode } from "./engine/types"
+import { PointerMode } from "./engine/types"
 
 import type { GridSettings, RenderSettings } from "./engine/settings"
+import { gridSettings, settings } from "./engine/settings"
 import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
-import { UID } from './engine/utils'
+import { UID } from "./engine/utils"
 
 const Worker = new EngineWorker()
 export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
@@ -44,24 +45,7 @@ export type PointerEvent = CustomEvent<PointerCoordinates>
 
 export class RenderEngine {
   public settings: RenderSettings = new Proxy(
-    {
-      MSPFRAME: 1000 / 60,
-      get FPS(): number {
-        return 1000 / this.MSPFRAME
-      },
-      set FPS(value: number) {
-        this.MSPFRAME = 1000 / value
-      },
-      OUTLINE_MODE: false,
-      SKELETON_MODE: false,
-      SNAP_MODE: SnapMode.EDGE,
-      COLOR_BLEND: "Contrast",
-      BACKGROUND_COLOR: [0, 0, 0, 0],
-      MAX_ZOOM: 1000,
-      MIN_ZOOM: 0.001,
-      ZOOM_TO_CURSOR: true,
-      SHOW_DATUMS: false,
-    },
+    settings,
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
@@ -74,16 +58,7 @@ export class RenderEngine {
     },
   )
   public grid: GridSettings = new Proxy(
-    {
-      enabled: true,
-      color: [0.2, 0.2, 0.2, 0.5],
-      spacing_x: 1,
-      spacing_y: 1,
-      offset_x: 0,
-      offset_y: 0,
-      _type: 0,
-      type: "dots",
-    },
+    gridSettings,
     {
       set: (target, name, value): boolean => {
         this.backend.then((engine) => {
@@ -500,9 +475,9 @@ export class RenderEngine {
   /**
    * @deprecated will move to backend datamodel
    */
-  public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  public async addFile(view: string, buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     const backend = await this.backend
-    backend.addFile(view, params)
+    backend.addFile(view, Comlink.transfer(buffer, [buffer]), params)
   }
 
   public async render(): Promise<void> {

@@ -1475,8 +1475,9 @@ function DemoApp(): JSX.Element {
       units: "mm",
     })
 
-    Engine.addFile("box2", {
-      buffer: cmp,
+    Engine.addFile("box2",
+      cmp,
+      {
       format: "rs274x",
       props: {
         name: "cmp",

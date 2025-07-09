@@ -405,8 +405,7 @@ export class StepRenderer {
     console.log("layer added")
   }
 
-  public async addFile(params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    console.log(params.format)
+  public async addFile(buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     if (params.format == "") {
       console.error("No format provided")
       // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
@@ -430,7 +429,7 @@ export class StepRenderer {
       const instance = new pluginWorker()
       const parser = Comlink.wrap<Plugin>(instance)
       try {
-        await parser(params.buffer, params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
+        await parser(Comlink.transfer(buffer, [buffer]), params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
       } catch (error) {
         console.error(error)
         throw error

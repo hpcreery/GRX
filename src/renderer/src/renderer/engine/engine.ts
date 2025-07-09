@@ -192,7 +192,7 @@ export class RenderEngineBackend {
       regl: this.regl,
       viewBox,
       name,
-      id
+      id,
     })
     newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
     this.views.set(id, newStep)
@@ -291,16 +291,25 @@ export class RenderEngineBackend {
     )
   }
 
+  /**
+   * @deprecated Use data api instead.
+   */
   public async addLayer(view: string, params: AddLayerProps): Promise<void> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.addLayer(params)
   }
 
-  public async addFile(view: string, params: { buffer: ArrayBuffer; format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  /**
+   * @deprecated Use data api instead.
+   */
+  public async addFile(view: string, buffer: ArrayBuffer, params: {format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.addFile(params)
+    return this.views.get(view)!.addFile(buffer, params)
   }
 
+  /**
+   * @deprecated Use data api instead.
+   */
   public getLayers(view: string): LayerInfo[] {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getLayers()
@@ -316,16 +325,25 @@ export class RenderEngineBackend {
     this.views.get(view)!.setTransform(transform)
   }
 
+  /**
+   * @deprecated Use data api instead.
+   */
   public removeLayer(view: string, id: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.removeLayer(id)
   }
 
+  /**
+   * @deprecated Use data api instead.
+   */
   public moveLayer(view: string, from: number, to: number): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.moveLayer(from, to)
   }
 
+  /**
+   * @deprecated Use data api instead.
+   */
   public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerProps(id, props)
