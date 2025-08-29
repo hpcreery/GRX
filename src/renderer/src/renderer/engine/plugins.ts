@@ -22,19 +22,19 @@ export interface PluginsDefinition {
   }
 }
 export const plugins: PluginsDefinition = {
-  rs274x: {
+  'RS-274X': {
     plugin: gerberPluginWorker,
     matchFile: (ext) => ["gbr", "geb", "gerber"].includes(ext),
   },
-  gdsii: {
+  'GDSII': {
     plugin: gdsiiPluginWorker,
     matchFile: (ext) => ["gds", "gdsii", "gds2"].includes(ext),
   },
-  dxf: {
+  'DXF': {
     plugin: dxfPluginWorker,
     matchFile: (ext) => ["dxf"].includes(ext),
   },
-  nc: {
+  'NC': {
     plugin: ncPluginWorker,
     matchFile: (ext) => ["nc", "drl", "dr", "rt", "xnc"].includes(ext),
   },
