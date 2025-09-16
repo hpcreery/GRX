@@ -1,16 +1,16 @@
 import React from "react"
 import { ContextMenuItemOptions } from "mantine-contextmenu"
 import { Units } from "@src/renderer/engine/types"
-import { RenderEngine } from "@src/renderer"
+import { Renderer } from "@src/renderer"
 
 export interface EditorContext {
-  renderEngine: RenderEngine
+  renderer: Renderer
   units: Units
   setUnits: React.Dispatch<React.SetStateAction<Units>>
 }
 
 export const EditorConfigProvider = React.createContext<EditorContext>({
-  renderEngine: new RenderEngine({ container: document.createElement("div") }),
+  renderer: new Renderer({ container: document.createElement("div") }),
   units: "mm",
   setUnits: () => {},
 })

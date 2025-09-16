@@ -36,15 +36,15 @@ import SnapSettings from "./SnapSettings"
 interface ToolbarProps {}
 
 export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
-  const { units, renderEngine } = React.useContext(EditorConfigProvider)
+  const { units, renderer } = React.useContext(EditorConfigProvider)
   const [settingsModalOpen, { open, close }] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
   const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
-  const [outlineMode, setOutlineMode] = React.useState<boolean>(renderEngine.settings.OUTLINE_MODE)
-  const [skeletonMode, setSkeletonMode] = React.useState<boolean>(renderEngine.settings.SKELETON_MODE)
-  // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderEngine.grid.type)
-  const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderEngine.pointerSettings.mode)
+  const [outlineMode, setOutlineMode] = React.useState<boolean>(renderer.settings.OUTLINE_MODE)
+  const [skeletonMode, setSkeletonMode] = React.useState<boolean>(renderer.settings.SKELETON_MODE)
+  // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderer.grid.type)
+  const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderer.pointerSettings.mode)
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
 
@@ -54,8 +54,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       title: "Clear Measurements",
       icon: <IconTrashX stroke={1.5} size={18} color={theme.colors.red[7]} />,
       onClick: async (): Promise<void> => {
-        const backend = await renderEngine.backend
-        backend.clearMeasurements("main")
+        const engine = await renderer.engine
+        engine.clearMeasurements("main")
       },
     })
     actions.push({
@@ -63,7 +63,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Outline Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderEngine.settings.OUTLINE_MODE = false
+        renderer.settings.OUTLINE_MODE = false
         setOutlineMode(false)
       },
       leftSection: <IconCube />,
@@ -74,7 +74,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Outline Mode",
       description: "Show outline of all features",
       onClick: () => {
-        renderEngine.settings.OUTLINE_MODE = true
+        renderer.settings.OUTLINE_MODE = true
         setOutlineMode(true)
       },
       leftSection: <IconCube3dSphere />,
@@ -85,7 +85,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Skeleton Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderEngine.settings.SKELETON_MODE = false
+        renderer.settings.SKELETON_MODE = false
         setSkeletonMode(false)
       },
       leftSection: <IconBoneOff />,
@@ -96,7 +96,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Skeleton Mode",
       description: "Show skeleton of all lines and arcs, outline of the rest of feature types",
       onClick: () => {
-        renderEngine.settings.SKELETON_MODE = true
+        renderer.settings.SKELETON_MODE = true
         setSkeletonMode(true)
       },
       leftSection: <IconBone />,
@@ -131,8 +131,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Clear Measurements",
       description: "Delete and remove all measurements",
       onClick: async (): Promise<void> => {
-        const backend = await renderEngine.backend
-        backend.clearMeasurements("main")
+        const engine = await renderer.engine
+        engine.clearMeasurements("main")
       },
       leftSection: <IconTrashX />,
       // rightSection: <Kbd>A</Kbd>
@@ -142,7 +142,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Move Mode",
       description: "Enable mouse move mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = PointerMode.MOVE
+        renderer.pointerSettings.mode = PointerMode.MOVE
         setPointerMode(PointerMode.MOVE)
       },
       leftSection: <IconArrowsMove />,
@@ -153,7 +153,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Select Mode",
       description: "Enable mouse select mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = PointerMode.SELECT
+        renderer.pointerSettings.mode = PointerMode.SELECT
         setPointerMode(PointerMode.SELECT)
       },
       leftSection: <IconClick />,
@@ -164,7 +164,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Mouse Measure Mode",
       description: "Enable mouse measure mode",
       onClick: () => {
-        renderEngine.pointerSettings.mode = PointerMode.MEASURE
+        renderer.pointerSettings.mode = PointerMode.MEASURE
         setPointerMode(PointerMode.MEASURE)
       },
       leftSection: <IconRulerMeasure />,
@@ -176,36 +176,36 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "a",
       (): void => {
-        renderEngine.pointerSettings.mode = PointerMode.MOVE
+        renderer.pointerSettings.mode = PointerMode.MOVE
         setPointerMode(PointerMode.MOVE)
       },
     ],
     [
       "s",
       (): void => {
-        renderEngine.pointerSettings.mode = PointerMode.SELECT
+        renderer.pointerSettings.mode = PointerMode.SELECT
         setPointerMode(PointerMode.SELECT)
       },
     ],
     [
       "d",
       (): void => {
-        renderEngine.pointerSettings.mode = PointerMode.MEASURE
+        renderer.pointerSettings.mode = PointerMode.MEASURE
         setPointerMode(PointerMode.MEASURE)
       },
     ],
     [
       "o",
       (): void => {
-        renderEngine.settings.OUTLINE_MODE = !renderEngine.settings.OUTLINE_MODE
-        setOutlineMode(renderEngine.settings.OUTLINE_MODE)
+        renderer.settings.OUTLINE_MODE = !renderer.settings.OUTLINE_MODE
+        setOutlineMode(renderer.settings.OUTLINE_MODE)
       },
     ],
     [
       "p",
       (): void => {
-        renderEngine.settings.SKELETON_MODE = !renderEngine.settings.SKELETON_MODE
-        setSkeletonMode(renderEngine.settings.SKELETON_MODE)
+        renderer.settings.SKELETON_MODE = !renderer.settings.SKELETON_MODE
+        setSkeletonMode(renderer.settings.SKELETON_MODE)
       },
     ],
     // ['g', gridSettingsModalHandlers.open],
@@ -213,8 +213,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "f",
       (): void => {
-        renderEngine.backend.then(async (backend) => {
-          backend.zoomFit("main")
+        renderer.engine.then(async (engine) => {
+          engine.zoomFit("main")
         })
       },
     ],
@@ -226,14 +226,14 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       key: "1",
       icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: async (): Promise<void> => {
-        const backend = await renderEngine.backend
-        backend.clearMeasurements("main")
+        const engine = await renderer.engine
+        engine.clearMeasurements("main")
       },
     },
   ]
 
   React.useEffect(() => {
-    renderEngine.backend.then((backend) => backend.setMeasurementSettings({ units }))
+    renderer.engine.then((engine) => engine.setMeasurementSettings({ units }))
   }, [])
 
   return (
@@ -259,7 +259,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant={pointerMode == PointerMode.MOVE ? "outline" : "default"}
                 onClick={() => {
-                  renderEngine.pointerSettings.mode = PointerMode.MOVE
+                  renderer.pointerSettings.mode = PointerMode.MOVE
                   setPointerMode(PointerMode.MOVE)
                 }}
               >
@@ -272,7 +272,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant={pointerMode == PointerMode.SELECT ? "outline" : "default"}
                 onClick={() => {
-                  renderEngine.pointerSettings.mode = PointerMode.SELECT
+                  renderer.pointerSettings.mode = PointerMode.SELECT
                   setPointerMode(PointerMode.SELECT)
                 }}
               >
@@ -285,7 +285,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant={pointerMode == PointerMode.MEASURE ? "outline" : "default"}
                 onClick={(): void => {
-                  renderEngine.pointerSettings.mode = PointerMode.MEASURE
+                  renderer.pointerSettings.mode = PointerMode.MEASURE
                   setPointerMode(PointerMode.MEASURE)
                 }}
                 onContextMenu={showContextMenu(contextItems)}
@@ -301,8 +301,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  const backend = await renderEngine.backend
-                  backend.zoomFit("main")
+                  const engine = await renderer.engine
+                  engine.zoomFit("main")
                 }}
               >
                 <IconZoomReset size={18} />
@@ -330,7 +330,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderEngine.settings.OUTLINE_MODE = !outlineMode
+                  renderer.settings.OUTLINE_MODE = !outlineMode
                   setOutlineMode(!outlineMode)
                 }}
               >
@@ -343,7 +343,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderEngine.settings.SKELETON_MODE = !skeletonMode
+                  renderer.settings.SKELETON_MODE = !skeletonMode
                   setSkeletonMode(!skeletonMode)
                 }}
               >

@@ -21,7 +21,7 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { getUnitsConversion } from "@src/renderer/engine/utils"
 import chroma from "chroma-js"
 import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/engine/step/layer/shape/symbol/symbol"
-import { AttributeCollection, FeatureTypeIdentifier, Units } from "@src/renderer/engine/types"
+import { AttributesType, FeatureTypeIdentifier, Units } from "@src/renderer/engine/types"
 import { menuItems } from "@src/contexts/EditorContext"
 
 interface ToolbarProps {}
@@ -50,7 +50,7 @@ function CornerIcon({ children }: { children: JSX.Element }): JSX.Element {
 export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
   const [features, setFeatures] = useState<QuerySelection[]>([])
   const [mounted, setMounted] = useState<boolean>(false)
-  const { units, renderEngine } = useContext(EditorConfigProvider)
+  const { units, renderer } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<LayerInfo[]>([])
   const theme = useMantineTheme()
 
@@ -82,7 +82,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
             <Text key={index}>
               - {key}: <Code>{Object.keys(value).length}</Code>
             </Text>
-            {Object.entries(value as AttributeCollection).map(([key, value]) => (
+            {Object.entries(value as AttributesType).map(([key, value]) => (
               <>
                 <Text key={`${key}`} style={{ whiteSpace: "preserve" }}>
                   {" "}
@@ -110,7 +110,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
 
   function clearSelection(): void {
     setMounted(false)
-    renderEngine.backend.then(async (engine) => {
+    renderer.engine.then(async (engine) => {
       await engine.clearSelection("main")
       await engine.render()
     })
@@ -126,15 +126,15 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
       } else {
         setMounted(false)
       }
-      renderEngine.backend.then((backend) => {
-        backend.getLayers("main").then((layers) => {
+      renderer.engine.then((engine) => {
+        engine.getLayers("main").then((layers) => {
           setLayers(layers)
         })
       })
     }
-    renderEngine.pointer.addEventListener(PointerEvents.POINTER_SELECT, handler)
+    renderer.pointer.addEventListener(PointerEvents.POINTER_SELECT, handler)
     return (): void => {
-      renderEngine.pointer.removeEventListener(PointerEvents.POINTER_SELECT, handler)
+      renderer.pointer.removeEventListener(PointerEvents.POINTER_SELECT, handler)
     }
   }, [])
 
@@ -460,7 +460,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
     }
   }
 
-  const getAttributes = (attributes: AttributeCollection): JSX.Element => {
+  const getAttributes = (attributes: AttributesType): JSX.Element => {
     return (
       <>
         {Object.entries(attributes).map(([key, value]) => (

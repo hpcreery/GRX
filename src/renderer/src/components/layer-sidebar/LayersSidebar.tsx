@@ -29,7 +29,7 @@ export interface UploadFile extends FileWithFormat {
 }
 
 export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<UploadFile[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
   const [renderID, setRenderID] = useState<number>(0)
@@ -77,22 +77,23 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
 
   async function deleteAllLayers(): Promise<void> {
     layers.forEach(async (layer) => {
-      const backend = await renderEngine.backend
-      if (!backend) return
-      await backend.removeLayer("main", layer.id)
+      const engine = await renderer.engine
+      if (!engine) return
+      await engine.removeLayer("main", layer.id)
       setLayers([])
       setRenderID(0)
     })
   }
 
   useEffect(() => {
-    renderEngine.backend.then(async (backend) => {
+    renderer.engine.then(async (engine) => {
       const reg = async (): Promise<void> => {
-        renderEngine.backend.then(backend => backend.zoomFit("main"))
-        return registerLayers(await backend.getLayers("main"), await backend.getLayersQueue("main"))
+        console.log("registeringLayers")
+        renderer.engine.then(engine => engine.zoomFit("main"))
+        return registerLayers(await engine.getLayers("main"), await engine.getLayersQueue("main"))
       }
       reg()
-      backend.addEventCallback(EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
+      engine.addEventCallback("main", EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
     })
   }, [])
 
@@ -108,25 +109,25 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     download: (): void => {},
     preview: (): void => {},
     remove: async (file: UploadFile): Promise<void> => {
-      const backend = await renderEngine.backend
-      if (!backend) return
-      await backend.removeLayer("main", file.id)
+      const engine = await renderer.engine
+      if (!engine) return
+      await engine.removeLayer("main", file.id)
       setLayers(layers.filter((l) => l.id !== file.id))
       return
     },
     hideAll: (): void => {
       layers.forEach(async (layer) => {
-        const backend = await renderEngine.backend
-        if (!backend) return
-        await backend.setLayerProps("main", layer.id, { visible: false })
+        const engine = await renderer.engine
+        if (!engine) return
+        await engine.setLayerProps("main", layer.id, { visible: false })
         setRenderID(renderID + 1)
       })
     },
     showAll: (): void => {
       layers.forEach(async (layer) => {
-        const backend = await renderEngine.backend
-        if (!backend) return
-        await backend.setLayerProps("main", layer.id, { visible: true })
+        const engine = await renderer.engine
+        if (!engine) return
+        await engine.setLayerProps("main", layer.id, { visible: true })
         setRenderID(renderID + 1)
       })
     },
@@ -167,10 +168,10 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       return
     }
     if (active.id !== over.id) {
-      renderEngine.backend.then(async (backend) => {
+      renderer.engine.then(async (engine) => {
         const oldIndex = layers.findIndex((item) => item.id === active.id)
         const newIndex = layers.findIndex((item) => item.id === over.id)
-        await backend.moveLayer("main", oldIndex, newIndex)
+        await engine.moveLayer("main", oldIndex, newIndex)
       })
       setLayers((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id)

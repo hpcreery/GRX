@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
-import { Units, BoundingBox, SnapMode } from "../../types"
+import { Units, BoundingBox } from "../../types"
 
 import type { UniverseContext } from "../../engine"
 import { getUnitsConversion, UID } from "../../utils"

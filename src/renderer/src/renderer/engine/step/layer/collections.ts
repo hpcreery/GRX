@@ -1,7 +1,7 @@
 import REGL from "regl"
 import * as Shapes from "./shape/shape"
 import * as Symbols from "./shape/symbol/symbol"
-import { glFloatSize } from "../../constants"
+// import { glFloatSize } from "../../constants"
 import { FeatureTypeIdentifier, Binary } from "../../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 
@@ -289,19 +289,19 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
       a_Position: {
         buffer: regl.prop<DatumTextAttachments, "positions">("positions"),
         offset: 0,
-        stride: 2 * glFloatSize,
+        stride: 2 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
       a_Texcoord: {
         buffer: regl.prop<DatumTextAttachments, "texcoords">("texcoords"),
         offset: 0,
-        stride: 2 * glFloatSize,
+        stride: 2 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
       a_CharPosition: {
         buffer: regl.prop<DatumTextAttachments, "charPosition">("charPosition"),
         offset: 0,
-        stride: 2 * glFloatSize,
+        stride: 2 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
       a_VertexPosition: [
@@ -343,57 +343,57 @@ export function initializeRenderers(regl: REGL.Regl): void {
     attributes: {
       a_Index: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.index * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.index * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Location: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.x * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.x * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SymNum: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.sym_num * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_ResizeFactor: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.resize_factor * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Polarity: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.polarity * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Rotation: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.rotation * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.rotation * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Mirror_X: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.mirror_x * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_x * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Mirror_Y: {
         buffer: regl.prop<PadAttachments, "buffer">("buffer"),
-        stride: PAD_RECORD_PARAMETERS.length * glFloatSize,
-        offset: PAD_RECORD_PARAMETERS_MAP.mirror_y * glFloatSize,
+        stride: PAD_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: PAD_RECORD_PARAMETERS_MAP.mirror_y * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
     },
@@ -417,50 +417,50 @@ export function initializeRenderers(regl: REGL.Regl): void {
     attributes: {
       a_Index: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.index * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.index * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Start_Location: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.xs * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_End_Location: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.xe * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Center_Location: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.xc * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.xc * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SymNum: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.sym_num * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Polarity: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.polarity * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Clockwise: {
         buffer: regl.prop<ArcAttachments, "buffer">("buffer"),
-        stride: ARC_RECORD_PARAMETERS.length * glFloatSize,
-        offset: ARC_RECORD_PARAMETERS_MAP.clockwise * glFloatSize,
+        stride: ARC_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: ARC_RECORD_PARAMETERS_MAP.clockwise * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
     },
@@ -484,36 +484,36 @@ export function initializeRenderers(regl: REGL.Regl): void {
     attributes: {
       a_Index: {
         buffer: regl.prop<LineAttachments, "buffer">("buffer"),
-        stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-        offset: LINE_RECORD_PARAMETERS_MAP.index * glFloatSize,
+        stride: LINE_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: LINE_RECORD_PARAMETERS_MAP.index * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Start_Location: {
         buffer: regl.prop<LineAttachments, "buffer">("buffer"),
-        stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-        offset: LINE_RECORD_PARAMETERS_MAP.xs * glFloatSize,
+        stride: LINE_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: LINE_RECORD_PARAMETERS_MAP.xs * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_End_Location: {
         buffer: regl.prop<LineAttachments, "buffer">("buffer"),
-        stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-        offset: LINE_RECORD_PARAMETERS_MAP.xe * glFloatSize,
+        stride: LINE_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: LINE_RECORD_PARAMETERS_MAP.xe * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SymNum: {
         buffer: regl.prop<LineAttachments, "buffer">("buffer"),
-        stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-        offset: LINE_RECORD_PARAMETERS_MAP.sym_num * glFloatSize,
+        stride: LINE_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: LINE_RECORD_PARAMETERS_MAP.sym_num * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Polarity: {
         buffer: regl.prop<LineAttachments, "buffer">("buffer"),
-        stride: LINE_RECORD_PARAMETERS.length * glFloatSize,
-        offset: LINE_RECORD_PARAMETERS_MAP.polarity * glFloatSize,
+        stride: LINE_RECORD_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT,
+        offset: LINE_RECORD_PARAMETERS_MAP.polarity * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
     },
@@ -540,55 +540,55 @@ export function initializeRenderers(regl: REGL.Regl): void {
     attributes: {
       a_ContourIndex: {
         buffer: regl.prop<SurfaceAttachments, "contourIndexBuffer">("contourIndexBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_ContourPolarity: {
         buffer: regl.prop<SurfaceAttachments, "contourPolarityBuffer">("contourPolarityBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_ContourOffset: {
         buffer: regl.prop<SurfaceAttachments, "contourOffsetBuffer">("contourOffsetBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_Indicies: {
         buffer: regl.prop<SurfaceAttachments, "indiciesBuffer">("indiciesBuffer"),
-        stride: 3 * glFloatSize,
+        stride: 3 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_QtyVerts: {
         buffer: regl.prop<SurfaceAttachments, "contourVertexQtyBuffer">("contourVertexQtyBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_QtyContours: {
         buffer: regl.prop<SurfaceAttachments, "qtyContours">("qtyContours"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SurfaceIndex: {
         buffer: regl.prop<SurfaceAttachments, "surfaceIndexBuffer">("surfaceIndexBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SurfacePolarity: {
         buffer: regl.prop<SurfaceAttachments, "surfacePolarityBuffer">("surfacePolarityBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
       a_SurfaceOffset: {
         buffer: regl.prop<SurfaceAttachments, "surfaceOffsetBuffer">("surfaceOffsetBuffer"),
-        stride: 1 * glFloatSize,
+        stride: 1 * Float32Array.BYTES_PER_ELEMENT,
         divisor: 1,
       },
 
@@ -740,7 +740,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     attributes: {
       a_Location: {
         buffer: regl.prop<DatumAttachments, "positions">("positions"),
-        stride: 2 * glFloatSize,
+        stride: 2 * Float32Array.BYTES_PER_ELEMENT,
         offset: 0,
         divisor: 1,
       },
@@ -863,7 +863,7 @@ export class ShapesShaderCollection {
 
   public shaderAttachment: TShaderAttachment
 
-  // public surfacesDatum: DatumShaderCollection
+  public surfacesDatum: DatumShaderCollection
   public surfaceEdges: ShapesShaderCollection | undefined
 
   constructor(props: { regl: REGL.Regl }) {
@@ -872,7 +872,7 @@ export class ShapesShaderCollection {
     this.symbolsCollection = new SymbolShaderCollection({
       regl,
     })
-    // this.surfacesDatum = new DatumShaderCollection({ regl })
+    this.surfacesDatum = new DatumShaderCollection({ regl })
     this.surfaceEdges = undefined
 
     this.shapes = {
@@ -893,6 +893,7 @@ export class ShapesShaderCollection {
         this.datumArcs.length = 0
       },
     }
+    // TODO init buffer with Actual TypedArrayBuffers to reduce Copy.
     this.shaderAttachment = {
       pads: {
         buffer: regl.buffer(0),
@@ -1019,7 +1020,7 @@ export class ShapesShaderCollection {
       id: "surface-outline-symbol",
     })
 
-    // const surfaceDatums: Shapes.DatumPoint[] = []
+    const surfaceDatums: Shapes.DatumPoint[] = []
 
     this.symbolsCollection.add(surfaceOutlineSymbol)
     // this.shapes.surfaceEdges.symbolsCollection.add(surfaceOutlineSymbol)
@@ -1058,10 +1059,10 @@ export class ShapesShaderCollection {
               }),
             )
           }
-          // surfaceDatums.push(new Shapes.DatumPoint({
-          //   x: segment.x,
-          //   y: segment.y,
-          // }))
+          surfaceDatums.push(new Shapes.DatumPoint({
+            x: segment.x,
+            y: segment.y,
+          }))
           // this.shapes.pads.push(new Shapes.Pad({
           //   x: segment.x,
           //   y: segment.y,
@@ -1073,7 +1074,7 @@ export class ShapesShaderCollection {
       })
     })
     this.surfaceEdges.refresh(surfaceOutlineShapes)
-    // this.surfacesDatum.refresh(surfaceDatums)
+    this.surfacesDatum.refresh(surfaceDatums)
   }
 
     this.shapes.pads.forEach((record) => {
@@ -1131,12 +1132,86 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumLines.length = this.shapes.datumLines.length
     this.shaderAttachment.datumArcs.length = this.shapes.datumArcs.length
 
+    console.time("ShapesShaderCollection.refresh.buffer")
     this.shaderAttachment.pads.buffer(this.shapes.pads.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.lines.buffer(this.shapes.lines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.arcs.buffer(this.shapes.arcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.datumPoints.buffer(this.shapes.datumPoints.map((record) => PAD_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.datumLines.buffer(this.shapes.datumLines.map((record) => LINE_RECORD_PARAMETERS.map((key) => record[key])))
     this.shaderAttachment.datumArcs.buffer(this.shapes.datumArcs.map((record) => ARC_RECORD_PARAMETERS.map((key) => record[key])))
+    // const padsData = new Float32Array(this.shapes.pads.length * PAD_RECORD_PARAMETERS.length)
+    // this.shapes.pads.forEach((record, index) => {
+    //     PAD_RECORD_PARAMETERS.forEach((key, i) => {
+    //     padsData[index * PAD_RECORD_PARAMETERS.length + i] = record[key]
+    //   })
+    // })
+    // this.shaderAttachment.pads.buffer({
+    //   data: padsData,
+    //   type: 'float32',
+    //   usage: 'static',
+    //   length: padsData.length,
+    // })
+    // const linesData = new Float32Array(this.shapes.lines.length * LINE_RECORD_PARAMETERS.length)
+    // this.shapes.lines.forEach((record, index) => {
+    //   LINE_RECORD_PARAMETERS.forEach((key, i) => {
+    //     linesData[index * LINE_RECORD_PARAMETERS.length + i] = record[key]
+    //   })
+    // })
+    // this.shaderAttachment.lines.buffer({
+    //   data: linesData,
+    //   type: 'float32',
+    //   usage: 'static',
+    //   length: linesData.length,
+    // })
+    // const arcsData = new Float32Array(this.shapes.arcs.length * ARC_RECORD_PARAMETERS.length)
+    // this.shapes.arcs.forEach((record, index) => {
+    //   ARC_RECORD_PARAMETERS.forEach((key, i) => {
+    //     arcsData[index * ARC_RECORD_PARAMETERS.length + i] = record[key]
+    //   })
+    // })
+    // this.shaderAttachment.arcs.buffer({
+    //   data: arcsData,
+    //   type: 'float32',
+    //   usage: 'static',
+    //   length: arcsData.length,
+    // })
+    // const datumPointsData = new Float32Array(this.shapes.datumPoints.length * PAD_RECORD_PARAMETERS.length)
+    // this.shapes.datumPoints.forEach((record, index) => {
+    //   PAD_RECORD_PARAMETERS.forEach((key, i) => {
+    //     datumPointsData[index * PAD_RECORD_PARAMETERS.length + i] = record[key]
+    //   })
+    // })
+    // this.shaderAttachment.datumPoints.buffer({
+    //   data: datumPointsData,
+    //   type: 'float32',
+    //   usage: 'static',
+    //   length: datumPointsData.length,
+    // })
+    // const datumLinesData = new Float32Array(this.shapes.datumLines.length * LINE_RECORD_PARAMETERS.length)
+    // this.shapes.datumLines.forEach((record, index) => {
+    //   LINE_RECORD_PARAMETERS.forEach((key, i) => {
+    //       datumLinesData[index * LINE_RECORD_PARAMETERS.length + i] = record[key]
+    //     })
+    //   })
+    //   this.shaderAttachment.datumLines.buffer({
+    //       data: datumLinesData,
+    //   type: 'float32',
+    //   usage: 'static',
+    //   length: datumLinesData.length,
+    // })
+    // const datumArcsData = new Float32Array(this.shapes.datumArcs.length * ARC_RECORD_PARAMETERS.length)
+    // this.shapes.datumArcs.forEach((record, index) => {
+    //     ARC_RECORD_PARAMETERS.forEach((key, i) => {
+    //         datumArcsData[index * ARC_RECORD_PARAMETERS.length + i] = record[key]
+    //       })
+    //     })
+    //     this.shaderAttachment.datumArcs.buffer({
+    //         data: datumArcsData,
+    //         type: 'float32',
+    //         usage: 'static',
+    //         length: datumArcsData.length,
+    //       })
+    console.timeEnd("ShapesShaderCollection.refresh.buffer")
 
     const surfacePolarities: number[] = []
     const surfaceOffsets: number[] = []
@@ -1164,45 +1239,57 @@ export class ShapesShaderCollection {
         const vertices = this.getVertices(contour)
         const ears = earcut(vertices)
         ears.forEach((ear) => indicies.push(ear))
-        const lengthArray = new Array<number>(ears.length / 3)
-        lengthArray.fill(contour.poly_type).forEach((polarity) => contourPolarities.push(polarity))
-        lengthArray.fill(contourOffset).forEach((offset) => contourOffsets.push(offset))
-        lengthArray.fill(contourIndex).forEach((index) => contourIndexes.push(index))
-        lengthArray.fill(vertices.length / 2).forEach((qty) => contourVertexQty.push(qty))
+        // const lengthArray = new Array<number>(ears.length / 3)
+        // lengthArray.fill(contour.poly_type).forEach((polarity) => contourPolarities.push(polarity))
+        for (let i = 0; i < ears.length; i += 3) {
+          contourPolarities.push(contour.poly_type)
+        }
+        // lengthArray.fill(contourOffset).forEach((offset) => contourOffsets.push(offset))
+        for (let i = 0; i < ears.length; i += 3) {
+          contourOffsets.push(contourOffset)
+        }
+        // lengthArray.fill(contourIndex).forEach((index) => contourIndexes.push(index))
+        for (let i = 0; i < ears.length; i += 3) {
+          contourIndexes.push(contourIndex)
+        }
+        // lengthArray.fill(vertices.length / 2).forEach((qty) => contourVertexQty.push(qty))
+        for (let i = 0; i < ears.length; i += 3) {
+          contourVertexQty.push(vertices.length / 2)
+        }
         contourOffset += vertices.length
         contourIndex++
         return vertices
       })
 
-      if (hasHoles) {
-        const { width, height, data } = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
-        const length = indicies.length / 3
-        this.shaderAttachment.surfacesWithHoles.push({
-          vertices: this.regl.texture({
-            width,
-            height,
-            type: "float",
-            channels: 1,
-            wrap: "clamp",
-            mag: "nearest",
-            min: "nearest",
-            data,
-          }),
-          verticiesDimensions: [width, height],
-          indiciesBuffer: this.regl.buffer(indicies),
-          contourPolarityBuffer: this.regl.buffer(contourPolarities),
-          contourOffsetBuffer: this.regl.buffer(contourOffsets),
-          contourIndexBuffer: this.regl.buffer(contourIndexes),
-          qtyContours: this.regl.buffer(new Array<number>(length).fill(record.contours.length)),
-          contourVertexQtyBuffer: this.regl.buffer(contourVertexQty),
-          surfaceIndex: record.index,
-          surfacePolarity: record.polarity,
-          surfaceIndexBuffer: this.regl.buffer(new Array<number>(length).fill(record.index)),
-          surfacePolarityBuffer: this.regl.buffer(new Array<Binary>(length).fill(record.polarity)),
-          surfaceOffsetBuffer: this.regl.buffer(new Array<number>(length).fill(0)),
-          length: length,
-        })
-      } else {
+      // if (hasHoles) {
+      //   const { width, height, data } = fixedTextureData(this.regl.limits.maxTextureSize, vertices)
+      //   const length = indicies.length / 3
+      //   this.shaderAttachment.surfacesWithHoles.push({
+      //     vertices: this.regl.texture({
+      //       width,
+      //       height,
+      //       type: "float",
+      //       channels: 1,
+      //       wrap: "clamp",
+      //       mag: "nearest",
+      //       min: "nearest",
+      //       data,
+      //     }),
+      //     verticiesDimensions: [width, height],
+      //     indiciesBuffer: this.regl.buffer(indicies),
+      //     contourPolarityBuffer: this.regl.buffer(contourPolarities),
+      //     contourOffsetBuffer: this.regl.buffer(contourOffsets),
+      //     contourIndexBuffer: this.regl.buffer(contourIndexes),
+      //     qtyContours: this.regl.buffer(new Array<number>(length).fill(record.contours.length)),
+      //     contourVertexQtyBuffer: this.regl.buffer(contourVertexQty),
+      //     surfaceIndex: record.index,
+      //     surfacePolarity: record.polarity,
+      //     surfaceIndexBuffer: this.regl.buffer(new Array<number>(length).fill(record.index)),
+      //     surfacePolarityBuffer: this.regl.buffer(new Array<Binary>(length).fill(record.polarity)),
+      //     surfaceOffsetBuffer: this.regl.buffer(new Array<number>(length).fill(0)),
+      //     length: length,
+      //   })
+      // } else {
         contourPolarities.forEach((polarity) => allContourPolarities.push(polarity))
         contourOffsets.forEach((offset) => allContourOffsets.push(offset))
         contourIndexes.forEach((index) => allContourIndexes.push(index))
@@ -1217,7 +1304,7 @@ export class ShapesShaderCollection {
         new Array<number>(length).fill(0).forEach(() => surfaceOffsets.push(surfaceOffset))
         surfaceOffset += vertices.length
         new Array<number>(length).fill(0).forEach(() => allContourQty.push(record.contours.length))
-      }
+      // }
     })
 
     if (allVertices.length != 0) {
@@ -1245,7 +1332,18 @@ export class ShapesShaderCollection {
         surfaceOffsetBuffer: this.regl.buffer(surfaceOffsets),
         length: allIndicies.length / 3,
       })
+      // console.log("Surface Buffer Collection Dimensions:", [width, height], allIndicies.length / 3, data.length)
+      // console.log("vertices", data)
+      // console.log("indicies", allIndicies)
+      // console.log("contourPolarity", allContourPolarities)
+      // console.log("contourOffset", allContourOffsets)
+      // console.log("contourIndex", allContourIndexes)
+      // console.log("contourVertexQty", allContourVertexQty)
+      // console.log("surfaceIndex", surfaceIndexes)
+      // console.log("surfacePolarity", surfacePolarities)
+      // console.log("surfaceOffset", surfaceOffsets)
     }
+
 
     return this
   }

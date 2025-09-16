@@ -10,12 +10,6 @@ import { ShapeDistance } from "./step/layer/shape-renderer"
 import { StepRenderer } from "./step/step"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
-import { Interface } from '../data/interface'
-export { Interface } from '../data/interface'
-// export Interface
-
-
-
 
 export interface UniverseProps {}
 
@@ -89,9 +83,6 @@ export interface MessageData {
 }
 
 export class Engine {
-
-  public readonly interface = Interface
-
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public offscreenCanvasGL: OffscreenCanvas
@@ -229,12 +220,7 @@ export class Engine {
   }
 
   public updateViewBox(view: string, viewBox: DOMRect): void {
-    // if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    // !TODO put error back
-    if (!this.views.has(view)) {
-      console.error(`View not found`)
-      return
-    }
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
     viewBox.x = viewBox.x - this.boundingBox.x
     this.views.get(view)!.updateViewBox(viewBox)

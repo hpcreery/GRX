@@ -284,7 +284,10 @@ export class StepRenderer {
       }
     }
     this.viewBox = newViewBox
-    if (viewBoxChanged) this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    if (viewBoxChanged) {
+      this.updateTransform()
+      this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    }
   }
 
   public toss(): void {
@@ -397,12 +400,11 @@ export class StepRenderer {
     const layer = new LayerRenderer({
       ...params,
       regl: this.regl,
-      // ctx: this.ctx,
     })
     this.layers.push(layer)
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
     this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
-    console.log("layer added")
+    console.log("Layer added:", layer.name, layer.id)
   }
 
   public async addFile(buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
@@ -543,6 +545,7 @@ export class StepRenderer {
 
   public select(pointer: vec2): QuerySelection[] {
     const selection: QuerySelection[] = []
+    this.selections.forEach((layer) => layer.destroy())
     this.selections.length = 0
     this.world((context) => {
       // this.clearMeasurements()
@@ -576,7 +579,7 @@ export class StepRenderer {
           image: this.copySelectionToImage(distances),
           transform: layer.transform,
         })
-        newSelectionLayer.dirty = true
+        // newSelectionLayer.dirty = true
         this.selections.push(newSelectionLayer)
       }
     })
@@ -597,14 +600,21 @@ export class StepRenderer {
             closest = select
             continue
           }
-          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, (closest as ShapeDistance).snapPoint)) {
+          if (closest.snapPoint == undefined) {
+            closest = select
+            continue
+          }
+          if (select.snapPoint == undefined) continue
+          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, closest.snapPoint)) {
             closest = select
           }
         }
       }
     })
+    // console.log(closest)
     if (closest == undefined) return pointer
-    return (closest as ShapeDistance).snapPoint
+    if ((closest as ShapeDistance).snapPoint == undefined) return pointer
+    return (closest as ShapeDistance).snapPoint!
   }
 
   private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
@@ -768,8 +778,8 @@ export class StepRenderer {
         selection.render(context)
         this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: selection.framebuffer }))
       }
-      this.measurements.render(context)
-      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
+      // this.measurements.render(context)
+      // this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
   }
 

@@ -4,7 +4,7 @@ import * as Cst from "./nccst"
 import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
 import * as Symbols from "@src/renderer/engine/step/layer/shape/symbol/symbol"
 
-import { Units, AttributeCollection, Binary, FeatureTypeIdentifier } from "@src/renderer/engine/types"
+import { Units, AttributesType, Binary, FeatureTypeIdentifier } from "@src/renderer/engine/types"
 import {
   Format,
   ZeroSuppression,
@@ -640,7 +640,7 @@ class NCParser extends CstParser {
 export const parser = new NCParser()
 export const productions: Record<string, Rule> = parser.getGAstProductions()
 
-const GENERATEDTS = true
+const GENERATEDTS = false
 if (GENERATEDTS) {
   const dtsString = generateCstDts(productions)
   console.log(dtsString)
@@ -743,12 +743,12 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.coordinateMode = ctx.On ? Constants.INCREMENTAL : Constants.ABSOLUTE
   }
 
-  headerEnd(ctx: Cst.HeaderCstChildren): void {
-    console.log("headerEnd", ctx)
+  headerEnd(_ctx: Cst.HeaderCstChildren): void {
+    // console.log("headerEnd", ctx)
   }
 
-  comment(ctx: Cst.CommentCstChildren): void {
-    console.log("comment", ctx)
+  comment(_ctx: Cst.CommentCstChildren): void {
+    // console.log("comment", ctx)
   }
 
   compensationIndex(ctx: Cst.CompensationIndexCstChildren): void {
@@ -770,7 +770,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   toolDefinition(ctx: Cst.ToolDefinitionCstChildren): void {
     const dia = this.visit(ctx.toolDia) as number
 
-    const attributes: AttributeCollection = {}
+    const attributes: AttributesType = {}
 
     if (ctx.feed) attributes.feed = this.visit(ctx.feed) as string
     if (ctx.speed) attributes.speed = this.visit(ctx.speed) as string
@@ -1177,8 +1177,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
   }
 
-  endOfProgramNoRewind(ctx: Cst.EndOfProgramNoRewindCstChildren): void {
-    console.log("endOfProgramNoRewind", ctx)
+  endOfProgramNoRewind(_ctx: Cst.EndOfProgramNoRewindCstChildren): void {
+    // console.log("endOfProgramNoRewind", ctx)
   }
 
   beginPattern(_ctx: Cst.BeginPatternCstChildren): void {
@@ -1243,12 +1243,12 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.patternOffsetY = 0
   }
 
-  optionalStop(ctx: Cst.OptionalStopCstChildren): void {
-    console.log("optionalStop", ctx)
+  optionalStop(_ctx: Cst.OptionalStopCstChildren): void {
+    // console.log("optionalStop", ctx)
   }
 
-  stopForInspect(ctx: Cst.StopForInspectCstChildren): void {
-    console.log("stopForInspect", ctx)
+  stopForInspect(_ctx: Cst.StopForInspectCstChildren): void {
+    // console.log("stopForInspect", ctx)
   }
 
   zAxisRoutPositionWithDepthControlledCountoring(_ctx: Cst.ZAxisRoutPositionWithDepthControlledCountoringCstChildren): void {
@@ -1313,20 +1313,20 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.plunged = false
   }
 
-  endOfProgramRewind(ctx: Cst.EndOfProgramRewindCstChildren): void {
-    console.log("endOfProgramRewind", ctx)
+  endOfProgramRewind(_ctx: Cst.EndOfProgramRewindCstChildren): void {
+    // console.log("endOfProgramRewind", ctx)
   }
 
-  longOperatorMessage(ctx: Cst.LongOperatorMessageCstChildren): void {
-    console.log("longOperatorMessage", ctx)
+  longOperatorMessage(_ctx: Cst.LongOperatorMessageCstChildren): void {
+    // console.log("longOperatorMessage", ctx)
   }
 
-  operatorMessage(ctx: Cst.OperatorMessageCstChildren): void {
-    console.log("operatorMessage", ctx)
+  operatorMessage(_ctx: Cst.OperatorMessageCstChildren): void {
+    // console.log("operatorMessage", ctx)
   }
 
-  header(ctx: Cst.HeaderCstChildren): void {
-    console.log("header", ctx)
+  header(_ctx: Cst.HeaderCstChildren): void {
+    // console.log("header", ctx)
   }
 
   metricMode(_ctx: Cst.MetricModeCstChildren): void {
@@ -1365,8 +1365,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.visit(ctx.move)
   }
 
-  dwell(ctx: Cst.DwellCstChildren): void {
-    console.log("dwell", ctx)
+  dwell(_ctx: Cst.DwellCstChildren): void {
+    // console.log("dwell", ctx)
   }
 
   drillMode(_ctx: Cst.DrillModeCstChildren): void {
@@ -1456,8 +1456,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
   }
 
-  selectVisionTool(ctx: Cst.SelectVisionToolCstChildren): void {
-    console.log("selectVisionTool", ctx)
+  selectVisionTool(_ctx: Cst.SelectVisionToolCstChildren): void {
+    // console.log("selectVisionTool", ctx)
   }
 
   singlePointVisionOffset(ctx: Cst.SinglePointVisionOffsetCstChildren): void {
@@ -1514,8 +1514,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
   }
 
-  cancelVisionOffset(ctx: Cst.CancelVisionOffsetCstChildren): void {
-    console.log("cancelVisionOffset", ctx)
+  cancelVisionOffset(_ctx: Cst.CancelVisionOffsetCstChildren): void {
+    // console.log("cancelVisionOffset", ctx)
   }
 
   visionCorrectedSingleHole(ctx: Cst.VisionCorrectedSingleHoleCstChildren): void {
@@ -1544,8 +1544,8 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
   }
 
-  visionAutoCalibration(ctx: Cst.VisionAutoCalibrationCstChildren): void {
-    console.log("visionAutoCalibration", ctx)
+  visionAutoCalibration(_ctx: Cst.VisionAutoCalibrationCstChildren): void {
+    // console.log("visionAutoCalibration", ctx)
   }
 
   // Canned cycles

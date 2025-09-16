@@ -4,7 +4,7 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
 interface EngineStatsProps {}
 export default function EngineStats(_props: EngineStatsProps): JSX.Element {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const [count, setCount] = useState<number>(0)
   const [cpuTime, setCPUTime] = useState<number>(0)
   const [gpuTime, setGPUTime] = useState<number>(0)
@@ -28,7 +28,7 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
 
   const update = async (): Promise<void> => {
     const precision = 3
-    const stats = await renderEngine.getStats()
+    const stats = await renderer.getStats()
     const averageGPU = stats.universe.gpuTime / stats.universe.count
     setAverageGPUTime(round(averageGPU, precision))
     const averageCPU = stats.universe.cpuTime / stats.universe.count

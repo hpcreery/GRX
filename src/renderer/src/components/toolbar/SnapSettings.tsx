@@ -9,14 +9,14 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 interface SnapSettingsProps {}
 
 export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | null {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const [snapMode, setSnapMode] = useLocalStorage<SnapMode>({
     key: "engine:SNAP_MODE",
-    defaultValue: renderEngine.settings.SNAP_MODE,
+    defaultValue: renderer.settings.SNAP_MODE,
   })
 
   useEffect(() => {
-    renderEngine.settings.SNAP_MODE = snapMode
+    renderer.settings.SNAP_MODE = snapMode
   }, [snapMode])
 
   useEffect(() => {

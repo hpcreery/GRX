@@ -46,7 +46,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   const [transformOrder, setTransformOrder] = useState<TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
-  const { units, renderEngine } = useContext(EditorConfigProvider)
+  const { units, renderer } = useContext(EditorConfigProvider)
   const [layerName, setLayerName] = useState<string>("")
 
   const sensors = useSensors(
@@ -72,8 +72,8 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   useEffect(() => {
-    renderEngine.backend.then((backend) => {
-      backend.getLayers("main").then((layers: LayerInfo[]) => {
+    renderer.engine.then((engine) => {
+      engine.getLayers("main").then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.id === props.layerID) {
             setLayerName(layer.name)
@@ -98,11 +98,11 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }, [])
 
   useEffect(() => {
-    renderEngine.backend.then((backend) => {
-      backend.getLayers("main").then((layers: LayerInfo[]) => {
+    renderer.engine.then((engine) => {
+      engine.getLayers("main").then((layers: LayerInfo[]) => {
         layers.forEach((layer: LayerInfo) => {
           if (layer.id === props.layerID) {
-            backend.setLayerTransform("main", layer.id, {
+            engine.setLayerTransform("main", layer.id, {
               datum: vec2.fromValues(datumX, datumY),
               rotation: rotation,
               scale: scale,

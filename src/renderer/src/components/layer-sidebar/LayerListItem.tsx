@@ -42,7 +42,7 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const { showContextMenu } = useContextMenu()
   const { file, actions } = props
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
@@ -51,9 +51,9 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
 
   async function changeColor(color: vec3): Promise<void> {
-    const renderer = await renderEngine.backend
-    if (!renderer) return
-    await renderer.setLayerProps("main", file.id, { color })
+    const engine = await renderer.engine
+    if (!engine) return
+    await engine.setLayerProps("main", file.id, { color })
     setColor(color)
   }
 
@@ -176,20 +176,20 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   const colors = useMantineColorScheme()
   const [visible, setVisible] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(true)
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
 
   function deleteLayer(): void {
     actions.remove(file)
   }
 
   async function toggleVisible(): Promise<void> {
-    const renderer = await renderEngine.backend
-    if (!renderer) return
+    const engine = await renderer.engine
+    if (!engine) return
     if (visible) {
-      renderer.setLayerProps("main", file.id, { visible: false })
+      engine.setLayerProps("main", file.id, { visible: false })
       setVisible(false)
     } else {
-      renderer.setLayerProps("main", file.id, { visible: true })
+      engine.setLayerProps("main", file.id, { visible: true })
       setVisible(true)
     }
   }
@@ -272,7 +272,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   }
 
   useEffect(() => {
-    renderEngine.backend.then(async (renderer) => {
+    renderer.engine.then(async (renderer) => {
       const layers = await renderer.getLayers("main")
       registerLayers(layers)
       if (layers.find((l) => l.id === file.id)) {
@@ -306,17 +306,17 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       reader.onload = async (_e): Promise<void> => {
         if (reader.result !== null && reader.result !== undefined) {
           try {
-            console.time(`${file.name} file parse time`)
+            // console.time(`${file.name} file parse time`)
             await renderer.addFile("main",
               Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]),
               {
               format: file.format,
               props: {
                 name: file.name,
-                id: file.id,
+                // id: file.id,
               },
             })
-            console.timeEnd(`${file.name} file parse time`)
+            // console.timeEnd(`${file.name} file parse time`)
             // notifications.show({
             //   title: 'File read',
             //   message: `${file.name} file read.`,

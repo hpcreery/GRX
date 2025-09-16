@@ -8,7 +8,7 @@ import { getUnitsConversion } from "@src/renderer/engine/utils"
 interface MousePositionProps {}
 
 export default function MousePosition(_props: MousePositionProps): JSX.Element | null {
-  const { units, renderEngine } = React.useContext(EditorConfigProvider)
+  const { units, renderer } = React.useContext(EditorConfigProvider)
 
   const [x, setX] = React.useState<number>(0)
   const [y, setY] = React.useState<number>(0)
@@ -19,11 +19,11 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
       setX(e.detail.x)
       setY(e.detail.y)
     }
-    renderEngine.pointer.addEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
-    renderEngine.pointer.addEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
+    renderer.pointer.addEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
+    renderer.pointer.addEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
     return (): void => {
-      renderEngine.pointer.removeEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
-      renderEngine.pointer.removeEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
+      renderer.pointer.removeEventListener(PointerEvents.POINTER_HOVER, handleMouseMove as EventListener)
+      renderer.pointer.removeEventListener(PointerEvents.POINTER_DOWN, handleMouseMove as EventListener)
     }
   }, [])
 

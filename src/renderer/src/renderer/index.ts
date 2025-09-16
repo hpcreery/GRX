@@ -1,6 +1,9 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
-import type { QuerySelection, RenderEngineBackend, Stats } from "./engine/engine"
+// import DataWorker from "./data/data?sharedworker"
+// import DataWorker from "./data/data?worker"
+// import type { Interface } from "./data/project"
+import type { QuerySelection, Engine, Stats } from "./engine/engine"
 import { AddLayerProps } from "./engine/plugins"
 import { PointerMode } from "./engine/types"
 
@@ -10,8 +13,11 @@ import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.tt
 import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
 import { UID } from "./engine/utils"
 
-const Worker = new EngineWorker()
-export const ComWorker = Comlink.wrap<typeof RenderEngineBackend>(Worker)
+const EWorker = new EngineWorker()
+export const EngineComWorker = Comlink.wrap<typeof Engine>(EWorker)
+
+// const DWorder = new DataWorker()
+// export const DataComWorker = Comlink.wrap<typeof Interface>(DWorder)
 
 export interface RenderEngineFrontendConfig {
   container?: HTMLElement
@@ -24,7 +30,6 @@ interface PointerCoordinates {
 }
 
 export interface PointerSettings {
-  // mode: "move" | "select" | "measure"
   mode: PointerMode
 }
 
@@ -43,13 +48,12 @@ export const PointerEvents = {
 
 export type PointerEvent = CustomEvent<PointerCoordinates>
 
-export class RenderEngine {
+export class Renderer {
   public settings: RenderSettings = new Proxy(
     settings,
     {
       set: (target, name, value): boolean => {
-        this.backend.then((engine) => {
-          // engine.settings[name] = value
+        this.engine.then((engine) => {
           engine.setSettings({ [name]: value })
         })
         target[name] = value
@@ -61,8 +65,7 @@ export class RenderEngine {
     gridSettings,
     {
       set: (target, name, value): boolean => {
-        this.backend.then((engine) => {
-          // engine.grid[name] = value
+        this.engine.then((engine) => {
           engine.setGrid({ [name]: value })
         })
         target[name] = value
@@ -116,9 +119,8 @@ export class RenderEngine {
   public readonly CONTAINER: HTMLElement
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
-  public backend: Promise<Comlink.Remote<RenderEngineBackend>>
+  public engine: Promise<Comlink.Remote<Engine>>
   public canvasGL: HTMLCanvasElement
-  // public canvas2D: HTMLCanvasElement
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
       container = document.createElement("div")
@@ -136,16 +138,15 @@ export class RenderEngine {
     this.CONTAINER = container
 
     this.canvasGL = this.createCanvas()
-    // this.canvas2D = this.createCanvas()
 
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
-    // const offscreenCanvas2D = this.canvas2D.transferControlToOffscreen()
 
-    this.backend = new ComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
+    this.engine = new EngineComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
       attributes,
       container: this.CONTAINER.getBoundingClientRect(),
       // dpr: this.canvasSettings.dpr,
     })
+
 
     this.pollEmbeddedViews()
     this.sendFontData()
@@ -155,7 +156,7 @@ export class RenderEngine {
   }
 
   private pollEmbeddedViews(): void {
-    this.backend.then((backend) => {
+    this.engine.then((engine) => {
       const views = this.getEmbeddedViews()
       views.forEach(async (viewElement) => {
         const viewName = viewElement.getAttribute("view")
@@ -167,7 +168,7 @@ export class RenderEngine {
         }
         const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
         if (viewExists) return
-        await backend.addView(viewElement.id, viewName, viewElement.getBoundingClientRect())
+        await engine.addView(viewElement.id, viewName, viewElement.getBoundingClientRect())
         await this.addControls(viewElement)
         this.managedViews.push(viewElement)
       })
@@ -182,8 +183,8 @@ export class RenderEngine {
       id = view.id
     }
     this.managedViews.push(view)
-    this.backend.then(async (backend) => {
-      await backend.addView(id, name, view.getBoundingClientRect())
+    this.engine.then(async (engine) => {
+      await engine.addView(id, name, view.getBoundingClientRect())
       await this.addControls(view)
     })
   }
@@ -205,7 +206,7 @@ export class RenderEngine {
   }
 
   public async onLoad(cb: () => void): Promise<void> {
-    await this.backend
+    await this.engine
     cb()
   }
 
@@ -215,7 +216,7 @@ export class RenderEngine {
   //   const viewbox = element.getBoundingClientRect()
   //   viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
   //   viewbox.x = viewbox.x - containerOffsetX
-  //   await backend.updateViewBox(view, viewbox)
+  //   await engine.updateViewBox(view, viewbox)
   // }
 
   private createCanvas(): HTMLCanvasElement {
@@ -243,25 +244,23 @@ export class RenderEngine {
     // this.canvasGL.style.zIndex = "1"
     // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
-    this.backend.then((engine) => {
+    this.engine.then((engine) => {
       engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
     })
 
-    this.backend.then((backend) => {
+    this.engine.then((engine) => {
       this.managedViews.forEach(async (node) => {
-        await backend.updateViewBox(node.id, node.getBoundingClientRect())
+        await engine.updateViewBox(node.id, node.getBoundingClientRect())
       })
     })
   }
 
   // public async zoomFit(view: string): Promise<void> {
-  //   const backend = await this.backend
-  //   backend.zoomFit(view)
+  //   const engine = await this.engine
+  //   engine.zoomFit(view)
   // }
 
   public async pollViews(): Promise<void> {
-    // const views = this.getViews()
-    // setTimeout
     this.resize()
     requestAnimationFrame(() => this.pollViews())
   }
@@ -270,7 +269,7 @@ export class RenderEngine {
     if (!element.id) {
       throw new Error("Element must have a 'id' attribute")
     }
-    const backend = await this.backend
+    const engine = await this.engine
     const sendPointerEvent = async (
       element: HTMLElement,
       mouse: MouseEvent,
@@ -312,8 +311,8 @@ export class RenderEngine {
         return mouse_normalize_pos
       }
 
-      const backend = await this.backend
-      return backend.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
+      const engine = await this.engine
+      return engine.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -322,19 +321,19 @@ export class RenderEngine {
       this.pointerCache.splice(index, 1)
     }
 
-    await backend.updateViewBox(element.id, element.getBoundingClientRect())
+    await engine.updateViewBox(element.id, element.getBoundingClientRect())
 
     element.style.cursor = "grab"
 
     element.onwheel = async (e): Promise<void> => {
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-      const settings = await backend.getSettings()
+      const settings = await engine.getSettings()
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
-        backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        engine.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        backend.zoomAtPoint(element.id, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
+        engine.zoomAtPoint(element.id, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -344,10 +343,10 @@ export class RenderEngine {
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
-        await backend.grabViewport(element.id)
+        await engine.grabViewport(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await backend.select(element.id, [x, y])
+        const features = await engine.select(element.id, [x, y])
         console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -358,11 +357,11 @@ export class RenderEngine {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x1, y1] = await getMouseWorldCoordinates(element, e)
-        const currentMeasurement = await backend.getCurrentMeasurement(element.id)
+        const currentMeasurement = await engine.getCurrentMeasurement(element.id)
         if (currentMeasurement != null) {
-          backend.finishMeasurement(element.id, [x1, y1])
+          engine.finishMeasurement(element.id, [x1, y1])
         } else {
-          backend.addMeasurement(element.id, [x1, y1])
+          engine.addMeasurement(element.id, [x1, y1])
         }
       }
     }
@@ -371,21 +370,21 @@ export class RenderEngine {
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grab"
-        await backend.releaseViewport(element.id)
+        await engine.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
     element.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(element.id)
+        await engine.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
     element.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await backend.releaseViewport(element.id)
+        await engine.releaseViewport(element.id)
       }
       removePointerCache(e)
     }
@@ -401,10 +400,10 @@ export class RenderEngine {
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x, y] = await getMouseWorldCoordinates(element, e)
-        backend.updateMeasurement(element.id, [x, y])
+        engine.updateMeasurement(element.id, [x, y])
       }
 
-      if (!(await backend.isDragging(element.id))) {
+      if (!(await engine.isDragging(element.id))) {
         await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
@@ -420,29 +419,29 @@ export class RenderEngine {
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
-          const settings = await backend.getSettings()
+          const settings = await engine.getSettings()
           const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            backend.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            engine.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            backend.zoomAtPoint(element.id, width / 2, height / 2, zoomFactor)
+            engine.zoomAtPoint(element.id, width / 2, height / 2, zoomFactor)
           }
-          backend.moveViewport(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          engine.moveViewport(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await backend.moveViewport(element.id, e.movementX * moveScale, e.movementY * moveScale)
+          await engine.moveViewport(element.id, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
     element.onkeydown = async (e): Promise<void> => {
       // if (e.key === 'Escape') {
-      //   await backend.cancelMeasurement()
+      //   await engine.cancelMeasurement()
       //   this.pointerSettings.mode = 'move'
       //   element.style.cursor = 'grab'
       // }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await backend.isDragging(element.id)
+        const isDragging = await engine.isDragging(element.id)
         if (isDragging) return
-        this.backend.then((engine) => {
+        this.engine.then((engine) => {
           engine.grabViewport(element.id)
           switch (e.key) {
             case "ArrowUp":
@@ -465,24 +464,24 @@ export class RenderEngine {
   }
 
   /**
-   * @deprecated will move to backend datamodel
+   * @deprecated will move to engine datamodel
    */
   public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-    const backend = await this.backend
-    backend.addLayer(view, params)
+    const engine = await this.engine
+    engine.addLayer(view, params)
   }
 
   /**
-   * @deprecated will move to backend datamodel
+   * @deprecated will move to engine datamodel
    */
   public async addFile(view: string, buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    const backend = await this.backend
-    backend.addFile(view, Comlink.transfer(buffer, [buffer]), params)
+    const engine = await this.engine
+    engine.addFile(view, Comlink.transfer(buffer, [buffer]), params)
   }
 
   public async render(): Promise<void> {
-    const backend = await this.backend
-    backend.render()
+    const engine = await this.engine
+    engine.render()
   }
 
   private sendFontData(): void {
@@ -507,7 +506,7 @@ export class RenderEngine {
       }
 
       const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0], cozetteFontInfo.textureSize[1])
-      this.backend.then((engine) => {
+      this.engine.then((engine) => {
         engine.initializeFontRenderer(imageData.data)
       })
 
@@ -534,15 +533,16 @@ export class RenderEngine {
   }
 
   public async getStats(): Promise<Stats> {
-    const backend = await this.backend
-    return backend.getStats()
+    const engine = await this.engine
+    return engine.getStats()
   }
 
   public async destroy(): Promise<void> {
-    const backend = await this.backend
-    backend.destroy()
-    ComWorker[Comlink.releaseProxy]()
-    Worker.terminate()
+    const engine = await this.engine
+    engine.destroy()
+    EngineComWorker[Comlink.releaseProxy]()
+    EWorker.terminate()
+    // DataComWorker[Comlink.releaseProxy]()
 
     this.CONTAINER.childNodes.forEach((node) => {
       if (node instanceof HTMLElement) {

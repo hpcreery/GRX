@@ -5,8 +5,9 @@ import { Notifications } from "@mantine/notifications"
 import { useLocalStorage } from "@mantine/hooks"
 import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
-// import DemoApp from "./renderer/demo"
+import DemoApp from "./renderer/DEMO"
 // import NCDemo from '@lib/nc/DEMO'
+import * as BufferCollection from './renderer/data/artwork-collection'
 
 import { Spotlight } from "@mantine/spotlight"
 import { spotlightStore, actions } from "./contexts/Spotlight"
@@ -20,6 +21,7 @@ import "@mantine/spotlight/styles.css"
 import "@mantine/code-highlight/styles.css"
 
 function Main(): JSX.Element | null {
+  // BufferCollection.test()
   const [transparency, setTransparency] = useLocalStorage<boolean>({
     key: "transparency",
     defaultValue: false,
@@ -52,8 +54,8 @@ function Main(): JSX.Element | null {
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
-          <App />
-          {/* <DemoApp /> */}
+          {/* <App /> */}
+          <DemoApp />
           {/* <NCDemo /> */}
         </ContextMenuProvider>
       </MantineProvider>

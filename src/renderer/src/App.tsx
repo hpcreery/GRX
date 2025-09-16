@@ -1,6 +1,6 @@
 import "./App.css"
 import { useRef, useEffect, useState, useContext } from "react"
-import { RenderEngine } from "./renderer"
+import { Renderer } from "./renderer"
 import chroma from "chroma-js"
 import InfoModal from "./components/InfoModal"
 import Toolbar from "./components/toolbar/Toolbar"
@@ -24,21 +24,22 @@ export default function App(): JSX.Element | null {
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const elementRef = useRef<HTMLDivElement>(document.createElement("div"))
-  const [renderEngine, setRenderEngine] = useState<RenderEngine>()
+  const [renderer, setRenderEngine] = useState<Renderer>()
   const [ready, setReady] = useState<boolean>(false)
   const { showContextMenu } = useContextMenu()
 
   // Load in the render engine
   useEffect(() => {
     console.log("Loading Engine Application")
-    const Engine = new RenderEngine({ container: elementRef.current })
-    setRenderEngine(Engine)
+    const renderer = new Renderer({ container: elementRef.current })
+    setRenderEngine(renderer)
     setEngineBackgroundColor()
-    Engine.onLoad(() => {
-      console.log("Engine Application Loaded", Engine)
+    renderer.onLoad(() => {
+      console.log("Engine Application Loaded", renderer)
       setReady(true)
-      Engine.backend.then((backend) => {
-        backend.addEventCallback(
+      renderer.engine.then((engine) => {
+        engine.addEventCallback(
+          "main",
           EngineEvents.MESSAGE,
           Comlink.proxy((e) => msg(e as MessageData)),
         )
@@ -47,17 +48,17 @@ export default function App(): JSX.Element | null {
         key: "download-canvas",
         icon: <IconPhotoDown stroke={1.5} size={18} />,
         title: "Download Screensot",
-        onClick: () => Engine.downloadImage(),
+        onClick: () => renderer.downloadImage(),
       })
     })
     return (): void => {
-      Engine.destroy()
+      renderer.destroy()
     }
   }, [])
 
   function setEngineBackgroundColor(): void {
-    if (renderEngine != undefined) {
-      renderEngine.settings.BACKGROUND_COLOR = chroma(colors.colorScheme == "dark" ? theme.colors.dark[8] : theme.colors.gray[1])
+    if (renderer != undefined) {
+      renderer.settings.BACKGROUND_COLOR = chroma(colors.colorScheme == "dark" ? theme.colors.dark[8] : theme.colors.gray[1])
         .alpha(0)
         .gl()
     }
@@ -84,10 +85,10 @@ export default function App(): JSX.Element | null {
 
   return (
     <>
-      {ready && renderEngine ? (
+      {ready && renderer ? (
         <EditorConfigProvider.Provider
           value={{
-            renderEngine: renderEngine,
+            renderer: renderer,
             units: units,
             setUnits: setUnits,
           }}
@@ -117,7 +118,7 @@ export default function App(): JSX.Element | null {
         </>
       )}
       <Skeleton
-        visible={renderEngine == undefined}
+        visible={renderer == undefined}
         style={{
           width: "100%",
           height: "100%",

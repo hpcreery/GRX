@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "../../../types"
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../../types"
 import { Transform } from "../../../transform"
 import * as Symbols from "./symbol/symbol"
 import { vec2 } from "gl-matrix"
@@ -22,7 +22,7 @@ export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
 export class Pad implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.PAD
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -77,7 +77,7 @@ export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
 export class Line implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -124,7 +124,7 @@ export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
 export class Arc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARC
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -294,7 +294,7 @@ export class Contour implements TContour {
 
 export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.SURFACE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   public index = 0
   /**
    * 1 == positive, 0 == negative
@@ -334,7 +334,7 @@ export class Surface implements TSurface, IPlotRecord {
 
 export class PolyLine implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.POLYLINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   public index = 0
   /**
    * line width
@@ -394,7 +394,7 @@ export class PolyLine implements IPlotRecord {
 
 export class StepAndRepeat implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -423,7 +423,7 @@ export class StepAndRepeat implements IPlotRecord {
 
 export class DatumPoint implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_POINT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -474,7 +474,7 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
 
 export class DatumText {
   public readonly type = FeatureTypeIdentifier.DATUM_TEXT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -499,7 +499,7 @@ export class DatumText {
 
 export class DatumLine implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_LINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -542,7 +542,7 @@ export class DatumLine implements TLine_Record, IPlotRecord {
 
 export class DatumArc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_ARC
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -598,6 +598,11 @@ export class DatumArc implements TArc_Record, IPlotRecord {
 export type Primitive = Pad | Line | Arc
 export type Datum = DatumPoint | DatumText | DatumLine | DatumArc
 export type Shape = Primitive | Surface | PolyLine | StepAndRepeat | Datum
+
+export type RawPrimative = TPad_Record | TLine_Record | TArc_Record
+export type RawSurface = TSurface
+export type RawShape = RawPrimative | RawSurface
+
 
 export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
   let min = vec2.fromValues(Infinity, Infinity)
