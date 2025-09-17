@@ -491,6 +491,9 @@ export class StepRenderer {
     this.updateTransform()
   }
 
+  /**
+   * @deprecated use data api instead
+   */
   public removeLayer(id: string): void {
     const index = this.layers.findIndex((layer) => layer.id === id)
     if (index === -1) return
@@ -498,10 +501,16 @@ export class StepRenderer {
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
   }
 
+  /**
+   * @deprecated use data api instead
+   */
   public moveLayer(from: number, to: number): void {
     this.layers.splice(to < 0 ? this.layers.length + to : to, 0, this.layers.splice(from, 1)[0])
   }
 
+  /**
+   * @deprecated use data api instead
+   */
   public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
     const layer = this.layers.find((layer) => layer.id === id)
     if (!layer) return

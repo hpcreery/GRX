@@ -3,17 +3,14 @@ import { mat3, vec2, vec3 } from "gl-matrix"
 import { LayerRendererProps } from "./step/layer/layer"
 import { initializeFontRenderer, initializeRenderers } from "./step/layer/collections"
 import * as Comlink from "comlink"
-import type { PluginsDefinition, AddLayerProps } from "./plugins"
+import type { AddLayerProps } from "./plugins"
 import { type Units } from "./types"
 import { Transform } from "./transform"
 import { ShapeDistance } from "./step/layer/shape-renderer"
 import { StepRenderer } from "./step/step"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
-import { Interface } from '../data/interface'
-export { Interface } from '../data/interface'
-// export Interface
-
+import { DataInterface } from '../data/interface'
 
 
 
@@ -90,7 +87,7 @@ export interface MessageData {
 
 export class Engine {
 
-  public readonly interface = Interface
+  public static readonly DataInterfaceProxy = Comlink.proxy(DataInterface)
 
   static defaultRenderProps = { force: false, updateLayers: true }
 
@@ -110,10 +107,7 @@ export class Engine {
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
-  public parsers: PluginsDefinition = {}
-
   public views: Map<string, StepRenderer> = new Map()
-  // public steps: StepRenderer[] = []
 
   private renderNowInterval: NodeJS.Timeout | null = null
 
@@ -198,16 +192,6 @@ export class Engine {
     this.render()
   }
 
-  // public addStep(name: string, viewBox: DOMRect): void {
-  //   const newStep = new ViewRenderer({
-  //     regl: this.regl,
-  //     viewBox,
-  //   })
-  //   newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
-  //   this.steps.set(name, newStep)
-  //   this.render()
-  // }
-
   public updateBoundingBox(box: DOMRect): void {
     // this.boundingBox.width = box.width * dpr
     // this.boundingBox.height = box.height * dpr
@@ -272,7 +256,6 @@ export class Engine {
 
   public updateTransform(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    // return this.steps.get(view)!.updateTransform()
     const transform = this.views.get(view)!.updateTransform()
     return transform
   }

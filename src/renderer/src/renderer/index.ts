@@ -1,8 +1,5 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
-// import DataWorker from "./data/data?sharedworker"
-// import DataWorker from "./data/data?worker"
-// import type { Interface } from "./data/project"
 import type { QuerySelection, Engine, Stats } from "./engine/engine"
 import { AddLayerProps } from "./engine/plugins"
 import { PointerMode } from "./engine/types"
@@ -13,11 +10,14 @@ import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.tt
 import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
 import { UID } from "./engine/utils"
 
-const EWorker = new EngineWorker()
-export const EngineComWorker = Comlink.wrap<typeof Engine>(EWorker)
+const EngineWorkerInstance = new EngineWorker()
+export const EngineComWorker = Comlink.wrap<typeof Engine>(EngineWorkerInstance)
 
-// const DWorder = new DataWorker()
-// export const DataComWorker = Comlink.wrap<typeof Interface>(DWorder)
+export const DataInterface = await EngineComWorker.DataInterfaceProxy
+// DataInterface.create_project("New Project")
+// DataInterface.create_step("New Project", "Step 1")
+// DataInterface.create_layer('New Project', 'asdf')
+
 
 export interface RenderEngineFrontendConfig {
   container?: HTMLElement
@@ -347,7 +347,7 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
         const features = await engine.select(element.id, [x, y])
-        console.log("features", features)
+        // console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
@@ -541,7 +541,7 @@ export class Renderer {
     const engine = await this.engine
     engine.destroy()
     EngineComWorker[Comlink.releaseProxy]()
-    EWorker.terminate()
+    EngineWorkerInstance.terminate()
     // DataComWorker[Comlink.releaseProxy]()
 
     this.CONTAINER.childNodes.forEach((node) => {
