@@ -333,6 +333,7 @@ export class ShapeRenderer {
       //   regl: this.regl,
       //   image: macroShaderAttachments.artworkBufferCollection,
       // })
+      if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
       if (!macroRenderer) return
       macroRenderer.updateTransformFromPad(macro.shape)

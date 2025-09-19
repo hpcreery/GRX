@@ -163,20 +163,27 @@ export class Renderer {
         if (viewName == null) {
           return
         }
+        const project = viewElement.getAttribute("project")
+        if (project == null) {
+          return
+        }
         if (viewElement.id == undefined || viewElement.id === "") {
           viewElement.id = UID()
         }
         const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
         if (viewExists) return
-        await engine.addView(viewElement.id, viewName, viewElement.getBoundingClientRect())
+        await engine.addView(viewElement.id, project, viewName, viewElement.getBoundingClientRect())
         await this.addControls(viewElement)
         this.managedViews.push(viewElement)
       })
     })
   }
 
-  public addManagedView(view: HTMLElement, name: string, id: string = UID()): void {
-    view.setAttribute("view", name)
+  public addManagedView(view: HTMLElement, attributes: {project: string, step: string}): string {
+    const { project, step } = attributes
+    view.setAttribute("view", step)
+    view.setAttribute("project", project)
+    let id = UID()
     if (view.id == null || view.id === "") {
       view.id = id
     } else {
@@ -184,9 +191,10 @@ export class Renderer {
     }
     this.managedViews.push(view)
     this.engine.then(async (engine) => {
-      await engine.addView(id, name, view.getBoundingClientRect())
+      await engine.addView(id, project, step, view.getBoundingClientRect())
       await this.addControls(view)
     })
+    return id
   }
 
   public removeManagedView(view: HTMLElement): void {
@@ -463,21 +471,21 @@ export class Renderer {
     }
   }
 
-  /**
-   * @deprecated will move to engine datamodel
-   */
-  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-    const engine = await this.engine
-    engine.addLayer(view, params)
-  }
+  // /**
+  //  * @deprecated will move to engine datamodel
+  //  */
+  // public async addLayer(view: string, params: AddLayerProps): Promise<void> {
+  //   const engine = await this.engine
+  //   engine.addLayer(view, params)
+  // }
 
-  /**
-   * @deprecated will move to engine datamodel
-   */
-  public async addFile(view: string, buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    const engine = await this.engine
-    engine.addFile(view, Comlink.transfer(buffer, [buffer]), params)
-  }
+  // /**
+  //  * @deprecated will move to engine datamodel
+  //  */
+  // public async addFile(view: string, buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  //   const engine = await this.engine
+  //   engine.addFile(view, Comlink.transfer(buffer, [buffer]), params)
+  // }
 
   public async render(): Promise<void> {
     const engine = await this.engine

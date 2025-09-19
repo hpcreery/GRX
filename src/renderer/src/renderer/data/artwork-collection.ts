@@ -124,8 +124,8 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
   public readonly properties: string[]
   public readonly typeIdentifier: FeatureTypeIdentifiers
   public attributes: AttributesType[] = []
-  public shapeType: (SymbolBufferCollectionType|MacroArtworkCollectionType)[] = []
-  public macros: {macroId: string, shape: T}[] = []
+  // public shapeType: (SymbolBufferCollectionType|MacroArtworkCollectionType)[] = []
+  public macros: ({macroId: string, shape: T} | undefined)[] = []
   public length = 0
 
   constructor(properties: string[], typeIdentifier: FeatureTypeIdentifiers) {
@@ -147,11 +147,11 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     if (shape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
       this.fixSymbolGetter(shape)
       SymbolBufferCollection.create(shape.symbol)
-      this.shapeType.push(SymbolBufferCollection)
+      // this.shapeType.push(SymbolBufferCollection)
     } else {
       this.fixSymbolGetter(shape)
       const artwork = MacroArtworkCollection.create(shape.symbol)
-      this.shapeType.push(MacroArtworkCollection)
+      // this.shapeType.push(MacroArtworkCollection)
       // this.macros.push({artwork, shape})
       this.macros[index] = {macroId: shape.symbol.id, shape}
     }
@@ -176,6 +176,9 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     }
     // Add symbol if it exists
     shape.symbol = SymbolBufferCollection.read(shape.sym_num)
+    if (this.macros[index]) {
+      shape.symbol = this.macros[index].shape.symbol
+    }
     return shape
   }
 
@@ -189,8 +192,12 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     // Update symbol if it changes
     if (shape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
       SymbolBufferCollection.create(shape.symbol)
+      this.macros[index] = undefined
     } else {
-      throw new Error(`Invalid symbol type: ${shape.symbol.type} when updating shape`)
+      // throw new Error(`Invalid symbol type: ${shape.symbol.type} when updating shape`)
+      const artwork = MacroArtworkCollection.create(shape.symbol)
+      this.macros[index] = {macroId: shape.symbol.id, shape}
+
     }
     const shapeData = this.properties.map((key) => shape[key])
     for (let i = 0; i < this.properties.length; i++) {
@@ -209,6 +216,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     }
     // Optionally, you could also remove the attributes for this index
     this.attributes[index] = {}
+    this.macros[index] = undefined
   }
 
   private isGetter(obj, prop): boolean {

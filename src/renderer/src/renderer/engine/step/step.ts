@@ -5,7 +5,7 @@ import { ReglRenderers, TLoadedReglRenderers } from "./layer/collections"
 import * as Shapes from "./layer/shape/shape"
 import * as Comlink from "comlink"
 import plugins from "../plugins"
-import type { Plugin, PluginsDefinition, AddLayerProps } from "../plugins"
+import type { Plugin, AddLayerProps } from "../plugins"
 import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
 import { UID } from "../utils"
@@ -15,6 +15,7 @@ import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
 import { TypedEventTarget } from "typescript-event-target"
+import { DataInterface } from '../../data/interface'
 
 export interface WorldProps {}
 
@@ -54,6 +55,7 @@ export interface WorldContext {
 export interface StepRendererConfig {
   id?: string
   name: string
+  project: string
   viewBox: DOMRect
   // dpr: number
   regl: REGL.Regl
@@ -118,6 +120,7 @@ export interface MessageData {
 export class StepRenderer {
   public id: string = UID()
   public name: string
+  public project: string
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public viewBox: ViewBox = {
@@ -171,15 +174,15 @@ export class StepRenderer {
   // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
-  public parsers: PluginsDefinition = {}
-
   public eventTarget = new TypedEventTarget<EngineEventsMap>()
 
   private utilitiesRenderer: UtilitiesRenderer
 
-  constructor({ viewBox, regl, id, name }: StepRendererConfig) {
+  constructor({ viewBox, regl, id, name, project }: StepRendererConfig) {
     this.id = id || UID()
     this.name = name
+    this.project = project
+
     this.viewBox = viewBox
 
     this.regl = regl
@@ -270,6 +273,8 @@ export class StepRenderer {
     })
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
+
+    this.buildLayers()
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
@@ -396,75 +401,133 @@ export class StepRenderer {
     )
   }
 
-  public async addLayer(params: AddLayerProps): Promise<void> {
-    const layer = new LayerRenderer({
-      ...params,
-      regl: this.regl,
-    })
-    this.layers.push(layer)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  private buildLayers(): void {
+    const layers = DataInterface.read_layers(this.project)
+    this.layers = []
+    for (const layer of layers) {
+      this.addLayer2(layer)
+    }
     this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
-    console.log("Layer added:", layer.name, layer.id)
-  }
-
-  public async addFile(buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    if (params.format == "") {
-      console.error("No format provided")
-      // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
-      return
-    }
-    if (!Object.keys(plugins).includes(params.format)) {
-      console.error("No parser found for format: " + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
-      return
-    }
-
-    const pluginWorker = plugins[params.format].plugin
-    if (pluginWorker) {
-      const tempUID = UID()
-      this.layersQueue.push({ name: params.props.name || "", id: tempUID })
-      const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
-      const addMessageCallback = async (title: string, message: string): Promise<void> => {
-        // await notifications.show({title, message})
-        this.sendMessage({ level: MessageLevel.WARN, title, message })
-      }
-      const instance = new pluginWorker()
-      const parser = Comlink.wrap<Plugin>(instance)
-      try {
-        await parser(Comlink.transfer(buffer, [buffer]), params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
-      } catch (error) {
-        console.error(error)
-        throw error
-      } finally {
-        parser[Comlink.releaseProxy]()
-        instance.terminate()
-        const index = this.layersQueue.findIndex((file) => file.id === tempUID)
-        if (index != -1) {
-          this.layersQueue.splice(index, 1)
+    DataInterface.subscribe_to_matrix(this.project, (event) => {
+      if (event.detail.layer == null) return
+      if (event.detail.step != this.name) return
+      switch (event.detail.action) {
+        case "create": {
+          this.addLayer2(event.detail.layer)
+          break
         }
-        this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
-        this.sendMessage({ level: MessageLevel.INFO, title: "File Loaded", message: "File loaded successfully" })
+        case "delete": {
+          this.deleteLayer2(event.detail.layer)
+          break
+        }
+        case "update": {
+          // !!TODO update layer properties
+          break
+        }
       }
-    } else {
-      console.error("No parser found for format: " + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
-    }
+      this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
+    })
   }
 
-  public getLayers(): LayerInfo[] {
-    return this.layers.map((layer) => {
-      return {
-        name: layer.name,
-        id: layer.id,
-        color: layer.color,
-        units: layer.units,
-        visible: layer.visible,
-        // context: layer.context,
-        // type: layer.type,
-        // format: layer.format,
-        transform: layer.transform,
-      }
+  private addLayer2(layer: string): void {
+    const artwork = DataInterface._read_artwork_ref(this.project, this.name, layer)
+    const layerRenderer = new LayerRenderer({
+      regl: this.regl,
+      name: layer,
+      color: vec3.fromValues(Math.random(), Math.random(), Math.random()),
+      // !!TODO FIX UNITS
+      units: 'mm',
+      visible: true,
+      image: artwork,
     })
+    this.layers.push(layerRenderer)
+  }
+
+  private deleteLayer2(layer: string): void {
+    const index = this.layers.findIndex((l) => l.name === layer)
+    if (index === -1) return
+    this.layers.splice(index, 1)
+  }
+
+
+  /**
+   * @deprecated use data api instead
+   */
+  public async addLayer(params: AddLayerProps): Promise<void> {
+    // const layer = new LayerRenderer({
+    //   ...params,
+    //   regl: this.regl,
+    // })
+    // this.layers.push(layer)
+    // this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    // this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
+    // console.log("Layer added:", layer.name, layer.id)
+  }
+
+  /**
+   * @deprecated use data api instead
+   */
+  public async addFile(buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+    // if (params.format == "") {
+    //   console.error("No format provided")
+    //   // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
+    //   return
+    // }
+    // if (!Object.keys(plugins).includes(params.format)) {
+    //   console.error("No parser found for format: " + params.format)
+    //   this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
+    //   return
+    // }
+
+    // const pluginWorker = plugins[params.format].plugin
+    // if (pluginWorker) {
+    //   const tempUID = UID()
+    //   this.layersQueue.push({ name: params.props.name || "", id: tempUID })
+    //   const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
+    //   const addMessageCallback = async (title: string, message: string): Promise<void> => {
+    //     // await notifications.show({title, message})
+    //     this.sendMessage({ level: MessageLevel.WARN, title, message })
+    //   }
+    //   const instance = new pluginWorker()
+    //   const parser = Comlink.wrap<Plugin>(instance)
+    //   try {
+    //     await parser(Comlink.transfer(buffer, [buffer]), params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
+    //   } catch (error) {
+    //     console.error(error)
+    //     throw error
+    //   } finally {
+    //     parser[Comlink.releaseProxy]()
+    //     instance.terminate()
+    //     const index = this.layersQueue.findIndex((file) => file.id === tempUID)
+    //     if (index != -1) {
+    //       this.layersQueue.splice(index, 1)
+    //     }
+    //     this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
+    //     this.sendMessage({ level: MessageLevel.INFO, title: "File Loaded", message: "File loaded successfully" })
+    //   }
+    // } else {
+    //   console.error("No parser found for format: " + params.format)
+    //   this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
+    // }
+  }
+
+  /**
+   * @deprecated use data api instead
+   */
+  public getLayers(): void | LayerInfo[] {
+    // return this.layers.map((layer) => {
+    //   return {
+    //     name: layer.name,
+    //     id: layer.id,
+    //     color: layer.color,
+    //     units: layer.units,
+    //     visible: layer.visible,
+    //     // context: layer.context,
+    //     // type: layer.type,
+    //     // format: layer.format,
+    //     transform: layer.transform,
+    //   }
+    // })
   }
 
   public getTransform(): Partial<RenderTransform> {
@@ -508,18 +571,36 @@ export class StepRenderer {
     this.layers.splice(to < 0 ? this.layers.length + to : to, 0, this.layers.splice(from, 1)[0])
   }
 
-  /**
-   * @deprecated use data api instead
-   */
-  public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
-    const layer = this.layers.find((layer) => layer.id === id)
+  // /**
+  //  * @deprecated use data api instead
+  //  */
+  // public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+  //   const layer = this.layers.find((layer) => layer.id === id)
+  //   if (!layer) return
+  //   Object.assign(layer, props)
+  //   this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  // }
+
+  public setLayerVisibility(name: string, visible: boolean): void {
+    console.log("Set layer visibility", name, visible)
+    const layer = this.layers.find((layer) => layer.name === name)
     if (!layer) return
-    Object.assign(layer, props)
+    layer.visible = visible
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    console.log(layer.visible)
   }
 
-  public setLayerTransform(id: string, transform: Partial<Transform>): void {
-    const layer = this.layers.find((layer) => layer.id === id)
+  public setLayerColor(name: string, color: vec3): void {
+    console.log("Set layer color", name, color)
+    const layer = this.layers.find((layer) => layer.name === name)
+    if (!layer) return
+    layer.color = color
+    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    console.log(layer.color)
+  }
+
+  public setLayerTransform(name: string, transform: Partial<Transform>): void {
+    const layer = this.layers.find((layer) => layer.name === name)
     if (!layer) return
     Object.assign(layer.transform, transform)
     this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))

@@ -1,4 +1,4 @@
-import * as Comlink from "comlink"
+// import * as Comlink from "comlink"
 import { ArtworkBufferCollection } from './artwork-collection'
 
 

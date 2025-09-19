@@ -2,12 +2,17 @@ import React, { useMemo } from "react"
 import "../App.css"
 import * as Symbols from "./engine/step/layer/shape/symbol/symbol"
 import * as Shapes from "./engine/step/layer/shape/shape"
-import { Renderer } from "."
+import { Renderer, DataInterface } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
 import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
 import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 // import * as BufferCollection from './engine/buffer-collection'
+
+const project = "DEMO"
+const step1 = "box1"
+const step2 = "box2"
+const layer = "layer1"
 
 // import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
 // import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
@@ -23,7 +28,7 @@ import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp
 import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
-import gtl_in from '@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer'
+import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
 import { LayerRendererProps } from "./engine/step/layer/layer"
@@ -1192,7 +1197,7 @@ function DemoApp(): JSX.Element {
   const [renderer, setEngine] = React.useState<Renderer>()
   const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
-  const [layers, setLayers] = React.useState<Omit<LayerRendererProps, "transform" | "regl" | "image" | "ctx">[]>([])
+  const [layers, setLayers] = React.useState<string[]>([])
 
   React.useEffect(() => {
     if (renderer) return
@@ -1211,8 +1216,31 @@ function DemoApp(): JSX.Element {
 
     console.log(box1Ref.current)
 
-    Engine.addManagedView(box2Ref.current, "box2", "box2")
-    Engine.addManagedView(box1Ref.current, "box1", "box1")
+    DataInterface.create_project(project)
+    DataInterface.create_step(project, step1)
+    DataInterface.create_step(project, step2)
+    DataInterface.create_layer(project, layer)
+
+    DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+      layer,
+      step: step1,
+      project,
+    })
+
+    DataInterface._import_file(gtl_in, "RS-274X", {
+      layer,
+      step: step2,
+      project,
+    })
+
+    Engine.addManagedView(box2Ref.current, {
+      project,
+      step: step2,
+    })
+    Engine.addManagedView(box1Ref.current, {
+      project,
+      step: step1,
+    })
 
     // Engine.addLayer({
     //   name: 'origin',
@@ -1442,14 +1470,14 @@ function DemoApp(): JSX.Element {
     //   visible: false
     // })
 
-    Engine.addFile("box1", nested_aperture_macro, {
-      format: "rs274x",
-      props: {
-        name: "nested_aperture_macro",
-        units: "inch",
-        visible: true,
-      },
-    })
+    // Engine.addFile("box1", nested_aperture_macro, {
+    //   format: "rs274x",
+    //   props: {
+    //     name: "nested_aperture_macro",
+    //     units: "inch",
+    //     visible: true,
+    //   },
+    // })
 
     // Engine.addFile({
     //   file: multi_polarity_over_self,
@@ -1460,14 +1488,14 @@ function DemoApp(): JSX.Element {
     //   }
     // })
 
-    Engine.addFile("box2", gtl_in, {
-      format: 'rs274x',
-      props: {
-        name: "gtl_in",
-        units: "inch",
-        visible: true,
-      },
-    })
+    // Engine.addFile("box2", gtl_in, {
+    //   format: "rs274x",
+    //   props: {
+    //     name: "gtl_in",
+    //     units: "inch",
+    //     visible: true,
+    //   },
+    // })
 
     // Engine.addLayer("box1", {
     //   name: "surfaces",
@@ -2186,7 +2214,8 @@ function DemoApp(): JSX.Element {
           box2
         </div>
         <div
-          {...{ view: "box2" }}
+          id="box2"
+          {...{ view: "box2", step: step2, project: project }}
           ref={box2Ref}
           style={{
             width: "300px",
@@ -2218,8 +2247,8 @@ function DemoApp(): JSX.Element {
         </div>
         <div
           ref={box1Ref}
-          // view="box1"
-          // {...{ view: "box1" }}
+          id="box1"
+          {...{ view: "box1", step: step1, project: project }}
           style={{
             width: "300px",
             height: "300px",
@@ -2239,11 +2268,10 @@ function DemoApp(): JSX.Element {
           <MouseCoordinates engine={renderer} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
+              const layers = await DataInterface.read_layers(project)
+              setLayers(layers)
               const engine = await renderer.engine
-              engine.getLayers("box1").then((layers) => {
-                setLayers(layers)
-                layers.map((l) => engine.setLayerProps("box1", l.id, { color: [Math.random(), Math.random(), Math.random()] }))
-              })
+              layers.map(l => engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
             }}
           >
             Randomize Colors
@@ -2264,27 +2292,21 @@ function DemoApp(): JSX.Element {
           Outline Mode
           <Switch
             defaultChecked={renderer.settings.OUTLINE_MODE}
-            onChange={(e): void => {
+            onChange={async (e): Promise<void> => {
               renderer.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
-              renderer.engine.then((engine) =>
-                engine.getLayers("box1").then((layers) => {
-                  setLayers(layers)
-                }),
-              )
+              const layers = await DataInterface.read_layers(project)
+              setLayers(layers)
             }}
           />
           Skeleton Mode
           <Switch
             defaultChecked={renderer.settings.SKELETON_MODE}
-            onChange={(e): void => {
+            onChange={async (e): Promise<void> => {
               renderer.settings.SKELETON_MODE = e.target.checked
               setSkeletonMode(e.target.checked)
-              renderer.engine.then((engine) =>
-                engine.getLayers("box1").then((layers) => {
-                  setLayers(layers)
-                }),
-              )
+              const layers = await DataInterface.read_layers(project)
+              setLayers(layers)
             }}
           />
           {/* Grid Toggle
@@ -2319,12 +2341,12 @@ function DemoApp(): JSX.Element {
           {layers.map((layer, i) => {
             return (
               <div key={i}>
-                {layer.name}
+                {layer}
                 <Switch
-                  defaultChecked={layer.visible}
+                  // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const engine = await renderer.engine
-                    engine.setLayerProps("box1", layer.id || layer.name, { visible: e.target.checked })
+                    engine.setLayerVisibility("box1", layer, e.target.checked)
                   }}
                 />
               </div>

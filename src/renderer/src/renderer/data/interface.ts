@@ -1,8 +1,8 @@
 import * as Shapes from "../engine/step/layer/shape/shape"
 import { Layer, Project, PROJECTS, Step } from "./project"
 import { ArtworkBufferCollection } from "./artwork-collection"
-import importPlugins from "./import_plugins"
-import type { ImportPlugin } from "./import_plugins"
+import importFormats from "./import_plugins"
+import type { importFormatName, ImportPluginSignature, ParametersType } from "./import_plugins"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
 
@@ -69,15 +69,37 @@ export interface LayerEventDetail {
  *   - All methods are documented with JSDoc comments.
  *   - All methods are named using snake_case.
  *   - Methods prefixed with _ are considered private and should not be used outside this class.
- *       - This is because these methods either return return or consume references to abstract data structures. (non-primitives)
- *   - All methods are designed to be used in a command-line interface context except methods explicitly marked as private (prefixed with _).
- *   - All methods return void or primitive types (string, number, boolean) except private methods.
- *   - All method parameters are primitive types (string, number, boolean) except private methods.
+ *       - This is because these methods either return return or consume references to abstract data structures. (non-primitives or non JSON serializable data)
+ *   - All public methods are designed to be used in a command-line interface context.
+ *   - All public methods return void or primitive types (string, number, boolean) or JSON serilizable types.
+ *   - All public method parameters are primitive types (string, number, boolean) or JSON serilizable types.
  *   - Methods should not have side effects outside of the project management context.
  *   - Methods, when applicable, should be named using verbs that clearly indicate their action. ie CRUD operations should be named create_*, read_*, update_*, delete_*.
  */
 export const DataInterface = {
   eventTarget: new TypedEventTarget<DataEventsMap>(),
+
+  subscribe_to_layer(project: string, step: string, layer: string, callback: (event: CustomEvent<LayerEventDetail>) => void): void {
+    this.eventTarget.addEventListener("LAYER_CHANGED", (event) => {
+      if (event.detail.project === project && event.detail.step === step && event.detail.layer === layer) {
+        callback(event)
+      }
+    })
+  },
+
+  subscribe_to_matrix(project: string, callback: (event: CustomEvent<MatrixEventDetail>) => void): void {
+    this.eventTarget.addEventListener("MATRIX_CHANGED", (event) => {
+      if (event.detail.project === project) {
+        callback(event)
+      }
+    })
+  },
+
+  subscribe_to_projects(callback: (event: CustomEvent<ProjectEventDetail>) => void): void {
+    this.eventTarget.addEventListener("PROJECTS_CHANGED", (event) => {
+      callback(event)
+    })
+  },
 
   /**
    * Creates a new project with the given name.
@@ -90,12 +112,15 @@ export const DataInterface = {
       throw new CommandError(`Project with name ${project_name} already exists`, ErrorCode.INVALID_INPUT)
     }
     PROJECTS.set(project_name, new Project(project_name))
-    this.eventTarget.dispatchTypedEvent("PROJECTS_CHANGED", new CustomEvent("PROJECTS_CHANGED", {
-      detail: {
-        project: project_name,
-        action: "create",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "PROJECTS_CHANGED",
+      new CustomEvent("PROJECTS_CHANGED", {
+        detail: {
+          project: project_name,
+          action: "create",
+        },
+      }),
+    )
   },
 
   /**
@@ -114,10 +139,10 @@ export const DataInterface = {
 
   /**
    * Lists all existing project names.
-   * @returns An array of project names. In JSON string format.
+   * @returns An array of project names. In JSON format.
    */
-  read_projects(): string {
-    return JSON.stringify(Array.from(PROJECTS.keys()))
+  read_projects(): string[] {
+    return Array.from(PROJECTS.keys())
   },
 
   /**
@@ -138,12 +163,15 @@ export const DataInterface = {
     PROJECTS.delete(old_name)
     project.name = new_name
     PROJECTS.set(new_name, project)
-    this.eventTarget.dispatchTypedEvent("PROJECTS_CHANGED", new CustomEvent("PROJECTS_CHANGED", {
-      detail: {
-        project: new_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "PROJECTS_CHANGED",
+      new CustomEvent("PROJECTS_CHANGED", {
+        detail: {
+          project: new_name,
+          action: "update",
+        },
+      }),
+    )
   },
 
   /**
@@ -165,14 +193,32 @@ export const DataInterface = {
     project.matrix.steps.forEach((step) => {
       step.layers.push(new Layer(layer_name))
     })
-    this.eventTarget.dispatchTypedEvent("MATRIX_CHANGED", new CustomEvent("MATRIX_CHANGED", {
-      detail: {
-        project: project_name,
-        step: null,
-        layer: layer_name,
-        action: "create",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "MATRIX_CHANGED",
+      new CustomEvent("MATRIX_CHANGED", {
+        detail: {
+          project: project_name,
+          step: null,
+          layer: layer_name,
+          action: "create",
+        },
+      }),
+    )
+  },
+
+  /**
+   * Lists all layer names in the specified step of the specified project.
+   * @param project_name Name of the project containing the step.
+   * @param step_name Name of the step whose layers are to be listed.
+   * @returns An array of layer names. In JSON format.
+   */
+  read_layers(project_name: string): string[] {
+    const project = this._read_project_object(project_name)
+    if (project.matrix.steps.length === 0) {
+      throw new CommandError("No steps available. Cannot list layers.", ErrorCode.STEP_NOT_FOUND)
+    }
+    // Just return layers from the first step, assuming all steps have the same layers
+    return project.matrix.steps[0].layers.map((layer) => layer.name)
   },
 
   /**
@@ -231,14 +277,17 @@ export const DataInterface = {
       }
       step.layers.splice(index, 1)
     })
-    this.eventTarget.dispatchTypedEvent("MATRIX_CHANGED", new CustomEvent("MATRIX_CHANGED", {
-      detail: {
-        project: project_name,
-        step: null,
-        layer: layer_name,
-        action: "delete",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "MATRIX_CHANGED",
+      new CustomEvent("MATRIX_CHANGED", {
+        detail: {
+          project: project_name,
+          step: null,
+          layer: layer_name,
+          action: "delete",
+        },
+      }),
+    )
   },
 
   /**
@@ -255,14 +304,17 @@ export const DataInterface = {
       throw new CommandError(`Step with name ${step_name} already exists`, ErrorCode.INVALID_INPUT)
     }
     project.matrix.steps.push(new Step(step_name))
-    this.eventTarget.dispatchTypedEvent("MATRIX_CHANGED", new CustomEvent("MATRIX_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: null,
-        action: "create",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "MATRIX_CHANGED",
+      new CustomEvent("MATRIX_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: null,
+          action: "create",
+        },
+      }),
+    )
   },
 
   /**
@@ -276,14 +328,17 @@ export const DataInterface = {
     const step = this._read_step_object(project_name, step_name) // to throw error if not found
     const index = project.matrix.steps.indexOf(step)
     project.matrix.steps.splice(index, 1)
-    this.eventTarget.dispatchTypedEvent("MATRIX_CHANGED", new CustomEvent("MATRIX_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: null,
-        action: "delete",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "MATRIX_CHANGED",
+      new CustomEvent("MATRIX_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: null,
+          action: "delete",
+        },
+      }),
+    )
   },
 
   /**
@@ -305,7 +360,7 @@ export const DataInterface = {
    * @param layer_name Name of the layer whose artwork data is to be retrieved.
    * @returns - An array of Shapes representing the artwork data.
    */
-  _read_artwork_json(project_name: string, step_name: string, layer_name: string): Shapes.Shape[] {
+  read_artwork(project_name: string, step_name: string, layer_name: string): Shapes.Shape[] {
     const artwork = this._read_artwork_ref(project_name, step_name, layer_name)
     return artwork.toJSON()
   },
@@ -321,14 +376,17 @@ export const DataInterface = {
   _update_artwork_ref(project_name: string, step_name: string, layer_name: string, artwork: ArtworkBufferCollection): void {
     const layer = this._read_layer_object(project_name, step_name, layer_name)
     layer.artwork = artwork
-    this.eventTarget.dispatchTypedEvent("LAYER_CHANGED", new CustomEvent("LAYER_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: layer_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "LAYER_CHANGED",
+      new CustomEvent("LAYER_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: layer_name,
+          action: "update",
+        },
+      }),
+    )
   },
 
   /**
@@ -342,14 +400,17 @@ export const DataInterface = {
   _update_artwork_json(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
     const artwork = new ArtworkBufferCollection(artworkData)
     this._update_artwork_ref(project_name, step_name, layer_name, artwork)
-    this.eventTarget.dispatchTypedEvent("LAYER_CHANGED", new CustomEvent("LAYER_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: layer_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "LAYER_CHANGED",
+      new CustomEvent("LAYER_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: layer_name,
+          action: "update",
+        },
+      }),
+    )
   },
 
   /**
@@ -360,7 +421,7 @@ export const DataInterface = {
    * @returns - An array of Shapes representing the artwork data.
    */
   _get_artwork(project_name: string, step_name: string, layer_name: string): Shapes.Shape[] {
-    return this._read_artwork_json(project_name, step_name, layer_name)
+    return this.read_artwork(project_name, step_name, layer_name)
   },
 
   // /**
@@ -386,14 +447,17 @@ export const DataInterface = {
   _add_feature(project_name: string, step_name: string, layer_name: string, shape: Shapes.Shape): number {
     const artwork = this._read_artwork_ref(project_name, step_name, layer_name)
     const return_value = artwork.create(shape)
-    this.eventTarget.dispatchTypedEvent("LAYER_CHANGED", new CustomEvent("LAYER_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: layer_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "LAYER_CHANGED",
+      new CustomEvent("LAYER_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: layer_name,
+          action: "update",
+        },
+      }),
+    )
     return return_value
   },
 
@@ -422,14 +486,17 @@ export const DataInterface = {
   _update_feature(project_name: string, step_name: string, layer_name: string, index: number, shape: Shapes.Shape): void {
     const artwork = this._read_artwork_ref(project_name, step_name, layer_name)
     artwork.update(index, shape)
-    this.eventTarget.dispatchTypedEvent("LAYER_CHANGED", new CustomEvent("LAYER_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: layer_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "LAYER_CHANGED",
+      new CustomEvent("LAYER_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: layer_name,
+          action: "update",
+        },
+      }),
+    )
   },
 
   /**
@@ -443,47 +510,56 @@ export const DataInterface = {
   delete_feature(project_name: string, step_name: string, layer_name: string, index: number): void {
     const artwork = this._read_artwork_ref(project_name, step_name, layer_name)
     artwork.delete(index)
-    this.eventTarget.dispatchTypedEvent("LAYER_CHANGED", new CustomEvent("LAYER_CHANGED", {
-      detail: {
-        project: project_name,
-        step: step_name,
-        layer: layer_name,
-        action: "update",
-      },
-    }))
+    this.eventTarget.dispatchTypedEvent(
+      "LAYER_CHANGED",
+      new CustomEvent("LAYER_CHANGED", {
+        detail: {
+          project: project_name,
+          step: step_name,
+          layer: layer_name,
+          action: "update",
+        },
+      }),
+    )
   },
 
-  /**
-   * Imports a file using the appropriate plugin based on the specified format.
-   * The plugin is expected to call back into this DataInterface to add layers and features as needed.
-   * @param buffer The file data as an ArrayBuffer.
-   * @param format The format of the file (e.g., "rs274x", "gdsii", "dxf", "nc").
-   * @param params Additional parameters to pass to the plugin.
-   * @returns void
-   */
-  async _import_file(buffer: ArrayBuffer, format: string, params: object): Promise<void> {
-    if (format == "") {
-      throw new CommandError("Format must be specified", ErrorCode.INVALID_INPUT)
-    }
-    if (!Object.keys(importPlugins).includes(format)) {
-      throw new CommandError("No parser found for format: " + format, ErrorCode.INVALID_INPUT)
-    }
-
-    const pluginWorker = importPlugins[format].plugin
-    if (pluginWorker) {
-      const instance = new pluginWorker()
-      const parser = Comlink.wrap<ImportPlugin>(instance)
-      try {
-        await parser(Comlink.transfer(buffer, [buffer]), params, Comlink.proxy(DataInterface))
-      } catch (error) {
-        console.error(error)
-        throw new CommandError("Error parsing file: " + (error as Error).message, ErrorCode.INVALID_INPUT)
-      } finally {
-        parser[Comlink.releaseProxy]()
-        instance.terminate()
-      }
-    } else {
-      throw new CommandError("No parser found for format: " + format, ErrorCode.INVALID_INPUT)
-    }
-  },
+  _import_file,
 }
+
+/**
+ * Imports a file using the appropriate plugin based on the specified format.
+ * The plugin is expected to call back into this DataInterface to add layers and features as needed.
+ * @param buffer The file data as an ArrayBuffer.
+ * @param format The format of the file (e.g., "rs274x", "gdsii", "dxf", "nc").
+ * @param params Additional parameters to pass to the plugin.
+ * @returns void
+ */
+async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer, format: Format, params: ParametersType<Format>): Promise<void> {
+  // @ts-expect-error TS2345
+  if (format == "") {
+    throw new CommandError("Format must be specified", ErrorCode.INVALID_INPUT)
+  }
+  if (!Object.keys(importFormats).includes(format)) {
+    throw new CommandError("No parser found for format: " + format, ErrorCode.INVALID_INPUT)
+  }
+
+  const pluginWorker = importFormats[format].plugin
+  if (pluginWorker) {
+    const instance = new pluginWorker()
+    const parser = Comlink.wrap<ImportPluginSignature>(instance)
+    try {
+      await parser(Comlink.transfer(buffer, [buffer]), params, Comlink.proxy(DataInterface))
+    } catch (error) {
+      console.error(error)
+      throw new CommandError("Error parsing file: " + (error as Error).message, ErrorCode.INVALID_INPUT)
+    } finally {
+      parser[Comlink.releaseProxy]()
+      instance.terminate()
+    }
+  } else {
+    throw new CommandError("No parser found for format: " + format, ErrorCode.INVALID_INPUT)
+  }
+}
+
+// _import_file(new ArrayBuffer(), 'RS-274X', {})
+// _import_file(new ArrayBuffer(), 'NC', {})

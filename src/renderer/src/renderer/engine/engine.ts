@@ -180,11 +180,12 @@ export class Engine {
 
   public renderDispatch = (): void => this.render()
 
-  public addView(id: string, name: string, viewBox: DOMRect): void {
+  public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
     const newStep = new StepRenderer({
       regl: this.regl,
       viewBox,
-      name,
+      project,
+      name: step,
       id,
     })
     newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
@@ -270,29 +271,29 @@ export class Engine {
     return this.views.get(view)!.getWorldPosition(x, y)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.addLayer(params)
-  }
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public async addLayer(view: string, params: AddLayerProps): Promise<void> {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   // return this.views.get(view)!.addLayer(params)
+  // }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public async addFile(view: string, buffer: ArrayBuffer, params: {format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.addFile(buffer, params)
-  }
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public async addFile(view: string, buffer: ArrayBuffer, params: {format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   // return this.views.get(view)!.addFile(buffer, params)
+  // }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public getLayers(view: string): LayerInfo[] {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.getLayers()
-  }
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public getLayers(view: string): LayerInfo[] | void {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   // return this.views.get(view)!.getLayers()
+  // }
 
   public getTransform(view: string): Partial<RenderTransform> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
@@ -304,33 +305,43 @@ export class Engine {
     this.views.get(view)!.setTransform(transform)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public removeLayer(view: string, id: string): void {
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public removeLayer(view: string, id: string): void {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   this.views.get(view)!.removeLayer(id)
+  // }
+
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public moveLayer(view: string, from: number, to: number): void {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   this.views.get(view)!.moveLayer(from, to)
+  // }
+
+  // /**
+  //  * @deprecated Use data api instead.
+  //  */
+  // public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+  //   this.views.get(view)!.setLayerProps(id, props)
+  // }
+
+  public setLayerVisibility(view: string, layer: string, visible: boolean): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.removeLayer(id)
+    this.views.get(view)!.setLayerVisibility(layer, visible)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public moveLayer(view: string, from: number, to: number): void {
+  public setLayerColor(view: string, layer: string, color: vec3): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.moveLayer(from, to)
+    this.views.get(view)!.setLayerColor(layer, color)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+  public setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.setLayerProps(id, props)
-  }
-
-  public setLayerTransform(view: string, id: string, transform: Partial<Transform>): void {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.setLayerTransform(id, transform)
+    this.views.get(view)!.setLayerTransform(layer, transform)
   }
 
   public addEventCallback(view: string, event: TEngineEvents, listener: (data: MessageData | null) => void): void {
