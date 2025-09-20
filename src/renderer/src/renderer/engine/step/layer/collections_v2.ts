@@ -175,9 +175,12 @@ interface TShaderAttachment {
   arcs: ArcAttachments
   surfaces: SurfaceAttachments[]
   surfacesWithHoles: SurfaceWithHolesAttachments[]
-  datumPoints: PadAttachments
+  // datumPoints: PadAttachments
+  datumPoints: DatumAttachments
   datumLines: LineAttachments
   datumArcs: ArcAttachments
+  datumTexts: DatumTextAttachments
+  // stepAndRepeats: StepAndRepeatRenderer[]
 }
 
 const { SYMBOL_PARAMETERS } = Symbols
@@ -206,21 +209,13 @@ export class ShapesShaderCollection {
   public artworkBufferCollection: ArtworkBufferCollection
 
   public shaderAttachment: TShaderAttachment
-  // public symbolsCollection: {
-  //   texture: REGL.Texture2D
-  // }
-  // public macroCollection: {
-  //     artwork: ShapesShaderCollection
-  //     shape: Shapes.Pad
-  //   }[]
+  public stepAndRepeats: StepAndRepeatRenderer[] = []
 
-  constructor(props: { regl: REGL.Regl, artwork: ArtworkBufferCollection }) {
+
+  constructor(props: { regl: REGL.Regl; artwork: ArtworkBufferCollection }) {
     const { regl, artwork } = props
     this.regl = regl
     this.artworkBufferCollection = artwork
-    // this.symbolsCollection = {
-    //   texture: regl.texture(),
-    // }
 
     this.shaderAttachment = {
       pads: {
@@ -236,7 +231,7 @@ export class ShapesShaderCollection {
         length: 0,
       },
       datumPoints: {
-        buffer: regl.buffer(0),
+        positions: regl.buffer(0),
         length: 0,
       },
       datumLines: {
@@ -247,44 +242,36 @@ export class ShapesShaderCollection {
         buffer: regl.buffer(0),
         length: 0,
       },
+      datumTexts: {
+        positions: regl.buffer(0),
+        texcoords: regl.buffer(0),
+        charPosition: regl.buffer(0),
+        length: 0,
+      },
       surfaces: [],
       surfacesWithHoles: [],
     }
-
-    // this.macroCollection = []
 
     this.refresh()
   }
 
   public refresh(): this {
-    // console.log("Refreshing ShapesShaderCollection with image:", image.length, "records")
-    // image.map((record) => {
-    //   try {
-    //     this.artworkBufferCollection.create(record)
-    //   } catch (e) {
-    //     console.error("Error creating artwork buffer collection for record:", record, e)
-    //     // console.error("error")
-    //   }
-    // })
-    // this.artworkBufferCollection = new ArtworkBufferCollection(image)
-    // this.macroCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].macros.map(record => {
-    //   return {
-    //     artwork: new ShapesShaderCollection({ regl: this.regl, artwork: record.artwork }),
-    //     shape: record.shape
-    //   }
-    // })
-    this.shaderAttachment.pads.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].view)
+    this.shaderAttachment.pads.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].view)
     this.shaderAttachment.pads.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].length
-    this.shaderAttachment.lines.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.LINE].view)
+    this.shaderAttachment.lines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.LINE].view)
     this.shaderAttachment.lines.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.LINE].length
-    this.shaderAttachment.arcs.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.ARC].view)
+    this.shaderAttachment.arcs.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.ARC].view)
     this.shaderAttachment.arcs.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.ARC].length
-    this.shaderAttachment.datumPoints.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_POINT].view)
+    this.shaderAttachment.datumPoints.positions(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_POINT].positionView)
     this.shaderAttachment.datumPoints.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_POINT].length
-    this.shaderAttachment.datumLines.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_LINE].view)
+    this.shaderAttachment.datumLines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_LINE].view)
     this.shaderAttachment.datumLines.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_LINE].length
-    this.shaderAttachment.datumArcs.buffer = this.regl.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_ARC].view)
+    this.shaderAttachment.datumArcs.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_ARC].view)
     this.shaderAttachment.datumArcs.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_ARC].length
+    this.shaderAttachment.datumTexts.positions(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].positionView)
+    this.shaderAttachment.datumTexts.texcoords(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].texcoordView)
+    this.shaderAttachment.datumTexts.charPosition(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].charPositionView)
+    this.shaderAttachment.datumTexts.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].length
     const surfaceCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE]
     const [width, height] = surfaceCollection.verticesDimensions
     if (width * height != 0) {
@@ -317,18 +304,33 @@ export class ShapesShaderCollection {
       ]
     }
 
-
+    this.stepAndRepeats = []
+    this.artworkBufferCollection.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT].stepAndRepeats.forEach((sr) => {
+      if (sr === null) return
+      this.stepAndRepeats.push(new StepAndRepeatRenderer({
+        regl: this.regl,
+        image: sr.artwork,
+        repeats: sr.repeats,
+        index: sr.index,
+      }))
+    })
 
     return this
   }
 
   public destroy(): this {
     this.shaderAttachment.pads.buffer.destroy()
+    this.shaderAttachment.pads.length = 0
     this.shaderAttachment.lines.buffer.destroy()
+    this.shaderAttachment.lines.length = 0
     this.shaderAttachment.arcs.buffer.destroy()
-    this.shaderAttachment.datumPoints.buffer.destroy()
+    this.shaderAttachment.arcs.length = 0
+    this.shaderAttachment.datumPoints.positions.destroy()
+    this.shaderAttachment.datumPoints.length = 0
     this.shaderAttachment.datumLines.buffer.destroy()
+    this.shaderAttachment.datumLines.length = 0
     this.shaderAttachment.datumArcs.buffer.destroy()
+    this.shaderAttachment.datumArcs.length = 0
     this.shaderAttachment.surfaces.map((surface) => {
       surface.vertices.destroy()
       surface.qtyContours.destroy()
@@ -341,11 +343,8 @@ export class ShapesShaderCollection {
       surface.surfaceIndexBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
     })
+    this.shaderAttachment.surfaces.length = 0
     this.artworkBufferCollection = new ArtworkBufferCollection([])
-    // this.macroCollection.map((macro) => {
-    //   macro.artwork.destroy()
-    // })
-    // this.macroCollection = []
     return this
   }
 }
@@ -353,7 +352,6 @@ export class ShapesShaderCollection {
 export class SymbolShaderCollection {
   public static texture: REGL.Texture2D
   public static regl: REGL.Regl
-
 
   constructor(props: { regl: REGL.Regl }) {
     const { regl } = props
@@ -415,13 +413,13 @@ export class MacroShaderCollection {
     })
     MacroShaderCollection.macros.clear()
     MacroArtworkCollection.macros.forEach((artwork, id) => {
-      console.log('artwork', id, artwork)
+      console.log("artwork", id, artwork)
       const macroRenderer = new MacroRenderer({
         regl: MacroShaderCollection.regl,
         image: artwork,
       })
       MacroShaderCollection.macros.set(id, macroRenderer)
-      console.log('done', id)
+      console.log("done", id)
       console.log(MacroShaderCollection.macros.size)
     })
     console.log(MacroShaderCollection.macros.size)
@@ -429,58 +427,58 @@ export class MacroShaderCollection {
   }
 }
 
-export class DatumTextShaderCollection {
-  private regl: REGL.Regl
+// export class DatumTextShaderCollection {
+//   private regl: REGL.Regl
 
-  public attachment: DatumTextAttachments
-  public texts: Shapes.DatumText[] = []
+//   public attachment: DatumTextAttachments
+//   public texts: Shapes.DatumText[] = []
 
-  constructor(props: { regl: REGL.Regl }) {
-    const { regl } = props
-    this.regl = regl
-    this.attachment = {
-      positions: this.regl.buffer(0),
-      texcoords: this.regl.buffer(0),
-      charPosition: this.regl.buffer(0),
-      length: 0,
-    }
-  }
+//   constructor(props: { regl: REGL.Regl }) {
+//     const { regl } = props
+//     this.regl = regl
+//     this.attachment = {
+//       positions: this.regl.buffer(0),
+//       texcoords: this.regl.buffer(0),
+//       charPosition: this.regl.buffer(0),
+//       length: 0,
+//     }
+//   }
 
-  refresh(image: Shapes.Shape[]): this {
-    const positions: number[] = []
-    const texcoords: number[] = []
-    const charPosition: vec2[] = []
-    image.map((record) => {
-      if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
-      this.texts.push(record)
-      const string = record.text
-      const x = record.x
-      const y = record.y
-      let row = 0
-      let col = 0
-      for (let i = 0; i < string.length; ++i) {
-        const letter = string[i]
-        const glyphInfo = cozetteFontInfo.characterLocation[letter]
-        if (glyphInfo !== undefined) {
-          positions.push(x, y)
-          texcoords.push(glyphInfo.x, glyphInfo.y)
-          charPosition.push([col, row])
-        }
-        col++
-        if (letter === "\n") {
-          row--
-          col = 0
-        }
-      }
-    })
+//   refresh(image: Shapes.Shape[]): this {
+//     const positions: number[] = []
+//     const texcoords: number[] = []
+//     const charPosition: vec2[] = []
+//     image.map((record) => {
+//       if (record.type !== FeatureTypeIdentifier.DATUM_TEXT) return
+//       this.texts.push(record)
+//       const string = record.text
+//       const x = record.x
+//       const y = record.y
+//       let row = 0
+//       let col = 0
+//       for (let i = 0; i < string.length; ++i) {
+//         const letter = string[i]
+//         const glyphInfo = cozetteFontInfo.characterLocation[letter]
+//         if (glyphInfo !== undefined) {
+//           positions.push(x, y)
+//           texcoords.push(glyphInfo.x, glyphInfo.y)
+//           charPosition.push([col, row])
+//         }
+//         col++
+//         if (letter === "\n") {
+//           row--
+//           col = 0
+//         }
+//       }
+//     })
 
-    this.attachment.positions(positions)
-    this.attachment.texcoords(texcoords)
-    this.attachment.charPosition(charPosition)
-    this.attachment.length = positions.length / 2
-    return this
-  }
-}
+//     this.attachment.positions(positions)
+//     this.attachment.texcoords(texcoords)
+//     this.attachment.charPosition(charPosition)
+//     this.attachment.length = positions.length / 2
+//     return this
+//   }
+// }
 
 // export class DatumShaderCollection {
 //   private regl: REGL.Regl

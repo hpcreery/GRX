@@ -3,7 +3,7 @@ import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "./shape/shape"
 import * as Symbols from "./shape/symbol/symbol"
 import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../../types"
-import ShapeTransform from "../../transform"
+import ShapeTransform, { Transform } from "../../transform"
 
 import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
 
@@ -95,7 +95,7 @@ export class ShapeRenderer {
     return this.artwork.length
   }
 
-  protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
+  protected artworkConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected drawCollections: TLoadedReglRenderers
@@ -154,7 +154,7 @@ export class ShapeRenderer {
     //   image: [],
     // })
 
-    this.commonConfig = this.regl<
+    this.artworkConfig = this.regl<
       CommonUniforms,
       CommonAttributes,
       Record<string, never>,
@@ -264,9 +264,9 @@ export class ShapeRenderer {
   }
 
   private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    // this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-    //   stepAndRepeat.render(context)
-    // })
+    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
+      stepAndRepeat.render(context)
+    })
     return this
   }
 
@@ -369,7 +369,7 @@ export class ShapeRenderer {
         depth: 0,
       })
       this.queryFrameBuffer.use(() => {
-        this.commonConfig(() => {
+        this.artworkConfig(() => {
           this.queryConfig({ pointer }, () => {
             this.drawPrimitives(context)
             this.drawSufaces(context)
@@ -468,24 +468,51 @@ export class ShapeRenderer {
     //     }
     //   })
     // })
-    // this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-    //   const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, context)
-    //   if (stepAndRepeatFeatures.length > 0) {
-    //     stepAndRepeatFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
-    //     const closest = stepAndRepeatFeatures.reduce((prev, current) => {
-    //       if (prev.snapPoint == undefined) return current
-    //       if (current.snapPoint == undefined) return prev
-    //       const prevDist = vec2.distance(pointer, prev.snapPoint)
-    //       const currentDist = vec2.distance(pointer, current.snapPoint)
-    //       return prevDist < currentDist ? prev : current
-    //     })
-    //     distances.push({
-    //       shape: stepAndRepeat.record,
-    //       snapPoint: closest.snapPoint,
-    //       children: stepAndRepeatFeatures,
-    //     })
-    //   }
-    // })
+
+    this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
+      if (macro === undefined) return
+      const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
+      if (!macroRenderer) return
+      macroRenderer.updateTransformFromPad(macro.shape)
+      macroRenderer.transform.index = 0
+      // macroRenderer.render(context)
+      const macroFeatures = macroRenderer.queryDistance(transformedPointer, context)
+      if (macroFeatures.length > 0) {
+        macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
+        const closest = macroFeatures.reduce((prev, current) => {
+          if (prev.snapPoint == undefined) return current
+          if (current.snapPoint == undefined) return prev
+          const prevDist = vec2.distance(pointer, prev.snapPoint)
+          const currentDist = vec2.distance(pointer, current.snapPoint)
+          return prevDist < currentDist ? prev : current
+        })
+        distances.push({
+          shape: macro.shape,
+          snapPoint: closest.snapPoint,
+          children: macroFeatures,
+        })
+      }
+    })
+
+    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, context)
+      if (stepAndRepeatFeatures.length > 0) {
+        stepAndRepeatFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
+        const closest = stepAndRepeatFeatures.reduce((prev, current) => {
+          if (prev.snapPoint == undefined) return current
+          if (current.snapPoint == undefined) return prev
+          const prevDist = vec2.distance(pointer, prev.snapPoint)
+          const currentDist = vec2.distance(pointer, current.snapPoint)
+          return prevDist < currentDist ? prev : current
+        })
+        distances.push({
+          // shape: stepAndRepeat.record,
+          shape: this.artwork.read(stepAndRepeat.transform.index),
+          snapPoint: closest.snapPoint,
+          children: stepAndRepeatFeatures,
+        })
+      }
+    })
     context.transformMatrix = origMatrix
     console.log("query distance", distances)
     return distances
@@ -504,7 +531,7 @@ export class ShapeRenderer {
     //   this.datumTextCollection.refresh(this.image)
     //   this.dirty = false
     // }
-    this.commonConfig(() => {
+    this.artworkConfig(() => {
       this.drawPrimitives(context)
       // if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
         this.drawSufaces(context)
@@ -521,12 +548,12 @@ export class ShapeRenderer {
   private drawDatums(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     if (settings.SHOW_DATUMS === false) return
     this.datumConfig(() => {
-      this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.datumPoints)
+      // this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.datumPoints)
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.datumLines)
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      // if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
-      // this.drawCollections.drawDatums(this.datumCollection.attachment)
+      if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.shapeShaderAttachments.shaderAttachment.datumTexts)
+      this.drawCollections.drawDatums(this.shapeShaderAttachments.shaderAttachment.datumPoints)
       // Enable Surface Datums
       // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
     })
@@ -652,7 +679,7 @@ export class MacroRenderer extends ShapeRenderer {
       super.render(context)
     })
     this.transform.polarity = tempPol
-    this.commonConfig(() => {
+    this.artworkConfig(() => {
       this.drawCollections.drawFrameBuffer({
         renderTexture: this.framebuffer,
         index: this.transform.index,
@@ -665,18 +692,22 @@ export class MacroRenderer extends ShapeRenderer {
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
-  record: Shapes.StepAndRepeat
+  image: ArtworkBufferCollection
+  repeats: Transform[]
+  index: number
 }
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
-  public record: Shapes.StepAndRepeat
+  // public record: Shapes.StepAndRepeat
+  public repeats: Transform[]
   constructor(props: StepAndRepeatRendererProps) {
+    const { regl, image, repeats, index } = props
     super({
-      regl: props.regl,
-      image: new ArtworkBufferCollection(props.record.shapes),
+      regl,
+      image,
     })
-    this.record = props.record
-    this.transform.index = props.record.index
+    this.repeats = repeats
+    this.transform.index = index
   }
 
   public queryDistance(
@@ -684,9 +715,9 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>,
   ): ShapeDistance[] {
     const features: ShapeDistance[] = []
-    this.record.repeats.forEach((repeat) => {
+    this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.record.repeats.length
+      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
       const nestedFeatures = super.queryDistance(pointer, context)
       features.push(...nestedFeatures)
@@ -695,9 +726,9 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
-    this.record.repeats.forEach((repeat) => {
+    this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.record.repeats.length
+      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
       super.render(context)
     })

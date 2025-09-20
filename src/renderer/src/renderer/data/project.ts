@@ -1,5 +1,6 @@
 // import * as Comlink from "comlink"
-import { ArtworkBufferCollection } from './artwork-collection'
+import { Transform } from '../engine/transform'
+import { ArtworkBufferCollection, SurfaceBufferCollection } from './artwork-collection'
 
 
 
@@ -16,10 +17,16 @@ export class Matrix {
   public readonly steps: Step[] = []
 }
 
+export interface StepAndRepeat {
+  repeats: Transform[]
+  step: Step
+}
 
 export class Step implements StepColumnType {
   public name: string = ""
   public readonly layers: Layer[] = []
+  public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
+  public readonly stepAndRepeat: StepAndRepeat[] = []
   constructor(name: string) {
     this.name = name
   }
@@ -28,6 +35,7 @@ export class Step implements StepColumnType {
 export class Layer implements LayerRowType {
   public name: string = ""
   public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
+  public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
   constructor(name: string) {
     this.name = name
   }

@@ -760,8 +760,8 @@ export class StepRenderer {
         selection.render(context)
         this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: selection.framebuffer }))
       }
-      // this.measurements.render(context)
-      // this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
+      this.measurements.render(context)
+      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
     })
   }
 

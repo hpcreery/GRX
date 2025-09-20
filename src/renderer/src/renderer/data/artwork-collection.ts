@@ -2,6 +2,8 @@ import * as Shapes from "../engine/step/layer/shape/shape"
 import * as Symbols from "../engine/step/layer/shape/symbol/symbol"
 import { FeatureTypeIdentifiers, toMap, FeatureTypeIdentifier, AttributesType, Binary } from "../engine/types"
 import earcut from "earcut"
+import { fontInfo as cozetteFontInfo } from "../engine/step/layer/shape/text/cozette/font"
+import { Transform } from '../engine/transform'
 
 interface BufferCollection<T extends Shapes.Shape> {
   create(shape: T): number
@@ -238,7 +240,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
   }
 }
 
-class SurfaceBufferCollection implements BufferCollection<Shapes.Surface> {
+export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface> {
   // private static readonly MAX_BYTE_LENGTH = 1024 * 1024 * 1 // 1 MB
 
   public surfaces: (Shapes.Surface | null)[] = []
@@ -654,21 +656,257 @@ class SurfaceBufferCollection implements BufferCollection<Shapes.Surface> {
   }
 }
 
-export class ArtworkBufferCollection {
+class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
+  positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
+  texcoordBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
+  charPositionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
+  positionView: Float32Array = new Float32Array(this.positionBuffer)
+  texcoordView: Float32Array = new Float32Array(this.texcoordBuffer)
+  charPositionView: Float32Array = new Float32Array(this.charPositionBuffer)
+  length: number = 0
+  datumTexts: (Shapes.DatumText | null)[] = []
+
+  bufferOffset: number = 0
+  bufferMap: ({
+    bufferOffset: number
+    bufferLength: number
+  } | null)[] = []
+
+  updateBuffers(index: number): void {
+    // Currently, each text is independent, so we only need to ensure the buffers are large enough
+    const shape = this.datumTexts[index]
+    if (!shape) {
+      // If the record is null, empty the buffers for this index
+      const locations = this.bufferMap[index]
+      if (locations) {
+        this.positionView.fill(0, locations.bufferOffset, locations.bufferOffset + locations.bufferLength)
+        this.texcoordView.fill(0, locations.bufferOffset, locations.bufferOffset + locations.bufferLength)
+        this.charPositionView.fill(0, locations.bufferOffset, locations.bufferOffset + locations.bufferLength)
+      }
+      return
+    }
+    const positions: number[] = []
+    const texcoords: number[] = []
+    const charPosition: number[] = []
+    const string = shape.text
+    const x = shape.x
+    const y = shape.y
+    let row = 0
+    let col = 0
+    for (let i = 0; i < string.length; ++i) {
+      const letter = string[i]
+      const glyphInfo = cozetteFontInfo.characterLocation[letter]
+      if (glyphInfo !== undefined) {
+        positions.push(x, y)
+        texcoords.push(glyphInfo.x, glyphInfo.y)
+        charPosition.push(col, row)
+      }
+      col++
+      if (letter === "\n") {
+        row--
+        col = 0
+      }
+    }
+
+
+    // Check if the buffers are large enough to hold the updated text
+    if (this.positionView.length < this.bufferOffset + positions.length) {
+      // Double the size of the buffer and add additional room for the updated text
+      const newBufferSize = (this.positionView.length * 2 + positions.length) * Float32Array.BYTES_PER_ELEMENT
+      this.positionBuffer = this.positionBuffer.transfer(newBufferSize)
+      this.positionView = new Float32Array(this.positionBuffer)
+    }
+    if (this.texcoordView.length < this.bufferOffset + positions.length) {
+      // Double the size of the buffer and add additional room for the updated text
+      const newBufferSize = (this.texcoordView.length * 2 + texcoords.length) * Float32Array.BYTES_PER_ELEMENT
+      this.texcoordBuffer = this.texcoordBuffer.transfer(newBufferSize)
+      this.texcoordView = new Float32Array(this.texcoordBuffer)
+    }
+    if (this.charPositionView.length < this.bufferOffset + positions.length) {
+      // Double the size of the buffer and add additional room for the updated text
+      const newBufferSize = (this.charPositionView.length * 2 + charPosition.length) * Float32Array.BYTES_PER_ELEMENT
+      this.charPositionBuffer = this.charPositionBuffer.transfer(newBufferSize)
+      this.charPositionView = new Float32Array(this.charPositionBuffer)
+    }
+    this.positionView.set(positions, this.bufferOffset)
+    this.texcoordView.set(texcoords, this.bufferOffset) // Each text has its own texcoords starting at index * 2
+    this.charPositionView.set(charPosition, this.bufferOffset)
+    this.length = this.positionView.length / 2 // Each position has 2 components (x, y)
+    this.bufferMap[index] = {
+      bufferOffset: this.bufferOffset,
+      bufferLength: positions.length,
+    }
+    this.bufferOffset += positions.length
+  }
+
+  create(shape: Shapes.DatumText): number {
+    const index = this.datumTexts.push(shape)
+    this.updateBuffers(index - 1) // Update the buffers for the newly created text
+    return index // Return the index of the newly created text
+  }
+
+  read(index: number): Shapes.DatumText {
+    if (index < 0 || index >= this.datumTexts.length) {
+      throw new Error("Index out of bounds when reading text")
+    }
+    const shape = this.datumTexts[index]
+    if (!shape) {
+      throw new Error(`No text found at index: ${index} when reading text`)
+    }
+    return shape
+  }
+
+  update(index: number, shape: Shapes.DatumText): void {
+    if (index < 0 || index >= this.datumTexts.length) {
+      throw new Error("Index out of bounds when updating text")
+    }
+    const existingShape = this.datumTexts[index]
+    if (!existingShape) {
+      throw new Error(`No text found at index: ${index} when updating text`)
+    }
+    this.datumTexts[index] = shape
+    this.updateBuffers(index) // Update the buffers for the updated text
+  }
+
+  delete(index: number): void {
+    if (index < 0 || index >= this.datumTexts.length) {
+      throw new Error("Index out of bounds when deleting text")
+    }
+    const shape = this.datumTexts[index]
+    if (!shape) {
+      throw new Error(`No text found at index: ${index} when deleting text`)
+    }
+    this.datumTexts[index] = null // Mark as deleted
+    this.updateBuffers(index) // Update the buffers for the deleted text
+  }
+
+}
+
+
+class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> {
+  positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
+  positionView: Float32Array = new Float32Array(this.positionBuffer)
+  length: number = 0
+
+  create(shape: Shapes.DatumPoint): number {
+    const index = this.length
+    // Check if the position buffer is large enough to hold the new point
+    if (this.positionView.length < (index + 1) * 2) {
+      // Double the size of the buffer and add additional room for the new point
+      const newBufferSize = (this.positionView.length * 2 + 2) * Float32Array.BYTES_PER_ELEMENT
+      this.positionBuffer = this.positionBuffer.transfer(newBufferSize)
+      this.positionView = new Float32Array(this.positionBuffer)
+    }
+    this.positionView[index * 2] = shape.x
+    this.positionView[index * 2 + 1] = shape.y
+    this.length += 1
+    return index // Return the index of the newly created point
+  }
+
+  read(index: number): Shapes.DatumPoint {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when reading point")
+    }
+    return new Shapes.DatumPoint({
+      x: this.positionView[index * 2],
+      y: this.positionView[index * 2 + 1],
+    })
+  }
+
+  update(index: number, shape: Shapes.DatumPoint): void {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when updating point")
+    }
+    this.positionView[index * 2] = shape.x
+    this.positionView[index * 2 + 1] = shape.y
+  }
+
+  delete(index: number): void {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when deleting point")
+    }
+    // Set the position to NaN to mark as deleted
+    this.positionView[index * 2] = NaN
+    this.positionView[index * 2 + 1] = NaN
+  }
+}
+
+export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndRepeat> {
+  // stepAndRepeats: (Shapes.StepAndRepeat | null)[] = []
+  stepAndRepeats: ({
+    repeats: Transform[]
+    artwork: ArtworkBufferCollection
+    index: number
+  } | null)[] = []
+  length: number = 0
+
+  create(shape: Shapes.StepAndRepeat): number {
+    const index = this.stepAndRepeats.push({
+      repeats: shape.repeats,
+      artwork: new ArtworkBufferCollection(shape.shapes),
+      index: shape.index,
+    })
+    this.length = this.stepAndRepeats.length
+    return index - 1 // Return the index of the newly created step and repeat
+  }
+  read(index: number): Shapes.StepAndRepeat {
+    if (index < 0 || index >= this.stepAndRepeats.length) {
+      throw new Error("Index out of bounds when reading step and repeat")
+    }
+    const shape = this.stepAndRepeats[index]
+    if (!shape) {
+      throw new Error(`No step and repeat found at index: ${index} when reading step and repeat`)
+    }
+    return new Shapes.StepAndRepeat({
+      repeats: shape.repeats,
+      shapes: shape.artwork.toJSON(),
+      index: shape.index,
+    })
+  }
+  update(index: number, shape: Shapes.StepAndRepeat): void {
+    if (index < 0 || index >= this.stepAndRepeats.length) {
+      throw new Error("Index out of bounds when updating step and repeat")
+    }
+    const existingShape = this.stepAndRepeats[index]
+    if (!existingShape) {
+      throw new Error(`No step and repeat found at index: ${index} when updating step and repeat`)
+    }
+    this.stepAndRepeats[index] = {
+      repeats: shape.repeats,
+      artwork: new ArtworkBufferCollection(shape.shapes),
+      index: shape.index,
+    }
+  }
+  delete(index: number): void {
+    if (index < 0 || index >= this.stepAndRepeats.length) {
+      throw new Error("Index out of bounds when deleting step and repeat")
+    }
+    const shape = this.stepAndRepeats[index]
+    if (!shape) {
+      throw new Error(`No step and repeat found at index: ${index} when deleting step and repeat`)
+    }
+    this.stepAndRepeats[index] = null // Mark as deleted
+  }
+}
+
+export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
   public shapes = {
     [FeatureTypeIdentifier.PAD]: new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD),
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
     [FeatureTypeIdentifier.ARC]: new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC),
-    [FeatureTypeIdentifier.DATUM_POINT]: new PrimitiveBufferCollection<Shapes.Pad>(
-      [...Shapes.PAD_RECORD_PARAMETERS],
-      FeatureTypeIdentifier.DATUM_POINT,
-    ),
+    [FeatureTypeIdentifier.SURFACE]: new SurfaceBufferCollection(),
+    // [FeatureTypeIdentifier.DATUM_POINT]: new PrimitiveBufferCollection<Shapes.Pad>(
+    //   [...Shapes.PAD_RECORD_PARAMETERS],
+    //   FeatureTypeIdentifier.DATUM_POINT,
+    // ),
+    [FeatureTypeIdentifier.DATUM_POINT]: new DatumPointBufferCollection(),
     [FeatureTypeIdentifier.DATUM_LINE]: new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],
       FeatureTypeIdentifier.DATUM_LINE,
     ),
     [FeatureTypeIdentifier.DATUM_ARC]: new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.DATUM_ARC),
-    [FeatureTypeIdentifier.SURFACE]: new SurfaceBufferCollection(),
+    [FeatureTypeIdentifier.DATUM_TEXT]: new DatumTextBufferCollection(),
+    [FeatureTypeIdentifier.STEP_AND_REPEAT]: new StepAndRepeatCollection(),
     // Add other collections as needed
   }
   public artworkMap: {
@@ -681,6 +919,7 @@ export class ArtworkBufferCollection {
 
   constructor(artwork: Shapes.Shape[] = []) {
     // Initialize the artwork with the provided shapes
+    // artwork.unshift(new Shapes.DatumPoint({ x: 0, y: 0 })) // Ensure there is always a datum point at index 0
     artwork.forEach((shape) => {
       this.create(shape)
     })
@@ -765,10 +1004,12 @@ export class ArtworkBufferCollection {
     this.shapes[FeatureTypeIdentifier.PAD] = new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD)
     this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE)
     this.shapes[FeatureTypeIdentifier.ARC] = new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC)
-    this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new PrimitiveBufferCollection<Shapes.Pad>(
-      [...Shapes.PAD_RECORD_PARAMETERS],
-      FeatureTypeIdentifier.DATUM_POINT,
-    )
+    this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfaceBufferCollection()
+    // this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new PrimitiveBufferCollection<Shapes.Pad>(
+    //   [...Shapes.PAD_RECORD_PARAMETERS],
+    //   FeatureTypeIdentifier.DATUM_POINT,
+    // )
+    this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new DatumPointBufferCollection()
     this.shapes[FeatureTypeIdentifier.DATUM_LINE] = new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],
       FeatureTypeIdentifier.DATUM_LINE,
@@ -777,7 +1018,8 @@ export class ArtworkBufferCollection {
       [...Shapes.ARC_RECORD_PARAMETERS],
       FeatureTypeIdentifier.DATUM_ARC,
     )
-    this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfaceBufferCollection()
+    this.shapes[FeatureTypeIdentifier.DATUM_TEXT] = new DatumTextBufferCollection()
+    this.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT] = new StepAndRepeatCollection()
     // Add other collections as needed
   }
 }

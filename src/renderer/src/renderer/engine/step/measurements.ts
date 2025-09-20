@@ -9,18 +9,6 @@ import { WorldContext } from "./step"
 import { measurementSettings } from "@src/renderer/engine/settings"
 import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
 
-// import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
-// import SimpleMeasurementVert from "@src/shaders/src/Measurements/SimpleMeasurement.vert"
-// interface SimpleMeasureRenderProps {}
-// interface SimpleMeasureRenderUniforms {
-//   u_Point1: vec2
-//   u_Point2: vec2
-// }
-// interface SimpleMeasurementAttachments {
-//   point1: vec2
-//   point2: vec2
-// }
-
 export class SimpleMeasurement extends ShapeRenderer {
   public measurements: { point1: vec2; point2: vec2 }[] = []
   public currentMeasurement: { point1: vec2; point2: vec2 } | null = null
@@ -31,10 +19,7 @@ export class SimpleMeasurement extends ShapeRenderer {
   }
 
   public refresh(): void {
-    // this.image.length = 0
-    // this.artwork.toJSON().forEach((shape) => {
-    //   this.artwork.delete(shape.index)
-    // })
+    // TODO: Optimize by only updating changed or new measurements
     this.artwork.clear()
     const allMeasurements = [...this.measurements, this.currentMeasurement].filter((m) => m !== null)
     allMeasurements.forEach((measurement) => {
@@ -60,9 +45,6 @@ export class SimpleMeasurement extends ShapeRenderer {
       this.artwork.create(new Shapes.DatumLine({ xs: x1, ys: y1, xe: x2, ye: y2 }))
     })
     this.shapeShaderAttachments.refresh()
-    // this.symbolShaderAttachments.refresh()
-    // this.macroShaderAttachments.refresh()
-    // this.dirty = true
   }
 
   public addMeasurement(point: vec2): void {

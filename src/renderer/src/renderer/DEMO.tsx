@@ -1222,18 +1222,20 @@ function DemoApp(): JSX.Element {
     DataInterface.create_layer(project, layer)
 
     setTimeout(() => {
-      DataInterface._import_file(cmp, "RS-274X", {
-        layer,
-        step: step1,
-        project,
-      })
-
-      DataInterface._import_file(nested_aperture_macro, "RS-274X", {
-        layer,
-        step: step2,
-        project,
-      })
     }, 3000)
+    DataInterface._import_file(cmp, "RS-274X", {
+      layer,
+      step: step1,
+      project,
+    })
+
+    DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+      layer,
+      step: step2,
+      project,
+    })
+
+    DataInterface._update_artwork_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
 
     Engine.addManagedView(box2Ref.current, {
       project,
