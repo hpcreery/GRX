@@ -1,6 +1,6 @@
 import { plot } from "./plotter/src"
 import { parse } from "@hpcreery/tracespace-parser"
-import { ImportPluginSignature } from '@src/renderer/data/import_plugins'
+import { ImportPluginSignature } from '@src/renderer/data/import-plugins'
 import { AddLayerProps } from "@src/renderer/engine/plugins"
 import * as Comlink from "comlink"
 import { DataInterface } from "@src/renderer/data/interface";

@@ -34,6 +34,7 @@ import earcut from "earcut"
 
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { WorldContext } from "../step"
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
 
 const {
   LINE_RECORD_PARAMETERS,
@@ -1593,7 +1594,7 @@ export class MacroShaderCollection {
           this.macros.set(record.symbol.id, {
             renderer: new MacroRenderer({
               regl: this.regl,
-              image: record.symbol.shapes,
+              image: new ArtworkBufferCollection(record.symbol.shapes),
               flatten: record.symbol.flatten,
             }),
             records: [],

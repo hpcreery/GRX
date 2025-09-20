@@ -1221,17 +1221,19 @@ function DemoApp(): JSX.Element {
     DataInterface.create_step(project, step2)
     DataInterface.create_layer(project, layer)
 
-    DataInterface._import_file(nested_aperture_macro, "RS-274X", {
-      layer,
-      step: step1,
-      project,
-    })
+    setTimeout(() => {
+      DataInterface._import_file(cmp, "RS-274X", {
+        layer,
+        step: step1,
+        project,
+      })
 
-    DataInterface._import_file(gtl_in, "RS-274X", {
-      layer,
-      step: step2,
-      project,
-    })
+      DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+        layer,
+        step: step2,
+        project,
+      })
+    }, 3000)
 
     Engine.addManagedView(box2Ref.current, {
       project,
@@ -1241,6 +1243,7 @@ function DemoApp(): JSX.Element {
       project,
       step: step1,
     })
+
 
     // Engine.addLayer({
     //   name: 'origin',
@@ -2271,7 +2274,7 @@ function DemoApp(): JSX.Element {
               const layers = await DataInterface.read_layers(project)
               setLayers(layers)
               const engine = await renderer.engine
-              layers.map(l => engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
+              layers.map((l) => engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
             }}
           >
             Randomize Colors

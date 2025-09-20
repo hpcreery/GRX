@@ -1,9 +1,7 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
 import type { QuerySelection, Engine, Stats } from "./engine/engine"
-import { AddLayerProps } from "./engine/plugins"
 import { PointerMode } from "./engine/types"
-
 import type { GridSettings, RenderSettings } from "./engine/settings"
 import { gridSettings, settings } from "./engine/settings"
 import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
@@ -14,9 +12,6 @@ const EngineWorkerInstance = new EngineWorker()
 export const EngineComWorker = Comlink.wrap<typeof Engine>(EngineWorkerInstance)
 
 export const DataInterface = await EngineComWorker.DataInterfaceProxy
-// DataInterface.create_project("New Project")
-// DataInterface.create_step("New Project", "Step 1")
-// DataInterface.create_layer('New Project', 'asdf')
 
 
 export interface RenderEngineFrontendConfig {
@@ -470,22 +465,6 @@ export class Renderer {
       }
     }
   }
-
-  // /**
-  //  * @deprecated will move to engine datamodel
-  //  */
-  // public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-  //   const engine = await this.engine
-  //   engine.addLayer(view, params)
-  // }
-
-  // /**
-  //  * @deprecated will move to engine datamodel
-  //  */
-  // public async addFile(view: string, buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-  //   const engine = await this.engine
-  //   engine.addFile(view, Comlink.transfer(buffer, [buffer]), params)
-  // }
 
   public async render(): Promise<void> {
     const engine = await this.engine

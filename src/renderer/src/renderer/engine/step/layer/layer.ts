@@ -7,9 +7,14 @@ import { getUnitsConversion, UID } from "../../utils"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
 import { WorldContext } from "../step"
+import { DataInterface } from '@src/renderer/data/interface'
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
+import { ShapesShaderCollection } from './collections_v2'
 
 export interface LayerProps {
   name: string
+  step: string
+  project: string
   id?: string
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
@@ -36,6 +41,8 @@ export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public id: string = UID()
   public name: string
+  public step: string
+  public project: string
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
   // public context = "misc"
@@ -52,10 +59,13 @@ export default class LayerRenderer extends ShapeRenderer {
 
   constructor(props: LayerRendererProps) {
     super(props)
-
+    this.name = props.name
+    this.step = props.step
+    this.project = props.project
     this.units = props.units
 
-    this.name = props.name
+
+
     if (props.color !== undefined) {
       this.color = props.color
     }
@@ -77,6 +87,14 @@ export default class LayerRenderer extends ShapeRenderer {
     // if (props.format !== undefined) {
     //   this.format = props.format
     // }
+
+    DataInterface.subscribe_to_layer(this.project, this.step, this.name, () => {
+      console.log("Layer data changed, updating...", this.project, this.step, this.name)
+      this.shapeShaderAttachments.refresh()
+      this.symbolShaderAttachments.refresh()
+      this.macroShaderAttachments.refresh()
+    })
+
 
     this.framebuffer = this.regl.framebuffer()
 

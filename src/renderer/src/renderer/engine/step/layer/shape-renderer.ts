@@ -21,6 +21,8 @@ const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 import { settings } from "../../settings"
 import { ArtworkBufferCollection } from '../../../data/artwork-collection'
 
+import { DataInterface } from '@src/renderer/data/interface';
+
 interface CommonAttributes {}
 
 interface CommonUniforms {
@@ -55,8 +57,7 @@ export interface RendererProps {
 }
 
 export interface ShapeProps {
-  image: Shapes.Shape[] | ArtworkBufferCollection
-  // ArtworkBufferCollection: ArtworkBufferCollection
+  image: ArtworkBufferCollection
   transform?: Partial<ShapeTransform>
 }
 
@@ -76,14 +77,6 @@ export type ShapeDistance = {
 
 export class ShapeRenderer {
   public regl: REGL.Regl
-  // public dirty = false
-  // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
-  // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
-  //   // console.log('records changed', { path, value, prev, apply })
-  //   onChange.target(this.records).map((record, i) => (record.index = i))
-  //   this.dirty = true
-  // })
-  // public readonly image: Shapes.Shape[] = []
   public artwork: ArtworkBufferCollection
   // public selection: SelectShapes[] = []
 
@@ -125,16 +118,9 @@ export class ShapeRenderer {
       Object.assign(this.transform, props.transform)
     }
 
-    // this.image = props.image
-    // this.artwork = new ArtworkBufferCollection(props.image)
-    if (props.image instanceof ArtworkBufferCollection) {
-      this.artwork = props.image
-    } else {
-      this.artwork = new ArtworkBufferCollection(props.image)
-    }
-    // this.artwork = props.ArtworkBufferCollection
+    this.artwork = props.image
+
     // this.breakStepRepeats()
-    // this.indexImage()
 
     this.shapeShaderAttachments = new ShapesShaderCollection({
       regl: this.regl,
@@ -266,73 +252,8 @@ export class ShapeRenderer {
   }
 
   private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    // this.macroCollection.macros.forEach((macro) => {
-    //   macro.records.forEach((record) => {
-    //     macro.renderer.updateTransformFromPad(record)
-    //     macro.renderer.render(context)
-    //   })
-    // })
-
-    // this.macroCollection.macros.forEach((macro) => {
-    //   macro.records.forEach((record) => {
-    //     macro.renderer.updateTransformFromPad(record)
-    //     macro.renderer.render(context)
-    //   })
-    // })
-
-    // const origTransform = Object.assign({}, this.transform)
-
-    // const updateTransformFromPad = (pad: Shapes.Pad): void => {
-    //   this.transform.index = pad.index
-    //   this.transform.polarity = pad.polarity
-    //   this.transform.datum = vec2.fromValues(pad.x, pad.y)
-    //   this.transform.rotation = pad.rotation
-    //   this.transform.scale = pad.resize_factor
-    //   this.transform.mirror_x = pad.mirror_x
-    //   this.transform.mirror_y = pad.mirror_y
-    // }
-
-    // this.shapeShaderAttachments.macroCollection.forEach((macro) => {
-    //   macro.artwork.flatten
-    // })
-
-    // const render = (context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): void => {
-    //   if (this.flatten === false) {
-    //     super.render(context)
-    //     return
-    //   }
-    //   this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-    //   this.regl.clear({
-    //     framebuffer: this.framebuffer,
-    //     color: [0, 0, 0, 0],
-    //     stencil: 0,
-    //     depth: 0,
-    //   })
-    //   const tempPol = this.transform.polarity
-    //   this.transform.polarity = 1
-    //   this.framebuffer.use(() => {
-    //     super.render(context)
-    //   })
-    //   this.transform.polarity = tempPol
-    //   this.commonConfig(() => {
-    //     this.drawCollections.drawFrameBuffer({
-    //       renderTexture: this.framebuffer,
-    //       index: this.transform.index,
-    //       qtyFeatures: context.prevQtyFeaturesRef ?? 1,
-    //       polarity: this.transform.polarity,
-    //     })
-    //   })
-    // }
-    // this.shapeShaderAttachments.shaderAttachment
-    // this.macroRenderer.artwork
     this.macroShaderAttachments.refresh()
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
-      // const macroShaderAttachments = MacroShaderCollection.macros.get(macro.macroId)
-      // if (!macroShaderAttachments) return
-      // const macroRenderer = new MacroRenderer({
-      //   regl: this.regl,
-      //   image: macroShaderAttachments.artworkBufferCollection,
-      // })
       if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
       if (!macroRenderer) return
@@ -376,11 +297,6 @@ export class ShapeRenderer {
     })
     return this
   }
-
-  // public indexImage(): this {
-  //   this.image.map((record, i) => (record.index = i))
-  //   return this
-  // }
 
   // public breakStepRepeats(): this {
   //   for (let i = 0; i < this.image.length; i++) {
@@ -757,7 +673,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   constructor(props: StepAndRepeatRendererProps) {
     super({
       regl: props.regl,
-      image: props.record.shapes,
+      image: new ArtworkBufferCollection(props.record.shapes),
     })
     this.record = props.record
     this.transform.index = props.record.index

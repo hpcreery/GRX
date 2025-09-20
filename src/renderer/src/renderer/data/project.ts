@@ -13,13 +13,13 @@ export interface StepColumnType {
 }
 
 export class Matrix {
-  public steps: Step[] = []
+  public readonly steps: Step[] = []
 }
 
 
 export class Step implements StepColumnType {
   public name: string = ""
-  public layers: Layer[] = []
+  public readonly layers: Layer[] = []
   constructor(name: string) {
     this.name = name
   }
@@ -27,7 +27,7 @@ export class Step implements StepColumnType {
 
 export class Layer implements LayerRowType {
   public name: string = ""
-  public artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
+  public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
   constructor(name: string) {
     this.name = name
   }
@@ -37,7 +37,7 @@ export class Project {
   public name: string = "Untitled Project"
   public created: Date = new Date()
   public modified: Date = new Date()
-  public matrix: Matrix = new Matrix()
+  public readonly matrix: Matrix = new Matrix()
   constructor(name: string) {
     this.name = name
     this.created = new Date()

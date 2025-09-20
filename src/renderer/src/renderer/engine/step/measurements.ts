@@ -7,6 +7,7 @@ import { RendererProps, ShapeRenderer } from "./layer/shape-renderer"
 import * as Shapes from "./layer/shape/shape"
 import { WorldContext } from "./step"
 import { measurementSettings } from "@src/renderer/engine/settings"
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
 
 // import SimpleMeasurementFrag from "@src/shaders/src/Measurements/SimpleMeasurement.frag"
 // import SimpleMeasurementVert from "@src/shaders/src/Measurements/SimpleMeasurement.vert"
@@ -25,12 +26,16 @@ export class SimpleMeasurement extends ShapeRenderer {
   public currentMeasurement: { point1: vec2; point2: vec2 } | null = null
   public framebuffer: REGL.Framebuffer2D
   constructor(props: RendererProps) {
-    super({ ...props, image: [] })
+    super({ ...props, image: new ArtworkBufferCollection() })
     this.framebuffer = this.regl.framebuffer()
   }
 
   public refresh(): void {
-    this.image.length = 0
+    // this.image.length = 0
+    // this.artwork.toJSON().forEach((shape) => {
+    //   this.artwork.delete(shape.index)
+    // })
+    this.artwork.clear()
     const allMeasurements = [...this.measurements, this.currentMeasurement].filter((m) => m !== null)
     allMeasurements.forEach((measurement) => {
       const [x1, y1] = measurement.point1
@@ -38,7 +43,7 @@ export class SimpleMeasurement extends ShapeRenderer {
       const length = Math.hypot(x1 - x2, y1 - y2) * getUnitsConversion(measurementSettings.units)
       const x = Math.abs(x1 - x2) * getUnitsConversion(measurementSettings.units)
       const y = Math.abs(y1 - y2) * getUnitsConversion(measurementSettings.units)
-      this.image.push(
+      this.artwork.create(
         new Shapes.DatumText({
           text: `↙${parseFloat(length.toFixed(4))}${typeof measurementSettings.units == "string" ? measurementSettings.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
           x: (x1 + x2) / 2,
@@ -52,9 +57,12 @@ export class SimpleMeasurement extends ShapeRenderer {
           },
         }),
       )
-      this.image.push(new Shapes.DatumLine({ xs: x1, ys: y1, xe: x2, ye: y2 }))
+      this.artwork.create(new Shapes.DatumLine({ xs: x1, ys: y1, xe: x2, ye: y2 }))
     })
-    this.dirty = true
+    this.shapeShaderAttachments.refresh()
+    // this.symbolShaderAttachments.refresh()
+    // this.macroShaderAttachments.refresh()
+    // this.dirty = true
   }
 
   public addMeasurement(point: vec2): void {

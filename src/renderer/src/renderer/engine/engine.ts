@@ -1,9 +1,7 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import { LayerRendererProps } from "./step/layer/layer"
 import { initializeFontRenderer, initializeRenderers } from "./step/layer/collections"
 import * as Comlink from "comlink"
-import type { AddLayerProps } from "./plugins"
 import { type Units } from "./types"
 import { Transform } from "./transform"
 import { ShapeDistance } from "./step/layer/shape-renderer"
@@ -271,30 +269,6 @@ export class Engine {
     return this.views.get(view)!.getWorldPosition(x, y)
   }
 
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   // return this.views.get(view)!.addLayer(params)
-  // }
-
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public async addFile(view: string, buffer: ArrayBuffer, params: {format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   // return this.views.get(view)!.addFile(buffer, params)
-  // }
-
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public getLayers(view: string): LayerInfo[] | void {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   // return this.views.get(view)!.getLayers()
-  // }
-
   public getTransform(view: string): Partial<RenderTransform> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getTransform()
@@ -304,30 +278,6 @@ export class Engine {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setTransform(transform)
   }
-
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public removeLayer(view: string, id: string): void {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   this.views.get(view)!.removeLayer(id)
-  // }
-
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public moveLayer(view: string, from: number, to: number): void {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   this.views.get(view)!.moveLayer(from, to)
-  // }
-
-  // /**
-  //  * @deprecated Use data api instead.
-  //  */
-  // public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
-  //   if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-  //   this.views.get(view)!.setLayerProps(id, props)
-  // }
 
   public setLayerVisibility(view: string, layer: string, visible: boolean): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)

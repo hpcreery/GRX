@@ -1,8 +1,8 @@
 import * as Shapes from "../engine/step/layer/shape/shape"
 import { Layer, Project, PROJECTS, Step } from "./project"
 import { ArtworkBufferCollection } from "./artwork-collection"
-import importFormats from "./import_plugins"
-import type { importFormatName, ImportPluginSignature, ParametersType } from "./import_plugins"
+import importFormats from "./import-plugins"
+import type { importFormatName, ImportPluginSignature, ParametersType } from "./import-plugins"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
 
@@ -365,29 +365,29 @@ export const DataInterface = {
     return artwork.toJSON()
   },
 
-  /**
-   * Sets the artwork collection for the specified layer in the specified step of the specified project.
-   * @param project_name Name of the project containing the step and layer.
-   * @param step_name Name of the step containing the layer.
-   * @param layer_name Name of the layer whose artwork collection is to be set.
-   * @param artwork A reference to the ArtworkBufferCollection to set.
-   * @returns void
-   */
-  _update_artwork_ref(project_name: string, step_name: string, layer_name: string, artwork: ArtworkBufferCollection): void {
-    const layer = this._read_layer_object(project_name, step_name, layer_name)
-    layer.artwork = artwork
-    this.eventTarget.dispatchTypedEvent(
-      "LAYER_CHANGED",
-      new CustomEvent("LAYER_CHANGED", {
-        detail: {
-          project: project_name,
-          step: step_name,
-          layer: layer_name,
-          action: "update",
-        },
-      }),
-    )
-  },
+  // /**
+  //  * Sets the artwork collection for the specified layer in the specified step of the specified project.
+  //  * @param project_name Name of the project containing the step and layer.
+  //  * @param step_name Name of the step containing the layer.
+  //  * @param layer_name Name of the layer whose artwork collection is to be set.
+  //  * @param artwork A reference to the ArtworkBufferCollection to set.
+  //  * @returns void
+  //  */
+  // _update_artwork_ref(project_name: string, step_name: string, layer_name: string, artwork: ArtworkBufferCollection): void {
+  //   const layer = this._read_layer_object(project_name, step_name, layer_name)
+  //   layer.artwork = artwork
+  //   this.eventTarget.dispatchTypedEvent(
+  //     "LAYER_CHANGED",
+  //     new CustomEvent("LAYER_CHANGED", {
+  //       detail: {
+  //         project: project_name,
+  //         step: step_name,
+  //         layer: layer_name,
+  //         action: "update",
+  //       },
+  //     }),
+  //   )
+  // },
 
   /**
    * Sets the artwork data as JSON for the specified layer in the specified step of the specified project.
@@ -398,8 +398,8 @@ export const DataInterface = {
    * @returns void
    */
   _update_artwork_json(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
-    const artwork = new ArtworkBufferCollection(artworkData)
-    this._update_artwork_ref(project_name, step_name, layer_name, artwork)
+    const artwork = this._read_artwork_ref(project_name, step_name, layer_name)
+    artwork.fromJSON(artworkData)
     this.eventTarget.dispatchTypedEvent(
       "LAYER_CHANGED",
       new CustomEvent("LAYER_CHANGED", {

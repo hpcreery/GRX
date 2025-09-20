@@ -753,6 +753,33 @@ export class ArtworkBufferCollection {
     }
     return artworkData
   }
+
+  fromJSON(artwork: Shapes.Shape[]): void {
+    artwork.forEach((shape) => {
+      this.create(shape)
+    })
+  }
+
+  clear(): void {
+    this.artworkMap = []
+    this.shapes[FeatureTypeIdentifier.PAD] = new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD)
+    this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE)
+    this.shapes[FeatureTypeIdentifier.ARC] = new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC)
+    this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new PrimitiveBufferCollection<Shapes.Pad>(
+      [...Shapes.PAD_RECORD_PARAMETERS],
+      FeatureTypeIdentifier.DATUM_POINT,
+    )
+    this.shapes[FeatureTypeIdentifier.DATUM_LINE] = new PrimitiveBufferCollection<Shapes.Line>(
+      [...Shapes.LINE_RECORD_PARAMETERS],
+      FeatureTypeIdentifier.DATUM_LINE,
+    )
+    this.shapes[FeatureTypeIdentifier.DATUM_ARC] = new PrimitiveBufferCollection<Shapes.Arc>(
+      [...Shapes.ARC_RECORD_PARAMETERS],
+      FeatureTypeIdentifier.DATUM_ARC,
+    )
+    this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfaceBufferCollection()
+    // Add other collections as needed
+  }
 }
 
 interface MacroArtworkCollectionType {
