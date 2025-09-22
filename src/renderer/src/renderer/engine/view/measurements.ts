@@ -1,13 +1,12 @@
 import REGL from "regl"
 import { vec2 } from "gl-matrix"
 import { UniverseContext } from "../engine"
-// import type { Units } from "../types"
 import { getUnitsConversion } from "../utils"
-import { RendererProps, ShapeRenderer } from "./layer/shape-renderer"
-import * as Shapes from "./layer/shape/shape"
-import { WorldContext } from "./step"
+import { RendererProps, ShapeRenderer } from "./shape-renderer"
+import * as Shapes from "@src/renderer/data/shape/shape"
+import { WorldContext } from "./view"
 import { measurementSettings } from "@src/renderer/engine/settings"
-import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
 
 export class SimpleMeasurement extends ShapeRenderer {
   public measurements: { point1: vec2; point2: vec2 }[] = []
@@ -44,7 +43,6 @@ export class SimpleMeasurement extends ShapeRenderer {
       )
       this.artwork.create(new Shapes.DatumLine({ xs: x1, ys: y1, xe: x2, ye: y2 }))
     })
-    this.shapeShaderAttachments.refresh()
   }
 
   public addMeasurement(point: vec2): void {

@@ -7,7 +7,7 @@ import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
 import DemoApp from "./renderer/DEMO"
 // import NCDemo from '@lib/nc/DEMO'
-import * as BufferCollection from './renderer/data/artwork-collection'
+import * as BufferCollection from './renderer/data/artwork-collections'
 
 import { Spotlight } from "@mantine/spotlight"
 import { spotlightStore, actions } from "./contexts/Spotlight"

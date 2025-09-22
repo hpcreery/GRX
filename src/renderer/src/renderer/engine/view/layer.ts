@@ -1,25 +1,22 @@
 import REGL from "regl"
 import { vec2, vec3 } from "gl-matrix"
-import { Units, BoundingBox } from "../../types"
+import { BoundingBox } from "../types"
 
-import type { UniverseContext } from "../../engine"
-import { getUnitsConversion, UID } from "../../utils"
+import type { UniverseContext } from "../engine"
+import { getUnitsConversion, UID } from "../utils"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
-import { WorldContext } from "../step"
-import { DataInterface } from '@src/renderer/data/interface'
-import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collection'
-import { ShapesShaderCollection } from './collections_v2'
+import { WorldContext } from "./view"
+import { Layer, Project, Step } from '@src/renderer/data/project'
 
 export interface LayerProps {
-  name: string
-  step: string
-  project: string
+  layerData: Layer
+  stepData: Step
+  projectData: Project
   id?: string
   /**
    * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
    */
-  units: Units
   visible?: boolean
   color?: vec3
   alpha?: number
@@ -28,7 +25,7 @@ export interface LayerProps {
   format?: string
 }
 
-export interface LayerRendererProps extends ShapeRendererProps, LayerProps {}
+export interface LayerRendererProps extends Omit<ShapeRendererProps, 'image'>, LayerProps {}
 
 interface LayerUniforms {
   u_Color: vec3
@@ -40,30 +37,23 @@ interface LayerAttributes {}
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public id: string = UID()
-  public name: string
-  public step: string
-  public project: string
+  public layerData: Layer
+  public stepData: Step
+  public projectData: Project
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
-  // public context = "misc"
-  // public type = "document"
-  // public format = "raw"
-  /**
-   * Units of the layer. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
-   */
-  public units: "mm" | "inch" | "mil" | "cm" | number = "mm"
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
+  private previousContext = ""
 
   constructor(props: LayerRendererProps) {
-    super(props)
-    this.name = props.name
-    this.step = props.step
-    this.project = props.project
-    this.units = props.units
-
+    const image = props.layerData.artwork
+    super({...props, image})
+    this.layerData = props.layerData
+    this.stepData = props.stepData
+    this.projectData = props.projectData
 
 
     if (props.color !== undefined) {
@@ -88,13 +78,6 @@ export default class LayerRenderer extends ShapeRenderer {
     //   this.format = props.format
     // }
 
-    DataInterface.subscribe_to_layer(this.project, this.step, this.name, () => {
-      console.log("Layer data changed, updating...", this.project, this.step, this.name)
-      this.shapeShaderAttachments.refresh()
-      this.symbolShaderAttachments.refresh()
-      this.macroShaderAttachments.refresh()
-    })
-
 
     this.framebuffer = this.regl.framebuffer()
 
@@ -118,14 +101,14 @@ export default class LayerRenderer extends ShapeRenderer {
 
   public getBoundingBox(): BoundingBox {
     const boundingBox = super.getBoundingBox()
-    vec2.scale(boundingBox.min, boundingBox.min, 1 / getUnitsConversion(this.units))
-    vec2.scale(boundingBox.max, boundingBox.max, 1 / getUnitsConversion(this.units))
+    vec2.scale(boundingBox.min, boundingBox.min, 1 / getUnitsConversion(this.layerData.artworkUnits))
+    vec2.scale(boundingBox.max, boundingBox.max, 1 / getUnitsConversion(this.layerData.artworkUnits))
     return boundingBox
   }
 
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
-    this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
+    this.transform.scale = this.transform.scale / getUnitsConversion(this.layerData.artworkUnits)
     // const newPointer = vec2.clone(pointer)
     // vec2.scale(newPointer, newPointer, getUnitsConversion(this.units))
     const measurements = super.queryDistance(pointer, context)
@@ -141,6 +124,16 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    const contextCopy = JSON.parse(JSON.stringify(context))
+    delete contextCopy['tick']
+    delete contextCopy['time']
+    contextCopy['color'] = this.color
+    const contextCopyStr = JSON.stringify(contextCopy)
+    if (this.previousContext == contextCopyStr) {
+      return
+    }
+    this.previousContext = contextCopyStr
+
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
@@ -149,13 +142,16 @@ export default class LayerRenderer extends ShapeRenderer {
     })
     this.framebuffer.use(() => {
       this.layerConfig(() => {
-        // this.drawCollections.renderOrigin()
-        // this.drawCollections.renderGrid(grid)
         const initScale = this.transform.scale
-        this.transform.scale = this.transform.scale / getUnitsConversion(this.units)
+        this.transform.scale = this.transform.scale / getUnitsConversion(this.layerData.artworkUnits)
         super.render(context)
         this.transform.scale = initScale
       })
     })
+  }
+
+  public destroy(): void {
+    super.destroy()
+    this.framebuffer.destroy()
   }
 }

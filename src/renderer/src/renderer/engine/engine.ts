@@ -1,11 +1,11 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import { initializeFontRenderer, initializeRenderers } from "./step/layer/collections"
+import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
 import * as Comlink from "comlink"
 import { type Units } from "./types"
 import { Transform } from "./transform"
-import { ShapeDistance } from "./step/layer/shape-renderer"
-import { StepRenderer } from "./step/step"
+import { ShapeDistance } from "./view/shape-renderer"
+import { ViewRenderer } from "./view/view"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
 import { DataInterface } from '../data/interface'
@@ -48,22 +48,6 @@ export interface LayerInfo {
   transform: Transform
 }
 
-export const EngineEvents = {
-  RENDER: "RENDER",
-  LAYERS_CHANGED: "LAYERS_CHANGED",
-  MESSAGE: "MESSAGE",
-} as const
-
-export type TEngineEvents = (typeof EngineEvents)[keyof typeof EngineEvents]
-
-export const MessageLevel = {
-  INFO: "blue",
-  WARN: "yellow",
-  ERROR: "red",
-} as const
-
-export type TMessageLevel = (typeof MessageLevel)[keyof typeof MessageLevel]
-
 export interface Pointer {
   x: number
   y: number
@@ -76,12 +60,6 @@ export interface QuerySelection extends ShapeDistance {
 }
 
 export type RenderProps = Partial<typeof Engine.defaultRenderProps>
-
-export interface MessageData {
-  level: TMessageLevel
-  title: string
-  message: string
-}
 
 export class Engine {
 
@@ -105,7 +83,7 @@ export class Engine {
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
-  public views: Map<string, StepRenderer> = new Map()
+  public views: Map<string, ViewRenderer> = new Map()
 
   private renderNowInterval: NodeJS.Timeout | null = null
 
@@ -179,14 +157,16 @@ export class Engine {
   public renderDispatch = (): void => this.render()
 
   public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
-    const newStep = new StepRenderer({
+    const projectObject = DataInterface._read_project_object(project)
+    const stepObject = DataInterface._read_step_object(project, step)
+    const newStep = new ViewRenderer({
       regl: this.regl,
       viewBox,
-      project,
-      name: step,
+      projectData: projectObject,
+      stepData: stepObject,
       id,
     })
-    newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
+    newStep.eventTarget.addEventListener("render", this.renderDispatch)
     this.views.set(id, newStep)
     this.render()
   }
@@ -212,12 +192,7 @@ export class Engine {
   }
 
   public updateViewBox(view: string, viewBox: DOMRect): void {
-    // if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    // !TODO put error back
-    if (!this.views.has(view)) {
-      console.error(`View not found`)
-      return
-    }
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
     viewBox.x = viewBox.x - this.boundingBox.x
     this.views.get(view)!.updateViewBox(viewBox)
@@ -292,11 +267,6 @@ export class Engine {
   public setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerTransform(layer, transform)
-  }
-
-  public addEventCallback(view: string, event: TEngineEvents, listener: (data: MessageData | null) => void): void {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.addEventCallback(event, listener)
   }
 
   public sample(view: string, x: number, y: number): void {
@@ -419,7 +389,7 @@ export class Engine {
 
   public destroy(): void {
     this.views.forEach((view) => {
-      view.eventTarget.removeEventListener("RENDER", this.renderDispatch)
+      view.eventTarget.removeEventListener("render", this.renderDispatch)
       view.destroy()
     })
     this.regl.destroy()

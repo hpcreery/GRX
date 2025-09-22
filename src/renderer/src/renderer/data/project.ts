@@ -1,6 +1,7 @@
 // import * as Comlink from "comlink"
 import { Transform } from '../engine/transform'
-import { ArtworkBufferCollection, SurfaceBufferCollection } from './artwork-collection'
+import { Units } from '../engine/types'
+import { ArtworkBufferCollection, SurfaceBufferCollection } from './artwork-collections'
 
 
 
@@ -34,6 +35,7 @@ export class Step implements StepColumnType {
 
 export class Layer implements LayerRowType {
   public name: string = ""
+  public artworkUnits: Units = "mm"
   public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
   constructor(name: string) {

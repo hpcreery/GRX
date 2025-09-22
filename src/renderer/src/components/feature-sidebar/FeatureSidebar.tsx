@@ -20,7 +20,7 @@ import classes from "./FeatureSidebar.module.css"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { getUnitsConversion } from "@src/renderer/engine/utils"
 import chroma from "chroma-js"
-import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/engine/step/layer/shape/symbol/symbol"
+import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/data/shape/symbol/symbol"
 import { AttributesType, FeatureTypeIdentifier, Units } from "@src/renderer/engine/types"
 import { menuItems } from "@src/contexts/EditorContext"
 

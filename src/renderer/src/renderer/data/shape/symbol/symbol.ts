@@ -1,6 +1,6 @@
-import { ISymbolRecord, FeatureTypeIdentifier, toMap, BoundingBox, AttributesType } from "../../../../types"
+import { ISymbolRecord, FeatureTypeIdentifier, toMap, BoundingBox, AttributesType } from "../../../engine/types"
 import { Shape, getBoundingBoxOfShape } from "../shape"
-import { malloc } from "../../../../utils"
+import { malloc } from "../../../engine/utils"
 import { vec2 } from "gl-matrix"
 
 export const STANDARD_SYMBOLS = [

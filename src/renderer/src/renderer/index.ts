@@ -4,8 +4,8 @@ import type { QuerySelection, Engine, Stats } from "./engine/engine"
 import { PointerMode } from "./engine/types"
 import type { GridSettings, RenderSettings } from "./engine/settings"
 import { gridSettings, settings } from "./engine/settings"
-import cozetteFont from "./engine/step/layer/shape/text/cozette/CozetteVector.ttf?url"
-import { fontInfo as cozetteFontInfo } from "./engine/step/layer/shape/text/cozette/font"
+import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
+import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import { UID } from "./engine/utils"
 
 const EngineWorkerInstance = new EngineWorker()
@@ -143,41 +143,53 @@ export class Renderer {
     })
 
 
-    this.pollEmbeddedViews()
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.render()
     this.pollViews()
+    // this.pollEmbeddedViews()
   }
 
-  private pollEmbeddedViews(): void {
-    this.engine.then((engine) => {
-      const views = this.getEmbeddedViews()
-      views.forEach(async (viewElement) => {
-        const viewName = viewElement.getAttribute("view")
-        if (viewName == null) {
-          return
-        }
-        const project = viewElement.getAttribute("project")
-        if (project == null) {
-          return
-        }
-        if (viewElement.id == undefined || viewElement.id === "") {
-          viewElement.id = UID()
-        }
-        const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
-        if (viewExists) return
-        await engine.addView(viewElement.id, project, viewName, viewElement.getBoundingClientRect())
-        await this.addControls(viewElement)
-        this.managedViews.push(viewElement)
-      })
-    })
-  }
+  // private pollEmbeddedViews(): void {
+  //   this.engine.then((engine) => {
+  //     const views = this.getEmbeddedViews()
+  //     views.forEach(async (viewElement) => {
+  //       const viewName = viewElement.getAttribute("view")
+  //       if (viewName == null) {
+  //         return
+  //       }
+  //       const project = viewElement.getAttribute("project")
+  //       if (project == null) {
+  //         return
+  //       }
+  //       if (viewElement.id == undefined || viewElement.id === "") {
+  //         viewElement.id = UID()
+  //       }
+  //       const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
+  //       if (viewExists) return
+  //       await engine.addView(viewElement.id, project, viewName, viewElement.getBoundingClientRect())
+  //       await this.addControls(viewElement)
+  //       this.managedViews.push(viewElement)
+  //     })
+  //   })
+  // }
+
+  // public getEmbeddedViews(): HTMLElement[] {
+  //   const views = this.CONTAINER.querySelectorAll("[view]")
+  //   const HTMLViews: HTMLElement[] = []
+  //   views.forEach((viewElement) => {
+  //     if (!(viewElement instanceof HTMLElement)) return
+  //     const viewName = viewElement.getAttribute("view")
+  //     if (viewName == null) return
+  //     HTMLViews.push(viewElement)
+  //   })
+  //   return HTMLViews
+  // }
 
   public addManagedView(view: HTMLElement, attributes: {project: string, step: string}): string {
     const { project, step } = attributes
-    view.setAttribute("view", step)
-    view.setAttribute("project", project)
+    // view.setAttribute("view", step)
+    // view.setAttribute("project", project)
     let id = UID()
     if (view.id == null || view.id === "") {
       view.id = id
@@ -194,18 +206,6 @@ export class Renderer {
 
   public removeManagedView(view: HTMLElement): void {
     this.managedViews.splice(this.managedViews.indexOf(view), 1)
-  }
-
-  public getEmbeddedViews(): HTMLElement[] {
-    const views = this.CONTAINER.querySelectorAll("[view]")
-    const HTMLViews: HTMLElement[] = []
-    views.forEach((viewElement) => {
-      if (!(viewElement instanceof HTMLElement)) return
-      const viewName = viewElement.getAttribute("view")
-      if (viewName == null) return
-      HTMLViews.push(viewElement)
-    })
-    return HTMLViews
   }
 
   public async onLoad(cb: () => void): Promise<void> {

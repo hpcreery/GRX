@@ -1,7 +1,6 @@
 import { plot } from "./plotter/src"
 import { parse } from "@hpcreery/tracespace-parser"
 import { ImportPluginSignature } from '@src/renderer/data/import-plugins'
-import { AddLayerProps } from "@src/renderer/engine/plugins"
 import * as Comlink from "comlink"
 import { DataInterface } from "@src/renderer/data/interface";
 
@@ -40,7 +39,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: Parameters, api: t
   //   ...props,
   // })
   // console.log('image', JSON.stringify(image.children));
-  api._update_artwork_json(parameters.project, parameters.step, parameters.layer, image.children)
+  api._update_layer_artwork_json(parameters.project, parameters.step, parameters.layer, image.children)
 }
 
 Comlink.expose(plugin)

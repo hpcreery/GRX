@@ -1,5 +1,5 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../../types"
-import { Transform } from "../../../transform"
+import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../engine/types"
+import { Transform } from "../../engine/transform"
 import * as Symbols from "./symbol/symbol"
 import { vec2 } from "gl-matrix"
 

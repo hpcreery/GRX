@@ -1,7 +1,7 @@
 import React, { useMemo } from "react"
 import "../App.css"
-import * as Symbols from "./engine/step/layer/shape/symbol/symbol"
-import * as Shapes from "./engine/step/layer/shape/shape"
+import * as Symbols from "./data/shape/symbol/symbol"
+import * as Shapes from "./data/shape/shape"
 import { Renderer, DataInterface } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
@@ -31,7 +31,7 @@ import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/
 import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
-import { LayerRendererProps } from "./engine/step/layer/layer"
+import { LayerRendererProps } from "./engine/view/layer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1235,7 +1235,7 @@ function DemoApp(): JSX.Element {
       project,
     })
 
-    DataInterface._update_artwork_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
+    DataInterface._update_layer_artwork_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
 
     Engine.addManagedView(box2Ref.current, {
       project,

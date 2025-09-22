@@ -1,27 +1,18 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shape/shape"
-import * as Symbols from "./shape/symbol/symbol"
-import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../../types"
-import ShapeTransform, { Transform } from "../../transform"
-
-import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
-
-// import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
-// import { MacroShaderCollection, StepAndRepeatCollection } from "./collections"
-import { StepAndRepeatCollection } from "./collections"
-import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./collections_v2"
-
-import type { UniverseContext } from "../../engine"
-import { getScaleMat3 } from "../../utils"
-import { WorldContext } from "../step"
+import * as Shapes from "../../data/shape/shape"
+import * as Symbols from "../../data/shape/symbol/symbol"
+import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../types"
+import ShapeTransform, { Transform } from "../transform"
+import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
+import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
+import type { UniverseContext } from "../engine"
+import { getScaleMat3 } from "../utils"
+import { WorldContext } from "./view"
+import { ArtworkBufferCollection } from '../../data/artwork-collections'
+import { settings } from "../settings"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
-
-import { settings } from "../../settings"
-import { ArtworkBufferCollection } from '../../../data/artwork-collection'
-
-import { DataInterface } from '@src/renderer/data/interface';
 
 interface CommonAttributes {}
 
@@ -78,20 +69,12 @@ export type ShapeDistance = {
 export class ShapeRenderer {
   public regl: REGL.Regl
   public artwork: ArtworkBufferCollection
-  // public selection: SelectShapes[] = []
 
   public shapeShaderAttachments: ShapesShaderCollection
   public symbolShaderAttachments: SymbolShaderCollection
   public macroShaderAttachments: MacroShaderCollection
-  // public macroCollection: MacroShaderCollection
-  // public stepAndRepeatCollection: StepAndRepeatCollection
-  // public datumCollection: DatumShaderCollection
-  // public datumTextCollection: DatumTextShaderCollection
-
-  // public macroRenderer: MacroRenderer
 
   public get qtyFeatures(): number {
-    // return this.image.length
     return this.artwork.length
   }
 
@@ -120,8 +103,6 @@ export class ShapeRenderer {
 
     this.artwork = props.image
 
-    // this.breakStepRepeats()
-
     this.shapeShaderAttachments = new ShapesShaderCollection({
       regl: this.regl,
       artwork: this.artwork,
@@ -132,27 +113,6 @@ export class ShapeRenderer {
     this.macroShaderAttachments = new MacroShaderCollection({
       regl: this.regl,
     })
-    // this.macroCollection = new MacroShaderCollection({
-    //   regl: this.regl,
-    // })
-    // this.stepAndRepeatCollection = new StepAndRepeatCollection({
-    //   regl: this.regl,
-    // })
-    // this.datumCollection = new DatumShaderCollection({
-    //   regl: this.regl,
-    // })
-    // this.datumTextCollection = new DatumTextShaderCollection({
-    //   regl: this.regl,
-    // })
-    // this.shapeCollection.refresh()
-    // this.macroCollection.refresh(this.image)
-    // this.stepAndRepeatCollection.refresh(this.image)
-    // this.datumCollection.refresh(this.image)
-    // this.datumTextCollection.refresh(this.image)
-    // this.macroRenderer = new MacroRenderer({
-    //   regl: this.regl,
-    //   image: [],
-    // })
 
     this.artworkConfig = this.regl<
       CommonUniforms,
@@ -271,7 +231,6 @@ export class ShapeRenderer {
   }
 
   private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    // console.log(this.shapeShaderAttachments.shaderAttachment.surfaces)
     if (this.shapeShaderAttachments.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces)
     return this
   }
@@ -297,18 +256,6 @@ export class ShapeRenderer {
     })
     return this
   }
-
-  // public breakStepRepeats(): this {
-  //   for (let i = 0; i < this.image.length; i++) {
-  //     const record = this.image[i]
-  //     if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-  //       if (record.break === false) continue
-  //       const brokenimage = breakStepRepeat(record, this.transform)
-  //       if (brokenimage !== undefined) this.image.splice(i, 1, ...brokenimage)
-  //     }
-  //   }
-  //   return this
-  // }
 
   /**
    * Converts the pointer applying the current transform
@@ -403,13 +350,13 @@ export class ShapeRenderer {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      console.log("distance query", {
-        i: i / 4,
-        bit: distData[i + 3],
-        distance: distData[i],
-        // shape: this.image[i / 4],
-        shape: this.artwork.read(i / 4),
-      })
+      // console.log("distance query", {
+      //   i: i / 4,
+      //   bit: distData[i + 3],
+      //   distance: distData[i],
+      //   // shape: this.image[i / 4],
+      //   shape: this.artwork.read(i / 4),
+      // })
       let distance = distData[i]
       distance *= this.transform.scale
 
@@ -446,36 +393,12 @@ export class ShapeRenderer {
       // }
     }
 
-    // this.macroCollection.macros.forEach((macro) => {
-    //   macro.records.forEach((record) => {
-    //     macro.renderer.updateTransformFromPad(record)
-    //     macro.renderer.transform.index = 0
-    //     const macroFeatures = macro.renderer.queryDistance(transformedPointer, context)
-    //     if (macroFeatures.length > 0) {
-    //       macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
-    //       const closest = macroFeatures.reduce((prev, current) => {
-    //         if (prev.snapPoint == undefined) return current
-    //         if (current.snapPoint == undefined) return prev
-    //         const prevDist = vec2.distance(pointer, prev.snapPoint)
-    //         const currentDist = vec2.distance(pointer, current.snapPoint)
-    //         return prevDist < currentDist ? prev : current
-    //       })
-    //       distances.push({
-    //         shape: record,
-    //         snapPoint: closest.snapPoint,
-    //         children: macroFeatures,
-    //       })
-    //     }
-    //   })
-    // })
-
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
       if (!macroRenderer) return
       macroRenderer.updateTransformFromPad(macro.shape)
       macroRenderer.transform.index = 0
-      // macroRenderer.render(context)
       const macroFeatures = macroRenderer.queryDistance(transformedPointer, context)
       if (macroFeatures.length > 0) {
         macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
@@ -506,7 +429,6 @@ export class ShapeRenderer {
           return prevDist < currentDist ? prev : current
         })
         distances.push({
-          // shape: stepAndRepeat.record,
           shape: this.artwork.read(stepAndRepeat.transform.index),
           snapPoint: closest.snapPoint,
           children: stepAndRepeatFeatures,
@@ -514,12 +436,11 @@ export class ShapeRenderer {
       }
     })
     context.transformMatrix = origMatrix
-    console.log("query distance", distances)
+    // console.log("query distance", distances)
     return distances
   }
 
   public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    // console.log("Rendering ShapeRenderer with", this.qtyFeatures, "features")
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
@@ -616,19 +537,6 @@ export class ShapeRenderer {
 
   public destroy(): void {
     this.shapeShaderAttachments.destroy()
-    // this.symbolShaderAttachments.destroy()
-    // this.macroCollection.destroy()
-    // this.stepAndRepeatCollection.destroy()
-    // this.datumCollection.destroy()
-    // this.datumTextCollection.destroy()
-    // this.commonConfig.destroy()
-    // this.queryConfig.destroy()
-    // this.datumConfig.destroy()
-    // this.surfaceFrameBuffer.destroy()
-    // this.queryFrameBuffer.destroy()
-    // this.drawCollections.destroy()
-    // this.image.length = 0
-    // this.artwork.destroy()
   }
 }
 
@@ -636,7 +544,6 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
   flatten?: boolean
 }
 
-// const macroRenderer = new MacroRenderer({flatten: true, regl: null, image: []})
 
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
@@ -688,6 +595,11 @@ export class MacroRenderer extends ShapeRenderer {
       })
     })
   }
+
+  public destroy(): void {
+    super.destroy()
+    this.framebuffer.destroy()
+  }
 }
 
 interface StepAndRepeatRendererProps {
@@ -698,7 +610,6 @@ interface StepAndRepeatRendererProps {
 }
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
-  // public record: Shapes.StepAndRepeat
   public repeats: Transform[]
   constructor(props: StepAndRepeatRendererProps) {
     const { regl, image, repeats, index } = props

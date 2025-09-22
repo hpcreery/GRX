@@ -1,9 +1,14 @@
-import * as Shapes from "../engine/step/layer/shape/shape"
-import * as Symbols from "../engine/step/layer/shape/symbol/symbol"
-import { FeatureTypeIdentifiers, toMap, FeatureTypeIdentifier, AttributesType, Binary } from "../engine/types"
+import * as Shapes from "./shape/shape"
+import * as Symbols from "./shape/symbol/symbol"
+import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType } from "../engine/types"
 import earcut from "earcut"
-import { fontInfo as cozetteFontInfo } from "../engine/step/layer/shape/text/cozette/font"
+import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { Transform } from '../engine/transform'
+import { TypedEventTarget } from "typescript-event-target"
+
+interface BufferEvents {
+  update: Event
+}
 
 interface BufferCollection<T extends Shapes.Shape> {
   create(shape: T): number
@@ -11,6 +16,7 @@ interface BufferCollection<T extends Shapes.Shape> {
   update(index: number, shape: T): void
   delete(index: number): void
   length: number
+  events: TypedEventTarget<BufferEvents>
 }
 
 // interface AttributeCollection {
@@ -33,10 +39,12 @@ interface SymbolBufferCollectionType {
   read(index: number): Symbols.StandardSymbol
   toJSON(): Symbols.TStandardSymbol[]
   length: number
+  events: TypedEventTarget<BufferEvents>
 }
 
 export const SymbolBufferCollection: SymbolBufferCollectionType = {
   buffer: new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1), // 1 symbol
+  events: new TypedEventTarget<BufferEvents>(),
   length: 1,
   /**
    * Create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
@@ -84,6 +92,7 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
     )
     symbol.sym_num.value = index
     this.length += 1
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return index
   },
   /**
@@ -129,6 +138,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
   // public shapeType: (SymbolBufferCollectionType|MacroArtworkCollectionType)[] = []
   public macros: ({macroId: string, shape: T} | undefined)[] = []
   public length = 0
+  public events = new TypedEventTarget<BufferEvents>()
 
   constructor(properties: string[], typeIdentifier: FeatureTypeIdentifiers) {
     this.properties = properties
@@ -161,6 +171,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     this.view.set(shapeData, index * this.properties.length)
     this.attributes[index] = shape.attributes || {}
     this.length += 1
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return index // Return the index of the newly created shape
   }
 
@@ -205,6 +216,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     for (let i = 0; i < this.properties.length; i++) {
       this.view[index * this.properties.length + i] = shapeData[i]
     }
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -219,6 +231,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     // Optionally, you could also remove the attributes for this index
     this.attributes[index] = {}
     this.macros[index] = undefined
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   private isGetter(obj, prop): boolean {
@@ -280,117 +293,7 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
   bufferOffset: number = 0
   textureOffset: number = 0
 
-  // public initializeBuffers(): void {
-  //   this.emptyBuffers()
-
-  //   let surfaceOffset = 0
-  //   let verticesOffset = 0
-  //   let indiciesOffset = 0
-  //   let totalTrianglesCount = 0
-
-  //   this.surfaces.sort((a, b) => b.index - a.index)
-
-  //   this.surfaces.forEach((surface) => {
-  //     if (!surface) {
-  //       // If the record is null, skip it
-  //       return
-  //     }
-  //     let contourOffset = 0
-  //     let contourIndex = 0
-  //     // let surfaceTrianglesCount = 0
-
-  //     // if (this.hasHoles(record)) {
-  //     //   // If there are holes, we can't use the regular buffers. It will get treated as a separate collection
-  //     //   return
-  //     // }
-
-  //     const surfaceBufferStart = totalTrianglesCount
-  //     surface.contours.map((contour) => {
-  //       const contourBufferStart = totalTrianglesCount
-
-  //       const vertices = this.getVertices(contour)
-
-  //       // Check if the vertices buffer is large enough to hold the new vertices
-  //       if (this.verticesView.length < verticesOffset + vertices.length) {
-  //         // Double the size of the buffer and add additional room for the new vertices
-  //         const newBufferSize = (this.verticesView.length * 2 + vertices.length) * Float32Array.BYTES_PER_ELEMENT
-  //         this.verticesBuffer = this.verticesBuffer.transfer(newBufferSize)
-  //         this.verticesView = new Float32Array(this.verticesBuffer)
-  //       }
-
-  //       // texture
-  //       this.verticesView.set(vertices, verticesOffset)
-  //       verticesOffset += vertices.length
-
-  //       const ears = earcut(vertices)
-  //       const numTriangles = ears.length / 3
-  //       totalTrianglesCount += numTriangles
-
-  //       // Check if the buffers are large enough to hold the new triangles
-  //       if (this.surfaceIndexView.length < totalTrianglesCount) {
-  //         // Double the size of the buffer and add additional room for the new triangles
-  //         const newBufferSize = (this.surfaceIndexView.length * 2 + totalTrianglesCount) * Float32Array.BYTES_PER_ELEMENT
-  //         this.contourPolarityBuffer = this.contourPolarityBuffer.transfer(newBufferSize)
-  //         this.contourOffsetBuffer = this.contourOffsetBuffer.transfer(newBufferSize)
-  //         this.contourIndexBuffer = this.contourIndexBuffer.transfer(newBufferSize)
-  //         this.contourVertexQtyBuffer = this.contourVertexQtyBuffer.transfer(newBufferSize)
-  //         this.qtyContours = this.qtyContours.transfer(newBufferSize)
-  //         this.surfaceIndexBuffer = this.surfaceIndexBuffer.transfer(newBufferSize)
-  //         this.surfacePolarityBuffer = this.surfacePolarityBuffer.transfer(newBufferSize)
-  //         this.surfaceOffsetBuffer = this.surfaceOffsetBuffer.transfer(newBufferSize)
-  //         this.indiciesBuffer = this.indiciesBuffer.transfer(newBufferSize * 3)
-
-  //         this.contourPolarityView = new Float32Array(this.contourPolarityBuffer)
-  //         this.contourOffsetView = new Float32Array(this.contourOffsetBuffer)
-  //         this.contourIndexView = new Float32Array(this.contourIndexBuffer)
-  //         this.contourVertexQtyView = new Float32Array(this.contourVertexQtyBuffer)
-  //         this.qtyContoursView = new Float32Array(this.qtyContours)
-  //         this.surfaceIndexView = new Float32Array(this.surfaceIndexBuffer)
-  //         this.surfacePolarityView = new Float32Array(this.surfacePolarityBuffer)
-  //         this.surfaceOffsetView = new Float32Array(this.surfaceOffsetBuffer)
-  //         this.indiciesView = new Float32Array(this.indiciesBuffer)
-  //       }
-
-  //       // vec3
-  //       this.indiciesView.set(ears, indiciesOffset)
-  //       indiciesOffset += ears.length
-
-  //       // float
-  //       this.contourPolarityView.fill(contour.poly_type, contourBufferStart, totalTrianglesCount)
-
-  //       // float
-  //       this.contourOffsetView.fill(contourOffset, contourBufferStart, totalTrianglesCount)
-
-  //       // float
-  //       this.contourIndexView.fill(contourIndex, contourBufferStart, totalTrianglesCount)
-
-  //       // float
-  //       this.contourVertexQtyView.fill(vertices.length / 2, contourBufferStart, totalTrianglesCount)
-
-  //       contourOffset += vertices.length
-  //       contourIndex++
-  //     })
-
-  //     // float
-  //     this.surfaceIndexView.fill(surface.index, surfaceBufferStart, totalTrianglesCount)
-
-  //     // float
-  //     this.surfacePolarityView.fill(surface.polarity, surfaceBufferStart, totalTrianglesCount)
-
-  //     // float
-  //     this.surfaceOffsetView.fill(surfaceOffset, surfaceBufferStart, totalTrianglesCount)
-
-  //     // float
-  //     this.qtyContoursView.fill(surface.contours.length, surfaceBufferStart, totalTrianglesCount)
-
-  //     surfaceOffset = verticesOffset
-  //   })
-
-  //   const { width, height } = this.fixedTextureData(1024, verticesOffset)
-  //   this.verticesDimensions = [width, height]
-  //   this.length = totalTrianglesCount
-
-  // }
+  public events = new TypedEventTarget<BufferEvents>()
 
   public updateBuffers(index: number): void {
     const surface = this.surfaces[index]
@@ -523,9 +426,11 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     }
     this.bufferOffset = totalTrianglesCount
     this.textureOffset = verticesOffset
+
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
-  emptyBuffers(): void {
+  empty(): void {
     this.verticesView.fill(0)
     this.contourPolarityView.fill(0)
     this.contourOffsetView.fill(0)
@@ -539,6 +444,14 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
 
     // Reset dimensions
     this.verticesDimensions = [0, 0]
+
+    this.length = 0
+    this.bufferOffset = 0
+    this.textureOffset = 0
+    this.bufferMap = []
+    this.surfaces = []
+    this.surfaceWithHoles = []
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   create(shape: Shapes.Surface): number {
@@ -672,6 +585,8 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
     bufferLength: number
   } | null)[] = []
 
+  public events = new TypedEventTarget<BufferEvents>()
+
   updateBuffers(index: number): void {
     // Currently, each text is independent, so we only need to ensure the buffers are large enough
     const shape = this.datumTexts[index]
@@ -737,6 +652,8 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
       bufferLength: positions.length,
     }
     this.bufferOffset += positions.length
+
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   create(shape: Shapes.DatumText): number {
@@ -788,6 +705,8 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
   positionView: Float32Array = new Float32Array(this.positionBuffer)
   length: number = 0
 
+  public events = new TypedEventTarget<BufferEvents>()
+
   create(shape: Shapes.DatumPoint): number {
     const index = this.length
     // Check if the position buffer is large enough to hold the new point
@@ -800,6 +719,7 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
     this.length += 1
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return index // Return the index of the newly created point
   }
 
@@ -819,6 +739,7 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     }
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -828,17 +749,19 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     // Set the position to NaN to mark as deleted
     this.positionView[index * 2] = NaN
     this.positionView[index * 2 + 1] = NaN
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
 export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndRepeat> {
-  // stepAndRepeats: (Shapes.StepAndRepeat | null)[] = []
   stepAndRepeats: ({
     repeats: Transform[]
     artwork: ArtworkBufferCollection
     index: number
   } | null)[] = []
   length: number = 0
+
+  public events = new TypedEventTarget<BufferEvents>()
 
   create(shape: Shapes.StepAndRepeat): number {
     const index = this.stepAndRepeats.push({
@@ -847,6 +770,7 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       index: shape.index,
     })
     this.length = this.stepAndRepeats.length
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return index - 1 // Return the index of the newly created step and repeat
   }
   read(index: number): Shapes.StepAndRepeat {
@@ -876,6 +800,7 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       artwork: new ArtworkBufferCollection(shape.shapes),
       index: shape.index,
     }
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
   delete(index: number): void {
     if (index < 0 || index >= this.stepAndRepeats.length) {
@@ -886,6 +811,7 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       throw new Error(`No step and repeat found at index: ${index} when deleting step and repeat`)
     }
     this.stepAndRepeats[index] = null // Mark as deleted
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
@@ -895,10 +821,6 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
     [FeatureTypeIdentifier.ARC]: new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC),
     [FeatureTypeIdentifier.SURFACE]: new SurfaceBufferCollection(),
-    // [FeatureTypeIdentifier.DATUM_POINT]: new PrimitiveBufferCollection<Shapes.Pad>(
-    //   [...Shapes.PAD_RECORD_PARAMETERS],
-    //   FeatureTypeIdentifier.DATUM_POINT,
-    // ),
     [FeatureTypeIdentifier.DATUM_POINT]: new DatumPointBufferCollection(),
     [FeatureTypeIdentifier.DATUM_LINE]: new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],
@@ -909,13 +831,16 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     [FeatureTypeIdentifier.STEP_AND_REPEAT]: new StepAndRepeatCollection(),
     // Add other collections as needed
   }
-  public artworkMap: {
-    shape: FeatureTypeIdentifiers | null
+  public artworkMap: ({
+    shape: FeatureTypeIdentifiers
     collectionIndex: number
-  }[] = []
+  } | null)[] = []
+  public attributeMap: AttributesType[] = []
   public get length(): number {
     return this.artworkMap.length
   }
+
+  public events = new TypedEventTarget<BufferEvents>()
 
   constructor(artwork: Shapes.Shape[] = []) {
     // Initialize the artwork with the provided shapes
@@ -936,7 +861,8 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
       shape: shape.type,
       collectionIndex,
     })
-    //! this is technically wrong since there can be null shapes in the artwork array
+    this.attributeMap.push(shape.attributes || {}) // Store attributes
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return shape.index // return the index of the artwork
   }
 
@@ -946,14 +872,14 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     if (!feature) {
       throw new Error(`No shape found at index: ${index} when reading shape`)
     }
-    if (feature.shape === null) {
-      throw new Error(`Shape at index ${index} is deleted`)
-    }
     const collection = this.shapes[feature.shape]
     if (!collection) {
       throw new Error(`No collection found for shape type: ${feature.shape} when reading shape`)
     }
-    return collection.read(feature.collectionIndex)
+    const shape =  collection.read(feature.collectionIndex)
+    shape.attributes = this.attributeMap[index] || {} // Attach attributes
+    shape.index = index // Ensure the index is correct
+    return shape
   }
 
   update(index: number, shape: Shapes.Shape): void {
@@ -961,8 +887,22 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     if (!collection) {
       throw new Error(`No collection found for shape type: ${shape.type} when updating shape`)
     }
+    const feature = this.artworkMap[index]
+    if (!feature) {
+      throw new Error(`No shape found at index: ${index} when updating shape`)
+    }
     shape.index = index // Update the index of the shape
+    this.attributeMap[index] = shape.attributes || {} // Update attributes
+    if (feature.shape !== shape.type) {
+      // If the shape type has changed, we need to delete the old shape and create a new one
+      this.delete(index)
+      this.artworkMap[index] = { shape: shape.type, collectionIndex: -1  } // placeholder, will be updated below
+      const newCollectionIndex = collection.create(shape)
+      this.artworkMap[index].collectionIndex = newCollectionIndex
+      return
+    }
     collection.update(index, shape)
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -970,23 +910,21 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     if (!feature) {
       throw new Error(`No shape found at index: ${index} when deleting shape`)
     }
-    if (feature.shape === null) {
-      throw new Error(`Shape at index ${index} is already deleted when deleting shape`)
-    }
     const collection = this.shapes[feature.shape]
     if (!collection) {
       throw new Error(`No collection found for shape type: ${feature.shape} when deleting shape`)
     }
-    // Optionally, remove the feature from the artwork array
-    this.artworkMap[index] = { shape: null, collectionIndex: -1 } // mark as deleted
+    this.artworkMap[index] = null // mark as deleted
+    this.attributeMap[index] = {} // Remove attributes
     collection.delete(feature.collectionIndex)
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
   toJSON(): Shapes.Shape[] {
     const artworkData: Shapes.Shape[] = []
     for (let i = 0; i < this.artworkMap.length; i++) {
       const feature = this.artworkMap[i]
-      if (feature.shape !== null) {
+      if (feature !== null) {
         artworkData.push(this.read(i))
       }
     }
@@ -1005,10 +943,6 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE)
     this.shapes[FeatureTypeIdentifier.ARC] = new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC)
     this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfaceBufferCollection()
-    // this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new PrimitiveBufferCollection<Shapes.Pad>(
-    //   [...Shapes.PAD_RECORD_PARAMETERS],
-    //   FeatureTypeIdentifier.DATUM_POINT,
-    // )
     this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new DatumPointBufferCollection()
     this.shapes[FeatureTypeIdentifier.DATUM_LINE] = new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],
@@ -1021,6 +955,8 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     this.shapes[FeatureTypeIdentifier.DATUM_TEXT] = new DatumTextBufferCollection()
     this.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT] = new StepAndRepeatCollection()
     // Add other collections as needed
+    this.attributeMap = []
+    this.events.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
@@ -1030,10 +966,12 @@ interface MacroArtworkCollectionType {
   read: (key: string) => MacroArtworkBufferCollection | undefined
   update: (symbol: Symbols.MacroSymbol) => void
   delete: (key: string) => void
+  events: TypedEventTarget<BufferEvents>
 }
 
 export const MacroArtworkCollection: MacroArtworkCollectionType = {
   macros: new Map<string, MacroArtworkBufferCollection>(),
+  events: new TypedEventTarget<BufferEvents>(),
   create(symbol: Symbols.MacroSymbol): MacroArtworkBufferCollection {
     const { id, shapes, flatten } = symbol
     symbol.sym_num.value = 0
@@ -1045,6 +983,7 @@ export const MacroArtworkCollection: MacroArtworkCollectionType = {
     }
     const macro = new MacroArtworkBufferCollection(shapes, flatten)
     this.macros.set(id, macro)
+    this.events.dispatchTypedEvent("update", new Event("update"))
     return macro
   },
   read(id: string): MacroArtworkBufferCollection | undefined {
@@ -1057,12 +996,14 @@ export const MacroArtworkCollection: MacroArtworkCollectionType = {
     }
     const macro = new MacroArtworkBufferCollection(shapes, flatten)
     this.macros.set(id, macro)
+    this.events.dispatchTypedEvent("update", new Event("update"))
   },
   delete(id: string): void {
     if (!this.macros[id]) {
       throw new Error(`No macro found with key: ${id} when deleting macro`)
     }
     this.macros.delete(id)
+    this.events.dispatchTypedEvent("update", new Event("update"))
   },
 }
 
@@ -1078,114 +1019,5 @@ export class MacroArtworkBufferCollection extends ArtworkBufferCollection {
 }
 
 export const test = (): void => {
-  console.log("Symbols Ids", Symbols.STANDARD_SYMBOLS_MAP)
-  console.log("Pad Ids", Shapes.PAD_RECORD_PARAMETERS_MAP)
-  console.log("Line Ids", Shapes.LINE_RECORD_PARAMETERS_MAP)
-  console.log("Arc Ids", Shapes.ARC_RECORD_PARAMETERS_MAP)
-  const a = new ArtworkBufferCollection()
-  // const surfaceIndex = a.create(
-  //   new Shapes.Surface({
-  //     polarity: 1,
-  //     contours: [
-  //       new Shapes.Contour({
-  //         poly_type: 1,
-  //         xs: 0,
-  //         ys: 0,
-  //         segments: [
-  //           new Shapes.Contour_Line_Segment({
-  //             x: 10,
-  //             y: 10,
-  //           }),
-  //           new Shapes.Contour_Line_Segment({
-  //             x: 20,
-  //             y: 0,
-  //           }),
-  //           new Shapes.Contour_Line_Segment({
-  //             x: 0,
-  //             y: 0,
-  //           }),
-  //         ],
-  //       }),
-  //     ],
-  //   }),
-  // )
-  // console.log(a.artwork)
-  // console.log(a.collections['surface'].surfaces)
-  // console.log("Created Surface, index:", surfaceIndex)
-  // const surface = a.read(surfaceIndex)
-  // console.log("Read Surface:", surface)
-  // console.log('indiciesView', a.collections['surface'].indiciesView)
-  // console.log('verticesView', a.collections['surface'].verticesView)
-  // console.log('contourPolarityView', a.collections['surface'].contourPolarityView)
-  // console.log('contourOffsetView', a.collections['surface'].contourOffsetView)
-  // console.log('contourIndexView', a.collections['surface'].contourIndexView)
-  // console.log('contourVertexQtyView', a.collections['surface'].contourVertexQtyView)
-  // console.log('surfaceIndexView', a.collections['surface'].surfaceIndexView)
-  // console.log('surfacePolarityView', a.collections['surface'].surfacePolarityView)
-  // console.log('surfaceOffsetView', a.collections['surface'].surfaceOffsetView)
-  // console.log('qtyContoursView', a.collections['surface'].qtyContoursView)
-  const symbol = new Symbols.StandardSymbol({
-    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square,
-    width: 10,
-  })
-  const pad = new Shapes.Pad({
-    index: 10,
-    x: 2,
-    y: 3,
-    resize_factor: 4,
-    polarity: 1,
-    rotation: 5,
-    symbol,
-    mirror_x: 1,
-    mirror_y: 1,
-  })
-  console.log("Creating Pad:", pad)
-  const padIndex = a.create(pad)
-  console.log("Pad Index:", padIndex)
-  const readPad = a.read(padIndex)
-  console.log("Read Pad:", readPad)
-  // if (readPad.type == FeatureTypeIdentifier.PAD) {
-  // readPad.x = 10 // Update the pad's x position
-  // }
-  // console.log("Updated Pad:", readPad)
-  // a.update(padIndex, readPad)
-  // const updatedPad = a.read(padIndex)
-  // console.log("Updated Pad after update:", updatedPad)
-  console.log("Symbol Buffer Collection:", new Float32Array(SymbolBufferCollection.buffer))
-  console.log("Pad Buffer Collection:", new Float32Array(a.shapes[FeatureTypeIdentifier.PAD].buffer))
-  // a.delete(padIndex);
-  // console.log("Deleted Pad, trying to read again...");
-  // try {
-  //   const deletedPad = a.read(padIndex);
-  //   console.log("Deleted Pad:", deletedPad);
-  // } catch (error) {
-  //   console.warn("Error reading deleted pad:", error);
-  // }
-  const symbo2 = new Symbols.StandardSymbol({
-    symbol: Symbols.STANDARD_SYMBOLS_MAP.Square,
-    width: 20,
-  })
-  const pad2 = new Shapes.Pad({
-    index: 20,
-    x: 20,
-    y: 30,
-    resize_factor: 4,
-    polarity: 1,
-    rotation: 5,
-    symbol: symbol,
-  })
-  console.log("Creating another Pad:", pad2)
-  const padIndex2 = a.create(pad2)
-  console.log("Pad Index 2:", padIndex2)
-  const readPad2 = a.read(padIndex2)
-  console.log("Read Pad 2:", readPad2)
-  // if (readPad2.type == FeatureTypeIdentifier.PAD) {
-  //   readPad2.x = 20 // Update the pad's x position
-  // }
-  // console.log("Updated Pad 2:", readPad2)
-  // a.update(padIndex2, readPad2)
-  // const updatedPad2 = a.read(padIndex2)
-  // console.log("Updated Pad 2 after update:", updatedPad2)
-  console.log("Symbol Buffer Collection after second pad:", new Float32Array(SymbolBufferCollection.buffer))
-  console.log("Pad Buffer Collection after second pad:", new Float32Array(a.shapes[FeatureTypeIdentifier.PAD].buffer))
+  console.log("Test function in artwork-collection.ts")
 }
