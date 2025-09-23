@@ -569,6 +569,90 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
   }
 }
 
+export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface> {
+  public surfacesWithoutHoles: SurfaceBufferCollection = new SurfaceBufferCollection()
+  public surfacesWithHoles: SurfaceBufferCollection[] = []
+  public surfacesMap: ({ index: number; collection: SurfaceBufferCollection } | undefined)[] = []
+  public length: number = 0
+  public events = new TypedEventTarget<BufferEvents>()
+
+
+  create(shape: Shapes.Surface): number {
+    const index = this.length
+    if (this.hasHoles(shape)) {
+      const collection = new SurfaceBufferCollection()
+      const shapeIndex = collection.create(shape)
+      this.surfacesWithHoles.push(collection)
+      this.surfacesMap[index] = { index: shapeIndex, collection }
+    } else {
+      const shapeIndex = this.surfacesWithoutHoles.create(shape)
+      this.surfacesMap[index] = { index: shapeIndex, collection: this.surfacesWithoutHoles }
+    }
+    this.length += 1
+    this.events.dispatchTypedEvent("update", new Event("update"))
+    return index
+  }
+
+  read(index: number): Shapes.Surface {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when reading shape")
+    }
+    const mapping = this.surfacesMap[index]
+    if (!mapping) {
+      throw new Error(`No shape found at index: ${index} when reading shape`)
+    }
+    return mapping.collection.read(mapping.index)
+  }
+
+  update(index: number, shape: Shapes.Surface): void {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when updating shape")
+    }
+    const mapping = this.surfacesMap[index]
+    if (!mapping) {
+      throw new Error(`No shape found at index: ${index} when updating shape`)
+    }
+    // If the hole status has changed, we need to move the shape to the correct collection
+    const currentlyHasHoles = this.hasHoles(this.read(index))
+    const newHasHoles = this.hasHoles(shape)
+    if (currentlyHasHoles !== newHasHoles) {
+      // Remove from current collection
+      mapping.collection.delete(mapping.index)
+      // Add to new collection
+      if (newHasHoles) {
+        const collection = new SurfaceBufferCollection()
+        const shapeIndex = collection.create(shape)
+        this.surfacesWithHoles.push(collection)
+        this.surfacesMap[index] = { index: shapeIndex, collection }
+      } else {
+        const shapeIndex = this.surfacesWithoutHoles.create(shape)
+        this.surfacesMap[index] = { index: shapeIndex, collection: this.surfacesWithoutHoles }
+      }
+    } else {
+      // Update in the same collection
+      mapping.collection.update(mapping.index, shape)
+    }
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  delete(index: number): void {
+    if (index < 0 || index >= this.length) {
+      throw new Error("Index out of bounds when deleting shape")
+    }
+    const mapping = this.surfacesMap[index]
+    if (!mapping) {
+      throw new Error(`No shape found at index: ${index} when deleting shape`)
+    }
+    mapping.collection.delete(mapping.index)
+    this.surfacesMap[index] = undefined
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  private hasHoles(shape: Shapes.Surface): boolean {
+    return shape.contours.some((contour) => contour.poly_type === 0)
+  }
+}
+
 class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   texcoordBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -820,7 +904,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     [FeatureTypeIdentifier.PAD]: new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD),
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
     [FeatureTypeIdentifier.ARC]: new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC),
-    [FeatureTypeIdentifier.SURFACE]: new SurfaceBufferCollection(),
+    [FeatureTypeIdentifier.SURFACE]: new SurfacesBufferCollection(),
     [FeatureTypeIdentifier.DATUM_POINT]: new DatumPointBufferCollection(),
     [FeatureTypeIdentifier.DATUM_LINE]: new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],
@@ -942,7 +1026,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     this.shapes[FeatureTypeIdentifier.PAD] = new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD)
     this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE)
     this.shapes[FeatureTypeIdentifier.ARC] = new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC)
-    this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfaceBufferCollection()
+    this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfacesBufferCollection()
     this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new DatumPointBufferCollection()
     this.shapes[FeatureTypeIdentifier.DATUM_LINE] = new PrimitiveBufferCollection<Shapes.Line>(
       [...Shapes.LINE_RECORD_PARAMETERS],

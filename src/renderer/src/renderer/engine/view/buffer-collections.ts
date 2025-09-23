@@ -1,6 +1,6 @@
 import REGL from "regl"
 import * as Symbols from "@src/renderer/data/shape/symbol/symbol"
-import { FeatureTypeIdentifier } from "../types"
+import { Binary, FeatureTypeIdentifier } from "../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 import { vec2 } from "gl-matrix"
 import { ArtworkBufferCollection, SymbolBufferCollection, MacroArtworkCollection } from "@src/renderer/data/artwork-collections"
@@ -115,7 +115,7 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumTexts.texcoords(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].texcoordView)
     this.shaderAttachment.datumTexts.charPosition(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].charPositionView)
     this.shaderAttachment.datumTexts.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.DATUM_TEXT].length
-    const surfaceCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE]
+    const surfaceCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithoutHoles
     const [width, height] = surfaceCollection.verticesDimensions
     if (width * height != 0) {
       this.shaderAttachment.surfaces = [
@@ -144,6 +144,37 @@ export class ShapesShaderCollection {
         },
       ]
     }
+    const surfaceWithHolesCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithHoles
+    this.shaderAttachment.surfacesWithHoles = []
+    surfaceWithHolesCollection.forEach((surface) => {
+      const [width, height] = surface.verticesDimensions
+      if (width * height == 0) return
+      this.shaderAttachment.surfacesWithHoles.push({
+        vertices: this.regl.texture({
+          width,
+          height,
+          type: "float32",
+          channels: 1,
+          wrap: "clamp",
+          mag: "nearest",
+          min: "nearest",
+          data: new Float32Array(surface.verticesView.buffer).slice(0, width * height),
+        }),
+        verticiesDimensions: vec2.fromValues(width, height),
+        length: surface.length,
+        qtyContours: this.regl.buffer(surface.qtyContoursView),
+        contourVertexQtyBuffer: this.regl.buffer(surface.contourVertexQtyView),
+        contourIndexBuffer: this.regl.buffer(surface.contourIndexView),
+        contourOffsetBuffer: this.regl.buffer(surface.contourOffsetView),
+        contourPolarityBuffer: this.regl.buffer(surface.contourPolarityView),
+        indiciesBuffer: this.regl.buffer(surface.indiciesView),
+        surfacePolarityBuffer: this.regl.buffer(surface.surfacePolarityView),
+        surfaceIndexBuffer: this.regl.buffer(surface.surfaceIndexView),
+        surfaceOffsetBuffer: this.regl.buffer(surface.surfaceOffsetView),
+        surfaceIndex: surface.surfaceIndexView.at(0) || 0,
+        surfacePolarity: surface.surfacePolarityView.at(0) as Binary || 0,
+      })
+    })
 
     this.stepAndRepeats = []
     this.artworkBufferCollection.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT].stepAndRepeats.forEach((sr) => {
