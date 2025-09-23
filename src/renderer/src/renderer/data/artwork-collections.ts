@@ -3,7 +3,7 @@ import * as Symbols from "./shape/symbol/symbol"
 import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType } from "../engine/types"
 import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
-import { Transform } from '../engine/transform'
+import { Transform } from "../engine/transform"
 import { TypedEventTarget } from "typescript-event-target"
 
 interface BufferEvents {
@@ -15,6 +15,7 @@ interface BufferCollection<T extends Shapes.Shape> {
   read(index: number): T
   update(index: number, shape: T): void
   delete(index: number): void
+  clear(): void
   length: number
   events: TypedEventTarget<BufferEvents>
 }
@@ -125,18 +126,15 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
       symbols.push(symbol)
     }
     return symbols
-  }
+  },
 }
-
 
 class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCollection<T> {
   public buffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   public view: Float32Array = new Float32Array(this.buffer)
   public readonly properties: string[]
   public readonly typeIdentifier: FeatureTypeIdentifiers
-  public attributes: AttributesType[] = []
-  // public shapeType: (SymbolBufferCollectionType|MacroArtworkCollectionType)[] = []
-  public macros: ({macroId: string, shape: T} | undefined)[] = []
+  public macros: ({ macroId: string; shape: T } | undefined)[] = []
   public length = 0
   public events = new TypedEventTarget<BufferEvents>()
 
@@ -165,11 +163,10 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
       const artwork = MacroArtworkCollection.create(shape.symbol)
       // this.shapeType.push(MacroArtworkCollection)
       // this.macros.push({artwork, shape})
-      this.macros[index] = {macroId: shape.symbol.id, shape}
+      this.macros[index] = { macroId: shape.symbol.id, shape }
     }
     const shapeData = this.properties.map((key) => shape[key])
     this.view.set(shapeData, index * this.properties.length)
-    this.attributes[index] = shape.attributes || {}
     this.length += 1
     this.events.dispatchTypedEvent("update", new Event("update"))
     return index // Return the index of the newly created shape
@@ -182,7 +179,6 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     }
     const shape: T = {
       type: this.typeIdentifier,
-      attributes: this.attributes[index] || {},
     } as T
     for (let i = 0; i < this.properties.length; i++) {
       shape[this.properties[i]] = this.view[index * this.properties.length + i]
@@ -200,8 +196,6 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     if (index < 0 || index >= this.length) {
       throw new Error("Index out of bounds when reading shape")
     }
-    // Update attributes if they exist
-    this.attributes[index] = shape.attributes || {}
     // Update symbol if it changes
     if (shape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
       SymbolBufferCollection.create(shape.symbol)
@@ -209,8 +203,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     } else {
       // throw new Error(`Invalid symbol type: ${shape.symbol.type} when updating shape`)
       const artwork = MacroArtworkCollection.create(shape.symbol)
-      this.macros[index] = {macroId: shape.symbol.id, shape}
-
+      this.macros[index] = { macroId: shape.symbol.id, shape }
     }
     const shapeData = this.properties.map((key) => shape[key])
     for (let i = 0; i < this.properties.length; i++) {
@@ -228,9 +221,14 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     for (let i = 0; i < this.properties.length; i++) {
       this.view[index * this.properties.length + i] = NaN
     }
-    // Optionally, you could also remove the attributes for this index
-    this.attributes[index] = {}
     this.macros[index] = undefined
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  clear(): void {
+    this.view.fill(0)
+    this.length = 0
+    this.macros = []
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -254,10 +252,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
 }
 
 export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface> {
-  // private static readonly MAX_BYTE_LENGTH = 1024 * 1024 * 1 // 1 MB
-
   public surfaces: (Shapes.Surface | null)[] = []
-  public surfaceWithHoles: SurfaceBufferCollection[] = []
 
   verticesBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   contourPolarityBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -317,11 +312,6 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     }
     let contourOffset = 0
     let contourIndex = 0
-
-    // if (this.hasHoles(record)) {
-    //   // If there are holes, we can't use the regular buffers. It will get treated as a separate collection
-    //   return
-    // }
 
     const bufferOffset = this.bufferOffset
     const textureOffset = this.textureOffset
@@ -430,7 +420,7 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
-  empty(): void {
+  clear(): void {
     this.verticesView.fill(0)
     this.contourPolarityView.fill(0)
     this.contourOffsetView.fill(0)
@@ -450,7 +440,6 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     this.textureOffset = 0
     this.bufferMap = []
     this.surfaces = []
-    this.surfaceWithHoles = []
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -502,15 +491,6 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     this.surfaces[index] = null // Mark as deleted
     // Reinitialize buffers to reflect the deletion
     this.updateBuffers(index) // Update the buffers for the deleted shape
-  }
-
-  // get length(): number {
-  //   // Return the number of valid shapes in the buffer
-  //   return this.surfaces.filter((shape) => shape !== null).length
-  // }
-
-  private hasHoles(shape: Shapes.Surface): boolean {
-    return shape.contours.some((contour) => contour.poly_type === 0)
   }
 
   private getVertices(contour: Shapes.Contour): number[] {
@@ -576,6 +556,75 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
   public length: number = 0
   public events = new TypedEventTarget<BufferEvents>()
 
+  edgeLineBufferCollection: PrimitiveBufferCollection<Shapes.Line> = new PrimitiveBufferCollection<Shapes.Line>(
+    [...Shapes.LINE_RECORD_PARAMETERS],
+    FeatureTypeIdentifier.LINE,
+  )
+  edgeArcBufferCollection: PrimitiveBufferCollection<Shapes.Arc> = new PrimitiveBufferCollection<Shapes.Arc>(
+    [...Shapes.ARC_RECORD_PARAMETERS],
+    FeatureTypeIdentifier.ARC,
+  )
+
+  updateEdges(): void {
+    this.edgeLineBufferCollection.clear()
+    this.edgeArcBufferCollection.clear()
+    const surfaceOutlineSymbol = new Symbols.NullSymbol({
+      id: "surface-outline-symbol",
+    })
+
+    this.surfacesMap.forEach((map) => {
+      if (!map) {
+        return
+      }
+      const { index, collection } = map
+      const surface = collection.read(index)
+      surface.contours.forEach((contour) => {
+        let xs = contour.xs
+        let ys = contour.ys
+        contour.segments.forEach((segment) => {
+          if (segment.type === FeatureTypeIdentifier.LINESEGMENT) {
+            this.edgeLineBufferCollection.create(
+              new Shapes.Line({
+                xs: xs,
+                ys: ys,
+                xe: segment.x,
+                ye: segment.y,
+                // index: -1,
+                index: surface.index,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          } else {
+            this.edgeArcBufferCollection.create(
+              new Shapes.Arc({
+                xs: xs,
+                ys: ys,
+                xc: segment.xc,
+                yc: segment.yc,
+                xe: segment.x,
+                ye: segment.y,
+                clockwise: segment.clockwise,
+                // index: -1,
+                index: surface.index,
+                symbol: surfaceOutlineSymbol,
+              }),
+            )
+          }
+          // surfaceDatums.push(new Shapes.DatumPoint({
+          //   x: segment.x,
+          //   y: segment.y,
+          // }))
+          // this.shapes.pads.push(new Shapes.Pad({
+          //   x: segment.x,
+          //   y: segment.y,
+          //   symbol: surfaceOutlineSymbol,
+          // }))
+          xs = segment.x
+          ys = segment.y
+        })
+      })
+    })
+  }
 
   create(shape: Shapes.Surface): number {
     const index = this.length
@@ -589,6 +638,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
       this.surfacesMap[index] = { index: shapeIndex, collection: this.surfacesWithoutHoles }
     }
     this.length += 1
+    this.updateEdges()
     this.events.dispatchTypedEvent("update", new Event("update"))
     return index
   }
@@ -632,6 +682,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
       // Update in the same collection
       mapping.collection.update(mapping.index, shape)
     }
+    this.updateEdges()
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -645,6 +696,18 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
     }
     mapping.collection.delete(mapping.index)
     this.surfacesMap[index] = undefined
+    this.updateEdges()
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  clear(): void {
+    this.surfacesWithoutHoles.clear()
+    this.surfacesWithHoles.forEach((collection) => collection.clear())
+    this.surfacesWithHoles = []
+    this.surfacesMap = []
+    this.length = 0
+    this.edgeLineBufferCollection.clear()
+    this.edgeArcBufferCollection.clear()
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -706,7 +769,6 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
         col = 0
       }
     }
-
 
     // Check if the buffers are large enough to hold the updated text
     if (this.positionView.length < this.bufferOffset + positions.length) {
@@ -781,8 +843,17 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
     this.updateBuffers(index) // Update the buffers for the deleted text
   }
 
+  clear(): void {
+    this.positionView.fill(0)
+    this.texcoordView.fill(0)
+    this.charPositionView.fill(0)
+    this.length = 0
+    this.bufferOffset = 0
+    this.bufferMap = []
+    this.datumTexts = []
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
 }
-
 
 class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -833,6 +904,12 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     // Set the position to NaN to mark as deleted
     this.positionView[index * 2] = NaN
     this.positionView[index * 2 + 1] = NaN
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  clear(): void {
+    this.positionView.fill(0)
+    this.length = 0
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 }
@@ -895,6 +972,11 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       throw new Error(`No step and repeat found at index: ${index} when deleting step and repeat`)
     }
     this.stepAndRepeats[index] = null // Mark as deleted
+    this.events.dispatchTypedEvent("update", new Event("update"))
+  }
+  clear(): void {
+    this.stepAndRepeats = []
+    this.length = 0
     this.events.dispatchTypedEvent("update", new Event("update"))
   }
 }
@@ -960,7 +1042,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     if (!collection) {
       throw new Error(`No collection found for shape type: ${feature.shape} when reading shape`)
     }
-    const shape =  collection.read(feature.collectionIndex)
+    const shape = collection.read(feature.collectionIndex)
     shape.attributes = this.attributeMap[index] || {} // Attach attributes
     shape.index = index // Ensure the index is correct
     return shape
@@ -980,7 +1062,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     if (feature.shape !== shape.type) {
       // If the shape type has changed, we need to delete the old shape and create a new one
       this.delete(index)
-      this.artworkMap[index] = { shape: shape.type, collectionIndex: -1  } // placeholder, will be updated below
+      this.artworkMap[index] = { shape: shape.type, collectionIndex: -1 } // placeholder, will be updated below
       const newCollectionIndex = collection.create(shape)
       this.artworkMap[index].collectionIndex = newCollectionIndex
       return
@@ -1024,7 +1106,10 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
   clear(): void {
     this.artworkMap = []
     this.shapes[FeatureTypeIdentifier.PAD] = new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD)
-    this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE)
+    this.shapes[FeatureTypeIdentifier.LINE] = new PrimitiveBufferCollection<Shapes.Line>(
+      [...Shapes.LINE_RECORD_PARAMETERS],
+      FeatureTypeIdentifier.LINE,
+    )
     this.shapes[FeatureTypeIdentifier.ARC] = new PrimitiveBufferCollection<Shapes.Arc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.ARC)
     this.shapes[FeatureTypeIdentifier.SURFACE] = new SurfacesBufferCollection()
     this.shapes[FeatureTypeIdentifier.DATUM_POINT] = new DatumPointBufferCollection()

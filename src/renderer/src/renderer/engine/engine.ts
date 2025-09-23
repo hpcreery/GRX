@@ -80,6 +80,9 @@ export class Engine {
   public regl: REGL.Regl
   private universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
 
+  // public calculatedFPS: number = 0
+  public renderTime: number = 0
+
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
@@ -353,11 +356,17 @@ export class Engine {
     if (this.renderNowInterval) return
     this.renderNowInterval = setTimeout(() => {
       this.renderNowInterval = null
+      const startTime = performance.now()
       this.universe((_context) => {
         this.views.forEach((view) => {
           view.render()
         })
       })
+      const endTime = performance.now()
+      this.renderTime = endTime - startTime
+      // console.log(`Render Time: ${endTime - startTime} milliseconds`)
+      // console.log(`FPS: ${Math.round(1000 / (endTime - startTime))}`)
+      // this.calculatedFPS = Math.round(1000 / (endTime - startTime))
     }, settings.MSPFRAME)
   }
 

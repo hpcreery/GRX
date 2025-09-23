@@ -9,7 +9,7 @@ import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection }
 import type { UniverseContext } from "../engine"
 import { getScaleMat3 } from "../utils"
 import { WorldContext } from "./view"
-import { ArtworkBufferCollection } from '../../data/artwork-collections'
+import { ArtworkBufferCollection } from "../../data/artwork-collections"
 import { settings } from "../settings"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
@@ -141,10 +141,7 @@ export class ShapeRenderer {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
         u_SymbolsTexture: () => SymbolShaderCollection.texture,
-        u_SymbolsTextureDimensions: () => [
-          SymbolShaderCollection.texture.width,
-          SymbolShaderCollection.texture.height,
-        ],
+        u_SymbolsTextureDimensions: () => [SymbolShaderCollection.texture.width, SymbolShaderCollection.texture.height],
         u_IndexOffset: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) => {
           return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
@@ -211,52 +208,6 @@ export class ShapeRenderer {
     })
   }
 
-  private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    this.macroShaderAttachments.refresh()
-    this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
-      if (macro === undefined) return
-      const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
-      if (!macroRenderer) return
-      macroRenderer.updateTransformFromPad(macro.shape)
-      macroRenderer.render(context)
-    })
-    return this
-  }
-
-  private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
-      stepAndRepeat.render(context)
-    })
-    return this
-  }
-
-  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeShaderAttachments.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces)
-    return this
-  }
-
-  private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.length === 0) return this
-    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
-      this.regl.clear({
-        framebuffer: this.surfaceFrameBuffer,
-        color: [0, 0, 0, 1],
-        depth: 0,
-      })
-      this.surfaceFrameBuffer.use(() => {
-        this.drawCollections.drawSurfaces(attachment)
-      })
-      this.drawCollections.drawFrameBuffer({
-        renderTexture: this.surfaceFrameBuffer,
-        qtyFeatures: this.qtyFeatures,
-        index: attachment.surfaceIndex,
-        polarity: attachment.surfacePolarity,
-      })
-    })
-    return this
-  }
-
   /**
    * Converts the pointer applying the current transform
    * Does not mutate the original pointer, returns a new pointer
@@ -285,6 +236,12 @@ export class ShapeRenderer {
     return point
   }
 
+  /**
+   * Queries the distance from the pointer to all shapes in the renderer
+   * @param pointer the pointer to query
+   * @param context the regl context
+   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance
+   */
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
@@ -371,7 +328,11 @@ export class ShapeRenderer {
 
       // sanity check for if the distances of the four directions are the same
       let validSnap = true
-      if ([this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every((d, _i, arr) => d === arr[0])) {
+      if (
+        [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
+          (d, _i, arr) => d === arr[0],
+        )
+      ) {
         validSnap = false
       }
 
@@ -444,24 +405,17 @@ export class ShapeRenderer {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
-    // if (this.dirty) {
-    //   this.shapeCollection.refresh(this.image)
-    //   this.macroCollection.refresh(this.image)
-    //   this.stepAndRepeatCollection.refresh(this.image)
-    //   this.datumCollection.refresh(this.image)
-    //   this.datumTextCollection.refresh(this.image)
-    //   this.dirty = false
-    // }
     this.artworkConfig(() => {
       this.drawPrimitives(context)
-      // if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
+      // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
+      if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
         this.drawSufaces(context)
         this.drawSurfaceWithHoles(context)
-      // }
+      }
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
-      this.drawSufaceEdges(context)
+      this.drawSurfaceEdges(context)
     })
     context.transformMatrix = origMatrix
   }
@@ -473,28 +427,75 @@ export class ShapeRenderer {
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.datumLines)
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.shapeShaderAttachments.shaderAttachment.datumTexts)
+      if (typeof this.drawCollections.drawDatumText === "function")
+        this.drawCollections.drawDatumText(this.shapeShaderAttachments.shaderAttachment.datumTexts)
       this.drawCollections.drawDatums(this.shapeShaderAttachments.shaderAttachment.datumPoints)
-      // Enable Surface Datums
-      // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
     })
   }
 
   private drawPrimitives(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    // console.log(this.shapeCollection.shaderAttachment.pads)
-    if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.pads)
-    if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.arcs)
-    if (this.shapeShaderAttachments.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.lines)
-    // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
-    // if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-    // this.drawSurfaceWithHoles(context)
+    if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0)
+      this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.pads)
+    if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0)
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.arcs)
+    if (this.shapeShaderAttachments.shaderAttachment.lines.length != 0)
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.lines)
   }
 
-  private drawSufaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    // if (this.shapeCollection.surfaceEdges) {
-    //   this.drawCollections.drawLines(this.shapeCollection.surfaceEdges.shaderAttachment.lines)
-    //   this.drawCollections.drawArcs(this.shapeCollection.surfaceEdges.shaderAttachment.arcs)
-    // }
+  private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    this.macroShaderAttachments.refresh()
+    this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
+      if (macro === undefined) return
+      const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
+      if (!macroRenderer) return
+      macroRenderer.updateTransformFromPad(macro.shape)
+      macroRenderer.render(context)
+    })
+    return this
+  }
+
+  private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
+      stepAndRepeat.render(context)
+    })
+    return this
+  }
+
+  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.length != 0)
+      this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces)
+    return this
+  }
+
+  private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.length === 0) return this
+    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
+      this.regl.clear({
+        framebuffer: this.surfaceFrameBuffer,
+        color: [0, 0, 0, 1],
+        depth: 0,
+      })
+      this.surfaceFrameBuffer.use(() => {
+        this.drawCollections.drawSurfaces(attachment)
+      })
+      this.drawCollections.drawFrameBuffer({
+        renderTexture: this.surfaceFrameBuffer,
+        qtyFeatures: this.qtyFeatures,
+        index: attachment.surfaceIndex,
+        polarity: attachment.surfacePolarity,
+      })
+    })
+    return this
+  }
+
+  private drawSurfaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeShaderAttachments.shaderAttachment.surfaceEdgeArcs.length != 0) {
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.surfaceEdgeArcs)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.surfaceEdgeLines.length != 0) {
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.surfaceEdgeLines)
+    }
   }
 
   public getBoundingBox(): BoundingBox {
@@ -544,7 +545,6 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
   flatten?: boolean
 }
 
-
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
@@ -558,6 +558,10 @@ export class MacroRenderer extends ShapeRenderer {
     })
   }
 
+  /**
+   * Updates the internal transform from a pad shape
+   * @param pad the pad to update the transform from
+   */
   public updateTransformFromPad(pad: Shapes.Pad): void {
     this.transform.index = pad.index
     this.transform.polarity = pad.polarity

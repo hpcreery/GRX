@@ -20,8 +20,10 @@ interface TShaderAttachment {
   pads: PadAttachments
   lines: LineAttachments
   arcs: ArcAttachments
-  surfaces: SurfaceAttachments[]
+  surfaces: SurfaceAttachments
   surfacesWithHoles: SurfaceWithHolesAttachments[]
+  surfaceEdgeLines: LineAttachments
+  surfaceEdgeArcs: ArcAttachments
   // datumPoints: PadAttachments
   datumPoints: DatumAttachments
   datumLines: LineAttachments
@@ -78,8 +80,29 @@ export class ShapesShaderCollection {
         charPosition: regl.buffer(0),
         length: 0,
       },
-      surfaces: [],
+      surfaces: {
+        vertices: regl.texture(),
+        verticiesDimensions: vec2.fromValues(0, 0),
+        length: 0,
+        qtyContours: regl.buffer(0),
+        contourVertexQtyBuffer: regl.buffer(0),
+        contourIndexBuffer: regl.buffer(0),
+        contourOffsetBuffer: regl.buffer(0),
+        contourPolarityBuffer: regl.buffer(0),
+        indiciesBuffer: regl.buffer(0),
+        surfacePolarityBuffer: regl.buffer(0),
+        surfaceIndexBuffer: regl.buffer(0),
+        surfaceOffsetBuffer: regl.buffer(0),
+      },
       surfacesWithHoles: [],
+      surfaceEdgeLines: {
+        buffer: regl.buffer(0),
+        length: 0,
+      },
+      surfaceEdgeArcs: {
+        buffer: regl.buffer(0),
+        length: 0,
+      },
     }
 
     this.refresh()
@@ -118,33 +141,41 @@ export class ShapesShaderCollection {
     const surfaceCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithoutHoles
     const [width, height] = surfaceCollection.verticesDimensions
     if (width * height != 0) {
-      this.shaderAttachment.surfaces = [
-        {
-          vertices: this.regl.texture({
-            width,
-            height,
-            type: "float32",
-            channels: 1,
-            wrap: "clamp",
-            mag: "nearest",
-            min: "nearest",
-            data: new Float32Array(surfaceCollection.verticesView.buffer).slice(0, width * height),
-          }),
-          verticiesDimensions: vec2.fromValues(width, height),
-          length: surfaceCollection.length,
-          qtyContours: this.regl.buffer(surfaceCollection.qtyContoursView),
-          contourVertexQtyBuffer: this.regl.buffer(surfaceCollection.contourVertexQtyView),
-          contourIndexBuffer: this.regl.buffer(surfaceCollection.contourIndexView),
-          contourOffsetBuffer: this.regl.buffer(surfaceCollection.contourOffsetView),
-          contourPolarityBuffer: this.regl.buffer(surfaceCollection.contourPolarityView),
-          indiciesBuffer: this.regl.buffer(surfaceCollection.indiciesView),
-          surfacePolarityBuffer: this.regl.buffer(surfaceCollection.surfacePolarityView),
-          surfaceIndexBuffer: this.regl.buffer(surfaceCollection.surfaceIndexView),
-          surfaceOffsetBuffer: this.regl.buffer(surfaceCollection.surfaceOffsetView),
-        },
-      ]
+      this.shaderAttachment.surfaces.vertices({
+        width,
+        height,
+        type: "float32",
+        channels: 1,
+        wrap: "clamp",
+        mag: "nearest",
+        min: "nearest",
+        data: new Float32Array(surfaceCollection.verticesView.buffer).slice(0, width * height),
+      })
+      this.shaderAttachment.surfaces.verticiesDimensions = vec2.fromValues(width, height)
+      this.shaderAttachment.surfaces.length = surfaceCollection.length
+      this.shaderAttachment.surfaces.qtyContours(surfaceCollection.qtyContoursView)
+      this.shaderAttachment.surfaces.contourVertexQtyBuffer(surfaceCollection.contourVertexQtyView)
+      this.shaderAttachment.surfaces.contourIndexBuffer(surfaceCollection.contourIndexView)
+      this.shaderAttachment.surfaces.contourOffsetBuffer(surfaceCollection.contourOffsetView)
+      this.shaderAttachment.surfaces.contourPolarityBuffer(surfaceCollection.contourPolarityView)
+      this.shaderAttachment.surfaces.indiciesBuffer(surfaceCollection.indiciesView)
+      this.shaderAttachment.surfaces.surfacePolarityBuffer(surfaceCollection.surfacePolarityView)
+      this.shaderAttachment.surfaces.surfaceIndexBuffer(surfaceCollection.surfaceIndexView)
+      this.shaderAttachment.surfaces.surfaceOffsetBuffer(surfaceCollection.surfaceOffsetView)
     }
     const surfaceWithHolesCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithHoles
+    this.shaderAttachment.surfacesWithHoles.map((surface) => {
+      surface.vertices.destroy()
+      surface.qtyContours.destroy()
+      surface.contourVertexQtyBuffer.destroy()
+      surface.contourIndexBuffer.destroy()
+      surface.contourOffsetBuffer.destroy()
+      surface.contourPolarityBuffer.destroy()
+      surface.indiciesBuffer.destroy()
+      surface.surfacePolarityBuffer.destroy()
+      surface.surfaceIndexBuffer.destroy()
+      surface.surfaceOffsetBuffer.destroy()
+    })
     this.shaderAttachment.surfacesWithHoles = []
     surfaceWithHolesCollection.forEach((surface) => {
       const [width, height] = surface.verticesDimensions
@@ -176,6 +207,11 @@ export class ShapesShaderCollection {
       })
     })
 
+    this.shaderAttachment.surfaceEdgeLines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.view)
+    this.shaderAttachment.surfaceEdgeLines.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.length
+    this.shaderAttachment.surfaceEdgeArcs.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.view)
+    this.shaderAttachment.surfaceEdgeArcs.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.length
+
     this.stepAndRepeats = []
     this.artworkBufferCollection.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT].stepAndRepeats.forEach((sr) => {
       if (sr === null) return
@@ -192,6 +228,7 @@ export class ShapesShaderCollection {
   }
 
   public destroy(): this {
+
     this.shaderAttachment.pads.buffer.destroy()
     this.shaderAttachment.pads.length = 0
     this.shaderAttachment.lines.buffer.destroy()
@@ -204,7 +241,7 @@ export class ShapesShaderCollection {
     this.shaderAttachment.datumLines.length = 0
     this.shaderAttachment.datumArcs.buffer.destroy()
     this.shaderAttachment.datumArcs.length = 0
-    this.shaderAttachment.surfaces.map((surface) => {
+    this.shaderAttachment.surfacesWithHoles.map((surface) => {
       surface.vertices.destroy()
       surface.qtyContours.destroy()
       surface.contourVertexQtyBuffer.destroy()
@@ -216,8 +253,29 @@ export class ShapesShaderCollection {
       surface.surfaceIndexBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
     })
+    this.shaderAttachment.surfacesWithHoles.length = 0
+
+    this.shaderAttachment.surfaces.vertices.destroy()
+    this.shaderAttachment.surfaces.qtyContours.destroy()
+    this.shaderAttachment.surfaces.contourVertexQtyBuffer.destroy()
+    this.shaderAttachment.surfaces.contourIndexBuffer.destroy()
+    this.shaderAttachment.surfaces.contourOffsetBuffer.destroy()
+    this.shaderAttachment.surfaces.contourPolarityBuffer.destroy()
+    this.shaderAttachment.surfaces.indiciesBuffer.destroy()
+    this.shaderAttachment.surfaces.surfacePolarityBuffer.destroy()
+    this.shaderAttachment.surfaces.surfaceIndexBuffer.destroy()
+    this.shaderAttachment.surfaces.surfaceOffsetBuffer.destroy()
     this.shaderAttachment.surfaces.length = 0
-    this.artworkBufferCollection = new ArtworkBufferCollection([])
+
+    this.shaderAttachment.datumTexts.positions.destroy()
+    this.shaderAttachment.datumTexts.texcoords.destroy()
+    this.shaderAttachment.datumTexts.charPosition.destroy()
+    this.shaderAttachment.datumTexts.length = 0
+
+    this.stepAndRepeats.forEach((sr) => {
+      sr.destroy()
+    })
+    this.stepAndRepeats = []
     return this
   }
 }

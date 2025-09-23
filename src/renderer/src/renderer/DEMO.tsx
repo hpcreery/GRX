@@ -1910,6 +1910,7 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
   const [shaderCount, setShaderCount] = React.useState<number>(0)
   const [framebufferCount, setFramebufferCount] = React.useState<number>(0)
   const [elementsCount, setElementsCount] = React.useState<number>(0)
+  const [calculatedFPS, setCalculatedFPS] = React.useState<number>(0)
 
   const round = (value: number, precision: number): number => {
     const multiplier = Math.pow(10, precision || 0)
@@ -1937,6 +1938,9 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
     setShaderCount(stats.regl.shaderCount)
     setFramebufferCount(stats.regl.framebufferCount)
     setElementsCount(stats.regl.elementsCount)
+    const renderTime = await props.engine.engine.then((e) => e.renderTime)
+    const calculatedFPS = Math.round(1000 / renderTime)
+    setCalculatedFPS(calculatedFPS)
     requestAnimationFrame(update)
   }
 
@@ -1961,13 +1965,14 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
         minWidth: 250,
       }}
     >
+      <div>Calculated FPS: {calculatedFPS}</div>
       <div>Frame Count: {count}</div>
-      <div>Total CPU Time: {cpuTime}ms</div>
-      <div>Total GPU Time: {gpuTime}ms</div>
-      <div>Avg CPU Time: {averageCPUTime}ms</div>
-      <div>Avg GPU Time: {averageGPUTime}ms</div>
-      <div>Theoretical FPS: {fps}</div>
-      <div>GPU FPS: {gpuFPS}</div>
+      {/* <div>Total CPU Time: {cpuTime}ms</div> */}
+      {/* <div>Total GPU Time: {gpuTime}ms</div> */}
+      {/* <div>Avg CPU Time: {averageCPUTime}ms</div> */}
+      {/* <div>Avg GPU Time: {averageGPUTime}ms</div> */}
+      {/* <div>Theoretical FPS: {fps}</div> */}
+      {/* <div>GPU FPS: {gpuFPS}</div> */}
       <div>Texture Size: {textureSize}MB</div>
       <div>Buffer Size: {bufferSize}MB</div>
       <div>Render Buffer Size: {renderBufferSize}MB</div>
