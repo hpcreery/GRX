@@ -134,15 +134,11 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> extends TypedEventTa
 
     // Check if the shape has a symbol and create it if it does
     const index = this.length
+    this.fixSymbolGetter(shape)
     if (shape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
-      this.fixSymbolGetter(shape)
       SymbolBufferCollection.create(shape.symbol)
-      // this.shapeType.push(SymbolBufferCollection)
     } else {
-      this.fixSymbolGetter(shape)
-      const artwork = MacroArtworkCollection.create(shape.symbol)
-      // this.shapeType.push(MacroArtworkCollection)
-      // this.macros.push({artwork, shape})
+      MacroArtworkCollection.create(shape.symbol)
       this.macros[index] = shape
     }
     const shapeData = this.properties.map((key) => shape[key])
@@ -177,12 +173,12 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> extends TypedEventTa
       throw new Error("Index out of bounds when reading shape")
     }
     // Update symbol if it changes
+    this.fixSymbolGetter(shape)
     if (shape.symbol.type === FeatureTypeIdentifier.SYMBOL_DEFINITION) {
       SymbolBufferCollection.create(shape.symbol)
       this.macros[index] = undefined
     } else {
-      // throw new Error(`Invalid symbol type: ${shape.symbol.type} when updating shape`)
-      const artwork = MacroArtworkCollection.create(shape.symbol)
+      MacroArtworkCollection.create(shape.symbol)
       this.macros[index] = shape
     }
     const shapeData = this.properties.map((key) => shape[key])
