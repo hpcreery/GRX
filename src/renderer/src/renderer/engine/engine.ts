@@ -9,6 +9,7 @@ import { ViewRenderer } from "./view/view"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
 import { DataInterface } from '../data/interface'
+import { initStaticShaderCollections } from './view/buffer-collections'
 
 
 
@@ -119,6 +120,7 @@ export class Engine {
     })
     console.log("WEBGL LIMITS", this.regl.limits)
 
+    initStaticShaderCollections(this.regl)
     initializeRenderers(this.regl)
 
     this.regl.clear({

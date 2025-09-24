@@ -5,55 +5,35 @@ import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { Transform } from "../engine/transform"
 import { TypedEventTarget } from "typescript-event-target"
+import { cyrb64 } from '../engine/utils'
 
-interface BufferEvents {
+export interface BufferEvents {
   update: Event
 }
 
-interface BufferCollection<T extends Shapes.Shape> {
+interface BufferCollection<T extends Shapes.Shape> extends TypedEventTarget<BufferEvents> {
   create(shape: T): number
   read(index: number): T
   update(index: number, shape: T): void
   delete(index: number): void
   clear(): void
   length: number
-  events: TypedEventTarget<BufferEvents>
 }
-
-// interface AttributeCollection {
-//   attributes: AttributesType[];
-// }
-
-// const AttributesCollection: AttributeCollection = {
-//   attributes: []
-// }
 
 const STARTING_BUFFER_BYTE_LENGTH = 64 // 1 KB
 
-interface SymbolBufferCollectionType {
-  buffer: ArrayBuffer
-  /**
-   * create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
-   * @param symbol
-   */
-  create(symbol: Symbols.StandardSymbol): number
-  read(index: number): Symbols.StandardSymbol
-  toJSON(): Symbols.TStandardSymbol[]
-  length: number
-  events: TypedEventTarget<BufferEvents>
-}
+export abstract class SymbolBufferCollection {
+  public static buffer: ArrayBuffer = new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1) // 1 symbol
+  public static length: number = 1
+  public static events: TypedEventTarget<BufferEvents> = new TypedEventTarget<BufferEvents>()
 
-export const SymbolBufferCollection: SymbolBufferCollectionType = {
-  buffer: new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1), // 1 symbol
-  events: new TypedEventTarget<BufferEvents>(),
-  length: 1,
   /**
    * Create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
    * @param symbol
    * @returns the index of the symbol in the collection
    * @throws Error if the buffer overflows
    */
-  create(symbol: Symbols.StandardSymbol): number {
+  static create(symbol: Symbols.StandardSymbol): number {
     let view = new Float32Array(this.buffer)
     for (let i = 0; i < this.length; i += 1) {
       let existingSymbol = true
@@ -61,7 +41,6 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
       for (let j = 0; j < Symbols.SYMBOL_PARAMETERS.length; j++) {
         // Check if the symbol already exists in the collection
         const precision = Math.pow(10, 8) // 8 decimal places
-
         const compareValue = Math.round(view[offset + j] * precision) / precision // Round to avoid floating point precision issues
         if (compareValue !== symbol[Symbols.SYMBOL_PARAMETERS[j]]) {
           existingSymbol = false
@@ -74,19 +53,14 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
         return i
       }
     }
-    // if ((this.length + 1) * Symbols.SYMBOL_PARAMETERS.length > view.length) {
-    //   throw new Error("Buffer overflow when creating symbol")
-    // }
     const index = this.length
-
-    // if the buffer isnt large enough, we need to expand it
+    // if the buffer isn't large enough, we need to expand it
     if (view.length < (index + 1) * Symbols.SYMBOL_PARAMETERS.length) {
       // double the size of the buffer and add additional room for the parameters
       const newBufferSize = (view.length * 2 + Symbols.SYMBOL_PARAMETERS.length) * Float32Array.BYTES_PER_ELEMENT
       this.buffer = this.buffer.transfer(newBufferSize)
       view = new Float32Array(this.buffer)
     }
-
     view.set(
       Symbols.SYMBOL_PARAMETERS.map((key) => symbol[key]),
       index * Symbols.SYMBOL_PARAMETERS.length,
@@ -95,13 +69,14 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
     this.length += 1
     this.events.dispatchTypedEvent("update", new Event("update"))
     return index
-  },
+  }
+
   /**
    * Read a symbol from the collection by its index
    * @param index - the index of the symbol in the collection
    * @returns
    */
-  read(index: number): Symbols.StandardSymbol {
+  static read(index: number): Symbols.StandardSymbol {
     const view = new Float32Array(this.buffer)
     if (index < 0 || index >= view.length / Symbols.SYMBOL_PARAMETERS.length) {
       throw new Error("Index out of bounds when reading symbol")
@@ -110,11 +85,11 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
     for (let i = 0; i < Symbols.SYMBOL_PARAMETERS.length; i++) {
       symbol[Symbols.SYMBOL_PARAMETERS[i]] = view[index * Symbols.SYMBOL_PARAMETERS.length + i]
     }
-    // TODO: Assign an ID to the symbol based on its type and properties
     symbol.id = `${Symbols.STANDARD_SYMBOLS[symbol.symbol]}_${index}` // Assign an ID to the symbol
     return symbol
-  },
-  toJSON(): Symbols.TStandardSymbol[] {
+  }
+
+  static toJSON(): Symbols.TStandardSymbol[] {
     const view = new Float32Array(this.buffer)
     const symbols: Symbols.TStandardSymbol[] = []
     for (let i = 0; i < this.length; i++) {
@@ -126,19 +101,24 @@ export const SymbolBufferCollection: SymbolBufferCollectionType = {
       symbols.push(symbol)
     }
     return symbols
-  },
+  }
+
+  static onUpdate(callback: (event: Event) => void): void {
+    this.events.addEventListener("update", callback)
+  }
 }
 
-class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCollection<T> {
+class PrimitiveBufferCollection<T extends Shapes.Primitive> extends TypedEventTarget<BufferEvents> implements BufferCollection<T> {
   public buffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   public view: Float32Array = new Float32Array(this.buffer)
   public readonly properties: string[]
   public readonly typeIdentifier: FeatureTypeIdentifiers
-  public macros: ({ macroId: string; shape: T } | undefined)[] = []
+  public macros: (T | undefined)[] = []
   public length = 0
-  public events = new TypedEventTarget<BufferEvents>()
+  // public events = new TypedEventTarget<BufferEvents>()
 
   constructor(properties: string[], typeIdentifier: FeatureTypeIdentifiers) {
+    super()
     this.properties = properties
     this.typeIdentifier = typeIdentifier
   }
@@ -163,12 +143,12 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
       const artwork = MacroArtworkCollection.create(shape.symbol)
       // this.shapeType.push(MacroArtworkCollection)
       // this.macros.push({artwork, shape})
-      this.macros[index] = { macroId: shape.symbol.id, shape }
+      this.macros[index] = shape
     }
     const shapeData = this.properties.map((key) => shape[key])
     this.view.set(shapeData, index * this.properties.length)
     this.length += 1
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return index // Return the index of the newly created shape
   }
 
@@ -186,7 +166,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     // Add symbol if it exists
     shape.symbol = SymbolBufferCollection.read(shape.sym_num)
     if (this.macros[index]) {
-      shape.symbol = this.macros[index].shape.symbol
+      shape.symbol = this.macros[index].symbol
     }
     return shape
   }
@@ -203,13 +183,13 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     } else {
       // throw new Error(`Invalid symbol type: ${shape.symbol.type} when updating shape`)
       const artwork = MacroArtworkCollection.create(shape.symbol)
-      this.macros[index] = { macroId: shape.symbol.id, shape }
+      this.macros[index] = shape
     }
     const shapeData = this.properties.map((key) => shape[key])
     for (let i = 0; i < this.properties.length; i++) {
       this.view[index * this.properties.length + i] = shapeData[i]
     }
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -222,17 +202,17 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
       this.view[index * this.properties.length + i] = NaN
     }
     this.macros[index] = undefined
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   clear(): void {
     this.view.fill(0)
     this.length = 0
     this.macros = []
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
-  private isGetter(obj, prop): boolean {
+  private isGetter(obj: Shapes.Primitive, prop: string): boolean {
     const descriptor = Object.getOwnPropertyDescriptor(obj, prop)
     if (descriptor === undefined) {
       return false
@@ -240,7 +220,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
     return !!Object.getOwnPropertyDescriptor(obj, prop)!["get"]
   }
 
-  private fixSymbolGetter(record: Shapes.Pad | Shapes.Line | Shapes.Arc | Shapes.DatumArc | Shapes.DatumLine | Shapes.DatumPoint): void {
+  private fixSymbolGetter(record: Shapes.Primitive): void {
     if (!this.isGetter(record, "sym_num")) {
       Object.defineProperty(record, "sym_num", {
         get: function (): number {
@@ -251,7 +231,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> implements BufferCol
   }
 }
 
-export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface> {
+export class SurfaceBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Surface> {
   public surfaces: (Shapes.Surface | null)[] = []
 
   verticesBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -287,8 +267,6 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
 
   bufferOffset: number = 0
   textureOffset: number = 0
-
-  public events = new TypedEventTarget<BufferEvents>()
 
   public updateBuffers(index: number): void {
     const surface = this.surfaces[index]
@@ -417,7 +395,7 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     this.bufferOffset = totalTrianglesCount
     this.textureOffset = verticesOffset
 
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   clear(): void {
@@ -440,7 +418,7 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
     this.textureOffset = 0
     this.bufferMap = []
     this.surfaces = []
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   create(shape: Shapes.Surface): number {
@@ -549,12 +527,11 @@ export class SurfaceBufferCollection implements BufferCollection<Shapes.Surface>
   }
 }
 
-export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface> {
+export class SurfacesBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Surface> {
   public surfacesWithoutHoles: SurfaceBufferCollection = new SurfaceBufferCollection()
   public surfacesWithHoles: SurfaceBufferCollection[] = []
   public surfacesMap: ({ index: number; collection: SurfaceBufferCollection } | undefined)[] = []
   public length: number = 0
-  public events = new TypedEventTarget<BufferEvents>()
 
   edgeLineBufferCollection: PrimitiveBufferCollection<Shapes.Line> = new PrimitiveBufferCollection<Shapes.Line>(
     [...Shapes.LINE_RECORD_PARAMETERS],
@@ -639,7 +616,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
     }
     this.length += 1
     this.updateEdges()
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return index
   }
 
@@ -683,7 +660,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
       mapping.collection.update(mapping.index, shape)
     }
     this.updateEdges()
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -697,7 +674,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
     mapping.collection.delete(mapping.index)
     this.surfacesMap[index] = undefined
     this.updateEdges()
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   clear(): void {
@@ -708,7 +685,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
     this.length = 0
     this.edgeLineBufferCollection.clear()
     this.edgeArcBufferCollection.clear()
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   private hasHoles(shape: Shapes.Surface): boolean {
@@ -716,7 +693,7 @@ export class SurfacesBufferCollection implements BufferCollection<Shapes.Surface
   }
 }
 
-class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
+class DatumTextBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.DatumText> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   texcoordBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   charPositionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -731,8 +708,6 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
     bufferOffset: number
     bufferLength: number
   } | null)[] = []
-
-  public events = new TypedEventTarget<BufferEvents>()
 
   updateBuffers(index: number): void {
     // Currently, each text is independent, so we only need to ensure the buffers are large enough
@@ -799,7 +774,7 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
     }
     this.bufferOffset += positions.length
 
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   create(shape: Shapes.DatumText): number {
@@ -851,16 +826,14 @@ class DatumTextBufferCollection implements BufferCollection<Shapes.DatumText> {
     this.bufferOffset = 0
     this.bufferMap = []
     this.datumTexts = []
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
-class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> {
+class DatumPointBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.DatumPoint> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   positionView: Float32Array = new Float32Array(this.positionBuffer)
   length: number = 0
-
-  public events = new TypedEventTarget<BufferEvents>()
 
   create(shape: Shapes.DatumPoint): number {
     const index = this.length
@@ -874,7 +847,7 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
     this.length += 1
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return index // Return the index of the newly created point
   }
 
@@ -894,7 +867,7 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     }
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -904,25 +877,23 @@ class DatumPointBufferCollection implements BufferCollection<Shapes.DatumPoint> 
     // Set the position to NaN to mark as deleted
     this.positionView[index * 2] = NaN
     this.positionView[index * 2 + 1] = NaN
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   clear(): void {
     this.positionView.fill(0)
     this.length = 0
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
-export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndRepeat> {
+export class StepAndRepeatCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.StepAndRepeat> {
   stepAndRepeats: ({
     repeats: Transform[]
     artwork: ArtworkBufferCollection
     index: number
   } | null)[] = []
   length: number = 0
-
-  public events = new TypedEventTarget<BufferEvents>()
 
   create(shape: Shapes.StepAndRepeat): number {
     const index = this.stepAndRepeats.push({
@@ -931,7 +902,7 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       index: shape.index,
     })
     this.length = this.stepAndRepeats.length
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return index - 1 // Return the index of the newly created step and repeat
   }
   read(index: number): Shapes.StepAndRepeat {
@@ -961,7 +932,7 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       artwork: new ArtworkBufferCollection(shape.shapes),
       index: shape.index,
     }
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
   delete(index: number): void {
     if (index < 0 || index >= this.stepAndRepeats.length) {
@@ -972,16 +943,20 @@ export class StepAndRepeatCollection implements BufferCollection<Shapes.StepAndR
       throw new Error(`No step and repeat found at index: ${index} when deleting step and repeat`)
     }
     this.stepAndRepeats[index] = null // Mark as deleted
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
   clear(): void {
     this.stepAndRepeats = []
     this.length = 0
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
-export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
+// interface ShapesCollections {
+//   [key: string]: BufferCollection<Shapes.Shape>
+// }
+
+export class ArtworkBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Shape> {
   public shapes = {
     [FeatureTypeIdentifier.PAD]: new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD),
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
@@ -1006,9 +981,8 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     return this.artworkMap.length
   }
 
-  public events = new TypedEventTarget<BufferEvents>()
-
   constructor(artwork: Shapes.Shape[] = []) {
+    super()
     // Initialize the artwork with the provided shapes
     // artwork.unshift(new Shapes.DatumPoint({ x: 0, y: 0 })) // Ensure there is always a datum point at index 0
     artwork.forEach((shape) => {
@@ -1028,7 +1002,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
       collectionIndex,
     })
     this.attributeMap.push(shape.attributes || {}) // Store attributes
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return shape.index // return the index of the artwork
   }
 
@@ -1068,7 +1042,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
       return
     }
     collection.update(index, shape)
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   delete(index: number): void {
@@ -1083,7 +1057,7 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     this.artworkMap[index] = null // mark as deleted
     this.attributeMap[index] = {} // Remove attributes
     collection.delete(feature.collectionIndex)
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   toJSON(): Shapes.Shape[] {
@@ -1125,55 +1099,56 @@ export class ArtworkBufferCollection implements BufferCollection<Shapes.Shape> {
     this.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT] = new StepAndRepeatCollection()
     // Add other collections as needed
     this.attributeMap = []
-    this.events.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 }
 
-interface MacroArtworkCollectionType {
-  macros: Map<string, MacroArtworkBufferCollection>
-  create: (symbol: Symbols.MacroSymbol) => MacroArtworkBufferCollection
-  read: (key: string) => MacroArtworkBufferCollection | undefined
-  update: (symbol: Symbols.MacroSymbol) => void
-  delete: (key: string) => void
-  events: TypedEventTarget<BufferEvents>
-}
 
-export const MacroArtworkCollection: MacroArtworkCollectionType = {
-  macros: new Map<string, MacroArtworkBufferCollection>(),
-  events: new TypedEventTarget<BufferEvents>(),
-  create(symbol: Symbols.MacroSymbol): MacroArtworkBufferCollection {
-    const { id, shapes, flatten } = symbol
+
+export abstract class MacroArtworkCollection {
+  public static macros: Map<string, MacroArtworkBufferCollection> = new Map<string, MacroArtworkBufferCollection>()
+  public static events: TypedEventTarget<BufferEvents> = new TypedEventTarget<BufferEvents>()
+
+  static create(symbol: Symbols.MacroSymbol): MacroArtworkBufferCollection {
+    const { shapes, flatten } = symbol
     symbol.sym_num.value = 0
-    if (this.macros.get(id)) {
-      if (this.macros.get(id)!.flatten !== flatten) {
-        console.warn(`Macro with key: ${id} already exists with different flatten value. Overwriting existing macro.`)
-      }
-      return this.macros.get(id)!
+    const id = cyrb64(JSON.stringify([shapes, flatten])).toString() // generate a new unique ID
+    const existing = this.macros.get(id)
+    if (existing) {
+      return existing // If a macro with the same ID already exists, return it
     }
+    symbol.id = id
     const macro = new MacroArtworkBufferCollection(shapes, flatten)
-    this.macros.set(id, macro)
+    this.macros.set(symbol.id, macro)
     this.events.dispatchTypedEvent("update", new Event("update"))
     return macro
-  },
-  read(id: string): MacroArtworkBufferCollection | undefined {
+  }
+
+  static read(id: string): MacroArtworkBufferCollection | undefined {
     return this.macros.get(id)
-  },
-  update(symbol: Symbols.MacroSymbol): void {
+  }
+
+  static update(symbol: Symbols.MacroSymbol): void {
     const { id, shapes, flatten } = symbol
-    if (!this.macros[id]) {
+    if (!this.macros.has(id)) {
       throw new Error(`No macro found with key: ${id} when updating macro`)
     }
     const macro = new MacroArtworkBufferCollection(shapes, flatten)
     this.macros.set(id, macro)
     this.events.dispatchTypedEvent("update", new Event("update"))
-  },
-  delete(id: string): void {
-    if (!this.macros[id]) {
+  }
+
+  static delete(id: string): void {
+    if (!this.macros.has(id)) {
       throw new Error(`No macro found with key: ${id} when deleting macro`)
     }
     this.macros.delete(id)
     this.events.dispatchTypedEvent("update", new Event("update"))
-  },
+  }
+
+  static onUpdate(listener: (event: Event) => void): void {
+    this.events.addEventListener("update", listener)
+  }
 }
 
 export class MacroArtworkBufferCollection extends ArtworkBufferCollection {

@@ -3,7 +3,7 @@ import * as Symbols from "@src/renderer/data/shape/symbol/symbol"
 import { Binary, FeatureTypeIdentifier } from "../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 import { vec2 } from "gl-matrix"
-import { ArtworkBufferCollection, SymbolBufferCollection, MacroArtworkCollection } from "@src/renderer/data/artwork-collections"
+import { ArtworkBufferCollection, SymbolBufferCollection, MacroArtworkCollection, BufferEvents } from "@src/renderer/data/artwork-collections"
 import {
   ArcAttachments,
   DatumAttachments,
@@ -14,7 +14,8 @@ import {
   SurfaceWithHolesAttachments,
 } from "./gl-commands"
 
-import {settings} from "../settings"
+import { settings } from "../settings"
+import { TypedEventTarget } from "typescript-event-target"
 
 interface TShaderAttachment {
   pads: PadAttachments
@@ -33,7 +34,7 @@ interface TShaderAttachment {
 
 const { SYMBOL_PARAMETERS } = Symbols
 
-export class ShapesShaderCollection {
+export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
   private regl: REGL.Regl
 
   public artworkBufferCollection: ArtworkBufferCollection
@@ -41,10 +42,11 @@ export class ShapesShaderCollection {
   public shaderAttachment: TShaderAttachment
   public stepAndRepeats: StepAndRepeatRenderer[] = []
 
-  private refreshTimer: NodeJS.Timeout | null = null
-  private refreshDelay = settings.MSPFRAME // milliseconds
+  private updateTimer: NodeJS.Timeout | null = null
+  private updateDelay = settings.MSPFRAME // milliseconds
 
   constructor(props: { regl: REGL.Regl; artwork: ArtworkBufferCollection }) {
+    super()
     const { regl, artwork } = props
     this.regl = regl
     this.artworkBufferCollection = artwork
@@ -105,23 +107,27 @@ export class ShapesShaderCollection {
       },
     }
 
-    this.refresh()
-    this.artworkBufferCollection.events.addEventListener("update", () => {
-      this.refresh()
+    this.update()
+    this.artworkBufferCollection.addEventListener("update", () => {
+      this.update()
     })
   }
 
-  public refresh(): this {
-    if (this.refreshTimer) return this
-    this.refreshTimer = setTimeout(() => {
-      this.refreshTimer = null
-      this._refresh()
-    }, this.refreshDelay)
+  public update(): this {
+    if (this.updateTimer) return this
+    this.updateTimer = setTimeout(() => {
+      this.updateTimer = null
+      this._update()
+    }, this.updateDelay)
 
     return this
   }
 
-  private _refresh(): this {
+  public onUpdate(listener: (event: Event) => void): void {
+    this.addEventListener("update", listener)
+  }
+
+  private _update(): this {
     this.shaderAttachment.pads.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].view)
     this.shaderAttachment.pads.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.PAD].length
     this.shaderAttachment.lines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.LINE].view)
@@ -203,7 +209,7 @@ export class ShapesShaderCollection {
         surfaceIndexBuffer: this.regl.buffer(surface.surfaceIndexView),
         surfaceOffsetBuffer: this.regl.buffer(surface.surfaceOffsetView),
         surfaceIndex: surface.surfaceIndexView.at(0) || 0,
-        surfacePolarity: surface.surfacePolarityView.at(0) as Binary || 0,
+        surfacePolarity: (surface.surfacePolarityView.at(0) as Binary) || 0,
       })
     })
 
@@ -224,11 +230,11 @@ export class ShapesShaderCollection {
         }),
       )
     })
+    this.dispatchTypedEvent("update", new Event("update"))
     return this
   }
 
   public destroy(): this {
-
     this.shaderAttachment.pads.buffer.destroy()
     this.shaderAttachment.pads.length = 0
     this.shaderAttachment.lines.buffer.destroy()
@@ -280,87 +286,79 @@ export class ShapesShaderCollection {
   }
 }
 
-export class SymbolShaderCollection {
+export const initStaticShaderCollections = (regl: REGL.Regl): void => {
+  console.log("Initializing static shader collections")
+
+  // setup symbol shader collection
+  SymbolShaderCollection.regl = regl
+  SymbolShaderCollection.texture = regl.texture()
+  SymbolShaderCollection.update()
+  SymbolBufferCollection.onUpdate(() => SymbolShaderCollection.update())
+
+  // setup macro shader collection
+  MacroShaderCollection.regl = regl
+  MacroShaderCollection.update()
+  MacroArtworkCollection.onUpdate(() => MacroShaderCollection.update())
+}
+
+export abstract class SymbolShaderCollection {
   public static texture: REGL.Texture2D
   public static regl: REGL.Regl
-  private static refreshTimer: NodeJS.Timeout | null = null
-  private static refreshDelay = settings.MSPFRAME // milliseconds
+  private static updateTimer: NodeJS.Timeout | null = null
+  private static updateDelay = settings.MSPFRAME // milliseconds
 
-  constructor(props: { regl: REGL.Regl }) {
-    const { regl } = props
-    SymbolShaderCollection.regl = regl
-    SymbolShaderCollection.texture = regl.texture()
-    this.refresh()
-    SymbolBufferCollection.events.addEventListener("update", () => {
-      this.refresh()
-    })
+  public static update(): void {
+    if (this.updateTimer) return
+    this.updateTimer = setTimeout(() => {
+      this.updateTimer = null
+      this._update()
+    }, this.updateDelay)
   }
 
-  public refresh(): this {
-    if (SymbolShaderCollection.refreshTimer) return this
-    SymbolShaderCollection.refreshTimer = setTimeout(() => {
-      SymbolShaderCollection.refreshTimer = null
-      this._refresh()
-    }, SymbolShaderCollection.refreshDelay)
-    return this
-  }
-
-  private _refresh(): this {
-    if (SymbolBufferCollection.length == 0) return this
+  private static _update(): void {
+    if (SymbolBufferCollection.length == 0) return
     const data = new Float32Array(SymbolBufferCollection.buffer).slice(0, SYMBOL_PARAMETERS.length * SymbolBufferCollection.length)
-    SymbolShaderCollection.texture({
+    this.texture({
       width: SYMBOL_PARAMETERS.length,
       height: SymbolBufferCollection.length,
       type: "float",
       format: "luminance",
       data,
     })
-    return this
   }
 
-  public destroy(): this {
-    SymbolShaderCollection.texture.destroy()
-    return this
+  public static destroy(): void {
+    this.texture.destroy()
   }
 }
 
-export class MacroShaderCollection {
+export abstract class MacroShaderCollection {
   public static regl: REGL.Regl
   public static macros: Map<string, MacroRenderer> = new Map<string, MacroRenderer>()
-  private static refreshTimer: NodeJS.Timeout | null = null
-  private static refreshDelay = settings.MSPFRAME // milliseconds
-  constructor(props: { regl: REGL.Regl }) {
-    const { regl } = props
-    MacroShaderCollection.regl = regl
-    this.refresh()
-    MacroArtworkCollection.events.addEventListener("update", () => {
-      this.refresh()
-    })
+  private static updateTimer: NodeJS.Timeout | null = null
+  private static updateDelay = settings.MSPFRAME // milliseconds
+
+  public static update(): void {
+    if (this.updateTimer) return
+    this.updateTimer = setTimeout(() => {
+      this.updateTimer = null
+      this._update()
+    }, this.updateDelay)
+    return
   }
 
-  public refresh(): this {
-    if (MacroShaderCollection.refreshTimer) return this
-    MacroShaderCollection.refreshTimer = setTimeout(() => {
-      MacroShaderCollection.refreshTimer = null
-      this._refresh()
-    }, MacroShaderCollection.refreshDelay)
-    return this
-  }
-
-  private _refresh(): this {
-    if (MacroShaderCollection.macros.size != 0) return this
-    MacroShaderCollection.macros.forEach((macro) => {
-      macro.destroy()
-    })
-    MacroShaderCollection.macros.clear()
+  private static _update(): void {
+    // this.macros.forEach((macro) => {
+    //   macro.destroy()
+    // })
+    this.macros.clear()
     MacroArtworkCollection.macros.forEach((artwork, id) => {
       const macroRenderer = new MacroRenderer({
-        regl: MacroShaderCollection.regl,
+        regl: this.regl,
         image: artwork,
       })
-      MacroShaderCollection.macros.set(id, macroRenderer)
+      this.macros.set(id, macroRenderer)
     })
-    return this
   }
 }
 

@@ -46,7 +46,9 @@ export default class LayerRenderer extends ShapeRenderer {
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
-  private previousContext = ""
+
+  private previousContextString = ""
+  private artworkChanged = false
 
   constructor(props: LayerRendererProps) {
     const image = props.layerData.artwork
@@ -97,6 +99,11 @@ export default class LayerRenderer extends ShapeRenderer {
         u_Alpha: () => this.alpha,
       },
     })
+
+    this.shapeShaderAttachments.onUpdate(() => {
+      console.log('LayerRenderer detected artwork change');
+      this.artworkChanged = true
+    })
   }
 
   public getBoundingBox(): BoundingBox {
@@ -129,10 +136,11 @@ export default class LayerRenderer extends ShapeRenderer {
     delete contextCopy['time']
     contextCopy['color'] = this.color
     const contextCopyStr = JSON.stringify(contextCopy)
-    if (this.previousContext == contextCopyStr) {
+    if (this.previousContextString == contextCopyStr && !this.artworkChanged) {
       return
     }
-    this.previousContext = contextCopyStr
+    this.previousContextString = contextCopyStr
+    this.artworkChanged = false
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({

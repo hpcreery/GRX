@@ -71,8 +71,6 @@ export class ShapeRenderer {
   public artwork: ArtworkBufferCollection
 
   public shapeShaderAttachments: ShapesShaderCollection
-  public symbolShaderAttachments: SymbolShaderCollection
-  public macroShaderAttachments: MacroShaderCollection
 
   public get qtyFeatures(): number {
     return this.artwork.length
@@ -106,12 +104,6 @@ export class ShapeRenderer {
     this.shapeShaderAttachments = new ShapesShaderCollection({
       regl: this.regl,
       artwork: this.artwork,
-    })
-    this.symbolShaderAttachments = new SymbolShaderCollection({
-      regl: this.regl,
-    })
-    this.macroShaderAttachments = new MacroShaderCollection({
-      regl: this.regl,
     })
 
     this.artworkConfig = this.regl<
@@ -356,9 +348,9 @@ export class ShapeRenderer {
 
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
-      const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
+      const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
       if (!macroRenderer) return
-      macroRenderer.updateTransformFromPad(macro.shape)
+      macroRenderer.updateTransformFromPad(macro)
       macroRenderer.transform.index = 0
       const macroFeatures = macroRenderer.queryDistance(transformedPointer, context)
       if (macroFeatures.length > 0) {
@@ -371,7 +363,7 @@ export class ShapeRenderer {
           return prevDist < currentDist ? prev : current
         })
         distances.push({
-          shape: macro.shape,
+          shape: macro,
           snapPoint: closest.snapPoint,
           children: macroFeatures,
         })
@@ -443,12 +435,11 @@ export class ShapeRenderer {
   }
 
   private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    this.macroShaderAttachments.refresh()
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
-      const macroRenderer = MacroShaderCollection.macros.get(macro.macroId)
+      const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
       if (!macroRenderer) return
-      macroRenderer.updateTransformFromPad(macro.shape)
+      macroRenderer.updateTransformFromPad(macro)
       macroRenderer.render(context)
     })
     return this
