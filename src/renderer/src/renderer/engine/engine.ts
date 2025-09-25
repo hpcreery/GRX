@@ -37,17 +37,17 @@ export interface RenderTransform {
   update: () => void
 }
 
-export interface LayerInfo {
-  name: string
-  id: string
-  color: vec3
-  // context: string
-  // type: string
-  units: Units
-  visible: boolean
-  // format: string
-  transform: Transform
-}
+// export interface LayerInfo {
+//   name: string
+//   id: string
+//   color: vec3
+//   // context: string
+//   // type: string
+//   units: Units
+//   visible: boolean
+//   // format: string
+//   transform: Transform
+// }
 
 export interface Pointer {
   x: number
@@ -171,7 +171,7 @@ export class Engine {
       stepData: stepObject,
       id,
     })
-    newStep.eventTarget.addEventListener("render", this.renderDispatch)
+    newStep.addEventListener("update", this.renderDispatch)
     this.views.set(id, newStep)
     this.render()
   }
@@ -400,7 +400,7 @@ export class Engine {
 
   public destroy(): void {
     this.views.forEach((view) => {
-      view.eventTarget.removeEventListener("render", this.renderDispatch)
+      view.removeEventListener("update", this.renderDispatch)
       view.destroy()
     })
     this.regl.destroy()

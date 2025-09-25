@@ -221,14 +221,16 @@ export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
     this.stepAndRepeats = []
     this.artworkBufferCollection.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT].stepAndRepeats.forEach((sr) => {
       if (sr === null) return
-      this.stepAndRepeats.push(
-        new StepAndRepeatRenderer({
-          regl: this.regl,
-          image: sr.artwork,
-          repeats: sr.repeats,
-          index: sr.index,
-        }),
-      )
+      const stepRepeatRenerer = new StepAndRepeatRenderer({
+        regl: this.regl,
+        image: sr.artwork,
+        repeats: sr.repeats,
+        index: sr.index,
+      })
+      this.stepAndRepeats.push(stepRepeatRenerer)
+      stepRepeatRenerer.shapeShaderAttachments.onUpdate(() => {
+        this.dispatchTypedEvent("update", new Event("update"))
+      })
     })
     this.dispatchTypedEvent("update", new Event("update"))
     return this
@@ -348,9 +350,9 @@ export abstract class MacroShaderCollection {
   }
 
   private static _update(): void {
-    // this.macros.forEach((macro) => {
-    //   macro.destroy()
-    // })
+    this.macros.forEach((macro) => {
+      macro.destroy()
+    })
     this.macros.clear()
     MacroArtworkCollection.macros.forEach((artwork, id) => {
       const macroRenderer = new MacroRenderer({

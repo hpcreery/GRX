@@ -101,7 +101,6 @@ export default class LayerRenderer extends ShapeRenderer {
     })
 
     this.shapeShaderAttachments.onUpdate(() => {
-      console.log('LayerRenderer detected artwork change');
       this.artworkChanged = true
     })
   }
@@ -159,7 +158,7 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 
   public destroy(): void {
-    super.destroy()
     this.framebuffer.destroy()
+    super.destroy()
   }
 }

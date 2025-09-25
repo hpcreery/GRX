@@ -11,6 +11,7 @@ import { getScaleMat3 } from "../utils"
 import { WorldContext } from "./view"
 import { ArtworkBufferCollection } from "../../data/artwork-collections"
 import { settings } from "../settings"
+import { TypedEventTarget } from 'typescript-event-target'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -66,7 +67,11 @@ export type ShapeDistance = {
   children: ShapeDistance[]
 }
 
-export class ShapeRenderer {
+export interface ShapeRendererEvents {
+  update: Event
+}
+
+export class ShapeRenderer extends TypedEventTarget<ShapeRendererEvents> {
   public regl: REGL.Regl
   public artwork: ArtworkBufferCollection
 
@@ -93,6 +98,7 @@ export class ShapeRenderer {
   public distanceDownQueryRaw: Float32Array = new Float32Array(0)
 
   constructor(props: ShapeRendererProps) {
+    super()
     this.regl = props.regl
 
     if (props.transform) {
@@ -105,6 +111,8 @@ export class ShapeRenderer {
       regl: this.regl,
       artwork: this.artwork,
     })
+
+    this.shapeShaderAttachments.onUpdate(() => this.dispatchTypedEvent("update", new Event("update")))
 
     this.artworkConfig = this.regl<
       CommonUniforms,
@@ -198,6 +206,10 @@ export class ShapeRenderer {
       depth: true,
       colorType: "float",
     })
+  }
+
+  public onUpdate(callback: (ev: Event) => void): void {
+    this.addEventListener("update", callback)
   }
 
   /**
@@ -529,6 +541,8 @@ export class ShapeRenderer {
 
   public destroy(): void {
     this.shapeShaderAttachments.destroy()
+    this.surfaceFrameBuffer.destroy()
+    this.queryFrameBuffer.destroy()
   }
 }
 
@@ -592,8 +606,8 @@ export class MacroRenderer extends ShapeRenderer {
   }
 
   public destroy(): void {
-    super.destroy()
     this.framebuffer.destroy()
+    super.destroy()
   }
 }
 

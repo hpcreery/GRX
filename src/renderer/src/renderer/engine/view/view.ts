@@ -12,8 +12,6 @@ import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
 import { TypedEventTarget } from "typescript-event-target"
-// import { DataInterface } from '../../data/interface'
-// import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
 import { Layer, Project, Step } from '@src/renderer/data/project'
 
 export interface WorldProps {}
@@ -81,7 +79,7 @@ export interface LayerInfo {
 }
 
 export interface EngineEventsMap {
-  render: Event
+  update: Event
 }
 
 export interface Pointer {
@@ -98,7 +96,7 @@ export interface QuerySelection extends ShapeDistance {
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
 
-export class ViewRenderer {
+export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
   public id: string = UID()
   public stepData: Step
   public projectData: Project
@@ -144,11 +142,12 @@ export class ViewRenderer {
   // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
-  public eventTarget = new TypedEventTarget<EngineEventsMap>()
+  // public eventTarget = new TypedEventTarget<EngineEventsMap>()
 
   private utilitiesRenderer: UtilitiesRenderer
 
   constructor({ viewBox, regl, id, stepData, projectData }: ViewRendererConfig) {
+    super()
     this.id = id || UID()
     this.stepData = stepData
     this.projectData = projectData
@@ -245,7 +244,7 @@ export class ViewRenderer {
     this.buildLayers()
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public updateViewBox(newViewBox: DOMRect): void {
@@ -259,7 +258,7 @@ export class ViewRenderer {
     this.viewBox = newViewBox
     if (viewBoxChanged) {
       this.updateTransform()
-      this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+      this.dispatchTypedEvent("update", new Event("update"))
     }
   }
 
@@ -330,7 +329,7 @@ export class ViewRenderer {
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
     // logMatrix(this.transform.matrix)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
@@ -407,7 +406,11 @@ export class ViewRenderer {
       visible: true,
       // image: artwork,
     })
+    layerRenderer.onUpdate(() => {
+      this.dispatchTypedEvent("update", new Event("update"))
+    })
     this.layers.push(layerRenderer)
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   private deleteLayer(layer: Layer): void {
@@ -444,21 +447,21 @@ export class ViewRenderer {
     const layer = this.layers.find((layer) => layer.layerData.name === name)
     if (!layer) return
     layer.visible = visible
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public setLayerColor(name: string, color: vec3): void {
     const layer = this.layers.find((layer) => layer.layerData.name === name)
     if (!layer) return
     layer.color = color
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public setLayerTransform(name: string, transform: Partial<Transform>): void {
     const layer = this.layers.find((layer) => layer.layerData.name === name)
     if (!layer) return
     Object.assign(layer.transform, transform)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public sample(x: number, y: number): void {
@@ -497,9 +500,9 @@ export class ViewRenderer {
             units: layer.layerData.artworkUnits,
           })
 
-          // THIS IS A VISUAL AIDS FOR THE SELECTION
+          // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
           // this.measurements.addMeasurement(pointer)
-          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
+          // this.measurements.finishMeasurement(select.snapPoint || pointer)
         }
         const selectionLayer = new Layer(layer.layerData.name + "_selection")
         // we want to deep clone this object to avoid the layer renderer from mutating the properties
@@ -516,10 +519,14 @@ export class ViewRenderer {
           id: layer.id,
           transform: layer.transform,
         })
+        newSelectionLayer.onUpdate(() => {
+          this.dispatchTypedEvent("update", new Event("update"))
+        })
         this.selections.push(newSelectionLayer)
       }
     })
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    console.log("Selection:", selection)
+    this.dispatchTypedEvent("update", new Event("update"))
     return selection
   }
 
@@ -558,14 +565,14 @@ export class ViewRenderer {
     for (const select of selection) {
       // we want to deep clone this object to avoid the layer renderer from mutating the properties
       const shape = JSON.parse(JSON.stringify(select.shape)) as Shapes.Shape
-      if (select.children.length > 0) {
-        if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
-          shape.shapes = this.copySelectionToImage(select.children)
-        }
-        if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
-          shape.symbol.shapes = this.copySelectionToImage(select.children)
-        }
-      }
+      // if (select.children.length > 0) {
+      //   if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
+      //     shape.shapes = this.copySelectionToImage(select.children)
+      //   }
+      //   if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
+      //     shape.symbol.shapes = this.copySelectionToImage(select.children)
+      //   }
+      // }
       image.push(shape)
     }
     return image
@@ -578,7 +585,7 @@ export class ViewRenderer {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+      this.dispatchTypedEvent("update", new Event("update"))
     }
   }
 
@@ -631,7 +638,7 @@ export class ViewRenderer {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom })
     }
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   // public startLoading(): void {
@@ -645,18 +652,18 @@ export class ViewRenderer {
   public addMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.addMeasurement(pointSnap)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public updateMeasurement(point: vec2): void {
     this.measurements.updateMeasurement(point)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public finishMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.finishMeasurement(pointSnap)
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public getMeasurements(): { point1: vec2; point2: vec2 }[] {
@@ -669,36 +676,22 @@ export class ViewRenderer {
 
   public clearMeasurements(): void {
     this.measurements.clearMeasurements()
-    this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   // public setMeasurementUnits(units: Units): void {
   //   this.measurements.setMeasurementUnits(units)
-  //   this.eventTarget.dispatchTypedEvent("render", new Event("render"))
+  //   this.eventTarget.dispatchTypedEvent("update", new Event("update"))
   // }
 
   public render(): void {
-    // if (!this.dirty) return
-    // this.dirty = false
-    // const { force, updateLayers } = { ...StepRenderer.defaultRenderProps, ...props }
-    // if (!this.dirty && !force) return
-    // if (this.loadingFrame.enabled) return
-    // if (updateLayers) this.changePending = false
-    // this.regl.poll()
-
-    // setTimeout(() => (this.dirty = true), settings.MSPFRAME)
-    // if (!this.changePending) return
     this.world((context) => {
-      // check if context.transformMatrix has changed
-
 
       this.regl.clear({
         color: [0, 0, 0, 0],
         depth: 1,
       })
 
-      // if (origin.enabled) this.drawCollections.renderOrigin()
-      // if (grid.enabled) this.drawCollections.renderGrid(grid)
       this.utilitiesRenderer.render(context)
       this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
 
@@ -722,64 +715,17 @@ export class ViewRenderer {
     })
   }
 
-  // private shapeToElement(shape: Shapes.Shape): Path2D {
-  //   const path = new Path2D()
-  //   switch (shape.type) {
-  //     case FeatureTypeIdentifier.LINE:
-  //       path.moveTo(shape.xs, shape.ys)
-  //       path.lineTo(shape.xe, shape.ye)
-  //       break
-  //     case FeatureTypeIdentifier.POLYLINE:
-  //       path.moveTo(shape.xs, shape.ys)
-  //       for (let i = 0; i < shape.lines.length; i++) {
-  //         path.lineTo(shape.lines[i].x, shape.lines[i].y)
-  //       }
-  //       break
-  //   }
-  //   return path
-  // }
-
-  // public getStats(): Stats {
-  //   return {
-  //     regl: {
-  //       totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
-  //       totalBufferSize: this.regl.stats.getTotalBufferSize ? this.regl.stats!.getTotalBufferSize() : -1,
-  //       totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
-  //       maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
-  //       maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
-  //       bufferCount: this.regl.stats.bufferCount,
-  //       elementsCount: this.regl.stats.elementsCount,
-  //       framebufferCount: this.regl.stats.framebufferCount,
-  //       shaderCount: this.regl.stats.shaderCount,
-  //       textureCount: this.regl.stats.textureCount,
-  //       cubeCount: this.regl.stats.cubeCount,
-  //       renderbufferCount: this.regl.stats.renderbufferCount,
-  //       maxTextureUnits: this.regl.stats.maxTextureUnits,
-  //       vaoCount: this.regl.stats.vaoCount,
-  //     },
-  //     world: this.world.stats,
-  //   }
-  // }
-
   public destroy(): void {
-    // this.regl.destroy()
+    for (const layer of this.layers) {
+      layer.destroy()
+    }
+    for (const selection of this.selections) {
+      selection.destroy()
+    }
+    this.measurements.destroy()
+    this.utilitiesRenderer.framebuffer.destroy()
   }
 }
-
-// export interface Stats {
-//   regl: ReglStats
-//   world: REGL.CommandStats
-// }
-
-// interface ReglStats extends REGL.Stats {
-//   totalTextureSize: number
-//   totalBufferSize: number
-//   totalRenderbufferSize: number
-//   maxUniformsCount: number
-//   maxAttributesCount: number
-// }
-
-// Comlink.expose(StepRenderer)
 
 export function logMatrix(matrix: mat3): void {
   console.log(
