@@ -7,11 +7,10 @@ import ShapeTransform, { Transform } from "../transform"
 import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
 import type { UniverseContext } from "../engine"
-import { getScaleMat3 } from "../utils"
+import { getScaleMat3, UpdateEventTarget } from "../utils"
 import { WorldContext } from "./view"
 import { ArtworkBufferCollection } from "../../data/artwork-collections"
 import { settings } from "../settings"
-import { TypedEventTarget } from 'typescript-event-target'
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -71,7 +70,7 @@ export interface ShapeRendererEvents {
   update: Event
 }
 
-export class ShapeRenderer extends TypedEventTarget<ShapeRendererEvents> {
+export class ShapeRenderer extends UpdateEventTarget {
   public regl: REGL.Regl
   public artwork: ArtworkBufferCollection
 
@@ -206,10 +205,6 @@ export class ShapeRenderer extends TypedEventTarget<ShapeRendererEvents> {
       depth: true,
       colorType: "float",
     })
-  }
-
-  public onUpdate(callback: (ev: Event) => void): void {
-    this.addEventListener("update", callback)
   }
 
   /**
@@ -540,6 +535,7 @@ export class ShapeRenderer extends TypedEventTarget<ShapeRendererEvents> {
   // }
 
   public destroy(): void {
+    super.unSubscribe()
     this.shapeShaderAttachments.destroy()
     this.surfaceFrameBuffer.destroy()
     this.queryFrameBuffer.destroy()

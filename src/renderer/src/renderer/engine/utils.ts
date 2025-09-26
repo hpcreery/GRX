@@ -1,5 +1,6 @@
 import { mat3, vec2 } from "gl-matrix"
 import { Units } from "./types"
+import { TypedEventTarget } from 'typescript-event-target'
 
 export type immutable = boolean | number | bigint | string | symbol | null | undefined
 
@@ -94,4 +95,21 @@ export const cyrb64 = (str: string, seed = 0): number => {
   // but we instead return the full 64-bit value:
   // return [h2>>>0, h1>>>0];
   return 4294967296 * (2097151 & h2) + (h1 >>> 0)
+}
+
+export interface UpdateEventsMap {
+  update: Event
+}
+
+export class UpdateEventTarget extends TypedEventTarget<UpdateEventsMap> {
+  protected controller: AbortController = new AbortController()
+
+  public onUpdate(callback: (ev: Event) => void): void {
+    this.addEventListener("update", callback, { signal: this.controller.signal })
+  }
+
+  public unSubscribe(): void {
+    this.controller.abort()
+    this.controller = new AbortController()
+  }
 }

@@ -5,14 +5,14 @@ import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import * as Shapes from "../../data/shape/shape"
 import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
-import { UID } from "../utils"
+import { UID, UpdateEventTarget } from "../utils"
 import { SimpleMeasurement } from "./measurements"
 import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
-import { TypedEventTarget } from "typescript-event-target"
 import { Layer, Project, Step } from '@src/renderer/data/project'
+import { DataInterface } from '@src/renderer/data/interface'
 
 export interface WorldProps {}
 
@@ -96,7 +96,7 @@ export interface QuerySelection extends ShapeDistance {
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
 
-export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
+export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
   public stepData: Step
   public projectData: Project
@@ -142,9 +142,9 @@ export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
   // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
-  // public eventTarget = new TypedEventTarget<EngineEventsMap>()
-
   private utilitiesRenderer: UtilitiesRenderer
+
+  private layersSubscriptionControler: AbortController
 
   constructor({ viewBox, regl, id, stepData, projectData }: ViewRendererConfig) {
     super()
@@ -241,7 +241,8 @@ export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
-    this.buildLayers()
+    this.layersSubscriptionControler = new AbortController();
+    this.createLayers()
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.dispatchTypedEvent("update", new Event("update"))
@@ -359,41 +360,25 @@ export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
     return [mousePos[0], mousePos[1]]
   }
 
-  // public async sendMessage(data: MessageData): Promise<void> {
-  //   this.eventTarget.dispatchTypedEvent(
-  //     "message",
-  //     new MessageEvent<MessageData>("MESSAGE", {
-  //       data,
-  //     }),
-  //   )
-  // }
 
+  private createLayers(): void {
+    this.layersSubscriptionControler.abort()
+    this.layersSubscriptionControler = new AbortController();
+    DataInterface.subscribe_to_matrix(this.projectData, () => {
+      this.updateLayers()
+    }, { signal: this.layersSubscriptionControler.signal });
+    this.updateLayers()
+  }
 
-  private buildLayers(): void {
-    // const layers = DataInterface.read_layers(this.projectData.name)
-    this.layers = []
+  public updateLayers(): void {
     for (const layer of this.stepData.layers) {
+      if (this.layers.find((l) => l.layerData === layer)) continue
       this.addLayer(layer)
     }
-    // DataInterface.subscribe_to_matrix(this.projectData, (event) => {
-    //   if (event.detail.layer == null) return
-    //   if (event.detail.step != this.stepData) return
-    //   switch (event.detail.action) {
-    //     case "create": {
-    //       this.addLayer(event.detail.layer)
-    //       break
-    //     }
-    //     case "delete": {
-    //       this.deleteLayer(event.detail.layer)
-    //       break
-    //     }
-    //     case "update": {
-    //       // !!TODO update layer properties
-    //       break
-    //     }
-    //   }
-    //   this.eventTarget.dispatchTypedEvent("layers_changed", new Event("layers_changed"))
-    // })
+    for (const layer of this.layers) {
+      if (this.stepData.layers.find((l) => l === layer.layerData)) continue
+      this.deleteLayer(layer.layerData)
+    }
   }
 
   private addLayer(layerData: Layer): void {
@@ -406,17 +391,21 @@ export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
       visible: true,
       // image: artwork,
     })
+    this.layers.push(layerRenderer)
     layerRenderer.onUpdate(() => {
       this.dispatchTypedEvent("update", new Event("update"))
     })
-    this.layers.push(layerRenderer)
-    this.dispatchTypedEvent("update", new Event("update"))
+    // this.dispatchTypedEvent("update", new Event("update"))
   }
 
   private deleteLayer(layer: Layer): void {
     const index = this.layers.findIndex((l) => l.layerData === layer)
     if (index === -1) return
-    this.layers.splice(index, 1)
+    const deleted = this.layers.splice(index, 1)
+    for (const d of deleted) {
+      d.destroy()
+    }
+    // this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public getTransform(): Partial<RenderTransform> {
@@ -716,6 +705,8 @@ export class ViewRenderer extends TypedEventTarget<EngineEventsMap> {
   }
 
   public destroy(): void {
+    super.unSubscribe()
+    this.layersSubscriptionControler.abort()
     for (const layer of this.layers) {
       layer.destroy()
     }

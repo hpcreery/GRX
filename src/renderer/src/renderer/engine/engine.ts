@@ -171,8 +171,16 @@ export class Engine {
       stepData: stepObject,
       id,
     })
-    newStep.addEventListener("update", this.renderDispatch)
+    newStep.onUpdate(this.renderDispatch)
     this.views.set(id, newStep)
+    this.render()
+  }
+
+  public removeView(id: string): void {
+    if (!this.views.has(id)) throw new Error(`View ${id} not found`)
+    const view = this.views.get(id)!
+    view.destroy()
+    this.views.delete(id)
     this.render()
   }
 

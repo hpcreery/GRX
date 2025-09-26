@@ -2,9 +2,11 @@ import * as Shapes from "./shape/shape"
 import { Layer, Project, PROJECTS, Step } from "./project"
 import { ArtworkBufferCollection } from "./artwork-collections"
 import importFormats from "./import-plugins"
-import type { importFormatName, ImportPluginSignature, ParametersType } from "./import-plugins"
+import type { importFormatName, ImportPluginSignature } from "./import-plugins"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
+// import * as z from "zod"
+import Ajv from "ajv"
 
 enum ErrorCode {
   UNKNOWN = 1,
@@ -35,32 +37,16 @@ class InternalError extends Error {
 export interface DataEventsMap {
   matrix_changed: CustomEvent<MatrixEventDetail>
   projects_list_changed: CustomEvent<ProjectListEventDetail>
-  // layer_artwork_changed: CustomEvent<LayerEventDetail>
-  project_name_changed: CustomEvent<{ old_name: string; new_name: string }>
-  step_name_changed: CustomEvent<{ project: string; old_name: string; new_name: string }>
-  layer_name_changed: CustomEvent<{ project: string; old_name: string; new_name: string }>
 }
 
-type CRUDAction = "create" | "read" | "update" | "delete"
 
 export interface ProjectListEventDetail {
-  // project: Project
-  action: CRUDAction
 }
 
 export interface MatrixEventDetail {
   project: Project
-  step: Step | null
-  layer: Layer | null
-  action: CRUDAction
 }
 
-export interface LayerEventDetail {
-  project: Project
-  step: Step
-  layer: Layer
-  action: CRUDAction
-}
 
 /**
  * dataInterface object provides all the methods to manage projects.
@@ -82,18 +68,18 @@ export interface LayerEventDetail {
 export const DataInterface = {
   eventTarget: new TypedEventTarget<DataEventsMap>(),
 
-  subscribe_to_matrix(project: Project, callback: (event: CustomEvent<MatrixEventDetail>) => void): void {
+  subscribe_to_matrix(project: Project, callback: (event: CustomEvent<MatrixEventDetail>) => void, options?: AddEventListenerOptions): void {
     this.eventTarget.addEventListener("matrix_changed", (event) => {
       if (event.detail.project === project) {
         callback(event)
       }
-    })
+    }, options)
   },
 
-  subscribe_to_projects_list(callback: (event: CustomEvent<ProjectListEventDetail>) => void): void {
+  subscribe_to_projects_list(callback: (event: CustomEvent<ProjectListEventDetail>) => void, options?: AddEventListenerOptions): void {
     this.eventTarget.addEventListener("projects_list_changed", (event) => {
       callback(event)
-    })
+    }, options)
   },
 
   /**
@@ -109,11 +95,7 @@ export const DataInterface = {
     PROJECTS.set(project_name, new Project(project_name))
     this.eventTarget.dispatchTypedEvent(
       "projects_list_changed",
-      new CustomEvent("projects_list_changed", {
-        detail: {
-          action: "create",
-        },
-      }),
+      new CustomEvent("projects_list_changed"),
     )
   },
 
@@ -157,10 +139,6 @@ export const DataInterface = {
     PROJECTS.delete(old_name)
     project.name = new_name
     PROJECTS.set(new_name, project)
-    this.eventTarget.dispatchTypedEvent(
-      "project_name_changed",
-      new CustomEvent("project_name_changed", { detail: { old_name, new_name } }),
-    )
   },
 
   /**
@@ -187,9 +165,6 @@ export const DataInterface = {
       new CustomEvent("matrix_changed", {
         detail: {
           project,
-          step: null,
-          layer: null,
-          action: "create",
         },
       }),
     )
@@ -271,9 +246,6 @@ export const DataInterface = {
       new CustomEvent("matrix_changed", {
         detail: {
           project,
-          step: null,
-          layer: null,
-          action: "delete",
         },
       }),
     )
@@ -303,10 +275,6 @@ export const DataInterface = {
       }
       layer.name = new_name
     })
-    this.eventTarget.dispatchTypedEvent(
-      "layer_name_changed",
-      new CustomEvent("layer_name_changed", { detail: { project: project_name, old_name, new_name } }),
-    )
   },
 
   /**
@@ -329,9 +297,6 @@ export const DataInterface = {
       new CustomEvent("matrix_changed", {
         detail: {
           project,
-          step,
-          layer: null,
-          action: "create",
         },
       }),
     )
@@ -353,9 +318,6 @@ export const DataInterface = {
       new CustomEvent("matrix_changed", {
         detail: {
           project,
-          step,
-          layer: null,
-          action: "delete",
         },
       }),
     )
@@ -387,15 +349,29 @@ export const DataInterface = {
 
 
   /**
-   * Sets the artwork data as JSON for the specified layer in the specified step of the specified project.
+   * Adds the artwork data as JSON for the specified layer in the specified step of the specified project.
    * @param project_name Name of the project containing the step and layer.
    * @param step_name Name of the step containing the layer.
    * @param layer_name Name of the layer whose artwork data is to be set.
    * @param artworkData An array of Shapes representing the artwork data to set.
    * @returns void
    */
-  _update_layer_artwork_json(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
+  _update_layer_artwork_from_json(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
     const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
+    artwork.fromJSON(artworkData)
+  },
+
+    /**
+   * Resets the artwork data as JSON for the specified layer in the specified step of the specified project.
+   * @param project_name Name of the project containing the step and layer.
+   * @param step_name Name of the step containing the layer.
+   * @param layer_name Name of the layer whose artwork data is to be set.
+   * @param artworkData An array of Shapes representing the artwork data to set.
+   * @returns void
+   */
+  _create_layer_artwork_from_json(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
+    const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
+    artwork.clear()
     artwork.fromJSON(artworkData)
   },
 
@@ -408,7 +384,7 @@ export const DataInterface = {
    * @param shape The shape to add to the artwork collection.
    * @returns The index of the newly added shape in the artwork collection.
    */
-  _add_layer_feature(project_name: string, step_name: string, layer_name: string, shape: Shapes.Shape): number {
+  _add_layer_shape(project_name: string, step_name: string, layer_name: string, shape: Shapes.Shape): number {
     const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
     const return_value = artwork.create(shape)
     return return_value
@@ -422,7 +398,7 @@ export const DataInterface = {
    * @param index The index of the shape to retrieve from the artwork collection.
    * @returns The shape at the specified index in the artwork collection.
    */
-  _read_layer_feature_object(project_name: string, step_name: string, layer_name: string, index: number): Shapes.Shape {
+  _read_layer_shape_object(project_name: string, step_name: string, layer_name: string, index: number): Shapes.Shape {
     const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
     return artwork.read(index)
   },
@@ -436,7 +412,7 @@ export const DataInterface = {
    * @param shape The new shape to replace the existing shape at the specified index.
    * @returns void
    */
-  _update_layer_feature(project_name: string, step_name: string, layer_name: string, index: number, shape: Shapes.Shape): void {
+  _update_layer_shape(project_name: string, step_name: string, layer_name: string, index: number, shape: Shapes.Shape): void {
     const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
     artwork.update(index, shape)
   },
@@ -449,7 +425,7 @@ export const DataInterface = {
    * @param index The index of the shape to delete from the artwork collection.
    * @returns void
    */
-  delete_layer_feature(project_name: string, step_name: string, layer_name: string, index: number): void {
+  delete_layer_shape(project_name: string, step_name: string, layer_name: string, index: number): void {
     const artwork = this._read_layer_artwork_ref(project_name, step_name, layer_name)
     artwork.delete(index)
   },
@@ -465,21 +441,13 @@ export const DataInterface = {
  * @param params Additional parameters to pass to the plugin.
  * @returns void
  */
-async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer, format: Format, params: ParametersType<Format>): Promise<void> {
+async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer, format: Format, params: object): Promise<void> {
   // @ts-expect-error TS2345
   if (format == "") {
     throw new CommandError("Format must be specified", ErrorCode.INVALID_INPUT)
   }
   if (!Object.keys(importFormats).includes(format)) {
     throw new CommandError("No parser found for format: " + format, ErrorCode.INVALID_INPUT)
-  }
-
-  try {
-    // Validate params against the schema
-    importFormats[format].parameters.parse(params)
-  } catch (error) {
-    console.error(error)
-    throw new CommandError("Invalid parameters: " + (error as Error).message, ErrorCode.INVALID_INPUT)
   }
 
   const pluginWorker = importFormats[format].plugin

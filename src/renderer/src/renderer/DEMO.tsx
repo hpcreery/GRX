@@ -1235,8 +1235,8 @@ function DemoApp(): JSX.Element {
       project,
     })
 
-    DataInterface._update_layer_artwork_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
-    DataInterface._update_layer_artwork_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
+    DataInterface._update_layer_artwork_from_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
+    DataInterface._update_layer_artwork_from_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
 
     Engine.addManagedView(box2Ref.current, {
       project,

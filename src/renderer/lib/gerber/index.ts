@@ -1,49 +1,26 @@
 import { plot } from "./plotter/src"
 import { parse } from "@hpcreery/tracespace-parser"
-import { ImportPluginSignature } from '@src/renderer/data/import-plugins'
-import * as Comlink from "comlink"
-import { DataInterface } from "@src/renderer/data/interface";
+import { registerFunction } from "@src/renderer/data/import-plugins"
+import type { DataInterface } from "@src/renderer/data/interface"
+import * as z from "zod"
 
+const Parameters = z.object({
+  step: z.string(),
+  layer: z.string(),
+  project: z.string(),
+})
 
-// export async function plugin(buffer: ArrayBuffer, props: Partial<AddLayerProps>, addLayer: (params: AddLayerProps) => void): Promise<void> {
-//   const decoder = new TextDecoder("utf-8")
-//   const file = decoder.decode(buffer)
-//   const tree = parse(file)
-//   const image = plot(tree)
-//   addLayer({
-//     name: props.name || "Gerber",
-//     image: image.children,
-//     units: image.units == "in" ? "inch" : "mm",
-//     ...props,
-//   })
-// }
-
-
-// If you meant 'DataInterface', fix the typo and import or define it:
-
-export interface Parameters {
-  step: string;
-  layer: string;
-  project: string;
-}
-
-export async function plugin(buffer: ArrayBuffer, parameters: Parameters, api: typeof DataInterface): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<void> {
+  const params = Parameters.parse(parameters)
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
   const tree = parse(file)
   const image = plot(tree)
-  // addLayer({
-  //   name: props.name || "Gerber",
-  //   image: image.children,
-  //   units: image.units == "in" ? "inch" : "mm",
-  //   ...props,
-  // })
-  // console.log('image', JSON.stringify(image.children));
-  api._update_layer_artwork_json(parameters.project, parameters.step, parameters.layer, image.children)
+  const units = image.units == "in" ? "inch" : "mm"
+  api._update_layer_artwork_from_json(params.project, params.step, params.layer, image.children)
 }
 
-Comlink.expose(plugin)
+// Comlink.expose(plugin)
+registerFunction(plugin)
 
-export function registerFunction(plugin: ImportPluginSignature): void {
-  Comlink.expose(plugin)
-}
+// Comlink.expose(plugin)

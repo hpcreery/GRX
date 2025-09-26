@@ -9,33 +9,35 @@
 import { recordReader } from "./lexer"
 import { parse } from "./parser"
 import { convert } from "./converter"
-
 import messages from "./messages"
+import type { DataInterface } from "@src/renderer/data/interface"
+import * as z from "zod"
+import { registerFunction } from "@src/renderer/data/import-plugins"
 
-import * as Comlink from "comlink"
-import { AddLayerProps } from "@src/renderer/engine/plugins"
+const Parameters = z.object({
+  step: z.string(),
+  project: z.string(),
+})
 
-export async function plugin(
-  buffer: ArrayBuffer,
-  props: Partial<AddLayerProps>,
-  addLayer: (params: AddLayerProps) => void,
-  addMessage: (title: string, message: string) => Promise<void>,
-): Promise<void> {
-  messages.setSender(addMessage, "GDSII")
-  messages.clear()
+export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<void> {
+  const params = Parameters.parse(parameters)
+  // messages.setSender(addMessage, "GDSII")
+  // messages.clear()
   const tokens = recordReader(buffer)
   const bnf = parse(tokens)
   const layerHierarchy = convert(bnf)
 
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-    delete props.name
-    addLayer({
-      name: layer,
-      units: 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000),
-      image: shapes.shapes,
-      ...props,
-    })
+    // delete props.name
+    // addLayer({
+    //   name: layer,
+    //   units: 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000),
+    //   image: shapes.shapes,
+    //   ...props,
+    // })
+    const units = 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000)
+    api._update_layer_artwork_from_json(params.project, params.step, layer, shapes.shapes)
   }
 }
 
-Comlink.expose(plugin)
+registerFunction(plugin)

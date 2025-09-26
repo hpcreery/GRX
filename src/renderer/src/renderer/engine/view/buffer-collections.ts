@@ -3,7 +3,7 @@ import * as Symbols from "@src/renderer/data/shape/symbol/symbol"
 import { Binary, FeatureTypeIdentifier } from "../types"
 import { MacroRenderer, StepAndRepeatRenderer } from "./shape-renderer"
 import { vec2 } from "gl-matrix"
-import { ArtworkBufferCollection, SymbolBufferCollection, MacroArtworkCollection, BufferEvents } from "@src/renderer/data/artwork-collections"
+import { ArtworkBufferCollection, SymbolBufferCollection, MacroArtworkCollection } from "@src/renderer/data/artwork-collections"
 import {
   ArcAttachments,
   DatumAttachments,
@@ -15,7 +15,7 @@ import {
 } from "./gl-commands"
 
 import { settings } from "../settings"
-import { TypedEventTarget } from "typescript-event-target"
+import { UpdateEventTarget } from '../utils'
 
 interface TShaderAttachment {
   pads: PadAttachments
@@ -34,7 +34,7 @@ interface TShaderAttachment {
 
 const { SYMBOL_PARAMETERS } = Symbols
 
-export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
+export class ShapesShaderCollection extends UpdateEventTarget {
   private regl: REGL.Regl
 
   public artworkBufferCollection: ArtworkBufferCollection
@@ -108,7 +108,7 @@ export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
     }
 
     this.update()
-    this.artworkBufferCollection.addEventListener("update", () => {
+    this.artworkBufferCollection.onUpdate(() => {
       this.update()
     })
   }
@@ -121,10 +121,6 @@ export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
     }, this.updateDelay)
 
     return this
-  }
-
-  public onUpdate(listener: (event: Event) => void): void {
-    this.addEventListener("update", listener)
   }
 
   private _update(): this {
@@ -237,6 +233,7 @@ export class ShapesShaderCollection extends TypedEventTarget<BufferEvents> {
   }
 
   public destroy(): this {
+    super.unSubscribe()
     this.shaderAttachment.pads.buffer.destroy()
     this.shaderAttachment.pads.length = 0
     this.shaderAttachment.lines.buffer.destroy()

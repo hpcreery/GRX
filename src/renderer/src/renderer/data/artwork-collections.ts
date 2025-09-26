@@ -4,14 +4,9 @@ import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType } from ".
 import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { Transform } from "../engine/transform"
-import { TypedEventTarget } from "typescript-event-target"
-import { cyrb64 } from '../engine/utils'
+import { cyrb64, UpdateEventTarget } from '../engine/utils'
 
-export interface BufferEvents {
-  update: Event
-}
-
-interface BufferCollection<T extends Shapes.Shape> extends TypedEventTarget<BufferEvents> {
+interface BufferCollection<T extends Shapes.Shape> extends UpdateEventTarget {
   create(shape: T): number
   read(index: number): T
   update(index: number, shape: T): void
@@ -25,7 +20,7 @@ const STARTING_BUFFER_BYTE_LENGTH = 64 // 1 KB
 export abstract class SymbolBufferCollection {
   public static buffer: ArrayBuffer = new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1) // 1 symbol
   public static length: number = 1
-  public static events: TypedEventTarget<BufferEvents> = new TypedEventTarget<BufferEvents>()
+  public static events: UpdateEventTarget = new UpdateEventTarget()
 
   /**
    * Create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
@@ -104,18 +99,17 @@ export abstract class SymbolBufferCollection {
   }
 
   static onUpdate(callback: (event: Event) => void): void {
-    this.events.addEventListener("update", callback)
+    this.events.onUpdate(callback)
   }
 }
 
-class PrimitiveBufferCollection<T extends Shapes.Primitive> extends TypedEventTarget<BufferEvents> implements BufferCollection<T> {
+class PrimitiveBufferCollection<T extends Shapes.Primitive> extends UpdateEventTarget implements BufferCollection<T> {
   public buffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   public view: Float32Array = new Float32Array(this.buffer)
   public readonly properties: string[]
   public readonly typeIdentifier: FeatureTypeIdentifiers
   public macros: (T | undefined)[] = []
   public length = 0
-  // public events = new TypedEventTarget<BufferEvents>()
 
   constructor(properties: string[], typeIdentifier: FeatureTypeIdentifiers) {
     super()
@@ -227,7 +221,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive> extends TypedEventTa
   }
 }
 
-export class SurfaceBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Surface> {
+export class SurfaceBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Surface> {
   public surfaces: (Shapes.Surface | null)[] = []
 
   verticesBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -523,7 +517,7 @@ export class SurfaceBufferCollection extends TypedEventTarget<BufferEvents> impl
   }
 }
 
-export class SurfacesBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Surface> {
+export class SurfacesBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Surface> {
   public surfacesWithoutHoles: SurfaceBufferCollection = new SurfaceBufferCollection()
   public surfacesWithHoles: SurfaceBufferCollection[] = []
   public surfacesMap: ({ index: number; collection: SurfaceBufferCollection } | undefined)[] = []
@@ -689,7 +683,7 @@ export class SurfacesBufferCollection extends TypedEventTarget<BufferEvents> imp
   }
 }
 
-class DatumTextBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.DatumText> {
+class DatumTextBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.DatumText> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   texcoordBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   charPositionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
@@ -826,7 +820,7 @@ class DatumTextBufferCollection extends TypedEventTarget<BufferEvents> implement
   }
 }
 
-class DatumPointBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.DatumPoint> {
+class DatumPointBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.DatumPoint> {
   positionBuffer: ArrayBuffer = new ArrayBuffer(STARTING_BUFFER_BYTE_LENGTH)
   positionView: Float32Array = new Float32Array(this.positionBuffer)
   length: number = 0
@@ -883,7 +877,7 @@ class DatumPointBufferCollection extends TypedEventTarget<BufferEvents> implemen
   }
 }
 
-export class StepAndRepeatCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.StepAndRepeat> {
+export class StepAndRepeatCollection extends UpdateEventTarget implements BufferCollection<Shapes.StepAndRepeat> {
   stepAndRepeats: ({
     repeats: Transform[]
     artwork: ArtworkBufferCollection
@@ -952,7 +946,7 @@ export class StepAndRepeatCollection extends TypedEventTarget<BufferEvents> impl
 //   [key: string]: BufferCollection<Shapes.Shape>
 // }
 
-export class ArtworkBufferCollection extends TypedEventTarget<BufferEvents> implements BufferCollection<Shapes.Shape> {
+export class ArtworkBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Shape> {
   public shapes = {
     [FeatureTypeIdentifier.PAD]: new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD),
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
@@ -1103,7 +1097,7 @@ export class ArtworkBufferCollection extends TypedEventTarget<BufferEvents> impl
 
 export abstract class MacroArtworkCollection {
   public static macros: Map<string, MacroArtworkBufferCollection> = new Map<string, MacroArtworkBufferCollection>()
-  public static events: TypedEventTarget<BufferEvents> = new TypedEventTarget<BufferEvents>()
+  public static events: UpdateEventTarget = new UpdateEventTarget()
 
   static create(symbol: Symbols.MacroSymbol): MacroArtworkBufferCollection {
     const { shapes, flatten } = symbol
@@ -1143,7 +1137,7 @@ export abstract class MacroArtworkCollection {
   }
 
   static onUpdate(listener: (event: Event) => void): void {
-    this.events.addEventListener("update", listener)
+    this.events.onUpdate(listener)
   }
 }
 
