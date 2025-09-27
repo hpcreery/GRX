@@ -15,17 +15,22 @@ import {
 } from "./gl-commands"
 
 import { settings } from "../settings"
-import { UpdateEventTarget } from '../utils'
+import { UpdateEventTarget } from "../utils"
 
 interface TShaderAttachment {
   pads: PadAttachments
   lines: LineAttachments
   arcs: ArcAttachments
-  surfaces: SurfaceAttachments
-  surfacesWithHoles: SurfaceWithHolesAttachments[]
-  surfaceEdgeLines: LineAttachments
-  surfaceEdgeArcs: ArcAttachments
-  // datumPoints: PadAttachments
+  surfaces: {
+    withoutHoles: SurfaceAttachments
+    withHoles: SurfaceWithHolesAttachments[]
+    edgeLines: LineAttachments
+    edgeArcs: ArcAttachments
+  }
+  polylines: {
+    lines: LineAttachments
+    pads: PadAttachments
+  }
   datumPoints: DatumAttachments
   datumLines: LineAttachments
   datumArcs: ArcAttachments
@@ -83,27 +88,39 @@ export class ShapesShaderCollection extends UpdateEventTarget {
         length: 0,
       },
       surfaces: {
-        vertices: regl.texture(),
-        verticiesDimensions: vec2.fromValues(0, 0),
-        length: 0,
-        qtyContours: regl.buffer(0),
-        contourVertexQtyBuffer: regl.buffer(0),
-        contourIndexBuffer: regl.buffer(0),
-        contourOffsetBuffer: regl.buffer(0),
-        contourPolarityBuffer: regl.buffer(0),
-        indiciesBuffer: regl.buffer(0),
-        surfacePolarityBuffer: regl.buffer(0),
-        surfaceIndexBuffer: regl.buffer(0),
-        surfaceOffsetBuffer: regl.buffer(0),
+        withoutHoles: {
+          vertices: regl.texture(),
+          verticiesDimensions: vec2.fromValues(0, 0),
+          length: 0,
+          qtyContours: regl.buffer(0),
+          contourVertexQtyBuffer: regl.buffer(0),
+          contourIndexBuffer: regl.buffer(0),
+          contourOffsetBuffer: regl.buffer(0),
+          contourPolarityBuffer: regl.buffer(0),
+          indiciesBuffer: regl.buffer(0),
+          surfacePolarityBuffer: regl.buffer(0),
+          surfaceIndexBuffer: regl.buffer(0),
+          surfaceOffsetBuffer: regl.buffer(0),
+        },
+        withHoles: [],
+        edgeLines: {
+          buffer: regl.buffer(0),
+          length: 0,
+        },
+        edgeArcs: {
+          buffer: regl.buffer(0),
+          length: 0,
+        },
       },
-      surfacesWithHoles: [],
-      surfaceEdgeLines: {
-        buffer: regl.buffer(0),
-        length: 0,
-      },
-      surfaceEdgeArcs: {
-        buffer: regl.buffer(0),
-        length: 0,
+      polylines: {
+        lines: {
+          buffer: regl.buffer(0),
+          length: 0,
+        },
+        pads: {
+          buffer: regl.buffer(0),
+          length: 0,
+        },
       },
     }
 
@@ -143,7 +160,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
     const surfaceCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithoutHoles
     const [width, height] = surfaceCollection.verticesDimensions
     if (width * height != 0) {
-      this.shaderAttachment.surfaces.vertices({
+      this.shaderAttachment.surfaces.withoutHoles.vertices({
         width,
         height,
         type: "float32",
@@ -153,20 +170,20 @@ export class ShapesShaderCollection extends UpdateEventTarget {
         min: "nearest",
         data: new Float32Array(surfaceCollection.verticesView.buffer).slice(0, width * height),
       })
-      this.shaderAttachment.surfaces.verticiesDimensions = vec2.fromValues(width, height)
-      this.shaderAttachment.surfaces.length = surfaceCollection.length
-      this.shaderAttachment.surfaces.qtyContours(surfaceCollection.qtyContoursView)
-      this.shaderAttachment.surfaces.contourVertexQtyBuffer(surfaceCollection.contourVertexQtyView)
-      this.shaderAttachment.surfaces.contourIndexBuffer(surfaceCollection.contourIndexView)
-      this.shaderAttachment.surfaces.contourOffsetBuffer(surfaceCollection.contourOffsetView)
-      this.shaderAttachment.surfaces.contourPolarityBuffer(surfaceCollection.contourPolarityView)
-      this.shaderAttachment.surfaces.indiciesBuffer(surfaceCollection.indiciesView)
-      this.shaderAttachment.surfaces.surfacePolarityBuffer(surfaceCollection.surfacePolarityView)
-      this.shaderAttachment.surfaces.surfaceIndexBuffer(surfaceCollection.surfaceIndexView)
-      this.shaderAttachment.surfaces.surfaceOffsetBuffer(surfaceCollection.surfaceOffsetView)
+      this.shaderAttachment.surfaces.withoutHoles.verticiesDimensions = vec2.fromValues(width, height)
+      this.shaderAttachment.surfaces.withoutHoles.length = surfaceCollection.length
+      this.shaderAttachment.surfaces.withoutHoles.qtyContours(surfaceCollection.qtyContoursView)
+      this.shaderAttachment.surfaces.withoutHoles.contourVertexQtyBuffer(surfaceCollection.contourVertexQtyView)
+      this.shaderAttachment.surfaces.withoutHoles.contourIndexBuffer(surfaceCollection.contourIndexView)
+      this.shaderAttachment.surfaces.withoutHoles.contourOffsetBuffer(surfaceCollection.contourOffsetView)
+      this.shaderAttachment.surfaces.withoutHoles.contourPolarityBuffer(surfaceCollection.contourPolarityView)
+      this.shaderAttachment.surfaces.withoutHoles.indiciesBuffer(surfaceCollection.indiciesView)
+      this.shaderAttachment.surfaces.withoutHoles.surfacePolarityBuffer(surfaceCollection.surfacePolarityView)
+      this.shaderAttachment.surfaces.withoutHoles.surfaceIndexBuffer(surfaceCollection.surfaceIndexView)
+      this.shaderAttachment.surfaces.withoutHoles.surfaceOffsetBuffer(surfaceCollection.surfaceOffsetView)
     }
     const surfaceWithHolesCollection = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].surfacesWithHoles
-    this.shaderAttachment.surfacesWithHoles.map((surface) => {
+    this.shaderAttachment.surfaces.withHoles.map((surface) => {
       surface.vertices.destroy()
       surface.qtyContours.destroy()
       surface.contourVertexQtyBuffer.destroy()
@@ -178,11 +195,11 @@ export class ShapesShaderCollection extends UpdateEventTarget {
       surface.surfaceIndexBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
     })
-    this.shaderAttachment.surfacesWithHoles = []
+    this.shaderAttachment.surfaces.withHoles = []
     surfaceWithHolesCollection.forEach((surface) => {
       const [width, height] = surface.verticesDimensions
       if (width * height == 0) return
-      this.shaderAttachment.surfacesWithHoles.push({
+      this.shaderAttachment.surfaces.withHoles.push({
         vertices: this.regl.texture({
           width,
           height,
@@ -209,10 +226,16 @@ export class ShapesShaderCollection extends UpdateEventTarget {
       })
     })
 
-    this.shaderAttachment.surfaceEdgeLines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.view)
-    this.shaderAttachment.surfaceEdgeLines.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.length
-    this.shaderAttachment.surfaceEdgeArcs.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.view)
-    this.shaderAttachment.surfaceEdgeArcs.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.length
+    this.shaderAttachment.surfaces.edgeLines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.view)
+    this.shaderAttachment.surfaces.edgeLines.length =
+      this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeLineBufferCollection.length
+    this.shaderAttachment.surfaces.edgeArcs.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.view)
+    this.shaderAttachment.surfaces.edgeArcs.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.SURFACE].edgeArcBufferCollection.length
+
+    this.shaderAttachment.polylines.lines.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.POLYLINE].lineBufferCollection.view)
+    this.shaderAttachment.polylines.lines.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.POLYLINE].lineBufferCollection.length
+    this.shaderAttachment.polylines.pads.buffer(this.artworkBufferCollection.shapes[FeatureTypeIdentifier.POLYLINE].padBufferCollection.view)
+    this.shaderAttachment.polylines.pads.length = this.artworkBufferCollection.shapes[FeatureTypeIdentifier.POLYLINE].padBufferCollection.length
 
     this.stepAndRepeats = []
     this.artworkBufferCollection.shapes[FeatureTypeIdentifier.STEP_AND_REPEAT].stepAndRepeats.forEach((sr) => {
@@ -246,7 +269,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
     this.shaderAttachment.datumLines.length = 0
     this.shaderAttachment.datumArcs.buffer.destroy()
     this.shaderAttachment.datumArcs.length = 0
-    this.shaderAttachment.surfacesWithHoles.map((surface) => {
+    this.shaderAttachment.surfaces.withHoles.map((surface) => {
       surface.vertices.destroy()
       surface.qtyContours.destroy()
       surface.contourVertexQtyBuffer.destroy()
@@ -258,24 +281,35 @@ export class ShapesShaderCollection extends UpdateEventTarget {
       surface.surfaceIndexBuffer.destroy()
       surface.surfaceOffsetBuffer.destroy()
     })
-    this.shaderAttachment.surfacesWithHoles.length = 0
+    this.shaderAttachment.surfaces.withHoles.length = 0
 
-    this.shaderAttachment.surfaces.vertices.destroy()
-    this.shaderAttachment.surfaces.qtyContours.destroy()
-    this.shaderAttachment.surfaces.contourVertexQtyBuffer.destroy()
-    this.shaderAttachment.surfaces.contourIndexBuffer.destroy()
-    this.shaderAttachment.surfaces.contourOffsetBuffer.destroy()
-    this.shaderAttachment.surfaces.contourPolarityBuffer.destroy()
-    this.shaderAttachment.surfaces.indiciesBuffer.destroy()
-    this.shaderAttachment.surfaces.surfacePolarityBuffer.destroy()
-    this.shaderAttachment.surfaces.surfaceIndexBuffer.destroy()
-    this.shaderAttachment.surfaces.surfaceOffsetBuffer.destroy()
-    this.shaderAttachment.surfaces.length = 0
+    this.shaderAttachment.surfaces.withoutHoles.vertices.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.qtyContours.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.contourVertexQtyBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.contourIndexBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.contourOffsetBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.contourPolarityBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.indiciesBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.surfacePolarityBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.surfaceIndexBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.surfaceOffsetBuffer.destroy()
+    this.shaderAttachment.surfaces.withoutHoles.length = 0
+    this.shaderAttachment.surfaces.withoutHoles.verticiesDimensions = vec2.fromValues(0, 0)
+
+    this.shaderAttachment.surfaces.edgeLines.buffer.destroy()
+    this.shaderAttachment.surfaces.edgeLines.length = 0
+    this.shaderAttachment.surfaces.edgeArcs.buffer.destroy()
+    this.shaderAttachment.surfaces.edgeArcs.length = 0
 
     this.shaderAttachment.datumTexts.positions.destroy()
     this.shaderAttachment.datumTexts.texcoords.destroy()
     this.shaderAttachment.datumTexts.charPosition.destroy()
     this.shaderAttachment.datumTexts.length = 0
+
+    this.shaderAttachment.polylines.lines.buffer.destroy()
+    this.shaderAttachment.polylines.lines.length = 0
+    this.shaderAttachment.polylines.pads.buffer.destroy()
+    this.shaderAttachment.polylines.pads.length = 0
 
     this.stepAndRepeats.forEach((sr) => {
       sr.destroy()

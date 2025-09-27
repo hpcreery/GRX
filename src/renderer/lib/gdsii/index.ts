@@ -36,6 +36,9 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     //   ...props,
     // })
     const units = 1 / (bnf.UNITS.metersPerDatabaseUnit * 1000)
+    // api.create_layer(params.project, layer)
+    if (!(await api.read_layers(params.project)).includes(layer))
+      api.create_layer(params.project, layer)
     api._update_layer_artwork_from_json(params.project, params.step, layer, shapes.shapes)
   }
 }

@@ -4,23 +4,36 @@ export const FeatureTypeIdentifier = {
   PAD: "pad",
   LINE: "line",
   ARC: "arc",
-  ARCSEGMENT: "arcsegment",
-  LINESEGMENT: "linesegment",
-  CONTOUR: "contour",
   SURFACE: "surface",
   POLYLINE: "polyline",
-  MACRO: "macro",
-  SYMBOL_DEFINITION: "symbol_defintion",
-  MACRO_DEFINITION: "macro_definition",
   STEP_AND_REPEAT: "step_and_repeat",
   DATUM_POINT: "datum_point",
   DATUM_TEXT: "datum_text",
   DATUM_LINE: "datum_line",
   DATUM_ARC: "datum_arc",
-  GLYPH_TEXT: "glyph_text",
 } as const
 
+export const SymbolDefinitionTypeIdentifier = {
+  SYMBOL_DEFINITION: "symbol_defintion",
+  MACRO_DEFINITION: "macro_definition",
+} as const
+
+export const SurfaceContourTypeIdentifier = {
+  CONTOUR: "contour",
+} as const
+
+export const ContourSegmentTypeIdentifier = {
+  ARCSEGMENT: "arcsegment",
+  LINESEGMENT: "linesegment",
+} as const
+
+export type SymbolDefinitionTypeIdentifiers = (typeof SymbolDefinitionTypeIdentifier)[keyof typeof SymbolDefinitionTypeIdentifier]
+
 export type FeatureTypeIdentifiers = (typeof FeatureTypeIdentifier)[keyof typeof FeatureTypeIdentifier]
+
+export type SurfaceContourTypeIdentifiers = (typeof SurfaceContourTypeIdentifier)[keyof typeof SurfaceContourTypeIdentifier]
+
+export type ContourSegmentTypeIdentifiers = (typeof ContourSegmentTypeIdentifier)[keyof typeof ContourSegmentTypeIdentifier]
 
 export interface IPlotRecord {
   type: FeatureTypeIdentifiers
@@ -28,7 +41,7 @@ export interface IPlotRecord {
 }
 
 export interface ISymbolRecord {
-  type: FeatureTypeIdentifiers
+  type: SymbolDefinitionTypeIdentifiers
 }
 
 export type AttributesType = { [key: string]: string | undefined }

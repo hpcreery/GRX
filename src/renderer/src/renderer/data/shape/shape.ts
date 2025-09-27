@@ -1,4 +1,4 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../engine/types"
+import { IPlotRecord, FeatureTypeIdentifier, ContourSegmentTypeIdentifier, SurfaceContourTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../engine/types"
 import { Transform } from "../../engine/transform"
 import * as Symbols from "./symbol/symbol"
 import { vec2 } from "gl-matrix"
@@ -203,7 +203,7 @@ type TContourArcSegment = {
 }
 
 export class Contour_Arc_Segment implements TContourArcSegment {
-  public readonly type = FeatureTypeIdentifier.ARCSEGMENT
+  public readonly type = ContourSegmentTypeIdentifier.ARCSEGMENT
   /**
    * end x
    */
@@ -231,7 +231,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
 }
 
 export class Contour_Line_Segment implements TContourLineSegment {
-  public readonly type = FeatureTypeIdentifier.LINESEGMENT
+  public readonly type = ContourSegmentTypeIdentifier.LINESEGMENT
   /**
    * end x
    */
@@ -247,7 +247,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
 }
 
 export class Contour implements TContour {
-  public readonly type = FeatureTypeIdentifier.CONTOUR
+  public readonly type = SurfaceContourTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole
    */
@@ -679,14 +679,14 @@ export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Cont
       vec2.add(max, max, maxDatum)
       break
     }
-    case FeatureTypeIdentifier.LINESEGMENT: {
+    case ContourSegmentTypeIdentifier.LINESEGMENT: {
       // TODO: better line segment bounding box
       min = vec2.fromValues(record.x, record.y)
       max = vec2.fromValues(record.x, record.y)
       break
     }
     // } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
-    case FeatureTypeIdentifier.ARCSEGMENT:
+    case ContourSegmentTypeIdentifier.ARCSEGMENT:
       {
         // TODO: better arc segment bounding box
         min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))

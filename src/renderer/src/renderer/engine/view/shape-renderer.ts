@@ -242,20 +242,22 @@ export class ShapeRenderer extends UpdateEventTarget {
    * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance
    */
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
-    const origMatrix = mat3.clone(context.transformMatrix)
-    this.transform.update(context.transformMatrix)
-    const transformedPointer = this.transformPointer(pointer)
-    context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
       console.error("Too many features to query")
       // TODO! for too many features, make multiple render passes in order to query all features
       return []
     }
+    if (this.qtyFeatures === 0) return []
+
+    const origMatrix = mat3.clone(context.transformMatrix)
+    this.transform.update(context.transformMatrix)
+    const transformedPointer = this.transformPointer(pointer)
+    context.transformMatrix = this.transform.matrix
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
 
-    const bufferLength = width * height * 4
+    const bufferLength = width * height * Float32Array.BYTES_PER_ELEMENT
     if (this.distanceQueryRaw.length != bufferLength) {
       this.distanceQueryRaw = new Float32Array(bufferLength)
       this.distanceLeftQueryRaw = new Float32Array(bufferLength)
@@ -415,6 +417,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
       this.drawSurfaceEdges(context)
+      this.drawPolyLines(context)
     })
     context.transformMatrix = origMatrix
   }
@@ -460,15 +463,15 @@ export class ShapeRenderer extends UpdateEventTarget {
   }
 
   private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeShaderAttachments.shaderAttachment.surfaces.length != 0)
-      this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces)
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles.length != 0)
+      this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles)
     return this
   }
 
   private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.length === 0) return this
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.length === 0) return this
     this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.shapeShaderAttachments.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
+    this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.forEach((attachment) => {
       this.regl.clear({
         framebuffer: this.surfaceFrameBuffer,
         color: [0, 0, 0, 1],
@@ -488,11 +491,20 @@ export class ShapeRenderer extends UpdateEventTarget {
   }
 
   private drawSurfaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    if (this.shapeShaderAttachments.shaderAttachment.surfaceEdgeArcs.length != 0) {
-      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.surfaceEdgeArcs)
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs.length != 0) {
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs)
     }
-    if (this.shapeShaderAttachments.shaderAttachment.surfaceEdgeLines.length != 0) {
-      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.surfaceEdgeLines)
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.edgeLines.length != 0) {
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.surfaces.edgeLines)
+    }
+  }
+
+  private drawPolyLines(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeShaderAttachments.shaderAttachment.polylines.lines.length != 0) {
+    this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.polylines.lines)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.polylines.pads.length != 0) {
+      this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.polylines.pads)
     }
   }
 

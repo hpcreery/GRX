@@ -14,8 +14,8 @@ const step1 = "box1"
 const step2 = "box2"
 const layer = "layer1"
 
-// import gdsiiFile from '@lib/gdsii/testdata/GdsIITests_test.gds?url'
-// import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
+// import gdsiiFile from '@lib/gdsii/testdata/various.gds?arraybuffer'
+import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
 import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
@@ -1221,15 +1221,19 @@ function DemoApp(): JSX.Element {
     DataInterface.create_step(project, step2)
     DataInterface.create_layer(project, layer)
 
-    setTimeout(() => {
-    }, 3000)
     DataInterface._import_file(cmp, "RS-274X", {
       layer,
       step: step1,
       project,
     })
 
-    DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+    // DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+    //   layer,
+    //   step: step2,
+    //   project,
+    // })
+
+    DataInterface._import_file(gdsiiFile, "GDSII", {
       layer,
       step: step2,
       project,
