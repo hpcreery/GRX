@@ -505,7 +505,6 @@ export class ViewRenderer extends UpdateEventTarget {
           layerData: selectionLayer,
           stepData: this.stepData,
           projectData: this.projectData,
-          id: layer.id,
           transform: layer.transform,
         })
         newSelectionLayer.onUpdate(() => {
