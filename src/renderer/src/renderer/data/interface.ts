@@ -186,6 +186,19 @@ export const DataInterface = {
   },
 
   /**
+   * Lists all step names in the specified project.
+   * @param project_name Name of the project containing the steps.
+   * @returns An array of step names. In JSON format.
+   */
+  read_steps(project_name: string): string[] {
+    const project = this._read_project_object(project_name)
+    if (project.matrix.steps.length === 0) {
+      throw new CommandError("No steps available. Cannot list steps.", ErrorCode.STEP_NOT_FOUND)
+    }
+    return project.matrix.steps.map((step) => step.name)
+  },
+
+  /**
    * Retrieves a step by name from the specified project.
    * @param project_name Name of the project containing the step.
    * @param step_name Name of the step to retrieve.
@@ -361,7 +374,7 @@ export const DataInterface = {
     artwork.fromJSON(artworkData)
   },
 
-    /**
+  /**
    * Resets the artwork data as JSON for the specified layer in the specified step of the specified project.
    * @param project_name Name of the project containing the step and layer.
    * @param step_name Name of the step containing the layer.

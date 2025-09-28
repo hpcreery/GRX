@@ -38,7 +38,7 @@ export const settings: RenderSettings = {
   COLOR_BLEND: ColorBlend.CONTRAST,
   BACKGROUND_COLOR: [0, 0, 0, 0],
   MAX_ZOOM: 1000,
-  MIN_ZOOM: 0.001,
+  MIN_ZOOM: 0.00001,
   ZOOM_TO_CURSOR: true,
   SHOW_DATUMS: false,
 }

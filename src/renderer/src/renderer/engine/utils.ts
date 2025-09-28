@@ -34,16 +34,16 @@ export function malloc<T extends immutable>(value: T): ptr<T> {
  * @param units Units to convert from. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
  * @returns Conversion factor to mm
  */
-export function getUnitsConversion(units: Units): number {
+export function baseUnitsConversionFactor(units: Units): number {
   switch (units) {
     case "mm":
       return 1
     case "inch":
-      return 1 / 25.4
+      return 25.4
     case "cm":
-      return 1 / 10
+      return 10
     case "mil":
-      return 1000 / 25.4
+      return 25.4 / 1000
     default:
       return units
   }

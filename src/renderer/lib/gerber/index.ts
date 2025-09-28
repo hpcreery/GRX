@@ -16,7 +16,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const file = decoder.decode(buffer)
   const tree = parse(file)
   const image = plot(tree)
-  const units = image.units == "in" ? "inch" : "mm"
+  // const units = image.units
   api._update_layer_artwork_from_json(params.project, params.step, params.layer, image.children)
 }
 

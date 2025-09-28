@@ -1,7 +1,9 @@
-import { IPlotRecord, FeatureTypeIdentifier, ContourSegmentTypeIdentifier, SurfaceContourTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox } from "../../engine/types"
+import { IPlotRecord, FeatureTypeIdentifier, ContourSegmentTypeIdentifier, SurfaceContourTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, BoundingBox, Units } from "../../engine/types"
 import { Transform } from "../../engine/transform"
 import * as Symbols from "./symbol/symbol"
 import { vec2 } from "gl-matrix"
+import { baseUnitsConversionFactor } from '@src/renderer/engine/utils'
+import { convertSymbolUnitsToMM } from './symbol/symbol'
 
 export const PAD_RECORD_PARAMETERS = ["index", "x", "y", "sym_num", "resize_factor", "polarity", "rotation", "mirror_x", "mirror_y"] as const
 export const LINE_RECORD_PARAMETERS = ["index", "xs", "ys", "xe", "ye", "sym_num", "polarity"] as const
@@ -23,6 +25,7 @@ export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 export class Pad implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.PAD
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -78,6 +81,7 @@ export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 export class Line implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINE
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -125,6 +129,7 @@ export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 export class Arc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARC
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -295,6 +300,10 @@ export class Contour implements TContour {
 export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.SURFACE
   public attributes: AttributesType = {}
+  public units: Units = "mm"
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   * */
   public index = 0
   /**
    * 1 == positive, 0 == negative
@@ -305,7 +314,7 @@ export class Surface implements TSurface, IPlotRecord {
    */
   public contours: Contour[] = []
 
-  constructor(record: Partial<IntersectingTypes<Surface, TSurface>>) {
+  constructor(record: Partial<IntersectingTypes<Surface, TSurface> & { units: Units}>) {
     Object.assign(this, record)
   }
 
@@ -335,6 +344,10 @@ export class Surface implements TSurface, IPlotRecord {
 export class PolyLine implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.POLYLINE
   public attributes: AttributesType = {}
+  public units: Units = "mm"
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   * */
   public index = 0
   /**
    * line width
@@ -395,6 +408,7 @@ export class PolyLine implements IPlotRecord {
 export class StepAndRepeat implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -424,6 +438,7 @@ export class StepAndRepeat implements IPlotRecord {
 export class DatumPoint implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_POINT
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -475,6 +490,7 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
 export class DatumText {
   public readonly type = FeatureTypeIdentifier.DATUM_TEXT
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -500,6 +516,7 @@ export class DatumText {
 export class DatumLine implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_LINE
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -543,6 +560,7 @@ export class DatumLine implements TLine_Record, IPlotRecord {
 export class DatumArc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_ARC
   public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -602,6 +620,111 @@ export type Shape = Primitive | Surface | PolyLine | StepAndRepeat | Datum
 export type RawPrimative = TPad_Record | TLine_Record | TArc_Record
 export type RawSurface = TSurface
 export type RawShape = RawPrimative | RawSurface
+
+export function convertShapesUnitsToMM(shapes: Shape[]): void {
+  for (const shape of shapes) {
+    convertShapeUnitsToMM(shape)
+  }
+}
+
+export function convertShapeUnitsToMM(shape: Shape): void {
+  const factor = baseUnitsConversionFactor(shape.units)
+  switch (shape.type) {
+    case FeatureTypeIdentifier.PAD:
+      shape.x *= factor
+      shape.y *= factor
+      shape.units = "mm"
+      convertSymbolUnitsToMM(shape.symbol)
+      break
+    case FeatureTypeIdentifier.LINE:
+      shape.xs *= factor
+      shape.ys *= factor
+      shape.xe *= factor
+      shape.ye *= factor
+      shape.units = "mm"
+      convertSymbolUnitsToMM(shape.symbol)
+      break
+    case FeatureTypeIdentifier.ARC:
+      shape.xs *= factor
+      shape.ys *= factor
+      shape.xe *= factor
+      shape.ye *= factor
+      shape.xc *= factor
+      shape.yc *= factor
+      shape.units = "mm"
+      convertSymbolUnitsToMM(shape.symbol)
+      break
+    case FeatureTypeIdentifier.SURFACE:
+      for (const contour of shape.contours) {
+        contour.xs *= factor
+        contour.ys *= factor
+        for (const segment of contour.segments) {
+          switch (segment.type) {
+            case ContourSegmentTypeIdentifier.LINESEGMENT:
+              segment.x *= factor
+              segment.y *= factor
+              break
+            case ContourSegmentTypeIdentifier.ARCSEGMENT:
+              segment.x *= factor
+              segment.y *= factor
+              segment.xc *= factor
+              segment.yc *= factor
+              break
+          }
+        }
+      }
+      shape.units = "mm"
+      break
+    case FeatureTypeIdentifier.POLYLINE:
+      shape.xs *= factor
+      shape.ys *= factor
+      for (const line of shape.lines) {
+        line.x *= factor
+        line.y *= factor
+      }
+      shape.width *= factor
+      shape.units = "mm"
+      break
+    case FeatureTypeIdentifier.STEP_AND_REPEAT:
+      for (const repeat of shape.repeats) {
+        repeat.datum[0] *= factor
+        repeat.datum[1] *= factor
+      }
+      for (const s of shape.shapes) {
+        convertShapeUnitsToMM(s)
+      }
+      shape.units = "mm"
+      break
+    case FeatureTypeIdentifier.DATUM_POINT:
+      shape.x *= factor
+      shape.y *= factor
+      shape.units = "mm"
+      break
+    case FeatureTypeIdentifier.DATUM_TEXT:
+      shape.x *= factor
+      shape.y *= factor
+      shape.units = "mm"
+      break
+    case FeatureTypeIdentifier.DATUM_LINE:
+      shape.xs *= factor
+      shape.ys *= factor
+      shape.xe *= factor
+      shape.ye *= factor
+      shape.units = "mm"
+      convertSymbolUnitsToMM(shape.symbol)
+      break
+    case FeatureTypeIdentifier.DATUM_ARC:
+      shape.xs *= factor
+      shape.ys *= factor
+      shape.xe *= factor
+      shape.ye *= factor
+      shape.xc *= factor
+      shape.yc *= factor
+      shape.units = "mm"
+      convertSymbolUnitsToMM(shape.symbol)
+      break
+  }
+}
 
 
 export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {

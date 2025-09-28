@@ -19,7 +19,7 @@ import {
   PossiblePoints,
 } from "./types"
 import * as Constants from "./constants"
-import { getUnitsConversion } from "@src/renderer/engine/utils"
+import { baseUnitsConversionFactor } from "@src/renderer/engine/utils"
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),
@@ -779,10 +779,11 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.depthOffset) attributes.depthOffset = this.visit(ctx.depthOffset) as string
 
     const tool = new Symbols.RoundSymbol({
+      units: this.state.units,
       id: ctx.T[0].image,
       outer_dia: dia,
       inner_dia: 0,
-      attributes,
+      // attributes,
     })
     this.state.currentTool = tool
     this.toolStore[String(Number(ctx.T[0].image.slice(1, 3)))] = tool
@@ -882,6 +883,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       if (lastFeature != undefined) {
         this.result.push(
           new Shapes.DatumLine({
+            units: this.state.units,
             xs: this.state.previousX,
             ys: this.state.previousY,
             xe: this.state.x,
@@ -891,6 +893,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       } else {
         this.result.push(
           new Shapes.DatumPoint({
+            units: this.state.units,
             x: this.state.x,
             y: this.state.y,
           }),
@@ -898,6 +901,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       }
       this.result.push(
         new Shapes.DatumText({
+          units: this.state.units,
           x: this.state.x,
           y: this.state.y,
           text: this.state.currentTool.id,
@@ -905,6 +909,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       )
       this.result.push(
         new Shapes.Pad({
+          units: this.state.units,
           x: this.state.x,
           y: this.state.y,
           symbol: this.state.currentTool,
@@ -922,6 +927,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           let ye = this.state.y
           this.result.push(
             new Shapes.DatumText({
+              units: this.state.units,
               x: (this.state.x + this.state.previousX) / 2,
               y: (this.state.y + this.state.previousY) / 2,
               text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`,
@@ -929,6 +935,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           )
           this.result.push(
             new Shapes.DatumLine({
+              units: this.state.units,
               xs,
               ys,
               xe,
@@ -978,6 +985,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                     // for those cases we can create the connecting arc tool path
                     this.result.push(
                       new Shapes.Arc({
+                        units: this.state.units,
                         xs: lastPath.xe,
                         ys: lastPath.ye,
                         xe: xs,
@@ -1000,6 +1008,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           // create the tool path
           this.result.push(
             new Shapes.Line({
+              units: this.state.units,
               xs,
               ys,
               xe,
@@ -1034,6 +1043,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           let ye = endPoint.y
           this.result.push(
             new Shapes.DatumArc({
+              units: this.state.units,
               xs,
               ys,
               xe,
@@ -1049,6 +1059,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           }
           this.result.push(
             new Shapes.DatumText({
+              units: this.state.units,
               x: datumLocation.x,
               y: datumLocation.y,
               text: `${this.state.currentTool.id} ${this.state.chainIndex}-${this.state.pathIndex}`,
@@ -1081,6 +1092,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                   // for those cases we can create the connecting arc tool path
                   this.result.push(
                     new Shapes.Arc({
+                      units: this.state.units,
                       xs: lastPath.xe,
                       ys: lastPath.ye,
                       xe: xs,
@@ -1116,6 +1128,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
                     // for those cases we can create the connecting arc tool path
                     this.result.push(
                       new Shapes.Arc({
+                        units: this.state.units,
                         xs: lastPath.xe,
                         ys: lastPath.ye,
                         xe: xs,
@@ -1138,6 +1151,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
           // create the tool path
           this.result.push(
             new Shapes.Arc({
+              units: this.state.units,
               xs,
               ys,
               xe,
@@ -1159,6 +1173,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         if (lastFeature != undefined) {
           this.result.push(
             new Shapes.DatumLine({
+              units: this.state.units,
               xs: this.state.previousX,
               ys: this.state.previousY,
               xe: this.state.x,
@@ -1168,6 +1183,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         } else {
           this.result.push(
             new Shapes.DatumPoint({
+              units: this.state.units,
               x: this.state.x,
               y: this.state.y,
             }),
@@ -1189,6 +1205,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
   endOfPattern(_ctx: Cst.EndOfPatternCstChildren): void {
     this.stepRepeats.push(
       new Shapes.StepAndRepeat({
+        units: this.state.units,
         shapes: this.result,
         repeats: [
           {
@@ -1257,6 +1274,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.pathIndex = 0
     this.result.push(
       new Shapes.DatumPoint({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         attributes: {
@@ -1267,6 +1285,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
     this.result.push(
       new Shapes.DatumText({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         text: "Plunge with depth control",
@@ -1284,6 +1303,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     this.state.pathIndex = 0
     this.result.push(
       new Shapes.DatumPoint({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         attributes: {
@@ -1294,6 +1314,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
     this.result.push(
       new Shapes.DatumText({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         text: "Plunge",
@@ -1383,6 +1404,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     const sweepRadius = radius - this.state.currentTool.outer_dia / 2
     this.result.push(
       new Shapes.Arc({
+        units: this.state.units,
         xs: this.state.x + sweepRadius,
         ys: this.state.y,
         xe: this.state.x + sweepRadius,
@@ -1406,6 +1428,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     const sweepRadius = radius - this.state.currentTool.outer_dia / 2
     this.result.push(
       new Shapes.Arc({
+        units: this.state.units,
         xs: this.state.x + sweepRadius,
         ys: this.state.y,
         xe: this.state.x + sweepRadius,
@@ -1444,10 +1467,12 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (x !== undefined) {
       this.result.push(
         new Shapes.DatumPoint({
+          units: this.state.units,
           x: x || 0,
           y: y || 0,
         }),
         new Shapes.DatumText({
+          units: this.state.units,
           text: "Zero Set",
           x: x || 0,
           y: y || 0,
@@ -1474,6 +1499,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
     this.result.push(
       new Shapes.DatumText({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         text: "Alignment Point",
@@ -1481,6 +1507,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
     this.result.push(
       new Shapes.DatumPoint({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
       }),
@@ -1501,6 +1528,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     if (ctx.coordinate) this.visit(ctx.coordinate)
     this.result.push(
       new Shapes.DatumText({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         text: "Alignment Point",
@@ -1508,6 +1536,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
     this.result.push(
       new Shapes.DatumPoint({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
       }),
@@ -1531,6 +1560,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
     this.result.push(
       new Shapes.DatumText({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         text: "Vision Correction",
@@ -1538,6 +1568,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
     this.result.push(
       new Shapes.DatumPoint({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
       }),
@@ -1563,6 +1594,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
     this.result.push(
       new Shapes.Line({
+        units: this.state.units,
         xs: this.state.previousX,
         ys: this.state.previousY,
         xe: this.state.x,
@@ -1573,17 +1605,20 @@ export class NCToShapesVisitor extends BaseCstVisitor {
         },
       }),
       new Shapes.DatumText({
+        units: this.state.units,
         x: (this.state.x + this.state.previousX) / 2,
         y: (this.state.y + this.state.previousY) / 2,
         text: "Canned Slot",
       }),
       new Shapes.DatumLine({
+        units: this.state.units,
         xs: this.state.x,
         ys: this.state.y,
         xe: this.state.previousX,
         ye: this.state.previousY,
       }),
       new Shapes.Pad({
+        units: this.state.units,
         x: this.state.x,
         y: this.state.y,
         symbol: this.state.currentTool,
@@ -1596,13 +1631,15 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     const dia = this.visit(ctx.x) as number | undefined
     this.result.push(
       new Shapes.Pad({
+        units: this.state.units,
         x: this.state.previousX,
         y: this.state.y,
         attributes: {
           type: "canned circle",
         },
         symbol: new Symbols.RoundSymbol({
-          outer_dia: dia || 3.175 * getUnitsConversion(this.state.units),
+          units: this.state.units,
+          outer_dia: dia || 3.175 * baseUnitsConversionFactor(this.state.units),
           inner_dia: 0,
         }),
       }),
@@ -1619,6 +1656,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       this.state.x += x
       this.result.push(
         new Shapes.Pad({
+          units: this.state.units,
           symbol: this.state.currentTool,
           x: this.state.x,
           y: this.state.y,

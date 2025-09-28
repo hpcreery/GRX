@@ -1,8 +1,7 @@
 import type { Parent } from "unist"
 
-import type { UnitsType } from "@hpcreery/tracespace-parser"
-
 import * as Shapes from "@src/renderer/data/shape/shape"
+import { Units } from './options'
 
 export type { Polarity } from "@hpcreery/tracespace-parser"
 
@@ -28,6 +27,6 @@ export type SizeEnvelope = [x1: number, y1: number, x2: number, y2: number] | []
 
 export interface ImageTree extends Parent {
   type: typeof IMAGE
-  units: UnitsType
+  units: Units
   children: Shapes.Shape[]
 }

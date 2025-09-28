@@ -13,7 +13,7 @@ export const FeatureTypeIdentifier = {
   DATUM_ARC: "datum_arc",
 } as const
 
-export const SymbolDefinitionTypeIdentifier = {
+export const SymbolTypeIdentifier = {
   SYMBOL_DEFINITION: "symbol_defintion",
   MACRO_DEFINITION: "macro_definition",
 } as const
@@ -27,7 +27,7 @@ export const ContourSegmentTypeIdentifier = {
   LINESEGMENT: "linesegment",
 } as const
 
-export type SymbolDefinitionTypeIdentifiers = (typeof SymbolDefinitionTypeIdentifier)[keyof typeof SymbolDefinitionTypeIdentifier]
+export type SymbolDefinitionTypeIdentifiers = (typeof SymbolTypeIdentifier)[keyof typeof SymbolTypeIdentifier]
 
 export type FeatureTypeIdentifiers = (typeof FeatureTypeIdentifier)[keyof typeof FeatureTypeIdentifier]
 
@@ -38,10 +38,12 @@ export type ContourSegmentTypeIdentifiers = (typeof ContourSegmentTypeIdentifier
 export interface IPlotRecord {
   type: FeatureTypeIdentifiers
   attributes: AttributesType
+  units: Units
 }
 
 export interface ISymbolRecord {
   type: SymbolDefinitionTypeIdentifiers
+
 }
 
 export type AttributesType = { [key: string]: string | undefined }

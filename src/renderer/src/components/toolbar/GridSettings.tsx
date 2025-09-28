@@ -2,7 +2,7 @@ import React, { useEffect } from "react"
 import { EditorConfigProvider } from "../../contexts/EditorContext"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput, Button, Space } from "@mantine/core"
-import { getUnitsConversion } from "@src/renderer/engine/utils"
+import { baseUnitsConversionFactor } from "@src/renderer/engine/utils"
 import { vec4 } from "gl-matrix"
 import { useLocalStorage } from "@mantine/hooks"
 import { gridSettings } from "@src/renderer/engine/settings"
@@ -87,15 +87,15 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
           <NumberInput
             allowNegative={false}
             suffix={` ${units}`}
-            value={Math.round((spacingX * getUnitsConversion(units) + Number.EPSILON) * 1000) / 1000}
-            onChange={(value): void => setSpacingX(Number(value) / getUnitsConversion(units))}
+            value={Math.round((spacingX * baseUnitsConversionFactor(units) + Number.EPSILON) * 1000) / 1000}
+            onChange={(value): void => setSpacingX(Number(value) / baseUnitsConversionFactor(units))}
           />
           Y:
           <NumberInput
             allowNegative={false}
             suffix={` ${units}`}
-            value={Math.round((spacingY * getUnitsConversion(units) + Number.EPSILON) * 1000) / 1000}
-            onChange={(value): void => setSpacingY(Number(value) / getUnitsConversion(units))}
+            value={Math.round((spacingY * baseUnitsConversionFactor(units) + Number.EPSILON) * 1000) / 1000}
+            onChange={(value): void => setSpacingY(Number(value) / baseUnitsConversionFactor(units))}
           />
         </Group>
       </Flex>
@@ -112,15 +112,15 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
           <NumberInput
             allowNegative={false}
             suffix={` ${units}`}
-            value={Math.round((offsetX * getUnitsConversion(units) + Number.EPSILON) * 1000) / 1000}
-            onChange={(value): void => setOffsetX(Number(value) / getUnitsConversion(units))}
+            value={Math.round((offsetX * baseUnitsConversionFactor(units) + Number.EPSILON) * 1000) / 1000}
+            onChange={(value): void => setOffsetX(Number(value) / baseUnitsConversionFactor(units))}
           />
           Y:
           <NumberInput
             allowNegative={false}
             suffix={` ${units}`}
-            value={Math.round((offsetY * getUnitsConversion(units) + Number.EPSILON) * 1000) / 1000}
-            onChange={(value): void => setOffsetY(Number(value) / getUnitsConversion(units))}
+            value={Math.round((offsetY * baseUnitsConversionFactor(units) + Number.EPSILON) * 1000) / 1000}
+            onChange={(value): void => setOffsetY(Number(value) / baseUnitsConversionFactor(units))}
           />
         </Group>
       </Flex>

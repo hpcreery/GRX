@@ -3,7 +3,7 @@ import { vec2, vec3 } from "gl-matrix"
 import { BoundingBox } from "../types"
 
 import type { UniverseContext } from "../engine"
-import { getUnitsConversion, UID } from "../utils"
+import { baseUnitsConversionFactor, UID } from "../utils"
 
 import { ShapeRenderer, ShapeRendererProps, ShapeDistance } from "./shape-renderer"
 import { WorldContext } from "./view"
@@ -107,14 +107,14 @@ export default class LayerRenderer extends ShapeRenderer {
 
   public getBoundingBox(): BoundingBox {
     const boundingBox = super.getBoundingBox()
-    vec2.scale(boundingBox.min, boundingBox.min, 1 / getUnitsConversion(this.layerData.artworkUnits))
-    vec2.scale(boundingBox.max, boundingBox.max, 1 / getUnitsConversion(this.layerData.artworkUnits))
+    vec2.scale(boundingBox.min, boundingBox.min, baseUnitsConversionFactor(this.layerData.artworkUnits))
+    vec2.scale(boundingBox.max, boundingBox.max, baseUnitsConversionFactor(this.layerData.artworkUnits))
     return boundingBox
   }
 
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
     const initScale = this.transform.scale
-    this.transform.scale = this.transform.scale / getUnitsConversion(this.layerData.artworkUnits)
+    this.transform.scale = this.transform.scale * baseUnitsConversionFactor(this.layerData.artworkUnits)
     // const newPointer = vec2.clone(pointer)
     // vec2.scale(newPointer, newPointer, getUnitsConversion(this.units))
     const measurements = super.queryDistance(pointer, context)
@@ -150,7 +150,7 @@ export default class LayerRenderer extends ShapeRenderer {
     this.framebuffer.use(() => {
       this.layerConfig(() => {
         const initScale = this.transform.scale
-        this.transform.scale = this.transform.scale / getUnitsConversion(this.layerData.artworkUnits)
+        this.transform.scale = this.transform.scale * baseUnitsConversionFactor(this.layerData.artworkUnits)
         super.render(context)
         this.transform.scale = initScale
       })

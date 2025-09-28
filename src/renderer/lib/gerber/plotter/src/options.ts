@@ -1,8 +1,9 @@
-import type { GerberTree, UnitsType, Format, ZeroSuppression } from "@hpcreery/tracespace-parser"
+import type { GerberTree, Format, ZeroSuppression } from "@hpcreery/tracespace-parser"
 import { UNITS, COORDINATE_FORMAT, GRAPHIC, COMMENT, LEADING, TRAILING, IN } from "@hpcreery/tracespace-parser"
 
+export type Units = "mm" | "inch"
 export interface PlotOptions {
-  units: UnitsType
+  units: Units
   coordinateFormat: Format
   zeroSuppression: ZeroSuppression
 }
@@ -11,7 +12,7 @@ const FORMAT_COMMENT_RE = /FORMAT={?(\d):(\d)/
 
 export function getPlotOptions(tree: GerberTree): PlotOptions {
   const { children: treeNodes } = tree
-  let units: UnitsType | undefined
+  let units: Units | undefined
   let coordinateFormat: Format | undefined
   let zeroSuppression: ZeroSuppression | undefined
   let index = 0
@@ -21,7 +22,7 @@ export function getPlotOptions(tree: GerberTree): PlotOptions {
 
     switch (node.type) {
       case UNITS: {
-        units = node.units
+        units = node.units == "in" ? "inch" : "mm"
         break
       }
 
@@ -71,7 +72,7 @@ export function getPlotOptions(tree: GerberTree): PlotOptions {
   }
 
   return {
-    units: units ?? IN,
+    units: units ?? 'inch',
     coordinateFormat: coordinateFormat ?? [2, 4],
     zeroSuppression: zeroSuppression ?? LEADING,
   }

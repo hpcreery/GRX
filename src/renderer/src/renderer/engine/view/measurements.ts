@@ -1,7 +1,7 @@
 import REGL from "regl"
 import { vec2 } from "gl-matrix"
 import { UniverseContext } from "../engine"
-import { getUnitsConversion } from "../utils"
+import { baseUnitsConversionFactor } from "../utils"
 import { RendererProps, ShapeRenderer } from "./shape-renderer"
 import * as Shapes from "@src/renderer/data/shape/shape"
 import { WorldContext } from "./view"
@@ -24,9 +24,9 @@ export class SimpleMeasurement extends ShapeRenderer {
     allMeasurements.forEach((measurement) => {
       const [x1, y1] = measurement.point1
       const [x2, y2] = measurement.point2
-      const length = Math.hypot(x1 - x2, y1 - y2) * getUnitsConversion(measurementSettings.units)
-      const x = Math.abs(x1 - x2) * getUnitsConversion(measurementSettings.units)
-      const y = Math.abs(y1 - y2) * getUnitsConversion(measurementSettings.units)
+      const length = Math.hypot(x1 - x2, y1 - y2) / baseUnitsConversionFactor(measurementSettings.units)
+      const x = Math.abs(x1 - x2) / baseUnitsConversionFactor(measurementSettings.units)
+      const y = Math.abs(y1 - y2) / baseUnitsConversionFactor(measurementSettings.units)
       this.artwork.create(
         new Shapes.DatumText({
           text: `↙${parseFloat(length.toFixed(4))}${typeof measurementSettings.units == "string" ? measurementSettings.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,

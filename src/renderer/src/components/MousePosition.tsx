@@ -3,7 +3,7 @@ import { PointerEvent } from "@src/renderer"
 import { PointerEvents } from "@src/renderer"
 import { Card, Group, Text, Tooltip } from "@mantine/core"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { getUnitsConversion } from "@src/renderer/engine/utils"
+import { baseUnitsConversionFactor } from "@src/renderer/engine/utils"
 
 interface MousePositionProps {}
 
@@ -45,12 +45,12 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
         <Group grow ml="xs" mr="xs" wrap="nowrap">
           <Group wrap="nowrap">
             <Text c="dimmed">X: </Text>
-            {(x * getUnitsConversion(units)).toFixed(3)}
+            {(x / baseUnitsConversionFactor(units)).toFixed(3)}
             {units}
           </Group>
           <Group wrap="nowrap">
             <Text c="dimmed">Y: </Text>
-            {(y * getUnitsConversion(units)).toFixed(3)}
+            {(y / baseUnitsConversionFactor(units)).toFixed(3)}
             {units}
           </Group>
         </Group>

@@ -1,6 +1,6 @@
 import * as Shapes from "./shape/shape"
 import * as Symbols from "./shape/symbol/symbol"
-import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType, ContourSegmentTypeIdentifier, SymbolDefinitionTypeIdentifier } from "../engine/types"
+import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType, ContourSegmentTypeIdentifier, SymbolTypeIdentifier } from "../engine/types"
 import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import { Transform } from "../engine/transform"
@@ -135,7 +135,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
     // Check if the shape has a symbol and create it if it does
     const index = this.length
     this.fixSymbolGetter(shape)
-    if (shape.symbol.type === SymbolDefinitionTypeIdentifier.SYMBOL_DEFINITION) {
+    if (shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION) {
       SymbolBufferCollection.create(shape.symbol)
     } else {
       MacroArtworkCollection.create(shape.symbol)
@@ -153,14 +153,39 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
     if (index < 0 || index >= this.length) {
       throw new Error("Index out of bounds when reading shape")
     }
-    const shape: T = {
-      type: this.typeIdentifier,
-    } as T
+    // const shape: T = {
+    //   type: this.typeIdentifier,
+    // } as T
+    let shape: T
+    switch (this.typeIdentifier) {
+      case FeatureTypeIdentifier.PAD:
+        shape = new Shapes.Pad({}) as T
+        break
+      case FeatureTypeIdentifier.LINE:
+        shape = new Shapes.Line({}) as T
+        break
+      case FeatureTypeIdentifier.ARC:
+        shape = new Shapes.Arc({}) as T
+        break
+      case FeatureTypeIdentifier.DATUM_LINE:
+        shape = new Shapes.DatumLine({}) as T
+        break
+      case FeatureTypeIdentifier.DATUM_ARC:
+        shape = new Shapes.DatumArc({}) as T
+        break
+      default:
+        throw new Error(`Unsupported type identifier: ${this.typeIdentifier}`)
+    }
+    let sym_num = -1
     for (let i = 0; i < this.properties.length; i++) {
+      if (this.properties[i] === "sym_num") {
+        sym_num = this.view[index * this.properties.length + i]
+        continue // Skip sym_num shape assignment as it is handled separately
+      }
       shape[this.properties[i]] = this.view[index * this.properties.length + i]
     }
     // Add symbol if it exists
-    shape.symbol = SymbolBufferCollection.read(shape.sym_num)
+    shape.symbol = SymbolBufferCollection.read(sym_num)
     if (this.macros[index]) {
       shape.symbol = this.macros[index].symbol
     }
@@ -174,7 +199,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
     }
     // Update symbol if it changes
     this.fixSymbolGetter(shape)
-    if (shape.symbol.type === SymbolDefinitionTypeIdentifier.SYMBOL_DEFINITION) {
+    if (shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION) {
       SymbolBufferCollection.create(shape.symbol)
       this.macros[index] = undefined
     } else {
@@ -1311,6 +1336,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       throw new Error(`No collection found for shape type: ${shape.type} when creating shape`)
     }
     shape.index = this.artworkMap.length // Assign an index to the shape
+    Shapes.convertShapeUnitsToMM(shape) // Ensure shape is in mm
     const collectionIndex = (collection.create as (shape: Shapes.Shape) => number)(shape)
     // const collectionIndex = collection.create(shape)
     this.artworkMap.push({
@@ -1349,6 +1375,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     shape.index = index // Update the index of the shape
     this.attributeMap[index] = shape.attributes || {} // Update attributes
+    Shapes.convertShapeUnitsToMM(shape) // Ensure shape is in mm
     if (feature.shape !== shape.type) {
       // If the shape type has changed, we need to delete the old shape and create a new one
       this.delete(feature.collectionIndex)

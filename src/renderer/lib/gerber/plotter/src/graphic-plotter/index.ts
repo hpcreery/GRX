@@ -25,7 +25,7 @@ import {
 import type { Tool } from "../tool-store"
 import type { Location, Point } from "../location-store"
 
-import { FeatureTypeIdentifier } from "@src/renderer/engine/types"
+import { SymbolTypeIdentifier } from "@src/renderer/engine/types"
 
 export const CW = "cw"
 export const CCW = "ccw"
@@ -155,7 +155,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
     // ** LINE AND ARC
     if (nextGraphicType === SEGMENT && !this._regionMode) {
-      if (tool?.type !== FeatureTypeIdentifier.MACRO_DEFINITION) {
+      if (tool?.type !== SymbolTypeIdentifier.MACRO_DEFINITION) {
         if (this._arcDirection === undefined) {
           graphics.push(
             new Shapes.Line({

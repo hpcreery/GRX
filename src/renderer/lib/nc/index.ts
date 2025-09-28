@@ -26,7 +26,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const visitor = new NCToShapesVisitor()
   visitor.visit(result)
   // console.timeEnd("visit")
-  const units = visitor.state.units
+  // const units = visitor.state.units
   api._update_layer_artwork_from_json(params.project, params.step, params.layer, visitor.result)
 }
 

@@ -18,7 +18,7 @@ import {
 import { LayerInfo, QuerySelection } from "@src/renderer/engine/engine"
 import classes from "./FeatureSidebar.module.css"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { getUnitsConversion } from "@src/renderer/engine/utils"
+import { baseUnitsConversionFactor } from "@src/renderer/engine/utils"
 import chroma from "chroma-js"
 import { STANDARD_SYMBOLS, StandardSymbol } from "@src/renderer/data/shape/symbol/symbol"
 import { AttributesType, FeatureTypeIdentifier, Units } from "@src/renderer/engine/types"
@@ -74,7 +74,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
           "ring_gap",
         ].includes(key)
       ) {
-        representedValue = `${((value * getUnitsConversion(units)) / getUnitsConversion(shapeUnits)).toFixed(3)}${units}`
+        representedValue = `${((value * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(shapeUnits)).toFixed(3)}${units}`
       }
       if (key === "attributes") {
         return (
@@ -167,16 +167,16 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
             <Text>
               Start:{" "}
               <Code>
-                X:{((selection.shape.xs * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.ys * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.xs * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.ys * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
             <Text>
               End:{" "}
               <Code>
-                X:{((selection.shape.xe * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.ye * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.xe * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.ye * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
@@ -242,8 +242,8 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
             <Text>
               Center:{" "}
               <Code>
-                X:{((selection.shape.x * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.y * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.x * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.y * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
@@ -298,24 +298,24 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
             <Text>
               Start:{" "}
               <Code>
-                X:{((selection.shape.xs * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.ys * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.xs * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.ys * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
             <Text>
               End:{" "}
               <Code>
-                X:{((selection.shape.xe * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.ye * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.xe * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.ye * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
             <Text>
               Center:{" "}
               <Code>
-                X:{((selection.shape.xc * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
-                {units} Y:{((selection.shape.yc * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                X:{((selection.shape.xc * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
+                {units} Y:{((selection.shape.yc * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>
@@ -386,7 +386,7 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
             <Text>
               Width:{" "}
               <Code>
-                {((selection.shape.width * getUnitsConversion(units)) / getUnitsConversion(selection.units)).toFixed(3)}
+                {((selection.shape.width * baseUnitsConversionFactor(units)) / baseUnitsConversionFactor(selection.units)).toFixed(3)}
                 {units}
               </Code>
             </Text>

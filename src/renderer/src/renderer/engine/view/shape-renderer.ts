@@ -280,6 +280,7 @@ export class ShapeRenderer extends UpdateEventTarget {
             this.drawSufaces(context)
             this.drawSurfaceWithHoles(context)
             this.drawDatums(context)
+            this.drawPolyLines(context)
           })
         })
       })

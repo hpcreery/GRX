@@ -1251,8 +1251,6 @@ function DemoApp(): JSX.Element {
       step: step1,
     })
 
-
-
     // Engine.addLayer({
     //   name: '+/- lines',
     //   transform: {
@@ -1308,7 +1306,6 @@ function DemoApp(): JSX.Element {
     //   name: 'duplicate-polyline',
     //   image: DUPLICATE_POLYLINE_RECORDS_ARRAY
     // })
-
 
     // Engine.addLayer("box1", {
     //   name: "circle",
@@ -1829,7 +1826,11 @@ function DemoApp(): JSX.Element {
                   // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const engine = await renderer.engine
-                    engine.setLayerVisibility("box1", layer, e.target.checked)
+                    DataInterface.read_steps(project).then((allSteps) => {
+                      allSteps.map((step) => {
+                        engine.setLayerVisibility(step, layer, e.target.checked)
+                      })
+                    })
                   }}
                 />
               </div>
