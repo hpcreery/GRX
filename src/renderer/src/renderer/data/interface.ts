@@ -5,8 +5,6 @@ import importFormats from "./import-plugins"
 import type { importFormatName, ImportPluginSignature } from "./import-plugins"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
-// import * as z from "zod"
-import Ajv from "ajv"
 
 enum ErrorCode {
   UNKNOWN = 1,

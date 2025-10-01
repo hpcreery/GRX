@@ -1,13 +1,14 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
 import * as Shapes from "../../data/shape/shape"
+import * as ShapesUtils from "../../data/shape/utils"
 import * as Symbols from "../../data/shape/symbol/symbol"
 import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../types"
 import ShapeTransform, { Transform } from "../transform"
 import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
 import type { UniverseContext } from "../engine"
-import { getScaleMat3, UpdateEventTarget } from "../utils"
+import { UpdateEventTarget } from "../utils"
 import { WorldContext } from "./view"
 import { ArtworkBufferCollection } from "../../data/artwork-collections"
 import { settings } from "../settings"
@@ -521,7 +522,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     // }
     for (let i = 0; i < this.artwork.length; i++) {
       const record = this.artwork.read(i)
-      const feature_bb = Shapes.getBoundingBoxOfShape(record)
+      const feature_bb = ShapesUtils.getBoundingBoxOfShape(record)
       vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
       vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
     }
@@ -662,70 +663,4 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
       super.render(context)
     })
   }
-}
-
-/**
- * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
- */
-export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
-  const newImage: Shapes.Shape[] = []
-  for (const repeat of stepRepeat.repeats) {
-    const transform = new ShapeTransform()
-    Object.assign(transform, repeat)
-    transform.update(inputTransform.matrix)
-    for (let i = 0; i < stepRepeat.shapes.length; i++) {
-      const shape = stepRepeat.shapes[i]
-      const newShape = JSON.parse(JSON.stringify(shape)) as Shapes.Shape
-      if (newShape.type === FeatureTypeIdentifier.SURFACE) {
-        for (const contour of newShape.contours) {
-          const position = vec3.fromValues(contour.xs, contour.ys, 1)
-          vec3.transformMat3(position, position, transform.matrix)
-          contour.xs = position[0]
-          contour.ys = position[1]
-          for (const segment of contour.segments) {
-            const position = vec3.fromValues(segment.x, segment.y, 1)
-            vec3.transformMat3(position, position, transform.matrix)
-            segment.x = position[0]
-            segment.y = position[1]
-          }
-        }
-        newImage.push(newShape)
-        continue
-      }
-      if (newShape.type === FeatureTypeIdentifier.POLYLINE) {
-        newShape.width = newShape.width * getScaleMat3(transform.matrix)
-        const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 1)
-        vec3.transformMat3(startPoint, startPoint, transform.matrix)
-        newShape.xs = startPoint[0]
-        newShape.ys = startPoint[1]
-        for (const segment of newShape.lines) {
-          const point = vec3.fromValues(segment.x, segment.y, 1)
-          vec3.transformMat3(point, point, transform.matrix)
-          segment.x = point[0]
-          segment.y = point[1]
-        }
-        newImage.push(newShape)
-        continue
-      }
-      if (newShape.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-        // this will disable breaking of nested step and repeats, not yet tested
-        // if (newShape.break === false) {
-        //   newImage.push(newShape)
-        //   continue
-        // }
-
-        // note, this is recursive
-        // breaking the top level step and repeat will break all nested step and repeats down to the primitive shapes
-        const newShapes = breakStepRepeat(newShape, transform)
-        if (newShapes === undefined) {
-          return
-        } else {
-          newImage.push(...newShapes)
-        }
-        continue
-      }
-      return
-    }
-  }
-  return newImage
 }

@@ -23,4 +23,3 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
 // Comlink.expose(plugin)
 registerFunction(plugin)
 
-// Comlink.expose(plugin)

@@ -1,10 +1,12 @@
 import * as Shapes from "./shape/shape"
+import * as ShapesUtils from "./shape/utils"
 import * as Symbols from "./shape/symbol/symbol"
 import { FeatureTypeIdentifiers, FeatureTypeIdentifier, AttributesType, ContourSegmentTypeIdentifier, SymbolTypeIdentifier } from "../engine/types"
 import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
-import { Transform } from "../engine/transform"
-import { cyrb64, UpdateEventTarget } from "../engine/utils"
+import ShapeTransform, { Transform } from "../engine/transform"
+import { cyrb64, getScaleMat3, UpdateEventTarget } from "../engine/utils"
+import { vec3 } from 'gl-matrix'
 
 interface BufferCollection<T extends Shapes.Shape> extends UpdateEventTarget {
   create(shape: T): number
@@ -1286,14 +1288,14 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
   }
 }
 
-interface ShapesCollections {
-  [key: string]: BufferCollection<Shapes.Shape>
-}
-type ShapeCollectionMap = {
-  [K in keyof typeof FeatureTypeIdentifier as (typeof FeatureTypeIdentifier)[K]]: BufferCollection<
-    Shapes.Shape & { type: (typeof FeatureTypeIdentifier)[K] }
-  >
-}
+// interface ShapesCollections {
+//   [key: string]: BufferCollection<Shapes.Shape>
+// }
+// type ShapeCollectionMap = {
+//   [K in keyof typeof FeatureTypeIdentifier as (typeof FeatureTypeIdentifier)[K]]: BufferCollection<
+//     Shapes.Shape & { type: (typeof FeatureTypeIdentifier)[K] }
+//   >
+// }
 
 export class ArtworkBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Shape> {
   public shapes = {
@@ -1336,7 +1338,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       throw new Error(`No collection found for shape type: ${shape.type} when creating shape`)
     }
     shape.index = this.artworkMap.length // Assign an index to the shape
-    Shapes.convertShapeUnitsToMM(shape) // Ensure shape is in mm
+    ShapesUtils.convertShapeUnits(shape, 'mm') // Ensure shape is in mm
     const collectionIndex = (collection.create as (shape: Shapes.Shape) => number)(shape)
     // const collectionIndex = collection.create(shape)
     this.artworkMap.push({
@@ -1375,7 +1377,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     shape.index = index // Update the index of the shape
     this.attributeMap[index] = shape.attributes || {} // Update attributes
-    Shapes.convertShapeUnitsToMM(shape) // Ensure shape is in mm
+    ShapesUtils.convertShapeUnits(shape, 'mm') // Ensure shape is in mm
     if (feature.shape !== shape.type) {
       // If the shape type has changed, we need to delete the old shape and create a new one
       this.delete(feature.collectionIndex)
@@ -1507,4 +1509,71 @@ export class MacroArtworkBufferCollection extends ArtworkBufferCollection {
 
 export const test = (): void => {
   console.log("Test function in artwork-collection.ts")
+}
+
+
+/**
+ * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
+ */
+function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
+  const newImage: Shapes.Shape[] = []
+  for (const repeat of stepRepeat.repeats) {
+    const transform = new ShapeTransform()
+    Object.assign(transform, repeat)
+    transform.update(inputTransform.matrix)
+    for (let i = 0; i < stepRepeat.shapes.length; i++) {
+      const shape = stepRepeat.shapes[i]
+      const newShape = JSON.parse(JSON.stringify(shape)) as Shapes.Shape
+      if (newShape.type === FeatureTypeIdentifier.SURFACE) {
+        for (const contour of newShape.contours) {
+          const position = vec3.fromValues(contour.xs, contour.ys, 1)
+          vec3.transformMat3(position, position, transform.matrix)
+          contour.xs = position[0]
+          contour.ys = position[1]
+          for (const segment of contour.segments) {
+            const position = vec3.fromValues(segment.x, segment.y, 1)
+            vec3.transformMat3(position, position, transform.matrix)
+            segment.x = position[0]
+            segment.y = position[1]
+          }
+        }
+        newImage.push(newShape)
+        continue
+      }
+      if (newShape.type === FeatureTypeIdentifier.POLYLINE) {
+        newShape.width = newShape.width * getScaleMat3(transform.matrix)
+        const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 1)
+        vec3.transformMat3(startPoint, startPoint, transform.matrix)
+        newShape.xs = startPoint[0]
+        newShape.ys = startPoint[1]
+        for (const segment of newShape.lines) {
+          const point = vec3.fromValues(segment.x, segment.y, 1)
+          vec3.transformMat3(point, point, transform.matrix)
+          segment.x = point[0]
+          segment.y = point[1]
+        }
+        newImage.push(newShape)
+        continue
+      }
+      if (newShape.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
+        // this will disable breaking of nested step and repeats, not yet tested
+        // if (newShape.break === false) {
+        //   newImage.push(newShape)
+        //   continue
+        // }
+
+        // note, this is recursive
+        // breaking the top level step and repeat will break all nested step and repeats down to the primitive shapes
+        const newShapes = breakStepRepeat(newShape, transform)
+        if (newShapes === undefined) {
+          return
+        } else {
+          newImage.push(...newShapes)
+        }
+        continue
+      }
+      return
+    }
+  }
+  return newImage
 }
