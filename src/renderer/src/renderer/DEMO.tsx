@@ -1046,7 +1046,8 @@ new Array<number>(1).fill(0).map((_, _i) => {
       xs: 0,
       ys: 0,
 
-      cornertype: "miter",
+      // cornertype: "miter",
+      cornertype: "round",
 
       pathtype: "square",
       // Polarity. 0 = negative, 1 = positive
@@ -1241,6 +1242,7 @@ function DemoApp(): JSX.Element {
 
     // DataInterface._update_layer_artwork_from_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
     // DataInterface._update_layer_artwork_from_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
+    DataInterface._update_layer_artwork_from_json(project, step1, layer, POLYLINE_RECORDS_ARRAY)
 
     Engine.addManagedView(box2Ref.current, {
       project,

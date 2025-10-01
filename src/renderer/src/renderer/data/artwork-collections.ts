@@ -1089,6 +1089,11 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
       endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Square
     }
 
+    let cornerSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
+    if (record.cornertype == "round") {
+      cornerSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Round
+    }
+
     const endSymbol = new Symbols.StandardSymbol({
       id: "polyline-cap",
       symbol: endSymbolType,
@@ -1100,6 +1105,14 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
     const lineSymbol = new Symbols.StandardSymbol({
       id: "polyline-line",
       symbol: Symbols.STANDARD_SYMBOLS_MAP.Null,
+      width: record.width,
+      height: record.width,
+      outer_dia: record.width,
+    })
+
+    const cornerSymbol = new Symbols.StandardSymbol({
+      id: "polyline-corner",
+      symbol: cornerSymbolType,
       width: record.width,
       height: record.width,
       outer_dia: record.width,
@@ -1154,7 +1167,7 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
             new Shapes.Pad({
               x: x,
               y: y,
-              symbol: endSymbol,
+              symbol: cornerSymbol,
               polarity: record.polarity,
               index: record.index,
             }),
