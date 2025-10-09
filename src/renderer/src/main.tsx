@@ -7,7 +7,6 @@ import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
 import DemoApp from "./renderer/DEMO"
 // import NCDemo from '@lib/nc/DEMO'
-import * as BufferCollection from './renderer/data/artwork-collections'
 
 import { Spotlight } from "@mantine/spotlight"
 import { spotlightStore, actions } from "./contexts/Spotlight"
@@ -54,8 +53,8 @@ function Main(): JSX.Element | null {
         <ContextMenuProvider zIndex={1000} shadow="md" borderRadius="md">
           <Spotlight store={spotlightStore} actions={actions} shortcut={["/"]} />
           <Notifications />
-          {/* <App /> */}
-          <DemoApp />
+          <App />
+          {/* <DemoApp /> */}
           {/* <NCDemo /> */}
         </ContextMenuProvider>
       </MantineProvider>

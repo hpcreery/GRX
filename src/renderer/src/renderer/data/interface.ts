@@ -1,5 +1,5 @@
 import * as Shapes from "./shape/shape"
-import { Layer, Project, PROJECTS, Step } from "./project"
+import { StepLayer, Layer, Project, PROJECTS, Step } from "./project"
 import { ArtworkBufferCollection } from "./artwork-collections"
 import importFormats from "./import-plugins"
 import type { importFormatName, ImportPluginSignature } from "./import-plugins"
@@ -152,11 +152,13 @@ export const DataInterface = {
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Please add a step before adding layers.", ErrorCode.STEP_NOT_FOUND)
     }
-    if (project.matrix.steps[0].layers.find((layer) => layer.name === layer_name)) {
+    if (project.matrix.layers.find((layer) => layer.name === layer_name)) {
       throw new CommandError(`Layer with name ${layer_name} already exists`, ErrorCode.LAYER_NOT_FOUND)
     }
+    const layer = new Layer(layer_name, project.matrix)
+    project.matrix.layers.push(layer)
     project.matrix.steps.forEach((step) => {
-      step.layers.push(new Layer(layer_name))
+      step.layers.push(new StepLayer(step, layer))
     })
     this.eventTarget.dispatchTypedEvent(
       "matrix_changed",
@@ -179,8 +181,7 @@ export const DataInterface = {
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Cannot list layers.", ErrorCode.STEP_NOT_FOUND)
     }
-    // Just return layers from the first step, assuming all steps have the same layers
-    return project.matrix.steps[0].layers.map((layer) => layer.name)
+    return project.matrix.layers.map((layer) => layer.name)
   },
 
   /**
@@ -220,9 +221,9 @@ export const DataInterface = {
    * @returns The layer object.
    * @throws CommandError if the project, step, or layer is not found.
    */
-  _read_layer_object(project_name: string, step_name: string, layer_name: string): Layer {
+  _read_layer_object(project_name: string, step_name: string, layer_name: string): StepLayer {
     const step = this._read_step_object(project_name, step_name)
-    const layer = step.layers.find((layer) => layer.name === layer_name)
+    const layer = step.layers.find((layer) => layer.row.name === layer_name)
     if (!layer) {
       throw new CommandError(`Layer with name ${layer_name} does not exist`, ErrorCode.LAYER_NOT_FOUND)
     }
@@ -242,11 +243,11 @@ export const DataInterface = {
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Cannot remove layer.", ErrorCode.STEP_NOT_FOUND)
     }
-    if (!project.matrix.steps[0].layers.find((layer) => layer.name === layer_name)) {
+    if (!project.matrix.layers.find((layer) => layer.name === layer_name)) {
       throw new CommandError(`Layer with name ${layer_name} does not exist`, ErrorCode.LAYER_NOT_FOUND)
     }
     project.matrix.steps.forEach((step) => {
-      const index = step.layers.findIndex((layer) => layer.name === layer_name)
+      const index = step.layers.findIndex((layer) => layer.row.name === layer_name)
       if (index === -1) {
         throw new InternalError(`Layer with name ${layer_name} does not exist in step ${step.name}`, ErrorCode.LAYER_NOT_FOUND)
       }
@@ -273,19 +274,14 @@ export const DataInterface = {
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Cannot rename layer.", ErrorCode.STEP_NOT_FOUND)
     }
-    if (!project.matrix.steps[0].layers.find((layer) => layer.name === old_name)) {
+    const layer = project.matrix.layers.find((layer) => layer.name === old_name)
+    if (layer === undefined) {
       throw new CommandError(`Layer with name ${old_name} does not exist`, ErrorCode.LAYER_NOT_FOUND)
     }
-    if (project.matrix.steps[0].layers.find((layer) => layer.name === new_name)) {
+    if (project.matrix.layers.find((layer) => layer.name === new_name)) {
       throw new CommandError(`Layer with name ${new_name} already exists`, ErrorCode.INVALID_INPUT)
     }
-    project.matrix.steps.forEach((step) => {
-      const layer = step.layers.find((layer) => layer.name === old_name)
-      if (!layer) {
-        throw new InternalError(`Layer with name ${old_name} does not exist in step ${step.name}`, ErrorCode.LAYER_NOT_FOUND)
-      }
-      layer.name = new_name
-    })
+    layer.name = new_name
   },
 
   /**
@@ -301,8 +297,11 @@ export const DataInterface = {
     if (project.matrix.steps.find((step) => step.name === step_name)) {
       throw new CommandError(`Step with name ${step_name} already exists`, ErrorCode.INVALID_INPUT)
     }
-    const step = new Step(step_name)
+    const step = new Step(step_name, project.matrix)
     project.matrix.steps.push(step)
+    project.matrix.layers.forEach((layer) => {
+      step.layers.push(new StepLayer(step, layer))
+    })
     this.eventTarget.dispatchTypedEvent(
       "matrix_changed",
       new CustomEvent("matrix_changed", {

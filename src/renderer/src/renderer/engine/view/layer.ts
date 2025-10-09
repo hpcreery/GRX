@@ -6,10 +6,10 @@ import { UID } from "../utils"
 
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
-import { Layer, Project, Step } from '@src/renderer/data/project'
+import { StepLayer, Project, Step } from '@src/renderer/data/project'
 
 export interface LayerProps {
-  layerData: Layer
+  layerData: StepLayer
   stepData: Step
   projectData: Project
   visible?: boolean
@@ -29,7 +29,7 @@ interface LayerAttributes {}
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public id: string = UID()
-  public layerData: Layer
+  public layerData: StepLayer
   public stepData: Step
   public projectData: Project
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())

@@ -4,18 +4,13 @@ import { Units } from '../engine/types'
 import { ArtworkBufferCollection, SurfaceBufferCollection } from './artwork-collections'
 
 
-
-export interface LayerRowType {
-  name: string
-  artwork: ArtworkBufferCollection
-}
-
-export interface StepColumnType {
-  layers: LayerRowType[]
-}
-
 export class Matrix {
+  public readonly project: Project
   public readonly steps: Step[] = []
+  public readonly layers: Layer[] = []
+  constructor(project: Project) {
+    this.project = project
+  }
 }
 
 export interface StepAndRepeat {
@@ -23,23 +18,38 @@ export interface StepAndRepeat {
   step: Step
 }
 
-export class Step implements StepColumnType {
+export class Layer {
+  public readonly matrix: Matrix
   public name: string = ""
-  public readonly layers: Layer[] = []
-  public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
-  public readonly stepAndRepeat: StepAndRepeat[] = []
-  constructor(name: string) {
+  public type: string = "normal"
+  public context: string = "default"
+  constructor(name: string, matrix: Matrix) {
     this.name = name
+    this.matrix = matrix
   }
 }
 
-export class Layer implements LayerRowType {
+export class Step {
+  public readonly matrix: Matrix
+  public readonly layers: StepLayer[] = []
+  public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
+  public readonly stepAndRepeat: StepAndRepeat[] = []
   public name: string = ""
-  public artworkUnits: Units = "mm"
+  constructor(name: string, matrix: Matrix) {
+    this.name = name
+    this.matrix = matrix
+  }
+}
+
+export class StepLayer {
+  public readonly row: Layer
+  public readonly step: Step
   public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
-  constructor(name: string) {
-    this.name = name
+  public artworkUnits: Units = "mm"
+  constructor(step: Step, row: Layer) {
+    this.step = step
+    this.row = row
   }
 }
 
@@ -47,7 +57,7 @@ export class Project {
   public name: string = "Untitled Project"
   public created: Date = new Date()
   public modified: Date = new Date()
-  public readonly matrix: Matrix = new Matrix()
+  public readonly matrix: Matrix = new Matrix(this)
   constructor(name: string) {
     this.name = name
     this.created = new Date()

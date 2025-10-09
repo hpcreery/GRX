@@ -11,7 +11,7 @@ import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
-import { Layer, Project, Step } from '@src/renderer/data/project'
+import { StepLayer, Project, Step } from '@src/renderer/data/project'
 import { DataInterface } from '@src/renderer/data/interface'
 
 export interface WorldProps {}
@@ -381,7 +381,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
-  private addLayer(layerData: Layer): void {
+  private addLayer(layerData: StepLayer): void {
     const layerRenderer = new LayerRenderer({
       regl: this.regl,
       layerData: layerData,
@@ -398,7 +398,7 @@ export class ViewRenderer extends UpdateEventTarget {
     // this.dispatchTypedEvent("update", new Event("update"))
   }
 
-  private deleteLayer(layer: Layer): void {
+  private deleteLayer(layer: StepLayer): void {
     const index = this.layers.findIndex((l) => l.layerData === layer)
     if (index === -1) return
     const deleted = this.layers.splice(index, 1)
@@ -493,7 +493,7 @@ export class ViewRenderer extends UpdateEventTarget {
           // this.measurements.addMeasurement(pointer)
           // this.measurements.finishMeasurement(select.snapPoint || pointer)
         }
-        const selectionLayer = new Layer(layer.layerData.name + "_selection")
+        const selectionLayer = new StepLayer(layer.layerData.name + "_selection")
         // we want to deep clone this object to avoid the layer renderer from mutating the properties
         selectionLayer.artwork.fromJSON(this.copySelectionToImage(distances))
         selectionLayer.artworkUnits = layer.layerData.artworkUnits
