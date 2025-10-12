@@ -57,7 +57,6 @@ export interface Pointer {
 
 export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
-  units: Units
 }
 
 export type RenderProps = Partial<typeof Engine.defaultRenderProps>
@@ -162,13 +161,11 @@ export class Engine {
   public renderDispatch = (): void => this.render()
 
   public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
-    const projectObject = DataInterface._read_project_object(project)
     const stepObject = DataInterface._read_step_object(project, step)
     const newStep = new ViewRenderer({
       regl: this.regl,
       viewBox,
-      projectData: projectObject,
-      stepData: stepObject,
+      dataStep: stepObject,
       id,
     })
     newStep.onUpdate(this.renderDispatch)
@@ -267,14 +264,29 @@ export class Engine {
     this.views.get(view)!.setTransform(transform)
   }
 
+  public getLayerVisibility(view: string, layer: string): boolean {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getLayerVisibility(layer)
+  }
+
   public setLayerVisibility(view: string, layer: string, visible: boolean): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerVisibility(layer, visible)
   }
 
+  public getLayerColor(view: string, layer: string): vec3 {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getLayerColor(layer)
+  }
+
   public setLayerColor(view: string, layer: string, color: vec3): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerColor(layer, color)
+  }
+
+  public getLayerTransform(view: string, layer: string): Transform {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getLayerTransform(layer)
   }
 
   public setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
@@ -352,14 +364,6 @@ export class Engine {
   public clearMeasurements(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.clearMeasurements()
-  }
-
-  public getLayersQueue(view: string): {
-    name: string
-    id: string
-  }[] {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.layersQueue
   }
 
   public render(): void {

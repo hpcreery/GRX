@@ -223,7 +223,7 @@ export const DataInterface = {
    */
   _read_layer_object(project_name: string, step_name: string, layer_name: string): StepLayer {
     const step = this._read_step_object(project_name, step_name)
-    const layer = step.layers.find((layer) => layer.row.name === layer_name)
+    const layer = step.layers.find((layer) => layer.layer.name === layer_name)
     if (!layer) {
       throw new CommandError(`Layer with name ${layer_name} does not exist`, ErrorCode.LAYER_NOT_FOUND)
     }
@@ -247,12 +247,15 @@ export const DataInterface = {
       throw new CommandError(`Layer with name ${layer_name} does not exist`, ErrorCode.LAYER_NOT_FOUND)
     }
     project.matrix.steps.forEach((step) => {
-      const index = step.layers.findIndex((layer) => layer.row.name === layer_name)
+      const index = step.layers.findIndex((layer) => layer.layer.name === layer_name)
       if (index === -1) {
         throw new InternalError(`Layer with name ${layer_name} does not exist in step ${step.name}`, ErrorCode.LAYER_NOT_FOUND)
       }
+      // step.layers[index].artwork.clear()
       step.layers.splice(index, 1)
     })
+    const layerIndex = project.matrix.layers.findIndex((layer) => layer.name === layer_name)
+    project.matrix.layers.splice(layerIndex, 1)
     this.eventTarget.dispatchTypedEvent(
       "matrix_changed",
       new CustomEvent("matrix_changed", {

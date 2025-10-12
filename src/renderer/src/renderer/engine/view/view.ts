@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import LayerRenderer from "./layer"
+import LayerRenderer, {SelectionRenderer} from "./layer"
 import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import * as Shapes from "../../data/shape/shape"
 import { type Units, type BoundingBox, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
@@ -11,8 +11,9 @@ import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
-import { StepLayer, Project, Step } from '@src/renderer/data/project'
+import { StepLayer, Step } from '@src/renderer/data/project'
 import { DataInterface } from '@src/renderer/data/interface'
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
 
 export interface WorldProps {}
 
@@ -51,8 +52,7 @@ export interface WorldContext {
 
 export interface ViewRendererConfig {
   id?: string
-  stepData: Step
-  projectData: Project
+  dataStep: Step
   viewBox: DOMRect
   // dpr: number
   regl: REGL.Regl
@@ -90,7 +90,7 @@ export interface Pointer {
 
 export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
-  units: Units
+  // units: Units
 }
 
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
@@ -98,8 +98,7 @@ export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
 export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
-  public stepData: Step
-  public projectData: Project
+  public dataStep: Step
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public viewBox: ViewBox = {
@@ -131,8 +130,7 @@ export class ViewRenderer extends UpdateEventTarget {
   public dirty = true
 
   public layers: LayerRenderer[] = []
-  public selections: LayerRenderer[] = []
-  public layersQueue: { name: string; id: string }[] = []
+  public selections: SelectionRenderer[] = []
 
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
@@ -146,11 +144,10 @@ export class ViewRenderer extends UpdateEventTarget {
 
   private layersSubscriptionControler: AbortController
 
-  constructor({ viewBox, regl, id, stepData, projectData }: ViewRendererConfig) {
+  constructor({ viewBox, regl, id, dataStep }: ViewRendererConfig) {
     super()
     this.id = id || UID()
-    this.stepData = stepData
-    this.projectData = projectData
+    this.dataStep = dataStep
 
     this.viewBox = viewBox
 
@@ -246,6 +243,10 @@ export class ViewRenderer extends UpdateEventTarget {
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
     this.dispatchTypedEvent("update", new Event("update"))
+
+    // DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
+    //   this.updateLayers()
+    // }, { signal: this.layersSubscriptionControler.signal });
   }
 
   public updateViewBox(newViewBox: DOMRect): void {
@@ -364,48 +365,45 @@ export class ViewRenderer extends UpdateEventTarget {
   private createLayers(): void {
     this.layersSubscriptionControler.abort()
     this.layersSubscriptionControler = new AbortController();
-    DataInterface.subscribe_to_matrix(this.projectData, () => {
+    DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
       this.updateLayers()
     }, { signal: this.layersSubscriptionControler.signal });
     this.updateLayers()
   }
 
   public updateLayers(): void {
-    for (const layer of this.stepData.layers) {
-      if (this.layers.find((l) => l.layerData === layer)) continue
+    for (const layer of this.dataStep.layers) {
+      if (this.layers.find((l) => l.dataLayer === layer)) continue
       this.addLayer(layer)
     }
     for (const layer of this.layers) {
-      if (this.stepData.layers.find((l) => l === layer.layerData)) continue
-      this.deleteLayer(layer.layerData)
+      if (this.dataStep.layers.find((l) => l === layer.dataLayer)) continue
+      this.deleteLayer(layer.dataLayer)
     }
   }
 
-  private addLayer(layerData: StepLayer): void {
+  private addLayer(dataLayer: StepLayer): void {
     const layerRenderer = new LayerRenderer({
       regl: this.regl,
-      layerData: layerData,
-      stepData: this.stepData,
-      projectData: this.projectData,
+      dataLayer,
       color: vec3.fromValues(Math.random(), Math.random(), Math.random()),
       visible: true,
-      // image: artwork,
     })
     this.layers.push(layerRenderer)
     layerRenderer.onUpdate(() => {
       this.dispatchTypedEvent("update", new Event("update"))
     })
-    // this.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   private deleteLayer(layer: StepLayer): void {
-    const index = this.layers.findIndex((l) => l.layerData === layer)
+    const index = this.layers.findIndex((l) => l.dataLayer === layer)
     if (index === -1) return
     const deleted = this.layers.splice(index, 1)
     for (const d of deleted) {
       d.destroy()
     }
-    // this.dispatchTypedEvent("update", new Event("update"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public getTransform(): Partial<RenderTransform> {
@@ -432,22 +430,58 @@ export class ViewRenderer extends UpdateEventTarget {
     this.updateTransform()
   }
 
+  /**
+   * Get layer visibility by name
+   */
+  public getLayerVisibility(name: string): boolean {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.visible
+  }
+
+  /**
+   * Toggle layer visibility by name
+   */
   public setLayerVisibility(name: string, visible: boolean): void {
-    const layer = this.layers.find((layer) => layer.layerData.name === name)
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     layer.visible = visible
     this.dispatchTypedEvent("update", new Event("update"))
   }
 
+  /**
+   * Get layer color by name
+   */
+  public getLayerColor(name: string): vec3 {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.color
+  }
+
+  /**
+   * Set layer color by name
+   */
   public setLayerColor(name: string, color: vec3): void {
-    const layer = this.layers.find((layer) => layer.layerData.name === name)
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     layer.color = color
     this.dispatchTypedEvent("update", new Event("update"))
   }
 
+  /**
+   * Get layer transform by name
+   */
+  public getLayerTransform(name: string): Transform {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.transform
+  }
+
+  /**
+   * Set layer transform by name
+   */
   public setLayerTransform(name: string, transform: Partial<Transform>): void {
-    const layer = this.layers.find((layer) => layer.layerData.name === name)
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     Object.assign(layer.transform, transform)
     this.dispatchTypedEvent("update", new Event("update"))
@@ -464,7 +498,7 @@ export class ViewRenderer extends UpdateEventTarget {
         height: 1,
       })
       if (data.reduce((acc, val) => acc + val, 0) > 0) {
-        console.log(layer.layerData.name)
+        console.log(layer.dataLayer.layer.name)
       }
     }
   }
@@ -474,46 +508,35 @@ export class ViewRenderer extends UpdateEventTarget {
     this.selections.forEach((layer) => layer.destroy())
     this.selections.length = 0
     this.world((context) => {
-      // this.clearMeasurements()
-      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
-      // const epsilons = 100 / scale
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const distances = layer.queryDistance(pointer, context)
-        // const layerSelection = distances.filter((shape) => shape.distance <= 0)
+        if (distances.length === 0) continue
         for (const select of distances) {
-          // if (select.distance >= epsilons) continue
           selection.push({
-            sourceLayer: layer.id,
+            sourceLayer: layer.dataLayer.layer.name,
             ...select,
-            units: layer.layerData.artworkUnits,
+            // units: layer.dataLayer.artworkUnits,
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
           // this.measurements.addMeasurement(pointer)
           // this.measurements.finishMeasurement(select.snapPoint || pointer)
         }
-        const selectionLayer = new StepLayer(layer.layerData.name + "_selection")
-        // we want to deep clone this object to avoid the layer renderer from mutating the properties
-        selectionLayer.artwork.fromJSON(this.copySelectionToImage(distances))
-        selectionLayer.artworkUnits = layer.layerData.artworkUnits
+        const selectionImage = new ArtworkBufferCollection()
+        selectionImage.fromJSON(this.copySelectionToImage(distances))
 
-        const newSelectionLayer = new LayerRenderer({
+        const newSelectionLayer = new SelectionRenderer({
           regl: this.regl,
-          color: [0.5, 0.5, 0.5],
-          alpha: 0.7,
-          layerData: selectionLayer,
-          stepData: this.stepData,
-          projectData: this.projectData,
+          image: selectionImage,
           transform: layer.transform,
         })
-        newSelectionLayer.onUpdate(() => {
-          this.dispatchTypedEvent("update", new Event("update"))
-        })
+        // newSelectionLayer.onUpdate(() => {
+        //   this.dispatchTypedEvent("update", new Event("update"))
+        // })
         this.selections.push(newSelectionLayer)
       }
     })
-    console.log("Selection:", selection)
     this.dispatchTypedEvent("update", new Event("update"))
     return selection
   }

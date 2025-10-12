@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
 import { Binary } from "@src/renderer/engine/types"
 import { TransformOrder } from "@src/renderer/engine/transform"
-import type { LayerInfo } from "@src/renderer/engine/engine"
+// import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec2 } from "gl-matrix"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
@@ -72,25 +72,39 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   useEffect(() => {
-    renderer.engine.then((engine) => {
-      engine.getLayers("main").then((layers: LayerInfo[]) => {
-        layers.forEach((layer: LayerInfo) => {
-          if (layer.id === props.layerID) {
-            setLayerName(layer.name)
-            setDatumX(layer.transform.datum[0])
-            setDatumY(layer.transform.datum[1])
-            setRotation(layer.transform.rotation)
-            setScale(layer.transform.scale)
-            setMirrorX(layer.transform.mirror_x)
-            setMirrorY(layer.transform.mirror_y)
-            if (layer.transform.order != undefined) {
-              setTransformOrder(layer.transform.order)
-            } else {
-              setTransformOrder(["translate", "rotate", "mirror", "scale"])
-            }
-          }
-        })
-      })
+    renderer.engine.then(async (engine) => {
+
+      // engine.getLayers("main").then((layers: LayerInfo[]) => {
+      //   layers.forEach((layer: LayerInfo) => {
+      //     if (layer.id === props.layerID) {
+      //       setLayerName(layer.name)
+      //       setDatumX(layer.transform.datum[0])
+      //       setDatumY(layer.transform.datum[1])
+      //       setRotation(layer.transform.rotation)
+      //       setScale(layer.transform.scale)
+      //       setMirrorX(layer.transform.mirror_x)
+      //       setMirrorY(layer.transform.mirror_y)
+      //       if (layer.transform.order != undefined) {
+      //         setTransformOrder(layer.transform.order)
+      //       } else {
+      //         setTransformOrder(["translate", "rotate", "mirror", "scale"])
+      //       }
+      //     }
+      //   })
+      // })
+      const transform = await engine.getLayerTransform("main", props.layerID)
+      setLayerName(props.layerID)
+      setDatumX(transform.datum[0])
+      setDatumY(transform.datum[1])
+      setRotation(transform.rotation)
+      setScale(transform.scale)
+      setMirrorX(transform.mirror_x)
+      setMirrorY(transform.mirror_y)
+      if (transform.order != undefined) {
+        setTransformOrder(transform.order)
+      } else {
+        setTransformOrder(["translate", "rotate", "mirror", "scale"])
+      }
     })
     return (): void => {
       console.log("LayerTransform Unloaded")
@@ -99,20 +113,28 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   useEffect(() => {
     renderer.engine.then((engine) => {
-      engine.getLayers("main").then((layers: LayerInfo[]) => {
-        layers.forEach((layer: LayerInfo) => {
-          if (layer.id === props.layerID) {
-            engine.setLayerTransform("main", layer.id, {
-              datum: vec2.fromValues(datumX, datumY),
-              rotation: rotation,
-              scale: scale,
-              mirror_x: mirror_x,
-              mirror_y: mirror_y,
-              order: transformOrder,
-            })
-          }
-        })
+      engine.setLayerTransform("main", props.layerID, {
+        datum: vec2.fromValues(datumX, datumY),
+        rotation: rotation,
+        scale: scale,
+        mirror_x: mirror_x,
+        mirror_y: mirror_y,
+        order: transformOrder,
       })
+      // engine.getLayers("main").then((layers: LayerInfo[]) => {
+      //   layers.forEach((layer: LayerInfo) => {
+      //     if (layer.id === props.layerID) {
+      //       engine.setLayerTransform("main", layer.id, {
+      //         datum: vec2.fromValues(datumX, datumY),
+      //         rotation: rotation,
+      //         scale: scale,
+      //         mirror_x: mirror_x,
+      //         mirror_y: mirror_y,
+      //         order: transformOrder,
+      //       })
+      //     }
+      //   })
+      // })
     })
   })
 

@@ -21,7 +21,7 @@ export interface StepAndRepeat {
 export class Layer {
   public readonly matrix: Matrix
   public name: string = ""
-  public type: string = "normal"
+  public function: string = "copper"
   public context: string = "default"
   constructor(name: string, matrix: Matrix) {
     this.name = name
@@ -31,25 +31,33 @@ export class Layer {
 
 export class Step {
   public readonly matrix: Matrix
-  public readonly layers: StepLayer[] = []
+  private readonly _layers: StepLayer[] = []
+  public get layers(): StepLayer[] {
+    this._layers.sort((a, b) => this.matrix.layers.indexOf(a.layer) - this.matrix.layers.indexOf(b.layer));
+    return this._layers
+  }
+  // public readonly layers: StepLayer[] = []
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
-  public readonly stepAndRepeat: StepAndRepeat[] = []
+  public readonly step_and_repeats: StepAndRepeat[] = []
   public name: string = ""
   constructor(name: string, matrix: Matrix) {
     this.name = name
     this.matrix = matrix
   }
+  // public sortLayers(): void {
+  //   this.layers.sort((a, b) => this.matrix.layers.indexOf(a.layer) - this.matrix.layers.indexOf(b.layer));
+  // }
 }
 
 export class StepLayer {
-  public readonly row: Layer
+  public readonly layer: Layer
   public readonly step: Step
   public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
-  public artworkUnits: Units = "mm"
+  // public artworkUnits: Units = "mm"
   constructor(step: Step, row: Layer) {
     this.step = step
-    this.row = row
+    this.layer = row
   }
 }
 
