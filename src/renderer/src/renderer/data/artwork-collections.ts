@@ -6,7 +6,7 @@ import earcut from "earcut"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
 import ShapeTransform, { Transform } from "../engine/transform"
 import { cyrb64, getScaleMat3, UpdateEventTarget } from "../engine/utils"
-import { vec3 } from 'gl-matrix'
+import { vec3 } from "gl-matrix"
 
 interface BufferCollection<T extends Shapes.Shape> extends UpdateEventTarget {
   create(shape: T): number
@@ -108,7 +108,10 @@ export abstract class SymbolBufferCollection {
   }
 }
 
-class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | Shapes.DatumLine> extends UpdateEventTarget implements BufferCollection<T> {
+class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | Shapes.DatumLine>
+  extends UpdateEventTarget
+  implements BufferCollection<T>
+{
   /**
    * Buffer storing all shapes' parameters in a sorted flat Float32Array
    */
@@ -594,6 +597,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
   public surfacesWithoutHoles: SurfaceBufferCollection = new SurfaceBufferCollection()
   public surfacesWithHoles: SurfaceBufferCollection[] = []
   public surfacesMap: ({ index: number; collection: SurfaceBufferCollection } | undefined)[] = []
+  private surfaceEdgesMap: Map<number, { lines: number[]; arcs: number[] }> = new Map()
   public length: number = 0
 
   edgeLineBufferCollection: PrimitiveBufferCollection<Shapes.Line> = new PrimitiveBufferCollection<Shapes.Line>(
@@ -605,24 +609,41 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     FeatureTypeIdentifier.ARC,
   )
 
-  updateEdges(): void {
-    this.edgeLineBufferCollection.clear()
-    this.edgeArcBufferCollection.clear()
+  updateEdges(index: number): void {
+    const mapping = this.surfacesMap[index]
+    if (!mapping) {
+      const edges = this.surfaceEdgesMap.get(index)
+      if (!edges) {
+        return
+      }
+      const { lines, arcs } = edges
+      lines.forEach((i) => this.edgeLineBufferCollection.delete(i))
+      arcs.forEach((i) => this.edgeArcBufferCollection.delete(i))
+      this.surfaceEdgesMap.delete(index)
+      return
+    }
+
+    const edges = this.surfaceEdgesMap.get(index)
+    if (edges) {
+      const { lines, arcs } = edges
+      lines.forEach((i) => this.edgeLineBufferCollection.delete(i))
+      arcs.forEach((i) => this.edgeArcBufferCollection.delete(i))
+    }
+
+    const newEdges = { lines: [] as number[], arcs: [] as number[] }
+
     const surfaceOutlineSymbol = new Symbols.NullSymbol({
       id: "surface-outline-symbol",
     })
 
-    this.surfacesMap.forEach((map) => {
-      if (!map) {
-        return
-      }
-      const { index, collection } = map
-      const surface = collection.read(index)
-      surface.contours.forEach((contour) => {
-        let xs = contour.xs
-        let ys = contour.ys
-        contour.segments.forEach((segment) => {
-          if (segment.type === ContourSegmentTypeIdentifier.LINESEGMENT) {
+    const { index: i, collection } = mapping
+    const surface = collection.read(i)
+    surface.contours.forEach((contour) => {
+      let xs = contour.xs
+      let ys = contour.ys
+      contour.segments.forEach((segment) => {
+        if (segment.type === ContourSegmentTypeIdentifier.LINESEGMENT) {
+          newEdges.lines.push(
             this.edgeLineBufferCollection.create(
               new Shapes.Line({
                 xs: xs,
@@ -633,8 +654,10 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
                 index: surface.index,
                 symbol: surfaceOutlineSymbol,
               }),
-            )
-          } else {
+            ),
+          )
+        } else {
+          newEdges.arcs.push(
             this.edgeArcBufferCollection.create(
               new Shapes.Arc({
                 xs: xs,
@@ -648,22 +671,23 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
                 index: surface.index,
                 symbol: surfaceOutlineSymbol,
               }),
-            )
-          }
-          // surfaceDatums.push(new Shapes.DatumPoint({
-          //   x: segment.x,
-          //   y: segment.y,
-          // }))
-          // this.shapes.pads.push(new Shapes.Pad({
-          //   x: segment.x,
-          //   y: segment.y,
-          //   symbol: surfaceOutlineSymbol,
-          // }))
-          xs = segment.x
-          ys = segment.y
-        })
+            ),
+          )
+        }
+        // surfaceDatums.push(new Shapes.DatumPoint({
+        //   x: segment.x,
+        //   y: segment.y,
+        // }))
+        // this.shapes.pads.push(new Shapes.Pad({
+        //   x: segment.x,
+        //   y: segment.y,
+        //   symbol: surfaceOutlineSymbol,
+        // }))
+        xs = segment.x
+        ys = segment.y
       })
     })
+    this.surfaceEdgesMap.set(index, newEdges)
   }
 
   create(shape: Shapes.Surface): number {
@@ -678,7 +702,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
       this.surfacesMap[index] = { index: shapeIndex, collection: this.surfacesWithoutHoles }
     }
     this.length += 1
-    this.updateEdges()
+    this.updateEdges(index)
     this.dispatchTypedEvent("update", new Event("update"))
     return index
   }
@@ -708,6 +732,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     if (currentlyHasHoles !== newHasHoles) {
       // Remove from current collection
       mapping.collection.delete(mapping.index)
+      this.updateEdges(mapping.index)
       // Add to new collection
       if (newHasHoles) {
         const collection = new SurfaceBufferCollection()
@@ -722,7 +747,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
       // Update in the same collection
       mapping.collection.update(mapping.index, shape)
     }
-    this.updateEdges()
+    this.updateEdges(index)
     this.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -736,7 +761,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     }
     mapping.collection.delete(mapping.index)
     this.surfacesMap[index] = undefined
-    this.updateEdges()
+    this.updateEdges(index)
     this.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -1047,7 +1072,7 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
   primitivesMap: ({ padIndex: number[]; lineIndex: number[] } | null)[] = []
 
   updateBuffers(index: number): void {
-  // drawPolyline(index: number): void {
+    // drawPolyline(index: number): void {
     const record = this.polyLines[index]
     if (!record) {
       // If the record is null, empty the buffers for this index
@@ -1080,7 +1105,6 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
     //   lineIndices.push(lineIdx)
     //   return lineIdx
     // }
-
 
     let endSymbolType = Symbols.STANDARD_SYMBOLS_MAP.Null
     if (record.pathtype == "round") {
@@ -1126,16 +1150,18 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
       const prevAngleDeg = (prevAngle * 180) / Math.PI
 
       if (i == 0) {
-        padIndices.push(this.padBufferCollection.create(
-          new Shapes.Pad({
-            x: prevx,
-            y: prevy,
-            rotation: prevAngleDeg,
-            symbol: endSymbol,
-            polarity: record.polarity,
-            index: record.index,
-          }),
-        ))
+        padIndices.push(
+          this.padBufferCollection.create(
+            new Shapes.Pad({
+              x: prevx,
+              y: prevy,
+              rotation: prevAngleDeg,
+              symbol: endSymbol,
+              polarity: record.polarity,
+              index: record.index,
+            }),
+          ),
+        )
       }
 
       const line = new Shapes.Line({
@@ -1150,28 +1176,32 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
       lineIndices.push(this.lineBufferCollection.create(line))
 
       if (i == record.lines.length - 1) {
-        padIndices.push(this.padBufferCollection.create(
-          new Shapes.Pad({
-            x: x,
-            y: y,
-            rotation: prevAngleDeg,
-            symbol: endSymbol,
-            polarity: record.polarity,
-            index: record.index,
-          }),
-        ))
-      } else {
-        const nextAngle = Math.atan2(record.lines[i + 1].y - y, record.lines[i + 1].x - x)
-        if (record.cornertype == "round") {
-          padIndices.push(this.padBufferCollection.create(
+        padIndices.push(
+          this.padBufferCollection.create(
             new Shapes.Pad({
               x: x,
               y: y,
-              symbol: cornerSymbol,
+              rotation: prevAngleDeg,
+              symbol: endSymbol,
               polarity: record.polarity,
               index: record.index,
             }),
-          ))
+          ),
+        )
+      } else {
+        const nextAngle = Math.atan2(record.lines[i + 1].y - y, record.lines[i + 1].x - x)
+        if (record.cornertype == "round") {
+          padIndices.push(
+            this.padBufferCollection.create(
+              new Shapes.Pad({
+                x: x,
+                y: y,
+                symbol: cornerSymbol,
+                polarity: record.polarity,
+                index: record.index,
+              }),
+            ),
+          )
         } else if (record.cornertype == "chamfer") {
           const deltaAngle = Math.abs(nextAngle - prevAngle)
           const base = Math.abs(record.width * Math.sin(deltaAngle / 2))
@@ -1321,7 +1351,10 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       [...Shapes.LINE_RECORD_PARAMETERS],
       FeatureTypeIdentifier.DATUM_LINE,
     ),
-    [FeatureTypeIdentifier.DATUM_ARC]: new PrimitiveBufferCollection<Shapes.DatumArc>([...Shapes.ARC_RECORD_PARAMETERS], FeatureTypeIdentifier.DATUM_ARC),
+    [FeatureTypeIdentifier.DATUM_ARC]: new PrimitiveBufferCollection<Shapes.DatumArc>(
+      [...Shapes.ARC_RECORD_PARAMETERS],
+      FeatureTypeIdentifier.DATUM_ARC,
+    ),
     [FeatureTypeIdentifier.DATUM_TEXT]: new DatumTextBufferCollection(),
     [FeatureTypeIdentifier.STEP_AND_REPEAT]: new StepAndRepeatCollection(),
     [FeatureTypeIdentifier.POLYLINE]: new PolyLineBufferCollection(),
@@ -1351,7 +1384,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       throw new Error(`No collection found for shape type: ${shape.type} when creating shape`)
     }
     shape.index = this.artworkMap.length // Assign an index to the shape
-    ShapesUtils.convertShapeUnits(shape, 'mm') // Ensure shape is in mm
+    ShapesUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
     const collectionIndex = (collection.create as (shape: Shapes.Shape) => number)(shape)
     // const collectionIndex = collection.create(shape)
     this.artworkMap.push({
@@ -1390,7 +1423,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     shape.index = index // Update the index of the shape
     this.attributeMap[index] = shape.attributes || {} // Update attributes
-    ShapesUtils.convertShapeUnits(shape, 'mm') // Ensure shape is in mm
+    ShapesUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
     if (feature.shape !== shape.type) {
       // If the shape type has changed, we need to delete the old shape and create a new one
       this.delete(feature.collectionIndex)
@@ -1523,7 +1556,6 @@ export class MacroArtworkBufferCollection extends ArtworkBufferCollection {
 export const test = (): void => {
   console.log("Test function in artwork-collection.ts")
 }
-
 
 /**
  * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
