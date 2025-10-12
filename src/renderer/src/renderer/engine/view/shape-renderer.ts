@@ -1,21 +1,19 @@
 import REGL from "regl"
 import { vec2, vec3, mat3 } from "gl-matrix"
-import * as Shapes from "./shape/shape"
-import * as Symbols from "./shape/symbol/symbol"
-import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../../types"
-import ShapeTransform from "../../transform"
-
-import { DatumShaderCollection, DatumTextShaderCollection, ReglRenderers, TLoadedReglRenderers } from "./collections"
-
-import { ShapesShaderCollection, MacroShaderCollection, StepAndRepeatCollection } from "./collections"
-
-import type { UniverseContext } from "../../engine"
-import { getScaleMat3 } from "../../utils"
-import { WorldContext } from "../step"
+import * as Shapes from "../../data/shape/shape"
+import * as ShapesUtils from "../../data/shape/utils"
+import * as Symbols from "../../data/shape/symbol/symbol"
+import { BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP } from "../types"
+import ShapeTransform, { Transform } from "../transform"
+import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
+import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
+import type { UniverseContext } from "../engine"
+import { UpdateEventTarget } from "../utils"
+import { WorldContext } from "./view"
+import { ArtworkBufferCollection } from "../../data/artwork-collections"
+import { settings } from "../settings"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
-
-import { settings } from "../../settings"
 
 interface CommonAttributes {}
 
@@ -51,7 +49,7 @@ export interface RendererProps {
 }
 
 export interface ShapeProps {
-  image: Shapes.Shape[]
+  image: ArtworkBufferCollection
   transform?: Partial<ShapeTransform>
 }
 
@@ -64,37 +62,30 @@ interface ShapeRendererCommonContext {
 }
 
 export type ShapeDistance = {
-  snapPoint: vec2
+  snapPoint?: vec2
   shape: Shapes.Shape
   children: ShapeDistance[]
 }
 
-export class ShapeRenderer {
-  public regl: REGL.Regl
-  public dirty = false
-  // ** unfortunately, onChange adds a lot of overhead to the records array and it's not really needed
-  // public readonly records: Shapes.Shape[] = onChange([], (path, value, prev, apply) => {
-  //   // console.log('records changed', { path, value, prev, apply })
-  //   onChange.target(this.records).map((record, i) => (record.index = i))
-  //   this.dirty = true
-  // })
-  public readonly image: Shapes.Shape[] = []
-  // public selection: SelectShapes[] = []
+export interface ShapeRendererEvents {
+  update: Event
+}
 
-  public shapeCollection: ShapesShaderCollection
-  public macroCollection: MacroShaderCollection
-  public stepAndRepeatCollection: StepAndRepeatCollection
-  public datumCollection: DatumShaderCollection
-  public datumTextCollection: DatumTextShaderCollection
+export class ShapeRenderer extends UpdateEventTarget {
+  public regl: REGL.Regl
+  public artwork: ArtworkBufferCollection
+
+  public shapeShaderAttachments: ShapesShaderCollection
 
   public get qtyFeatures(): number {
-    return this.image.length
+    return this.artwork.length
   }
 
-  protected commonConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
+  protected artworkConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected queryConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected datumConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext>
   protected drawCollections: TLoadedReglRenderers
+
   public surfaceFrameBuffer: REGL.Framebuffer2D
   public queryFrameBuffer: REGL.Framebuffer2D
 
@@ -107,38 +98,23 @@ export class ShapeRenderer {
   public distanceDownQueryRaw: Float32Array = new Float32Array(0)
 
   constructor(props: ShapeRendererProps) {
+    super()
     this.regl = props.regl
 
     if (props.transform) {
       Object.assign(this.transform, props.transform)
     }
 
-    this.image = props.image
-    this.breakStepRepeats()
-    this.indexImage()
+    this.artwork = props.image
 
-    this.shapeCollection = new ShapesShaderCollection({
+    this.shapeShaderAttachments = new ShapesShaderCollection({
       regl: this.regl,
+      artwork: this.artwork,
     })
-    this.macroCollection = new MacroShaderCollection({
-      regl: this.regl,
-    })
-    this.stepAndRepeatCollection = new StepAndRepeatCollection({
-      regl: this.regl,
-    })
-    this.datumCollection = new DatumShaderCollection({
-      regl: this.regl,
-    })
-    this.datumTextCollection = new DatumTextShaderCollection({
-      regl: this.regl,
-    })
-    this.shapeCollection.refresh(this.image)
-    this.macroCollection.refresh(this.image)
-    this.stepAndRepeatCollection.refresh(this.image)
-    this.datumCollection.refresh(this.image)
-    this.datumTextCollection.refresh(this.image)
 
-    this.commonConfig = this.regl<
+    this.shapeShaderAttachments.onUpdate(() => this.dispatchTypedEvent("update", new Event("update")))
+
+    this.artworkConfig = this.regl<
       CommonUniforms,
       CommonAttributes,
       Record<string, never>,
@@ -164,11 +140,8 @@ export class ShapeRenderer {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
-        u_SymbolsTexture: () => this.shapeCollection.symbolsCollection.texture,
-        u_SymbolsTextureDimensions: () => [
-          this.shapeCollection.symbolsCollection.texture.width,
-          this.shapeCollection.symbolsCollection.texture.height,
-        ],
+        u_SymbolsTexture: () => SymbolShaderCollection.texture,
+        u_SymbolsTextureDimensions: () => [SymbolShaderCollection.texture.width, SymbolShaderCollection.texture.height],
         u_IndexOffset: (context: REGL.DefaultContext & UniverseContext & Partial<ShapeRendererCommonContext>) => {
           return this.transform.index / (context.prevQtyFeaturesRef ?? 1)
         },
@@ -235,67 +208,6 @@ export class ShapeRenderer {
     })
   }
 
-  private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    this.macroCollection.macros.forEach((macro) => {
-      macro.records.forEach((record) => {
-        macro.renderer.updateTransformFromPad(record)
-        macro.renderer.render(context)
-      })
-    })
-    return this
-  }
-
-  private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      stepAndRepeat.render(context)
-    })
-    return this
-  }
-
-  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-    return this
-  }
-
-  private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeCollection.shaderAttachment.surfacesWithHoles.length === 0) return this
-    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.shapeCollection.shaderAttachment.surfacesWithHoles.forEach((attachment) => {
-      this.regl.clear({
-        framebuffer: this.surfaceFrameBuffer,
-        color: [0, 0, 0, 1],
-        depth: 0,
-      })
-      this.surfaceFrameBuffer.use(() => {
-        this.drawCollections.drawSurfaces(attachment)
-      })
-      this.drawCollections.drawFrameBuffer({
-        renderTexture: this.surfaceFrameBuffer,
-        qtyFeatures: this.qtyFeatures,
-        index: attachment.surfaceIndex,
-        polarity: attachment.surfacePolarity,
-      })
-    })
-    return this
-  }
-
-  public indexImage(): this {
-    this.image.map((record, i) => (record.index = i))
-    return this
-  }
-
-  public breakStepRepeats(): this {
-    for (let i = 0; i < this.image.length; i++) {
-      const record = this.image[i]
-      if (record.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-        if (record.break === false) continue
-        const brokenimage = breakStepRepeat(record, this.transform)
-        if (brokenimage !== undefined) this.image.splice(i, 1, ...brokenimage)
-      }
-    }
-    return this
-  }
-
   /**
    * Converts the pointer applying the current transform
    * Does not mutate the original pointer, returns a new pointer
@@ -324,21 +236,29 @@ export class ShapeRenderer {
     return point
   }
 
+  /**
+   * Queries the distance from the pointer to all shapes in the renderer
+   * @param pointer the pointer to query
+   * @param context the regl context
+   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance
+   */
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & UniverseContext & WorldContext): ShapeDistance[] {
-    const origMatrix = mat3.clone(context.transformMatrix)
-    this.transform.update(context.transformMatrix)
-    const transformedPointer = this.transformPointer(pointer)
-    context.transformMatrix = this.transform.matrix
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
       console.error("Too many features to query")
       // TODO! for too many features, make multiple render passes in order to query all features
       return []
     }
+    if (this.qtyFeatures === 0) return []
+
+    const origMatrix = mat3.clone(context.transformMatrix)
+    this.transform.update(context.transformMatrix)
+    const transformedPointer = this.transformPointer(pointer)
+    context.transformMatrix = this.transform.matrix
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
     const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
 
-    const bufferLength = width * height * 4
+    const bufferLength = width * height * Float32Array.BYTES_PER_ELEMENT
     if (this.distanceQueryRaw.length != bufferLength) {
       this.distanceQueryRaw = new Float32Array(bufferLength)
       this.distanceLeftQueryRaw = new Float32Array(bufferLength)
@@ -355,12 +275,13 @@ export class ShapeRenderer {
         depth: 0,
       })
       this.queryFrameBuffer.use(() => {
-        this.commonConfig(() => {
+        this.artworkConfig(() => {
           this.queryConfig({ pointer }, () => {
             this.drawPrimitives(context)
             this.drawSufaces(context)
             this.drawSurfaceWithHoles(context)
             this.drawDatums(context)
+            this.drawPolyLines(context)
           })
         })
       })
@@ -389,12 +310,13 @@ export class ShapeRenderer {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      console.log("distance query", {
-        i: i / 4,
-        bit: distData[i + 3],
-        distance: distData[i],
-        shape: this.image[i / 4],
-      })
+      // console.log("distance query", {
+      //   i: i / 4,
+      //   bit: distData[i + 3],
+      //   distance: distData[i],
+      //   // shape: this.image[i / 4],
+      //   shape: this.artwork.read(i / 4),
+      // })
       let distance = distData[i]
       distance *= this.transform.scale
 
@@ -407,13 +329,24 @@ export class ShapeRenderer {
       // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
       vec2.scale(direction, direction, 1 / this.transform.scale)
 
+      // sanity check for if the distances of the four directions are the same
+      let validSnap = true
+      if (
+        [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
+          (d, _i, arr) => d === arr[0],
+        )
+      ) {
+        validSnap = false
+      }
+
       const snapPoint = vec2.create()
       vec2.sub(snapPoint, transformedPointer, vec2.scale(vec2.create(), direction, distance))
       this.transformPoint(snapPoint)
 
       distances.push({
-        shape: this.image[i / 4],
-        snapPoint,
+        // shape: this.image[i / 4],
+        shape: this.artwork.read(i / 4),
+        snapPoint: validSnap ? snapPoint : undefined,
         children: [],
       })
       // if (closestIndex == undefined) {
@@ -424,43 +357,50 @@ export class ShapeRenderer {
       // }
     }
 
-    this.macroCollection.macros.forEach((macro) => {
-      macro.records.forEach((record) => {
-        macro.renderer.updateTransformFromPad(record)
-        macro.renderer.transform.index = 0
-        const macroFeatures = macro.renderer.queryDistance(transformedPointer, context)
-        if (macroFeatures.length > 0) {
-          macroFeatures.map((measurement) => this.transformPoint(measurement.snapPoint))
-          const closest = macroFeatures.reduce((prev, current) => {
-            const prevDist = vec2.distance(pointer, prev.snapPoint)
-            const currentDist = vec2.distance(pointer, current.snapPoint)
-            return prevDist < currentDist ? prev : current
-          })
-          distances.push({
-            shape: record,
-            snapPoint: closest.snapPoint,
-            children: macroFeatures,
-          })
-        }
-      })
-    })
-    this.stepAndRepeatCollection.steps.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, context)
-      if (stepAndRepeatFeatures.length > 0) {
-        stepAndRepeatFeatures.map((measurement) => this.transformPoint(measurement.snapPoint))
-        const closest = stepAndRepeatFeatures.reduce((prev, current) => {
+    this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
+      if (macro === undefined) return
+      const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
+      if (!macroRenderer) return
+      macroRenderer.updateTransformFromPad(macro)
+      macroRenderer.transform.index = 0
+      const macroFeatures = macroRenderer.queryDistance(transformedPointer, context)
+      if (macroFeatures.length > 0) {
+        macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
+        const closest = macroFeatures.reduce((prev, current) => {
+          if (prev.snapPoint == undefined) return current
+          if (current.snapPoint == undefined) return prev
           const prevDist = vec2.distance(pointer, prev.snapPoint)
           const currentDist = vec2.distance(pointer, current.snapPoint)
           return prevDist < currentDist ? prev : current
         })
         distances.push({
-          shape: stepAndRepeat.record,
+          shape: macro,
+          snapPoint: closest.snapPoint,
+          children: macroFeatures,
+        })
+      }
+    })
+
+    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, context)
+      if (stepAndRepeatFeatures.length > 0) {
+        stepAndRepeatFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
+        const closest = stepAndRepeatFeatures.reduce((prev, current) => {
+          if (prev.snapPoint == undefined) return current
+          if (current.snapPoint == undefined) return prev
+          const prevDist = vec2.distance(pointer, prev.snapPoint)
+          const currentDist = vec2.distance(pointer, current.snapPoint)
+          return prevDist < currentDist ? prev : current
+        })
+        distances.push({
+          shape: this.artwork.read(stepAndRepeat.transform.index),
           snapPoint: closest.snapPoint,
           children: stepAndRepeatFeatures,
         })
       }
     })
     context.transformMatrix = origMatrix
+    // console.log("query distance", distances)
     return distances
   }
 
@@ -468,16 +408,9 @@ export class ShapeRenderer {
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
     context.transformMatrix = this.transform.matrix
-    if (this.dirty) {
-      this.shapeCollection.refresh(this.image)
-      this.macroCollection.refresh(this.image)
-      this.stepAndRepeatCollection.refresh(this.image)
-      this.datumCollection.refresh(this.image)
-      this.datumTextCollection.refresh(this.image)
-      this.dirty = false
-    }
-    this.commonConfig(() => {
+    this.artworkConfig(() => {
       this.drawPrimitives(context)
+      // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
       if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
         this.drawSufaces(context)
         this.drawSurfaceWithHoles(context)
@@ -485,7 +418,8 @@ export class ShapeRenderer {
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
-      this.drawSufaceEdges(context)
+      this.drawSurfaceEdges(context)
+      this.drawPolyLines(context)
     })
     context.transformMatrix = origMatrix
   }
@@ -493,30 +427,86 @@ export class ShapeRenderer {
   private drawDatums(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
     if (settings.SHOW_DATUMS === false) return
     this.datumConfig(() => {
-      this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.datumPoints)
-      this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.datumLines)
-      this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.datumArcs)
+      // this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.datumPoints)
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.datumLines)
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      if (typeof this.drawCollections.drawDatumText === "function") this.drawCollections.drawDatumText(this.datumTextCollection.attachment)
-      this.drawCollections.drawDatums(this.datumCollection.attachment)
-      // Enable Surface Datums
-      // this.drawCollections.drawDatums(this.shapeCollection.surfacesDatum.attachment)
+      if (typeof this.drawCollections.drawDatumText === "function")
+        this.drawCollections.drawDatumText(this.shapeShaderAttachments.shaderAttachment.datumTexts)
+      this.drawCollections.drawDatums(this.shapeShaderAttachments.shaderAttachment.datumPoints)
     })
   }
 
   private drawPrimitives(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    if (this.shapeCollection.shaderAttachment.pads.length != 0) this.drawCollections.drawPads(this.shapeCollection.shaderAttachment.pads)
-    if (this.shapeCollection.shaderAttachment.arcs.length != 0) this.drawCollections.drawArcs(this.shapeCollection.shaderAttachment.arcs)
-    if (this.shapeCollection.shaderAttachment.lines.length != 0) this.drawCollections.drawLines(this.shapeCollection.shaderAttachment.lines)
-    // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
-    // if (this.shapeCollection.shaderAttachment.surfaces.length != 0) this.drawCollections.drawSurfaces(this.shapeCollection.shaderAttachment.surfaces)
-    // this.drawSurfaceWithHoles(context)
+    if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0)
+      this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.pads)
+    if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0)
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.arcs)
+    if (this.shapeShaderAttachments.shaderAttachment.lines.length != 0)
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.lines)
   }
 
-  private drawSufaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
-    if (this.shapeCollection.surfaceEdges) {
-      this.drawCollections.drawLines(this.shapeCollection.surfaceEdges.shaderAttachment.lines)
-      this.drawCollections.drawArcs(this.shapeCollection.surfaceEdges.shaderAttachment.arcs)
+  private drawMacros(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
+      if (macro === undefined) return
+      const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
+      if (!macroRenderer) return
+      macroRenderer.updateTransformFromPad(macro)
+      macroRenderer.render(context)
+    })
+    return this
+  }
+
+  private drawStepAndRepeats(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
+      stepAndRepeat.render(context)
+    })
+    return this
+  }
+
+  private drawSufaces(_context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles.length != 0)
+      this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles)
+    return this
+  }
+
+  private drawSurfaceWithHoles(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.length === 0) return this
+    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+    this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.forEach((attachment) => {
+      this.regl.clear({
+        framebuffer: this.surfaceFrameBuffer,
+        color: [0, 0, 0, 1],
+        depth: 0,
+      })
+      this.surfaceFrameBuffer.use(() => {
+        this.drawCollections.drawSurfaces(attachment)
+      })
+      this.drawCollections.drawFrameBuffer({
+        renderTexture: this.surfaceFrameBuffer,
+        qtyFeatures: this.qtyFeatures,
+        index: attachment.surfaceIndex,
+        polarity: attachment.surfacePolarity,
+      })
+    })
+    return this
+  }
+
+  private drawSurfaceEdges(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs.length != 0) {
+      this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.edgeLines.length != 0) {
+      this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.surfaces.edgeLines)
+    }
+  }
+
+  private drawPolyLines(_context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.shapeShaderAttachments.shaderAttachment.polylines.lines.length != 0) {
+    this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.polylines.lines)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.polylines.pads.length != 0) {
+      this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.polylines.pads)
     }
   }
 
@@ -525,8 +515,14 @@ export class ShapeRenderer {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity),
     }
-    for (const record of this.image) {
-      const feature_bb = Shapes.getBoundingBoxOfShape(record)
+    // for (const record of this.image) {
+    //   const feature_bb = Shapes.getBoundingBoxOfShape(record)
+    //   vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
+    //   vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
+    // }
+    for (let i = 0; i < this.artwork.length; i++) {
+      const record = this.artwork.read(i)
+      const feature_bb = ShapesUtils.getBoundingBoxOfShape(record)
       vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
       vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
     }
@@ -551,10 +547,17 @@ export class ShapeRenderer {
   //   ])
   //   this.image.push(polyline)
   // }
+
+  public destroy(): void {
+    super.unSubscribe()
+    this.shapeShaderAttachments.destroy()
+    this.surfaceFrameBuffer.destroy()
+    this.queryFrameBuffer.destroy()
+  }
 }
 
 interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
-  flatten: boolean
+  flatten?: boolean
 }
 
 export class MacroRenderer extends ShapeRenderer {
@@ -563,13 +566,17 @@ export class MacroRenderer extends ShapeRenderer {
   constructor(props: MacroRendererProps) {
     super(props)
 
-    this.flatten = props.flatten
+    this.flatten = props.flatten ?? true
 
     this.framebuffer = this.regl.framebuffer({
       depth: true,
     })
   }
 
+  /**
+   * Updates the internal transform from a pad shape
+   * @param pad the pad to update the transform from
+   */
   public updateTransformFromPad(pad: Shapes.Pad): void {
     this.transform.index = pad.index
     this.transform.polarity = pad.polarity
@@ -598,7 +605,7 @@ export class MacroRenderer extends ShapeRenderer {
       super.render(context)
     })
     this.transform.polarity = tempPol
-    this.commonConfig(() => {
+    this.artworkConfig(() => {
       this.drawCollections.drawFrameBuffer({
         renderTexture: this.framebuffer,
         index: this.transform.index,
@@ -607,22 +614,30 @@ export class MacroRenderer extends ShapeRenderer {
       })
     })
   }
+
+  public destroy(): void {
+    this.framebuffer.destroy()
+    super.destroy()
+  }
 }
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
-  record: Shapes.StepAndRepeat
+  image: ArtworkBufferCollection
+  repeats: Transform[]
+  index: number
 }
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
-  public record: Shapes.StepAndRepeat
+  public repeats: Transform[]
   constructor(props: StepAndRepeatRendererProps) {
+    const { regl, image, repeats, index } = props
     super({
-      regl: props.regl,
-      image: props.record.shapes,
+      regl,
+      image,
     })
-    this.record = props.record
-    this.transform.index = props.record.index
+    this.repeats = repeats
+    this.transform.index = index
   }
 
   public queryDistance(
@@ -630,9 +645,9 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>,
   ): ShapeDistance[] {
     const features: ShapeDistance[] = []
-    this.record.repeats.forEach((repeat) => {
+    this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.record.repeats.length
+      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
       const nestedFeatures = super.queryDistance(pointer, context)
       features.push(...nestedFeatures)
@@ -641,77 +656,11 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
   }
 
   public render(context: REGL.DefaultContext & UniverseContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
-    this.record.repeats.forEach((repeat) => {
+    this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.record.repeats.length
+      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
       super.render(context)
     })
   }
-}
-
-/**
- * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
- */
-export function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
-  const newImage: Shapes.Shape[] = []
-  for (const repeat of stepRepeat.repeats) {
-    const transform = new ShapeTransform()
-    Object.assign(transform, repeat)
-    transform.update(inputTransform.matrix)
-    for (let i = 0; i < stepRepeat.shapes.length; i++) {
-      const shape = stepRepeat.shapes[i]
-      const newShape = JSON.parse(JSON.stringify(shape)) as Shapes.Shape
-      if (newShape.type === FeatureTypeIdentifier.SURFACE) {
-        for (const contour of newShape.contours) {
-          const position = vec3.fromValues(contour.xs, contour.ys, 1)
-          vec3.transformMat3(position, position, transform.matrix)
-          contour.xs = position[0]
-          contour.ys = position[1]
-          for (const segment of contour.segments) {
-            const position = vec3.fromValues(segment.x, segment.y, 1)
-            vec3.transformMat3(position, position, transform.matrix)
-            segment.x = position[0]
-            segment.y = position[1]
-          }
-        }
-        newImage.push(newShape)
-        continue
-      }
-      if (newShape.type === FeatureTypeIdentifier.POLYLINE) {
-        newShape.width = newShape.width * getScaleMat3(transform.matrix)
-        const startPoint = vec3.fromValues(newShape.xs, newShape.ys, 1)
-        vec3.transformMat3(startPoint, startPoint, transform.matrix)
-        newShape.xs = startPoint[0]
-        newShape.ys = startPoint[1]
-        for (const segment of newShape.lines) {
-          const point = vec3.fromValues(segment.x, segment.y, 1)
-          vec3.transformMat3(point, point, transform.matrix)
-          segment.x = point[0]
-          segment.y = point[1]
-        }
-        newImage.push(newShape)
-        continue
-      }
-      if (newShape.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
-        // this will disable breaking of nested step and repeats, not yet tested
-        // if (newShape.break === false) {
-        //   newImage.push(newShape)
-        //   continue
-        // }
-
-        // note, this is recursive
-        // breaking the top level step and repeat will break all nested step and repeats down to the primitive shapes
-        const newShapes = breakStepRepeat(newShape, transform)
-        if (newShapes === undefined) {
-          return
-        } else {
-          newImage.push(...newShapes)
-        }
-        continue
-      }
-      return
-    }
-  }
-  return newImage
 }

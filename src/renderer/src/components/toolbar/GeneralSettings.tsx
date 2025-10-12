@@ -8,21 +8,21 @@ import { useLocalStorage } from "@mantine/hooks"
 interface SettingsModalProps {}
 
 export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.Element | null {
-  const { units, setUnits, renderEngine } = React.useContext(EditorConfigProvider)
+  const { units, setUnits, renderer } = React.useContext(EditorConfigProvider)
   const { transparency, setTransparency, setPrimaryColor } = React.useContext(ThemeConfigProvider)
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const [useHiDPI, setUseHiDPI] = useLocalStorage<boolean>({
     key: "engine:USE_HIDPI",
-    defaultValue: renderEngine.canvasSettings.hidpi,
+    defaultValue: renderer.canvasSettings.hidpi,
   })
 
   React.useEffect(() => {
-    // renderEngine.backend.then((backend) => backend.setMeasurementUnits(units))
-    renderEngine.backend.then((backend) => backend.setMeasurementSettings({ units }))
+    // renderer.engine.then((engine) => engine.setMeasurementUnits(units))
+    renderer.engine.then((engine) => engine.setMeasurementSettings({ units }))
   }, [units])
   React.useEffect(() => {
-    renderEngine.canvasSettings.hidpi = useHiDPI
+    renderer.canvasSettings.hidpi = useHiDPI
   }, [useHiDPI])
 
   return (
@@ -44,10 +44,10 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
           onChange={(event): void => {
             if (event.currentTarget.checked) {
               colors.setColorScheme("dark")
-              renderEngine.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
+              renderer.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
             } else {
               colors.setColorScheme("light")
-              renderEngine.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
+              renderer.settings.BACKGROUND_COLOR = chroma(theme.colors.dark[8]).alpha(0).gl()
             }
           }}
         />

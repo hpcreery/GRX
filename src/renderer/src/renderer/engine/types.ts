@@ -4,34 +4,49 @@ export const FeatureTypeIdentifier = {
   PAD: "pad",
   LINE: "line",
   ARC: "arc",
-  ARCSEGMENT: "arcsegment",
-  LINESEGMENT: "linesegment",
-  CONTOUR: "contour",
   SURFACE: "surface",
   POLYLINE: "polyline",
-  MACRO: "macro",
-  SYMBOL_DEFINITION: "symbol_defintion",
-  MACRO_DEFINITION: "macro_definition",
   STEP_AND_REPEAT: "step_and_repeat",
   DATUM_POINT: "datum_point",
   DATUM_TEXT: "datum_text",
   DATUM_LINE: "datum_line",
   DATUM_ARC: "datum_arc",
-  GLYPH_TEXT: "glyph_text",
 } as const
+
+export const SymbolTypeIdentifier = {
+  SYMBOL_DEFINITION: "symbol_defintion",
+  MACRO_DEFINITION: "macro_definition",
+} as const
+
+export const SurfaceContourTypeIdentifier = {
+  CONTOUR: "contour",
+} as const
+
+export const ContourSegmentTypeIdentifier = {
+  ARCSEGMENT: "arcsegment",
+  LINESEGMENT: "linesegment",
+} as const
+
+export type SymbolDefinitionTypeIdentifiers = (typeof SymbolTypeIdentifier)[keyof typeof SymbolTypeIdentifier]
 
 export type FeatureTypeIdentifiers = (typeof FeatureTypeIdentifier)[keyof typeof FeatureTypeIdentifier]
 
+export type SurfaceContourTypeIdentifiers = (typeof SurfaceContourTypeIdentifier)[keyof typeof SurfaceContourTypeIdentifier]
+
+export type ContourSegmentTypeIdentifiers = (typeof ContourSegmentTypeIdentifier)[keyof typeof ContourSegmentTypeIdentifier]
+
 export interface IPlotRecord {
   type: FeatureTypeIdentifiers
-  attributes: AttributeCollection
+  attributes: AttributesType
+  units: Units
 }
 
 export interface ISymbolRecord {
-  type: FeatureTypeIdentifiers
+  type: SymbolDefinitionTypeIdentifiers
+
 }
 
-export type AttributeCollection = { [key: string]: string | undefined }
+export type AttributesType = { [key: string]: string | undefined }
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }

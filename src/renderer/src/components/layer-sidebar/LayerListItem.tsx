@@ -19,7 +19,7 @@ import {
   IconGripVertical,
 } from "@tabler/icons-react"
 import { ContextMenuContent, ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
-import type { LayerInfo } from "@src/renderer/engine/engine"
+// import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec3 } from "gl-matrix"
 import LayerTransform from "./transform/LayerTransform"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
@@ -30,11 +30,12 @@ import { ReactDOMAttributes } from "@use-gesture/react/dist/declarations/src/typ
 import * as Comlink from "comlink"
 
 interface LayerListItemProps {
-  file: UploadFile
+  // file: UploadFile
+  layer: string
   actions: {
     download: () => void
     preview: () => void
-    remove: (file: UploadFile) => Promise<void>
+    remove: (layer: string) => Promise<void>
     hideAll: () => void
     showAll: () => void
     deleteAll: () => void
@@ -42,18 +43,19 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer, DataInterface } = useContext(EditorConfigProvider)
   const { showContextMenu } = useContextMenu()
-  const { file, actions } = props
+  // const { file, actions } = props
+  const { actions, layer } = props
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
   const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
   const [colorPickerVisible, setColorPickerVisible] = useState<boolean>(false)
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
 
   async function changeColor(color: vec3): Promise<void> {
-    const renderer = await renderEngine.backend
-    if (!renderer) return
-    await renderer.setLayerProps("main", file.id, { color })
+    const engine = await renderer.engine
+    if (!engine) return
+    await engine.setLayerColor("main", layer, color)
     setColor(color)
   }
 
@@ -92,7 +94,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
         actions={actions}
         setLayerTransformVisible={setLayerTransformVisible}
         showContextMenu={showContextMenu}
-        file={file}
+        layer={layer}
         bind={bind}
         setColor={setColor}
         color={color}
@@ -133,14 +135,14 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           ]}
         />
       </Popover.Dropdown>
-      <LayerTransform layerID={file.id} visible={layerTransformVisible} onClose={() => setLayerTransformVisible(false)} />
+      <LayerTransform layerID={layer} visible={layerTransformVisible} onClose={() => setLayerTransformVisible(false)} />
     </Popover>
   )
 }
 
 interface DraggableLayerProps {
   showContextMenu: ShowContextMenuFunction
-  file: UploadFile
+  layer: string
   bind: () => ReactDOMAttributes
   color: vec3
   setColor: (color: vec3) => void
@@ -151,7 +153,7 @@ interface DraggableLayerProps {
   actions: {
     download: () => void
     preview: () => void
-    remove: (file: UploadFile) => Promise<void>
+    remove: (layer: string) => Promise<void>
     hideAll: () => void
     showAll: () => void
     deleteAll: () => void
@@ -161,7 +163,7 @@ interface DraggableLayerProps {
 function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   const {
     showContextMenu,
-    file,
+    layer,
     bind,
     setColorPickerVisible: setShowColorPicker,
     color,
@@ -171,25 +173,25 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     setLayerTransformVisible,
     actions,
   } = props
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.file.id })
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props.layer })
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const [visible, setVisible] = useState<boolean>(false)
-  const [loading, setLoading] = useState<boolean>(true)
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const [loading, setLoading] = useState<boolean>(false)
+  const { renderer, DataInterface } = useContext(EditorConfigProvider)
 
   function deleteLayer(): void {
-    actions.remove(file)
+    actions.remove(layer)
   }
 
   async function toggleVisible(): Promise<void> {
-    const renderer = await renderEngine.backend
-    if (!renderer) return
+    const engine = await renderer.engine
+    if (!engine) return
     if (visible) {
-      renderer.setLayerProps("main", file.id, { visible: false })
+      engine.setLayerVisibility("main", layer, false)
       setVisible(false)
     } else {
-      renderer.setLayerProps("main", file.id, { visible: true })
+      engine.setLayerVisibility("main", layer, true)
       setVisible(true)
     }
   }
@@ -260,89 +262,99 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     },
   ]
 
-  function registerLayers(rendererLayers: LayerInfo[]): void {
-    // console.log("registerlayers", rendererLayers, file.id)
-    const thisLayer = rendererLayers.find((l) => l.id === file.id)
-    if (thisLayer) {
-      setColor(thisLayer.color)
-      setVisible(thisLayer.visible)
-      // setzIndex(thisLayer.zIndex)
-      setLoading(false)
-    }
-  }
+  // function registerLayers(rendererLayers: LayerInfo[]): void {
+  //   // console.log("registerlayers", rendererLayers, file.id)
+  //   const thisLayer = rendererLayers.find((l) => l.id === file.id)
+  //   if (thisLayer) {
+  //     setColor(thisLayer.color)
+  //     setVisible(thisLayer.visible)
+  //     // setzIndex(thisLayer.zIndex)
+  //     setLoading(false)
+  //   }
+  // }
 
   useEffect(() => {
-    renderEngine.backend.then(async (renderer) => {
-      const layers = await renderer.getLayers("main")
-      registerLayers(layers)
-      if (layers.find((l) => l.id === file.id)) {
-        setLoading(false)
-        return
-      }
+    renderer.engine.then(async (renderer) => {
+      const color = await renderer.getLayerColor("main", layer)
+      setColor(color)
+      const vis = await renderer.getLayerVisibility("main", layer)
+      setVisible(vis)
+      // setLoading(false)
+      // const layers = await renderer.getLayers("main")
+      // registerLayers(layers)
+      // if (layers.find((l) => l.id === file.id)) {
+      //   setLoading(false)
+      //   return
+      // }
 
-      const reader = new FileReader()
-      reader.onerror = (err): void => {
-        console.error(err, `${file.name} Error reading file.`)
-        notifications.show({
-          title: "Error reading file",
-          message: `${file.name} Error reading file.`,
-          color: "red",
-          autoClose: 5000,
-        })
-      }
-      reader.onabort = (err): void => {
-        console.warn(err, `${file.name} File read aborted.`)
-        notifications.show({
-          title: "File read aborted",
-          message: `${file.name} File read aborted.`,
-          color: "red",
-          autoClose: 5000,
-        })
-      }
-      reader.onprogress = (e): void => {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        console.info(`${file.name} ${percent}% read`)
-      }
-      reader.onload = async (_e): Promise<void> => {
-        if (reader.result !== null && reader.result !== undefined) {
-          try {
-            console.time(`${file.name} file parse time`)
-            await renderer.addFile("main",
-              Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]),
-              {
-              format: file.format,
-              props: {
-                name: file.name,
-                id: file.id,
-              },
-            })
-            console.timeEnd(`${file.name} file parse time`)
-            // notifications.show({
-            //   title: 'File read',
-            //   message: `${file.name} file read.`,
-            //   color: 'green',
-            //   autoClose: 5000
-            // })
-          } catch (fileParseError) {
-            console.error(fileParseError)
-            notifications.show({
-              title: "File parse error",
-              message: `${file.name} file parse error.`,
-              color: "red",
-              autoClose: 5000,
-            })
-          }
-          registerLayers(await renderer.getLayers("main"))
-        } else {
-          notifications.show({
-            title: "File upload failed",
-            message: `${file.name} file upload failed.`,
-            color: "red",
-            autoClose: 5000,
-          })
-        }
-      }
-      reader.readAsArrayBuffer(file)
+    //   const reader = new FileReader()
+    //   reader.onerror = (err): void => {
+    //     console.error(err, `${file.name} Error reading file.`)
+    //     notifications.show({
+    //       title: "Error reading file",
+    //       message: `${file.name} Error reading file.`,
+    //       color: "red",
+    //       autoClose: 5000,
+    //     })
+    //   }
+    //   reader.onabort = (err): void => {
+    //     console.warn(err, `${file.name} File read aborted.`)
+    //     notifications.show({
+    //       title: "File read aborted",
+    //       message: `${file.name} File read aborted.`,
+    //       color: "red",
+    //       autoClose: 5000,
+    //     })
+    //   }
+    //   reader.onprogress = (e): void => {
+    //     const percent = Math.round((e.loaded / e.total) * 100)
+    //     console.info(`${file.name} ${percent}% read`)
+    //   }
+    //   reader.onload = async (_e): Promise<void> => {
+    //     if (reader.result !== null && reader.result !== undefined) {
+    //       try {
+    //         // console.time(`${file.name} file parse time`)
+    //         // await renderer.addFile("main",
+    //         //   Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]),
+    //         //   {
+    //         //   format: file.format,
+    //         //   props: {
+    //         //     name: file.name,
+    //         //     // id: file.id,
+    //         //   },
+    //         // })
+    //         DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
+    //           project: "main",
+    //           step: "main",
+    //           layer: file.id,
+    //         })
+    //         // console.timeEnd(`${file.name} file parse time`)
+    //         // notifications.show({
+    //         //   title: 'File read',
+    //         //   message: `${file.name} file read.`,
+    //         //   color: 'green',
+    //         //   autoClose: 5000
+    //         // })
+    //       } catch (fileParseError) {
+    //         console.error(fileParseError)
+    //         notifications.show({
+    //           title: "File parse error",
+    //           message: `${file.name} file parse error.`,
+    //           color: "red",
+    //           autoClose: 5000,
+    //         })
+    //       }
+    //       registerLayers(await renderer.getLayers("main"))
+    //     } else {
+    //       notifications.show({
+    //         title: "File upload failed",
+    //         message: `${file.name} file upload failed.`,
+    //         color: "red",
+    //         autoClose: 5000,
+    //       })
+    //     }
+    //   }
+    //   reader.readAsArrayBuffer(file)
     })
 
     return (): void => {}
@@ -359,7 +371,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       ref={setNodeRef}
     >
       <animated.div {...bind()} style={{ width: "100%", overflow: "hidden", touchAction: "none", overscrollBehaviorX: "none" }}>
-        <Tooltip label={file.name} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
+        <Tooltip label={layer} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
           <Popover.Target>
             <Button
               style={{
@@ -407,7 +419,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
               }}
               loading={loading}
             >
-              {file.name}
+              {layer}
             </Button>
           </Popover.Target>
         </Tooltip>

@@ -9,7 +9,8 @@ import { createGraphicPlotter, GraphicPlotter } from "./graphic-plotter"
 import { createTransformStore, ApertureTransform, TransformStore } from "./aperture-transform-store"
 import { IMAGE } from "./tree"
 import type { ImageTree } from "./tree"
-import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
+import * as Shapes from "@src/renderer/data/shape/shape"
+import { FeatureTypeIdentifier, SymbolTypeIdentifier } from "@src/renderer/engine/types"
 
 export * from "./tree"
 export * from "./tool-store"
@@ -29,6 +30,25 @@ export function plot(tree: GerberTree): ImageTree {
   }
 }
 
+function convertShapeUnits(shape: Shapes.Shape, units: "mm" | "inch"): void {
+  shape.units = units
+  if (shape.type === FeatureTypeIdentifier.STEP_AND_REPEAT) {
+    shape.shapes.map((s) => convertShapeUnits(s, units))
+  }
+  if (shape.type === FeatureTypeIdentifier.PAD && shape.symbol.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
+    shape.symbol.shapes.map((s) => convertShapeUnits(s, units))
+  }
+  if (shape.type === FeatureTypeIdentifier.PAD && shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION) {
+    shape.symbol.units = units
+  }
+  if (shape.type === FeatureTypeIdentifier.LINE && shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION) {
+    shape.symbol.units = units
+  }
+  if (shape.type === FeatureTypeIdentifier.ARC && shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION) {
+    shape.symbol.units = units
+  }
+}
+
 export function plotShapes(nodes: ChildNode[], plotOptions: PlotOptions, toolStore: ToolStore, block?: string): Shapes.Shape[] {
   const locationStore: LocationStore = createLocationStore()
   const transformStore: TransformStore = createTransformStore()
@@ -41,6 +61,9 @@ export function plotShapes(nodes: ChildNode[], plotOptions: PlotOptions, toolSto
     const tool: Tool = toolStore.use(node, plotOptions)
     if (toolStore.block && toolStore.block != block) continue
     const graphics: Shapes.Shape[] = graphicPlotter.plot(node, tool, location, apertureTransform)
+    graphics.map((g) => {
+      convertShapeUnits(g, plotOptions.units)
+    })
 
     children.push(...graphics)
   }

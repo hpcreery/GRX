@@ -25,14 +25,14 @@ import {
 import type { Tool } from "../tool-store"
 import type { Location, Point } from "../location-store"
 
-import { FeatureTypeIdentifier } from "@src/renderer/engine/types"
+import { SymbolTypeIdentifier } from "@src/renderer/engine/types"
 
 export const CW = "cw"
 export const CCW = "ccw"
 
 export type ArcDirection = typeof CW | typeof CCW
 
-import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
+import * as Shapes from "@src/renderer/data/shape/shape"
 import { ApertureTransform } from "../aperture-transform-store"
 import { vec2 } from "gl-matrix"
 
@@ -155,7 +155,7 @@ const GraphicPlotterPrototype: GraphicPlotterImpl = {
 
     // ** LINE AND ARC
     if (nextGraphicType === SEGMENT && !this._regionMode) {
-      if (tool?.type !== FeatureTypeIdentifier.MACRO_DEFINITION) {
+      if (tool?.type !== SymbolTypeIdentifier.MACRO_DEFINITION) {
         if (this._arcDirection === undefined) {
           graphics.push(
             new Shapes.Line({

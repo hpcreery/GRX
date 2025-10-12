@@ -3,7 +3,7 @@
 import type { GerberNode, SimpleShape, HoleShape, MacroBlock } from "@hpcreery/tracespace-parser"
 import { MACRO_SHAPE, TOOL_CHANGE, TOOL_DEFINITION, TOOL_MACRO, BLOCK_APERTURE_OPEN, BLOCK_APERTURE_CLOSE } from "@hpcreery/tracespace-parser"
 
-import * as Symbols from "@src/renderer/engine/step/layer/shape/symbol/symbol"
+import * as Symbols from "@src/renderer/data/shape/symbol/symbol"
 
 import { createMacro } from "./graphic-plotter/plot-macro"
 
@@ -68,17 +68,22 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
       const { code, shape, hole } = node
 
       if (shape.type == MACRO_SHAPE) {
-        this._toolsByCode[code] = createMacro({
+        const macro = createMacro({
           type: MACRO_TOOL,
           name: shape.name,
           dcode: code,
           macro: this._macrosByName[shape.name] ?? [],
           variableValues: shape.variableValues,
         })
+        // macro.shapes.map((s) => {
+        //   s.units = plotOptions.units
+        // })
+        this._toolsByCode[code] = macro
       } else {
         switch (shape.type) {
           case Constants.CIRCLE:
             this._toolsByCode[code] = new Symbols.RoundSymbol({
+              // units: plotOptions.units,
               id: `274x_D${code}`,
               outer_dia: shape.diameter,
               inner_dia: hole?.type === Constants.CIRCLE ? hole.diameter : 0,
@@ -86,6 +91,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
             break
           case Constants.RECTANGLE:
             this._toolsByCode[code] = new Symbols.RectangleSymbol({
+              // units: plotOptions.units,
               id: `274x_D${code}`,
               width: shape.xSize,
               height: shape.ySize,
@@ -94,6 +100,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
             break
           case Constants.OBROUND:
             this._toolsByCode[code] = new Symbols.OvalSymbol({
+              // units: plotOptions.units,
               id: `274x_D${code}`,
               width: shape.xSize,
               height: shape.ySize,
@@ -102,6 +109,7 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
             break
           case Constants.POLYGON:
             this._toolsByCode[code] = new Symbols.PolygonSymbol({
+              // units: plotOptions.units,
               id: `274x_D${code}`,
               outer_dia: shape.diameter,
               corners: shape.vertices,
@@ -127,9 +135,11 @@ const ToolStorePrototype: ToolStore & ToolStoreState = {
       const current = this._currentBlockAperture.shift()
       if (current) {
         this.block = current.code
+        const shapes = plotShapes(current.nodes, plotOptions, this, current.code)
+        // shapes.map((s) => s.units = plotOptions.units )
         this._toolsByCode[current.code] = new Symbols.MacroSymbol({
           id: `274x_D${current.code}`,
-          shapes: plotShapes(current.nodes, plotOptions, this, current.code),
+          shapes,
           flatten: false,
         })
       }

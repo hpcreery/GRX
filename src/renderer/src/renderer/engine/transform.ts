@@ -5,7 +5,7 @@ export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
 
 export interface Transform {
   /**
-   * Translation in x and y, in mm units. The base unit is mm.
+   * Translation in x and y, in mm units. The base unit is mm. Unless Transform is a part to a shape with different units ( like step and repeats ) then those units apply.
    */
   datum: vec2
   /**
@@ -25,7 +25,7 @@ export interface Transform {
    */
   mirror_y: Binary
   /**
-   * Order of transformations
+   * Order of transformations. Default is ["translate", "rotate", "mirror", "scale"]
    */
   order?: TransformOrder
 }

@@ -1,1 +1,1 @@
-export const glFloatSize = 4
+export const glFloatSize = Float32Array.BYTES_PER_ELEMENT

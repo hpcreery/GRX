@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
 import { Binary } from "@src/renderer/engine/types"
 import { TransformOrder } from "@src/renderer/engine/transform"
-import type { LayerInfo } from "@src/renderer/engine/engine"
+// import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec2 } from "gl-matrix"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 
@@ -12,7 +12,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { IconGripHorizontal } from "@tabler/icons-react"
-import { getUnitsConversion } from "@src/renderer/engine/utils"
+import { baseUnitsConversionFactor } from "@src/renderer/engine/utils"
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers"
 
 export interface LayerTransformProps {
@@ -46,7 +46,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
 
   const [transformOrder, setTransformOrder] = useState<TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
-  const { units, renderEngine } = useContext(EditorConfigProvider)
+  const { units, renderer } = useContext(EditorConfigProvider)
   const [layerName, setLayerName] = useState<string>("")
 
   const sensors = useSensors(
@@ -72,25 +72,39 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   useEffect(() => {
-    renderEngine.backend.then((backend) => {
-      backend.getLayers("main").then((layers: LayerInfo[]) => {
-        layers.forEach((layer: LayerInfo) => {
-          if (layer.id === props.layerID) {
-            setLayerName(layer.name)
-            setDatumX(layer.transform.datum[0])
-            setDatumY(layer.transform.datum[1])
-            setRotation(layer.transform.rotation)
-            setScale(layer.transform.scale)
-            setMirrorX(layer.transform.mirror_x)
-            setMirrorY(layer.transform.mirror_y)
-            if (layer.transform.order != undefined) {
-              setTransformOrder(layer.transform.order)
-            } else {
-              setTransformOrder(["translate", "rotate", "mirror", "scale"])
-            }
-          }
-        })
-      })
+    renderer.engine.then(async (engine) => {
+
+      // engine.getLayers("main").then((layers: LayerInfo[]) => {
+      //   layers.forEach((layer: LayerInfo) => {
+      //     if (layer.id === props.layerID) {
+      //       setLayerName(layer.name)
+      //       setDatumX(layer.transform.datum[0])
+      //       setDatumY(layer.transform.datum[1])
+      //       setRotation(layer.transform.rotation)
+      //       setScale(layer.transform.scale)
+      //       setMirrorX(layer.transform.mirror_x)
+      //       setMirrorY(layer.transform.mirror_y)
+      //       if (layer.transform.order != undefined) {
+      //         setTransformOrder(layer.transform.order)
+      //       } else {
+      //         setTransformOrder(["translate", "rotate", "mirror", "scale"])
+      //       }
+      //     }
+      //   })
+      // })
+      const transform = await engine.getLayerTransform("main", props.layerID)
+      setLayerName(props.layerID)
+      setDatumX(transform.datum[0])
+      setDatumY(transform.datum[1])
+      setRotation(transform.rotation)
+      setScale(transform.scale)
+      setMirrorX(transform.mirror_x)
+      setMirrorY(transform.mirror_y)
+      if (transform.order != undefined) {
+        setTransformOrder(transform.order)
+      } else {
+        setTransformOrder(["translate", "rotate", "mirror", "scale"])
+      }
     })
     return (): void => {
       console.log("LayerTransform Unloaded")
@@ -98,21 +112,29 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }, [])
 
   useEffect(() => {
-    renderEngine.backend.then((backend) => {
-      backend.getLayers("main").then((layers: LayerInfo[]) => {
-        layers.forEach((layer: LayerInfo) => {
-          if (layer.id === props.layerID) {
-            backend.setLayerTransform("main", layer.id, {
-              datum: vec2.fromValues(datumX, datumY),
-              rotation: rotation,
-              scale: scale,
-              mirror_x: mirror_x,
-              mirror_y: mirror_y,
-              order: transformOrder,
-            })
-          }
-        })
+    renderer.engine.then((engine) => {
+      engine.setLayerTransform("main", props.layerID, {
+        datum: vec2.fromValues(datumX, datumY),
+        rotation: rotation,
+        scale: scale,
+        mirror_x: mirror_x,
+        mirror_y: mirror_y,
+        order: transformOrder,
       })
+      // engine.getLayers("main").then((layers: LayerInfo[]) => {
+      //   layers.forEach((layer: LayerInfo) => {
+      //     if (layer.id === props.layerID) {
+      //       engine.setLayerTransform("main", layer.id, {
+      //         datum: vec2.fromValues(datumX, datumY),
+      //         rotation: rotation,
+      //         scale: scale,
+      //         mirror_x: mirror_x,
+      //         mirror_y: mirror_y,
+      //         order: transformOrder,
+      //       })
+      //     }
+      //   })
+      // })
     })
   })
 
@@ -127,17 +149,17 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
           label={`Datum X (${units})`}
           description="Layer X translation"
           placeholder="Input number"
-          value={roundToThree(datumX * getUnitsConversion(units))}
+          value={roundToThree(datumX * baseUnitsConversionFactor(units))}
           step={1}
-          onChange={(x) => setDatumX(roundToThree(Number(x) / getUnitsConversion(units)))}
+          onChange={(x) => setDatumX(roundToThree(Number(x) / baseUnitsConversionFactor(units)))}
         />
         <NumberInput
           label={`Datum Y (${units})`}
           description="Layer Y translation"
           placeholder="Input number"
-          value={roundToThree(datumY * getUnitsConversion(units))}
+          value={roundToThree(datumY * baseUnitsConversionFactor(units))}
           step={1}
-          onChange={(y) => setDatumY(roundToThree(Number(y) / getUnitsConversion(units)))}
+          onChange={(y) => setDatumY(roundToThree(Number(y) / baseUnitsConversionFactor(units)))}
         />
       </Group>
       <Space h="md" />

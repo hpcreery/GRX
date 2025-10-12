@@ -1,7 +1,6 @@
-import { IPlotRecord, FeatureTypeIdentifier, toMap, Binary, IntersectingTypes, AttributeCollection, BoundingBox } from "../../../types"
-import { Transform } from "../../../transform"
+import { IPlotRecord, FeatureTypeIdentifier, ContourSegmentTypeIdentifier, SurfaceContourTypeIdentifier, toMap, Binary, IntersectingTypes, AttributesType, Units } from "../../engine/types"
+import { Transform } from "../../engine/transform"
 import * as Symbols from "./symbol/symbol"
-import { vec2 } from "gl-matrix"
 
 export const PAD_RECORD_PARAMETERS = ["index", "x", "y", "sym_num", "resize_factor", "polarity", "rotation", "mirror_x", "mirror_y"] as const
 export const LINE_RECORD_PARAMETERS = ["index", "xs", "ys", "xe", "ye", "sym_num", "polarity"] as const
@@ -22,7 +21,8 @@ export type TPad_Record = typeof PAD_RECORD_PARAMETERS_MAP
 
 export class Pad implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.PAD
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -77,7 +77,8 @@ export type TLine_Record = typeof LINE_RECORD_PARAMETERS_MAP
 
 export class Line implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.LINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -124,7 +125,8 @@ export type TArc_Record = typeof ARC_RECORD_PARAMETERS_MAP
 
 export class Arc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.ARC
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -203,7 +205,7 @@ type TContourArcSegment = {
 }
 
 export class Contour_Arc_Segment implements TContourArcSegment {
-  public readonly type = FeatureTypeIdentifier.ARCSEGMENT
+  public readonly type = ContourSegmentTypeIdentifier.ARCSEGMENT
   /**
    * end x
    */
@@ -231,7 +233,7 @@ export class Contour_Arc_Segment implements TContourArcSegment {
 }
 
 export class Contour_Line_Segment implements TContourLineSegment {
-  public readonly type = FeatureTypeIdentifier.LINESEGMENT
+  public readonly type = ContourSegmentTypeIdentifier.LINESEGMENT
   /**
    * end x
    */
@@ -247,7 +249,7 @@ export class Contour_Line_Segment implements TContourLineSegment {
 }
 
 export class Contour implements TContour {
-  public readonly type = FeatureTypeIdentifier.CONTOUR
+  public readonly type = SurfaceContourTypeIdentifier.CONTOUR
   /**
    * 1 == island, 0 == hole
    */
@@ -294,7 +296,11 @@ export class Contour implements TContour {
 
 export class Surface implements TSurface, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.SURFACE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   * */
   public index = 0
   /**
    * 1 == positive, 0 == negative
@@ -305,7 +311,7 @@ export class Surface implements TSurface, IPlotRecord {
    */
   public contours: Contour[] = []
 
-  constructor(record: Partial<IntersectingTypes<Surface, TSurface>>) {
+  constructor(record: Partial<IntersectingTypes<Surface, TSurface> & { units: Units}>) {
     Object.assign(this, record)
   }
 
@@ -334,7 +340,11 @@ export class Surface implements TSurface, IPlotRecord {
 
 export class PolyLine implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.POLYLINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
+  /**
+   * feature index ( order of appearance, 0 is first, reassigned on render )
+   * */
   public index = 0
   /**
    * line width
@@ -394,7 +404,8 @@ export class PolyLine implements IPlotRecord {
 
 export class StepAndRepeat implements IPlotRecord {
   public readonly type = FeatureTypeIdentifier.STEP_AND_REPEAT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -423,7 +434,8 @@ export class StepAndRepeat implements IPlotRecord {
 
 export class DatumPoint implements TPad_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_POINT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -474,7 +486,8 @@ export class DatumPoint implements TPad_Record, IPlotRecord {
 
 export class DatumText {
   public readonly type = FeatureTypeIdentifier.DATUM_TEXT
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -499,7 +512,8 @@ export class DatumText {
 
 export class DatumLine implements TLine_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_LINE
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -542,7 +556,8 @@ export class DatumLine implements TLine_Record, IPlotRecord {
 
 export class DatumArc implements TArc_Record, IPlotRecord {
   public readonly type = FeatureTypeIdentifier.DATUM_ARC
-  public attributes: AttributeCollection = {}
+  public attributes: AttributesType = {}
+  public units: Units = "mm"
   /**
    * feature index ( order of appearance, 0 is first, reassigned on render )
    */
@@ -599,106 +614,7 @@ export type Primitive = Pad | Line | Arc
 export type Datum = DatumPoint | DatumText | DatumLine | DatumArc
 export type Shape = Primitive | Surface | PolyLine | StepAndRepeat | Datum
 
-export function getBoundingBoxOfShape(record: Shape | Contour_Arc_Segment | Contour_Line_Segment): BoundingBox {
-  let min = vec2.fromValues(Infinity, Infinity)
-  let max = vec2.fromValues(-Infinity, -Infinity)
-  switch (record.type) {
-    case FeatureTypeIdentifier.PAD: {
-      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-      min = vec2.fromValues(record.x, record.y)
-      max = vec2.fromValues(record.x, record.y)
-      vec2.add(min, symbolbox.min, min)
-      vec2.add(max, symbolbox.max, max)
-      break
-    }
-    case FeatureTypeIdentifier.LINE: {
-      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-      min = vec2.fromValues(Math.min(record.xs, record.xe), Math.min(record.ys, record.ye))
-      max = vec2.fromValues(Math.max(record.xs, record.xe), Math.max(record.ys, record.ye))
-      vec2.add(min, symbolbox.min, min)
-      vec2.add(max, symbolbox.max, max)
-      break
-    }
-    case FeatureTypeIdentifier.ARC: {
-      // TODO: better arc bounding box
-      const symbolbox = Symbols.getBoundingBoxOfSymbol(record.symbol)
-      min = vec2.fromValues(Math.min(record.xs, record.xe, record.xc), Math.min(record.ys, record.ye, record.yc))
-      max = vec2.fromValues(Math.max(record.xs, record.xe, record.xc), Math.max(record.ys, record.ye, record.yc))
-      vec2.add(min, symbolbox.min, min)
-      vec2.add(max, symbolbox.max, max)
-      break
-    }
-    case FeatureTypeIdentifier.SURFACE: {
-      min = vec2.fromValues(Infinity, Infinity)
-      max = vec2.fromValues(-Infinity, -Infinity)
-      for (const contour of record.contours) {
-        const { xs, ys } = contour
-        vec2.min(min, min, vec2.fromValues(xs, ys))
-        vec2.max(max, max, vec2.fromValues(xs, ys))
-        for (const segment of contour.segments) {
-          const { min: segment_min, max: segment_max } = getBoundingBoxOfShape(segment)
-          vec2.min(min, min, segment_min)
-          vec2.max(max, max, segment_max)
-        }
-      }
-      break
-    }
-    case FeatureTypeIdentifier.POLYLINE: {
-      min = vec2.fromValues(Infinity, Infinity)
-      max = vec2.fromValues(-Infinity, -Infinity)
-      for (const line of record.lines) {
-        const { x, y } = line
-        vec2.min(min, min, vec2.fromValues(x, y))
-        vec2.max(max, max, vec2.fromValues(x, y))
-      }
-      vec2.add(min, min, vec2.fromValues(-record.width, -record.width))
-      vec2.add(max, max, vec2.fromValues(record.width, record.width))
-      break
-    }
-    case FeatureTypeIdentifier.STEP_AND_REPEAT: {
-      min = vec2.fromValues(Infinity, Infinity)
-      max = vec2.fromValues(-Infinity, -Infinity)
-      for (const shape of record.shapes) {
-        const { min: shape_min, max: shape_max } = getBoundingBoxOfShape(shape)
-        vec2.min(min, min, shape_min)
-        vec2.max(max, max, shape_max)
-      }
-      const minDatum = vec2.fromValues(Infinity, Infinity)
-      const maxDatum = vec2.fromValues(-Infinity, -Infinity)
-      for (const repeat of record.repeats) {
-        const { datum } = repeat
-        vec2.min(minDatum, minDatum, datum)
-        vec2.max(maxDatum, maxDatum, datum)
-      }
-      vec2.add(min, min, minDatum)
-      vec2.add(max, max, maxDatum)
-      break
-    }
-    case FeatureTypeIdentifier.LINESEGMENT: {
-      // TODO: better line segment bounding box
-      min = vec2.fromValues(record.x, record.y)
-      max = vec2.fromValues(record.x, record.y)
-      break
-    }
-    // } else if (record.type === FeatureTypeIdentifier.ARCSEGMENT) {
-    case FeatureTypeIdentifier.ARCSEGMENT:
-      {
-        // TODO: better arc segment bounding box
-        min = vec2.fromValues(Math.min(record.x, record.xc), Math.min(record.y, record.yc))
-        max = vec2.fromValues(Math.max(record.x, record.xc), Math.max(record.y, record.yc))
-      }
-      break
-    case FeatureTypeIdentifier.DATUM_LINE:
-    case FeatureTypeIdentifier.DATUM_POINT:
-    case FeatureTypeIdentifier.DATUM_TEXT:
-    case FeatureTypeIdentifier.DATUM_ARC:
-      break
-    default:
-      console.warn("Unknown record type", record)
-      break
-  }
-  if (isNaN(min[0]) || isNaN(min[1]) || isNaN(max[0]) || isNaN(max[1])) {
-    console.warn("Corrupt Feature Bounding Box", record, min, max)
-  }
-  return { min, max }
-}
+export type RawPrimative = TPad_Record | TLine_Record | TArc_Record
+export type RawSurface = TSurface
+export type RawShape = RawPrimative | RawSurface
+

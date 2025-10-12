@@ -1,6 +1,6 @@
 import { vec2 } from "gl-matrix"
 import * as TREE from "./gdsii_tree"
-import * as Shapes from "@src/renderer/engine/step/layer/shape/shape"
+import * as Shapes from "@src/renderer/data/shape/shape"
 import { GDSIIHierarchy } from "./types"
 import messages from "./messages"
 
@@ -51,6 +51,7 @@ export class Plotter {
     }).addSegments(contour_line_segments)
 
     const shape = new Shapes.Surface({
+      units: this.scale,
       polarity: 1,
     }).addContour(contour)
 
@@ -71,6 +72,7 @@ export class Plotter {
       lines.push(line)
     }
     const polyline = new Shapes.PolyLine({
+      units: this.scale,
       // Start point.
       xs: el.XY[0].x,
       ys: el.XY[0].y,
@@ -101,6 +103,7 @@ export class Plotter {
     }
     for (const [_idx, cell] of this.gdsiiHierarchy[srefName].entries()) {
       const srShape = new Shapes.StepAndRepeat({
+        units: this.scale,
         shapes: [cell.shape],
         break: true,
         repeats: [
@@ -154,6 +157,7 @@ export class Plotter {
       }
 
       const srShape = new Shapes.StepAndRepeat({
+        units: this.scale,
         shapes: [cell.shape],
         break: true,
         repeats: repeats,
@@ -168,6 +172,7 @@ export class Plotter {
 
   public addText(el: TREE.text): void {
     const text = new Shapes.DatumText({
+      units: this.scale,
       x: el.XY[0].x,
       y: el.XY[0].y,
       text: el.STRING.string,

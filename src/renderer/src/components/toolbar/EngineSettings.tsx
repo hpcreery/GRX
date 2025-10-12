@@ -14,24 +14,24 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 interface EngineSettingsProps {}
 
 export default function EngineSettings(_props: EngineSettingsProps): JSX.Element | null {
-  const { renderEngine } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const [colorBlend, setColorBlend] = useLocalStorage<ColorBlend>({
     key: "engine:COLOR_BLEND",
-    defaultValue: renderEngine.settings.COLOR_BLEND,
+    defaultValue: renderer.settings.COLOR_BLEND,
   })
   const [zoomToCursor, setZoomToCursor] = useLocalStorage<boolean>({
     key: "engine:ZOOM_TO_CURSOR",
-    defaultValue: renderEngine.settings.ZOOM_TO_CURSOR,
+    defaultValue: renderer.settings.ZOOM_TO_CURSOR,
   })
   const [showDatums, setShowDatums] = useLocalStorage<boolean>({
     key: "engine:SHOW_DATUMS",
-    defaultValue: renderEngine.settings.SHOW_DATUMS,
+    defaultValue: renderer.settings.SHOW_DATUMS,
   })
 
   useEffect(() => {
-    renderEngine.settings.COLOR_BLEND = colorBlend
-    renderEngine.settings.ZOOM_TO_CURSOR = zoomToCursor
-    renderEngine.settings.SHOW_DATUMS = showDatums
+    renderer.settings.COLOR_BLEND = colorBlend
+    renderer.settings.ZOOM_TO_CURSOR = zoomToCursor
+    renderer.settings.SHOW_DATUMS = showDatums
   }, [colorBlend, zoomToCursor, showDatums])
 
   useEffect(() => {

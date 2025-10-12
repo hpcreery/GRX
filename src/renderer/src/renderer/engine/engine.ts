@@ -1,15 +1,16 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import { LayerRendererProps } from "./step/layer/layer"
-import { initializeFontRenderer, initializeRenderers } from "./step/layer/collections"
+import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
 import * as Comlink from "comlink"
-import type { PluginsDefinition, AddLayerProps } from "./plugins"
-import { type Units } from "./types"
 import { Transform } from "./transform"
-import { ShapeDistance } from "./step/layer/shape-renderer"
-import { StepRenderer } from "./step/step"
+import { ShapeDistance } from "./view/shape-renderer"
+import { ViewRenderer } from "./view/view"
 import type { RenderSettings, GridSettings, MeasurementSettings } from "./settings"
 import { settings, gridSettings, measurementSettings } from "./settings"
+import { DataInterface } from '../data/interface'
+import { initStaticShaderCollections } from './view/buffer-collections'
+
+
 
 export interface UniverseProps {}
 
@@ -19,15 +20,7 @@ interface UniverseAttributes {}
 
 export interface UniverseContext {}
 
-// interface ScreenRenderProps {
-//   renderTexture: REGL.Framebuffer | REGL.Texture2D
-// }
-
-// interface ScreenRenderUniforms {
-//   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
-// }
-
-export interface RenderEngineBackendConfig {
+export interface RenderEngineConfig {
   attributes?: WebGLContextAttributes | undefined
   container: DOMRect
 }
@@ -43,33 +36,17 @@ export interface RenderTransform {
   update: () => void
 }
 
-export interface LayerInfo {
-  name: string
-  id: string
-  color: vec3
-  // context: string
-  // type: string
-  units: Units
-  visible: boolean
-  // format: string
-  transform: Transform
-}
-
-export const EngineEvents = {
-  RENDER: "RENDER",
-  LAYERS_CHANGED: "LAYERS_CHANGED",
-  MESSAGE: "MESSAGE",
-} as const
-
-export type TEngineEvents = (typeof EngineEvents)[keyof typeof EngineEvents]
-
-export const MessageLevel = {
-  INFO: "blue",
-  WARN: "yellow",
-  ERROR: "red",
-} as const
-
-export type TMessageLevel = (typeof MessageLevel)[keyof typeof MessageLevel]
+// export interface LayerInfo {
+//   name: string
+//   id: string
+//   color: vec3
+//   // context: string
+//   // type: string
+//   units: Units
+//   visible: boolean
+//   // format: string
+//   transform: Transform
+// }
 
 export interface Pointer {
   x: number
@@ -79,18 +56,14 @@ export interface Pointer {
 
 export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
-  units: Units
 }
 
-export type RenderProps = Partial<typeof RenderEngineBackend.defaultRenderProps>
+export type RenderProps = Partial<typeof Engine.defaultRenderProps>
 
-export interface MessageData {
-  level: TMessageLevel
-  title: string
-  message: string
-}
+export class Engine {
 
-export class RenderEngineBackend {
+  public static readonly DataInterfaceProxy = Comlink.proxy(DataInterface)
+
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public offscreenCanvasGL: OffscreenCanvas
@@ -106,19 +79,17 @@ export class RenderEngineBackend {
   public regl: REGL.Regl
   private universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
 
+  // public calculatedFPS: number = 0
+  public renderTime: number = 0
+
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
-  public parsers: PluginsDefinition = {}
-
-  public eventTarget = new EventTarget()
-
-  public views: Map<string, StepRenderer> = new Map()
-  // public steps: StepRenderer[] = []
+  public views: Map<string, ViewRenderer> = new Map()
 
   private renderNowInterval: NodeJS.Timeout | null = null
 
-  constructor(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineBackendConfig) {
+  constructor(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineConfig) {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.boundingBox = {
       ...container,
@@ -140,13 +111,14 @@ export class RenderEngineBackend {
         "EXT_frag_depth",
         "EXT_blend_minmax",
         // "WEBGL_color_buffer_float",
-        "EXT_disjoint_timer_query",
+        // "EXT_disjoint_timer_query",
         "OES_standard_derivatives"
       ],
       profile: true,
     })
     console.log("WEBGL LIMITS", this.regl.limits)
 
+    initStaticShaderCollections(this.regl)
     initializeRenderers(this.regl)
 
     this.regl.clear({
@@ -187,27 +159,26 @@ export class RenderEngineBackend {
 
   public renderDispatch = (): void => this.render()
 
-  public addView(id: string, name: string, viewBox: DOMRect): void {
-    const newStep = new StepRenderer({
+  public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
+    const stepObject = DataInterface._read_step_object(project, step)
+    const newStep = new ViewRenderer({
       regl: this.regl,
       viewBox,
-      name,
+      dataStep: stepObject,
       id,
     })
-    newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
+    newStep.onUpdate(this.renderDispatch)
     this.views.set(id, newStep)
     this.render()
   }
 
-  // public addStep(name: string, viewBox: DOMRect): void {
-  //   const newStep = new ViewRenderer({
-  //     regl: this.regl,
-  //     viewBox,
-  //   })
-  //   newStep.eventTarget.addEventListener("RENDER", this.renderDispatch)
-  //   this.steps.set(name, newStep)
-  //   this.render()
-  // }
+  public removeView(id: string): void {
+    if (!this.views.has(id)) throw new Error(`View ${id} not found`)
+    const view = this.views.get(id)!
+    view.destroy()
+    this.views.delete(id)
+    this.render()
+  }
 
   public updateBoundingBox(box: DOMRect): void {
     // this.boundingBox.width = box.width * dpr
@@ -268,7 +239,6 @@ export class RenderEngineBackend {
 
   public updateTransform(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    // return this.steps.get(view)!.updateTransform()
     const transform = this.views.get(view)!.updateTransform()
     return transform
   }
@@ -283,38 +253,6 @@ export class RenderEngineBackend {
     return this.views.get(view)!.getWorldPosition(x, y)
   }
 
-  public async sendMessage(data: MessageData): Promise<void> {
-    this.eventTarget.dispatchEvent(
-      new MessageEvent<MessageData>(EngineEvents.MESSAGE, {
-        data,
-      }),
-    )
-  }
-
-  /**
-   * @deprecated Use data api instead.
-   */
-  public async addLayer(view: string, params: AddLayerProps): Promise<void> {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.addLayer(params)
-  }
-
-  /**
-   * @deprecated Use data api instead.
-   */
-  public async addFile(view: string, buffer: ArrayBuffer, params: {format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.addFile(buffer, params)
-  }
-
-  /**
-   * @deprecated Use data api instead.
-   */
-  public getLayers(view: string): LayerInfo[] {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.getLayers()
-  }
-
   public getTransform(view: string): Partial<RenderTransform> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getTransform()
@@ -325,44 +263,34 @@ export class RenderEngineBackend {
     this.views.get(view)!.setTransform(transform)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public removeLayer(view: string, id: string): void {
+  public getLayerVisibility(view: string, layer: string): boolean {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.removeLayer(id)
+    return this.views.get(view)!.getLayerVisibility(layer)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public moveLayer(view: string, from: number, to: number): void {
+  public setLayerVisibility(view: string, layer: string, visible: boolean): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.moveLayer(from, to)
+    this.views.get(view)!.setLayerVisibility(layer, visible)
   }
 
-  /**
-   * @deprecated Use data api instead.
-   */
-  public setLayerProps(view: string, id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
+  public getLayerColor(view: string, layer: string): vec3 {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.setLayerProps(id, props)
+    return this.views.get(view)!.getLayerColor(layer)
   }
 
-  public setLayerTransform(view: string, id: string, transform: Partial<Transform>): void {
+  public setLayerColor(view: string, layer: string, color: vec3): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    this.views.get(view)!.setLayerTransform(id, transform)
+    this.views.get(view)!.setLayerColor(layer, color)
   }
 
-  public addEventCallback(event: TEngineEvents, listener: (data: MessageData | null) => void): void {
-    function runCallback(e: Event | MessageEvent): void {
-      if (e instanceof MessageEvent) {
-        listener(e.data)
-      } else {
-        listener(null)
-      }
-    }
-    this.eventTarget.addEventListener(event, runCallback)
+  public getLayerTransform(view: string, layer: string): Transform {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    return this.views.get(view)!.getLayerTransform(layer)
+  }
+
+  public setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
+    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
+    this.views.get(view)!.setLayerTransform(layer, transform)
   }
 
   public sample(view: string, x: number, y: number): void {
@@ -437,23 +365,21 @@ export class RenderEngineBackend {
     return this.views.get(view)!.clearMeasurements()
   }
 
-  public getLayersQueue(view: string): {
-    name: string
-    id: string
-  }[] {
-    if (!this.views.has(view)) throw new Error(`View ${view} not found`)
-    return this.views.get(view)!.layersQueue
-  }
-
   public render(): void {
     if (this.renderNowInterval) return
     this.renderNowInterval = setTimeout(() => {
       this.renderNowInterval = null
+      const startTime = performance.now()
       this.universe((_context) => {
         this.views.forEach((view) => {
           view.render()
         })
       })
+      const endTime = performance.now()
+      this.renderTime = endTime - startTime
+      // console.log(`Render Time: ${endTime - startTime} milliseconds`)
+      // console.log(`FPS: ${Math.round(1000 / (endTime - startTime))}`)
+      // this.calculatedFPS = Math.round(1000 / (endTime - startTime))
     }, settings.MSPFRAME)
   }
 
@@ -485,6 +411,7 @@ export class RenderEngineBackend {
 
   public destroy(): void {
     this.views.forEach((view) => {
+      view.removeEventListener("update", this.renderDispatch)
       view.destroy()
     })
     this.regl.destroy()
@@ -504,7 +431,7 @@ interface ReglStats extends REGL.Stats {
   maxAttributesCount: number
 }
 
-Comlink.expose(RenderEngineBackend)
+Comlink.expose(Engine)
 
 export function logMatrix(matrix: mat3): void {
   console.log(

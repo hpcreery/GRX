@@ -1,20 +1,19 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import LayerRenderer, { LayerRendererProps } from "./layer/layer"
-import { ReglRenderers, TLoadedReglRenderers } from "./layer/collections"
-import * as Shapes from "./layer/shape/shape"
-import * as Comlink from "comlink"
-import plugins from "../plugins"
-import type { Plugin, PluginsDefinition, AddLayerProps } from "../plugins"
-import { type Units, type BoundingBox, FeatureTypeIdentifier, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
+import LayerRenderer, {SelectionRenderer} from "./layer"
+import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
+import * as Shapes from "../../data/shape/shape"
+import { type Units, type BoundingBox, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
-import { UID } from "../utils"
+import { UID, UpdateEventTarget } from "../utils"
 import { SimpleMeasurement } from "./measurements"
-import { ShapeDistance } from "./layer/shape-renderer"
+import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
-import { TypedEventTarget } from "typescript-event-target"
+import { StepLayer, Step } from '@src/renderer/data/project'
+import { DataInterface } from '@src/renderer/data/interface'
+import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
 
 export interface WorldProps {}
 
@@ -51,9 +50,9 @@ export interface WorldContext {
 //   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
 // }
 
-export interface StepRendererConfig {
+export interface ViewRendererConfig {
   id?: string
-  name: string
+  dataStep: Step
   viewBox: DOMRect
   // dpr: number
   regl: REGL.Regl
@@ -77,24 +76,11 @@ export interface LayerInfo {
   units: Units
   visible: boolean
   transform: Transform
-  // format: string
-  // context: string
-  // type: string
 }
 
-interface EngineEventsMap {
-  RENDER: Event
-  LAYERS_CHANGED: Event
-  MESSAGE: MessageEvent<MessageData>
+export interface EngineEventsMap {
+  update: Event
 }
-
-export const MessageLevel = {
-  INFO: "blue",
-  WARN: "yellow",
-  ERROR: "red",
-} as const
-
-export type TMessageLevel = (typeof MessageLevel)[keyof typeof MessageLevel]
 
 export interface Pointer {
   x: number
@@ -104,20 +90,15 @@ export interface Pointer {
 
 export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
-  units: Units
+  // units: Units
 }
 
-export type StepRendererProps = Partial<typeof StepRenderer.defaultRenderProps>
+export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
-export interface MessageData {
-  level: TMessageLevel
-  title: string
-  message: string
-}
 
-export class StepRenderer {
+export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
-  public name: string
+  public dataStep: Step
   static defaultRenderProps = { force: false, updateLayers: true }
 
   public viewBox: ViewBox = {
@@ -146,22 +127,10 @@ export class StepRenderer {
     },
   }
 
-  // public transform2: ShapeTransform = new ShapeTransform()
-
-  // private changePending = true
-
-  // ** make layers a proxy so that we can call render when a property is updated
-  // public layers: LayerRenderer[] = new Proxy([], {
-  //   set: (target, name, value): boolean => {
-  //     target[name] = value
-  //     this.render(true)
-  //     return true
-  //   }
-  // })
+  public dirty = true
 
   public layers: LayerRenderer[] = []
-  public selections: LayerRenderer[] = []
-  public layersQueue: { name: string; id: string }[] = []
+  public selections: SelectionRenderer[] = []
 
   public regl: REGL.Regl
   private world: REGL.DrawCommand<REGL.DefaultContext & WorldContext, WorldProps>
@@ -171,19 +140,18 @@ export class StepRenderer {
   // public loadingFrame: LoadingAnimation
   public measurements: SimpleMeasurement
 
-  public parsers: PluginsDefinition = {}
-
-  public eventTarget = new TypedEventTarget<EngineEventsMap>()
-
   private utilitiesRenderer: UtilitiesRenderer
 
-  constructor({ viewBox, regl, id, name }: StepRendererConfig) {
+  private layersSubscriptionControler: AbortController
+
+  constructor({ viewBox, regl, id, dataStep }: ViewRendererConfig) {
+    super()
     this.id = id || UID()
-    this.name = name
+    this.dataStep = dataStep
+
     this.viewBox = viewBox
 
     this.regl = regl
-    // this.ctx = ctx
 
     this.utilitiesRenderer = new UtilitiesRenderer(regl)
 
@@ -266,13 +234,19 @@ export class StepRenderer {
     // this.measurements = new SimpleMeasurement(this.regl, this.ctx)
     this.measurements = new SimpleMeasurement({
       regl: this.regl,
-      // ctx: this.ctx,
     })
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
+    this.layersSubscriptionControler = new AbortController();
+    this.createLayers()
+
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
+
+    // DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
+    //   this.updateLayers()
+    // }, { signal: this.layersSubscriptionControler.signal });
   }
 
   public updateViewBox(newViewBox: DOMRect): void {
@@ -284,7 +258,10 @@ export class StepRenderer {
       }
     }
     this.viewBox = newViewBox
-    if (viewBoxChanged) this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    if (viewBoxChanged) {
+      this.updateTransform()
+      this.dispatchTypedEvent("update", new Event("update"))
+    }
   }
 
   public toss(): void {
@@ -354,7 +331,7 @@ export class StepRenderer {
     mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
     // logMatrix(this.transform.matrix)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public zoomAtPoint(x: number, y: number, s: number): void {
@@ -384,85 +361,49 @@ export class StepRenderer {
     return [mousePos[0], mousePos[1]]
   }
 
-  public async sendMessage(data: MessageData): Promise<void> {
-    this.eventTarget.dispatchTypedEvent(
-      "MESSAGE",
-      new MessageEvent<MessageData>("MESSAGE", {
-        data,
-      }),
-    )
+
+  private createLayers(): void {
+    this.layersSubscriptionControler.abort()
+    this.layersSubscriptionControler = new AbortController();
+    DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
+      this.updateLayers()
+    }, { signal: this.layersSubscriptionControler.signal });
+    this.updateLayers()
   }
 
-  public async addLayer(params: AddLayerProps): Promise<void> {
-    const layer = new LayerRenderer({
-      ...params,
+  public updateLayers(): void {
+    for (const layer of this.dataStep.layers) {
+      if (this.layers.find((l) => l.dataLayer === layer)) continue
+      this.addLayer(layer)
+    }
+    for (const layer of this.layers) {
+      if (this.dataStep.layers.find((l) => l === layer.dataLayer)) continue
+      this.deleteLayer(layer.dataLayer)
+    }
+  }
+
+  private addLayer(dataLayer: StepLayer): void {
+    const layerRenderer = new LayerRenderer({
       regl: this.regl,
-      // ctx: this.ctx,
+      dataLayer,
+      color: vec3.fromValues(Math.random(), Math.random(), Math.random()),
+      visible: true,
     })
-    this.layers.push(layer)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
-    this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
-    console.log("layer added")
+    this.layers.push(layerRenderer)
+    layerRenderer.onUpdate(() => {
+      this.dispatchTypedEvent("update", new Event("update"))
+    })
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
-  public async addFile(buffer: ArrayBuffer, params: { format: string; props: Partial<Omit<AddLayerProps, "image">> }): Promise<void> {
-    if (params.format == "") {
-      console.error("No format provided")
-      // this.addMessage({ level: MessageLevel.ERROR, title: 'File Load Error', message: 'No format provided' })
-      return
+  private deleteLayer(layer: StepLayer): void {
+    const index = this.layers.findIndex((l) => l.dataLayer === layer)
+    if (index === -1) return
+    const deleted = this.layers.splice(index, 1)
+    for (const d of deleted) {
+      d.destroy()
     }
-    if (!Object.keys(plugins).includes(params.format)) {
-      console.error("No parser found for format: " + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
-      return
-    }
-
-    const pluginWorker = plugins[params.format].plugin
-    if (pluginWorker) {
-      const tempUID = UID()
-      this.layersQueue.push({ name: params.props.name || "", id: tempUID })
-      const addLayerCallback = async (params: AddLayerProps): Promise<void> => await this.addLayer({ ...params, format: params.format })
-      const addMessageCallback = async (title: string, message: string): Promise<void> => {
-        // await notifications.show({title, message})
-        this.sendMessage({ level: MessageLevel.WARN, title, message })
-      }
-      const instance = new pluginWorker()
-      const parser = Comlink.wrap<Plugin>(instance)
-      try {
-        await parser(Comlink.transfer(buffer, [buffer]), params.props, Comlink.proxy(addLayerCallback), Comlink.proxy(addMessageCallback))
-      } catch (error) {
-        console.error(error)
-        throw error
-      } finally {
-        parser[Comlink.releaseProxy]()
-        instance.terminate()
-        const index = this.layersQueue.findIndex((file) => file.id === tempUID)
-        if (index != -1) {
-          this.layersQueue.splice(index, 1)
-        }
-        this.eventTarget.dispatchTypedEvent("LAYERS_CHANGED", new Event("LAYERS_CHANGED"))
-        this.sendMessage({ level: MessageLevel.INFO, title: "File Loaded", message: "File loaded successfully" })
-      }
-    } else {
-      console.error("No parser found for format: " + params.format)
-      this.sendMessage({ level: MessageLevel.ERROR, title: "File Load Error", message: "No parser found for format: " + params.format })
-    }
-  }
-
-  public getLayers(): LayerInfo[] {
-    return this.layers.map((layer) => {
-      return {
-        name: layer.name,
-        id: layer.id,
-        color: layer.color,
-        units: layer.units,
-        visible: layer.visible,
-        // context: layer.context,
-        // type: layer.type,
-        // format: layer.format,
-        transform: layer.transform,
-      }
-    })
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public getTransform(): Partial<RenderTransform> {
@@ -489,40 +430,61 @@ export class StepRenderer {
     this.updateTransform()
   }
 
-  public removeLayer(id: string): void {
-    const index = this.layers.findIndex((layer) => layer.id === id)
-    if (index === -1) return
-    this.layers.splice(index, 1)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  /**
+   * Get layer visibility by name
+   */
+  public getLayerVisibility(name: string): boolean {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.visible
   }
 
-  public moveLayer(from: number, to: number): void {
-    this.layers.splice(to < 0 ? this.layers.length + to : to, 0, this.layers.splice(from, 1)[0])
-  }
-
-  public setLayerProps(id: string, props: Partial<Omit<LayerRendererProps, "regl">>): void {
-    const layer = this.layers.find((layer) => layer.id === id)
+  /**
+   * Toggle layer visibility by name
+   */
+  public setLayerVisibility(name: string, visible: boolean): void {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
-    Object.assign(layer, props)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    layer.visible = visible
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
-  public setLayerTransform(id: string, transform: Partial<Transform>): void {
-    const layer = this.layers.find((layer) => layer.id === id)
+  /**
+   * Get layer color by name
+   */
+  public getLayerColor(name: string): vec3 {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.color
+  }
+
+  /**
+   * Set layer color by name
+   */
+  public setLayerColor(name: string, color: vec3): void {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) return
+    layer.color = color
+    this.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  /**
+   * Get layer transform by name
+   */
+  public getLayerTransform(name: string): Transform {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
+    if (!layer) throw new Error(`Layer ${name} not found`)
+    return layer.transform
+  }
+
+  /**
+   * Set layer transform by name
+   */
+  public setLayerTransform(name: string, transform: Partial<Transform>): void {
+    const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     Object.assign(layer.transform, transform)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
-  }
-
-  public addEventCallback(event: keyof EngineEventsMap, listener: (data: MessageData | null) => void): void {
-    function runCallback(e: Event | MessageEvent): void {
-      if (e instanceof MessageEvent) {
-        listener(e.data)
-      } else {
-        listener(null)
-      }
-    }
-    this.eventTarget.addEventListener(event, runCallback)
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public sample(x: number, y: number): void {
@@ -536,51 +498,46 @@ export class StepRenderer {
         height: 1,
       })
       if (data.reduce((acc, val) => acc + val, 0) > 0) {
-        console.log(layer.name)
+        console.log(layer.dataLayer.layer.name)
       }
     }
   }
 
   public select(pointer: vec2): QuerySelection[] {
     const selection: QuerySelection[] = []
+    this.selections.forEach((layer) => layer.destroy())
     this.selections.length = 0
     this.world((context) => {
-      // this.clearMeasurements()
-      // const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
-      // const epsilons = 100 / scale
       for (const layer of this.layers) {
         if (!layer.visible) continue
         const distances = layer.queryDistance(pointer, context)
-        // const layerSelection = distances.filter((shape) => shape.distance <= 0)
+        if (distances.length === 0) continue
         for (const select of distances) {
-          // if (select.distance >= epsilons) continue
           selection.push({
-            sourceLayer: layer.id,
+            sourceLayer: layer.dataLayer.layer.name,
             ...select,
-            units: layer.units,
+            // units: layer.dataLayer.artworkUnits,
           })
 
-          // THIS IS A VISUAL AIDS FOR THE SELECTION
+          // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
           // this.measurements.addMeasurement(pointer)
-          // this.measurements.finishMeasurement(vec2.sub(vec2.create(), pointer, vec2.scale(vec2.create(), select.direction, select.distance)))
+          // this.measurements.finishMeasurement(select.snapPoint || pointer)
         }
-        const newSelectionLayer = new LayerRenderer({
+        const selectionImage = new ArtworkBufferCollection()
+        selectionImage.fromJSON(this.copySelectionToImage(distances))
+
+        const newSelectionLayer = new SelectionRenderer({
           regl: this.regl,
-          // ctx: this.ctx,
-          color: [0.5, 0.5, 0.5],
-          alpha: 0.7,
-          units: layer.units,
-          name: layer.name,
-          id: layer.id,
-          // we want to deep clone this object to avoid the layer renderer from mutating the properties
-          image: this.copySelectionToImage(distances),
+          image: selectionImage,
           transform: layer.transform,
         })
-        newSelectionLayer.dirty = true
+        // newSelectionLayer.onUpdate(() => {
+        //   this.dispatchTypedEvent("update", new Event("update"))
+        // })
         this.selections.push(newSelectionLayer)
       }
     })
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
     return selection
   }
 
@@ -597,14 +554,21 @@ export class StepRenderer {
             closest = select
             continue
           }
-          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, (closest as ShapeDistance).snapPoint)) {
+          if (closest.snapPoint == undefined) {
+            closest = select
+            continue
+          }
+          if (select.snapPoint == undefined) continue
+          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, closest.snapPoint)) {
             closest = select
           }
         }
       }
     })
+    // console.log(closest)
     if (closest == undefined) return pointer
-    return (closest as ShapeDistance).snapPoint
+    if ((closest as ShapeDistance).snapPoint == undefined) return pointer
+    return (closest as ShapeDistance).snapPoint!
   }
 
   private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
@@ -612,14 +576,14 @@ export class StepRenderer {
     for (const select of selection) {
       // we want to deep clone this object to avoid the layer renderer from mutating the properties
       const shape = JSON.parse(JSON.stringify(select.shape)) as Shapes.Shape
-      if (select.children.length > 0) {
-        if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
-          shape.shapes = this.copySelectionToImage(select.children)
-        }
-        if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
-          shape.symbol.shapes = this.copySelectionToImage(select.children)
-        }
-      }
+      // if (select.children.length > 0) {
+      //   if (shape.type == FeatureTypeIdentifier.STEP_AND_REPEAT) {
+      //     shape.shapes = this.copySelectionToImage(select.children)
+      //   }
+      //   if (shape.type == FeatureTypeIdentifier.PAD && shape.symbol.type == FeatureTypeIdentifier.MACRO_DEFINITION) {
+      //     shape.symbol.shapes = this.copySelectionToImage(select.children)
+      //   }
+      // }
       image.push(shape)
     }
     return image
@@ -632,7 +596,7 @@ export class StepRenderer {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+      this.dispatchTypedEvent("update", new Event("update"))
     }
   }
 
@@ -685,7 +649,7 @@ export class StepRenderer {
       const offsetY = -bbTopLeftToOriginScaled[1]
       this.setTransform({ position: [offsetX, offsetY], zoom })
     }
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   // public startLoading(): void {
@@ -699,18 +663,18 @@ export class StepRenderer {
   public addMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.addMeasurement(pointSnap)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public updateMeasurement(point: vec2): void {
     this.measurements.updateMeasurement(point)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public finishMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.finishMeasurement(pointSnap)
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public getMeasurements(): { point1: vec2; point2: vec2 }[] {
@@ -723,38 +687,27 @@ export class StepRenderer {
 
   public clearMeasurements(): void {
     this.measurements.clearMeasurements()
-    this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   // public setMeasurementUnits(units: Units): void {
   //   this.measurements.setMeasurementUnits(units)
-  //   this.eventTarget.dispatchTypedEvent("RENDER", new Event("RENDER"))
+  //   this.eventTarget.dispatchTypedEvent("update", new Event("update"))
   // }
 
   public render(): void {
-    // const { force, updateLayers } = { ...StepRenderer.defaultRenderProps, ...props }
-    // if (!this.dirty && !force) return
-    // if (this.loadingFrame.enabled) return
-    // if (updateLayers) this.changePending = false
-    // this.regl.poll()
-
-    // setTimeout(() => (this.dirty = true), settings.MSPFRAME)
-    // if (!this.changePending) return
     this.world((context) => {
+
       this.regl.clear({
         color: [0, 0, 0, 0],
         depth: 1,
       })
 
-      // if (origin.enabled) this.drawCollections.renderOrigin()
-      // if (grid.enabled) this.drawCollections.renderGrid(grid)
       this.utilitiesRenderer.render(context)
       this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
 
       for (const layer of this.layers) {
         if (!layer.visible) continue
-        // layer.dirty
-        // updateLayers && layer.render(context)
         layer.render(context)
         this.drawCollections.blend(() => {
           if (settings.COLOR_BLEND == ColorBlend.OVERLAY) {
@@ -773,64 +726,19 @@ export class StepRenderer {
     })
   }
 
-  // private shapeToElement(shape: Shapes.Shape): Path2D {
-  //   const path = new Path2D()
-  //   switch (shape.type) {
-  //     case FeatureTypeIdentifier.LINE:
-  //       path.moveTo(shape.xs, shape.ys)
-  //       path.lineTo(shape.xe, shape.ye)
-  //       break
-  //     case FeatureTypeIdentifier.POLYLINE:
-  //       path.moveTo(shape.xs, shape.ys)
-  //       for (let i = 0; i < shape.lines.length; i++) {
-  //         path.lineTo(shape.lines[i].x, shape.lines[i].y)
-  //       }
-  //       break
-  //   }
-  //   return path
-  // }
-
-  // public getStats(): Stats {
-  //   return {
-  //     regl: {
-  //       totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
-  //       totalBufferSize: this.regl.stats.getTotalBufferSize ? this.regl.stats!.getTotalBufferSize() : -1,
-  //       totalRenderbufferSize: this.regl.stats.getTotalRenderbufferSize ? this.regl.stats!.getTotalRenderbufferSize() : -1,
-  //       maxUniformsCount: this.regl.stats.getMaxUniformsCount ? this.regl.stats!.getMaxUniformsCount() : -1,
-  //       maxAttributesCount: this.regl.stats.getMaxAttributesCount ? this.regl.stats!.getMaxAttributesCount() : -1,
-  //       bufferCount: this.regl.stats.bufferCount,
-  //       elementsCount: this.regl.stats.elementsCount,
-  //       framebufferCount: this.regl.stats.framebufferCount,
-  //       shaderCount: this.regl.stats.shaderCount,
-  //       textureCount: this.regl.stats.textureCount,
-  //       cubeCount: this.regl.stats.cubeCount,
-  //       renderbufferCount: this.regl.stats.renderbufferCount,
-  //       maxTextureUnits: this.regl.stats.maxTextureUnits,
-  //       vaoCount: this.regl.stats.vaoCount,
-  //     },
-  //     world: this.world.stats,
-  //   }
-  // }
-
   public destroy(): void {
-    // this.regl.destroy()
+    super.unSubscribe()
+    this.layersSubscriptionControler.abort()
+    for (const layer of this.layers) {
+      layer.destroy()
+    }
+    for (const selection of this.selections) {
+      selection.destroy()
+    }
+    this.measurements.destroy()
+    this.utilitiesRenderer.framebuffer.destroy()
   }
 }
-
-// export interface Stats {
-//   regl: ReglStats
-//   world: REGL.CommandStats
-// }
-
-// interface ReglStats extends REGL.Stats {
-//   totalTextureSize: number
-//   totalBufferSize: number
-//   totalRenderbufferSize: number
-//   maxUniformsCount: number
-//   maxAttributesCount: number
-// }
-
-// Comlink.expose(StepRenderer)
 
 export function logMatrix(matrix: mat3): void {
   console.log(
