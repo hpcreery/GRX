@@ -1,6 +1,5 @@
 // import * as Comlink from "comlink"
 import { Transform } from '../engine/transform'
-import { Units } from '../engine/types'
 import { ArtworkBufferCollection, SurfaceBufferCollection } from './artwork-collections'
 
 
@@ -36,7 +35,6 @@ export class Step {
     this._layers.sort((a, b) => this.matrix.layers.indexOf(a.layer) - this.matrix.layers.indexOf(b.layer));
     return this._layers
   }
-  // public readonly layers: StepLayer[] = []
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
   public readonly step_and_repeats: StepAndRepeat[] = []
   public name: string = ""
@@ -44,9 +42,6 @@ export class Step {
     this.name = name
     this.matrix = matrix
   }
-  // public sortLayers(): void {
-  //   this.layers.sort((a, b) => this.matrix.layers.indexOf(a.layer) - this.matrix.layers.indexOf(b.layer));
-  // }
 }
 
 export class StepLayer {
@@ -54,7 +49,6 @@ export class StepLayer {
   public readonly step: Step
   public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
-  // public artworkUnits: Units = "mm"
   constructor(step: Step, row: Layer) {
     this.step = step
     this.layer = row
