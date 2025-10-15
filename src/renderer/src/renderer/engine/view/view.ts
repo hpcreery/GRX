@@ -530,6 +530,7 @@ export class ViewRenderer extends UpdateEventTarget {
           regl: this.regl,
           image: selectionImage,
           transform: layer.transform,
+          sourceLayer: layer.dataLayer.layer,
         })
         // newSelectionLayer.onUpdate(() => {
         //   this.dispatchTypedEvent("update", new Event("update"))

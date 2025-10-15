@@ -5,7 +5,7 @@ import type { UniverseContext } from "../engine"
 
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
-import { StepLayer } from '@src/renderer/data/project'
+import { Layer, StepLayer } from '@src/renderer/data/project'
 
 export interface LayerProps {
   dataLayer: StepLayer
@@ -120,18 +120,25 @@ export default class LayerRenderer extends ShapeRenderer {
   }
 }
 
+interface SelectionRendererProps extends ShapeRendererProps {
+  sourceLayer: Layer
+}
+
 export class SelectionRenderer extends ShapeRenderer {
 
   private selectionConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
 
+  public sourceLayer: Layer
+
   private previousContextString = ""
   private previousTransformString = ""
   private artworkChanged = false
 
-  constructor(props: ShapeRendererProps) {
+  constructor(props: SelectionRendererProps) {
     super(props)
+    this.sourceLayer = props.sourceLayer
 
     this.framebuffer = this.regl.framebuffer()
 
