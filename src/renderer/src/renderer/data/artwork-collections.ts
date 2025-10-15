@@ -375,7 +375,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
       if (this.verticesView.length < verticesOffset + vertices.length) {
         // Double the size of the buffer and add additional room for the new vertices
         // const newBufferSize = (this.verticesView.length * 2 + vertices.length) * Float32Array.BYTES_PER_ELEMENT
-        const { width, height } = this.fixedTextureData(1024, this.verticesView.length * 2 + vertices.length)
+        const { width, height } = this.fixedTextureData(this.verticesView.length * 2 + vertices.length)
         const newBufferSize = width * height * Float32Array.BYTES_PER_ELEMENT
         this.verticesBuffer = this.verticesBuffer.transfer(newBufferSize)
         this.verticesView = new Float32Array(this.verticesBuffer)
@@ -448,7 +448,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
 
     surfaceOffset = verticesOffset
 
-    const { width, height } = this.fixedTextureData(1024, verticesOffset)
+    const { width, height } = this.fixedTextureData(verticesOffset)
     this.verticesDimensions = [width, height]
     this.length = totalTrianglesCount
 
@@ -573,13 +573,14 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
   }
 
   private fixedTextureData(
-    maxTextureSize: number,
+    // maxTextureSize: number,
     // inputBuffer: ArrayBuffer,
     length: number = 0,
   ): {
     width: number
     height: number
   } {
+    const maxTextureSize = 16384 // This is the maximum texture size for most GPUs, could be queried from WebGL if needed
     // const view = new Float32Array(inputBuffer)
     if (length > Math.pow(maxTextureSize, 2)) {
       throw new Error("Cannot fit data into size")
@@ -636,8 +637,10 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
 
     const newEdges = { lines: [] as number[], arcs: [] as number[] }
 
-    const surfaceOutlineSymbol = new Symbols.NullSymbol({
+    const surfaceOutlineSymbol = new Symbols.StandardSymbol({
       id: "surface-outline-symbol",
+      symbol: Symbols.STANDARD_SYMBOLS_MAP.Round,
+      outer_dia: 0
     })
 
     const { index: i, collection } = mapping
