@@ -160,7 +160,7 @@ export class Engine {
   public renderDispatch = (): void => this.render()
 
   public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
-    const stepObject = DataInterface._read_step_object(project, step)
+    const stepObject = DataInterface.read_step_info(project, step)
     const newStep = new ViewRenderer({
       regl: this.regl,
       viewBox,

@@ -1,5 +1,5 @@
 import { useEffect, useState, useContext } from "react"
-import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select, useMantineTheme } from "@mantine/core"
+import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select, useMantineTheme, Flex, Input, Divider } from "@mantine/core"
 import { Dropzone, FileWithPath } from "@mantine/dropzone"
 import { IconFileX, IconFileVector, IconContrast, IconContrastOff, IconClearAll } from "@tabler/icons-react"
 import LayerListItem from "./LayerListItem"
@@ -20,11 +20,9 @@ import { Resizable } from "re-resizable"
 
 import { useLocalStorage } from "@mantine/hooks"
 
-import { Renderer, DataInterface } from "@src/renderer"
+import { DataInterface } from "@src/renderer"
 
 import type { importFormatName } from "@src/renderer/data/import-plugins"
-
-// const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
 interface SidebarProps {}
 
@@ -46,7 +44,6 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     defaultValue: 220,
   })
 
-
   function identifyFileType(file: FileWithPath): string {
     const defaultFormat = importFormatList[0]
 
@@ -63,7 +60,6 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   }
 
   async function confirmFiles(files: UploadFile[]): Promise<void> {
-    // setLayers([...layers, ...files])
     files.forEach((file) => openFile(file))
     setFiles([])
   }
@@ -72,23 +68,18 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     layers.forEach(async (layer) => {
       const engine = await renderer.engine
       if (!engine) return
-      // await engine.removeLayer("main", layer.id)
       await DataInterface.delete_layer("main", layer)
-      setLayers(await DataInterface.read_layers("main"))
+      setLayers(await DataInterface.read_layers_list("main"))
       setRenderID(0)
     })
   }
 
   useEffect(() => {
     const reg = async (): Promise<void> => {
-      // console.log("registeringLayers")
       renderer.engine.then((engine) => engine.zoomFit("main"))
-      return setLayers(await DataInterface.read_layers("main"))
+      return setLayers(await DataInterface.read_layers_list("main"))
     }
     reg()
-    // renderer.engine.then(async (engine) => {
-    //   // engine.addEventCallback("main", EngineEvents.LAYERS_CHANGED, Comlink.proxy(reg))
-    // })
   }, [])
 
   const closeDeleteConfirmModal = (): void => {
@@ -106,7 +97,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       const engine = await renderer.engine
       if (!engine) return
       await DataInterface.delete_layer("main", layer)
-      setLayers(await DataInterface.read_layers("main"))
+      setLayers(await DataInterface.read_layers_list("main"))
       return
     },
     hideAll: (): void => {
@@ -156,85 +147,87 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     }),
   )
 
-  function handleDragEnd(event: DragEndEvent): void {
+  async function handleDragEnd(event: DragEndEvent): Promise<void> {
     const { active, over } = event
     if (over == null) {
       return
     }
     if (active.id !== over.id) {
-      renderer.engine.then(async (engine) => {
-        const oldIndex = layers.findIndex((item) => item === active.id)
-        const newIndex = layers.findIndex((item) => item === over.id)
-        // TODO: implement layer reordering in data interface
-        // await engine.moveLayer("main", oldIndex, newIndex)
-        // await DataInterface.move_layer("main", oldIndex, newIndex)
+      const oldIndex = layers.findIndex((item) => item === active.id)
+      const newIndex = layers.findIndex((item) => item === over.id)
+      const layerName = layers[oldIndex]
+      // temp set the new order
+      setLayers((items) => arrayMove(items, oldIndex, newIndex))
+      // update the real order
+      DataInterface.update_layer_position("main", layerName, newIndex).then(() => {
+        DataInterface.read_layers_list("main").then(setLayers)
       })
-      DataInterface.read_layers("main").then((updatedLayers) => setLayers(updatedLayers))
     }
   }
 
   function openFile(file: UploadFile): void {
-
-      const reader = new FileReader()
-      reader.onerror = (err): void => {
-        console.error(err, `${file.name} Error reading file.`)
-        notifications.show({
-          title: "Error reading file",
-          message: `${file.name} Error reading file.`,
-          color: "red",
-          autoClose: 5000,
-        })
-      }
-      reader.onabort = (err): void => {
-        console.warn(err, `${file.name} File read aborted.`)
-        notifications.show({
-          title: "File read aborted",
-          message: `${file.name} File read aborted.`,
-          color: "red",
-          autoClose: 5000,
-        })
-      }
-      reader.onprogress = (e): void => {
-        const percent = Math.round((e.loaded / e.total) * 100)
-        console.info(`${file.name} ${percent}% read`)
-      }
-      reader.onload = async (_e): Promise<void> => {
-        if (reader.result !== null && reader.result !== undefined) {
-          try {
-            // console.time(`${file.name} file parse time`)
-            await DataInterface.create_layer("main", file.id)
-            await DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
-              project: "main",
-              step: "main",
-              layer: file.id,
-            })
-            setLayers(await DataInterface.read_layers("main"))
-            // console.timeEnd(`${file.name} file parse time`)
-            // notifications.show({
-            //   title: 'File read',
-            //   message: `${file.name} file read.`,
-            //   color: 'green',
-            //   autoClose: 5000
-            // })
-          } catch (fileParseError) {
-            console.error(fileParseError)
-            notifications.show({
-              title: "File parse error",
-              message: `${file.name} file parse error.`,
-              color: "red",
-              autoClose: 5000,
-            })
-          }
-        } else {
+    const reader = new FileReader()
+    reader.onerror = (err): void => {
+      console.error(err, `${file.name} Error reading file.`)
+      notifications.show({
+        title: "Error reading file",
+        message: `${file.name} Error reading file.`,
+        color: "red",
+        autoClose: 5000,
+      })
+    }
+    reader.onabort = (err): void => {
+      console.warn(err, `${file.name} File read aborted.`)
+      notifications.show({
+        title: "File read aborted",
+        message: `${file.name} File read aborted.`,
+        color: "red",
+        autoClose: 5000,
+      })
+    }
+    reader.onprogress = (e): void => {
+      const percent = Math.round((e.loaded / e.total) * 100)
+      console.info(`${file.name} ${percent}% read`)
+    }
+    reader.onload = async (_e): Promise<void> => {
+      if (reader.result !== null && reader.result !== undefined) {
+        try {
+          // console.time(`${file.name} file parse time`)
+          // await DataInterface.create_layer("main", file.id)
+          await DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
+            project: "main",
+            step: "main",
+            layer: file.id,
+          })
+          setLayers(await DataInterface.read_layers_list("main"))
+          // console.timeEnd(`${file.name} file parse time`)
           notifications.show({
-            title: "File upload failed",
-            message: `${file.name} file upload failed.`,
+            title: "File imported successfully",
+            message: `${file.name} file imported.`,
+            color: "green",
+            autoClose: 5000,
+          })
+        } catch (fileImportError) {
+          if (fileImportError instanceof Error) {
+          console.error(fileImportError)
+          notifications.show({
+            title: "Failed to import file",
+            message: `${file.name} file import error. ${fileImportError.message}`,
             color: "red",
             autoClose: 5000,
           })
         }
+        }
+      } else {
+        notifications.show({
+          title: "File upload failed",
+          message: `${file.name} file upload failed.`,
+          color: "red",
+          autoClose: 5000,
+        })
       }
-      reader.readAsArrayBuffer(file)
+    }
+    reader.readAsArrayBuffer(file)
     // })
   }
 
@@ -248,21 +241,38 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         zIndex: 10,
       }}
     >
-      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Identification">
+      <Modal opened={files.length > 0} onClose={(): void => setFiles([])} title="Layer Identification" size="lg">
         <Stack>
           {files.map((file) => (
-            <Select
-              key={file.id}
-              label={file.name}
-              placeholder="Pick value"
-              data={importFormatList}
-              defaultValue={file.format}
-              comboboxProps={{ shadow: "md" }}
-              onChange={(value): void => {
-                if (!value) return
-                files.find((f) => f.id === file.id)!.format = value as importFormatName
-              }}
-            />
+            <Stack key={file.id} align="stretch" justify="center" gap="xs">
+              <Text fw={700}>{file.id}</Text>
+              <Group justify="center" gap="xs" grow>
+                <Input.Wrapper label={"Layer Name"}>
+                  <Input
+                    w="100%"
+                    placeholder="Layer name"
+                    defaultValue={file.name}
+                    onChange={(value): void => {
+                      files.find((f) => f.id === file.id)!.id = value.currentTarget.value
+                    }}
+                  />
+                </Input.Wrapper>
+                <Input.Wrapper label="File format">
+                  <Select
+                    w="100%"
+                    placeholder="Select format"
+                    data={importFormatList}
+                    defaultValue={file.format}
+                    comboboxProps={{ shadow: "md" }}
+                    onChange={(value): void => {
+                      if (!value) return
+                      files.find((f) => f.id === file.id)!.format = value as importFormatName
+                    }}
+                  />
+                </Input.Wrapper>
+              </Group>
+              <Divider my="sm" />
+            </Stack>
           ))}
           {files.length > 0 && <Button onClick={(): Promise<void> => confirmFiles(files)}>Open</Button>}
         </Stack>
@@ -370,7 +380,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
                 <SortableContext items={layers} strategy={verticalListSortingStrategy}>
                   {layers.map((layer) => (
-                    <LayerListItem key={layer + renderID} layer={layer} actions={actions} />
+                    <LayerListItem key={layer} layer={layer} actions={actions} />
                   ))}
                 </SortableContext>
               </DndContext>

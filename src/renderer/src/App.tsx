@@ -100,6 +100,7 @@ export default function App(): JSX.Element | null {
           value={{
             renderer: renderer,
             DataInterface: DataInterface,
+            project: { name: PROJECT_NAME, stepName: STEP_NAME },
             units: units,
             setUnits: setUnits,
           }}

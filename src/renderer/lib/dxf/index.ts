@@ -23,7 +23,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     return console.error(err)
   }
 
-  console.log("dxf", JSON.stringify(dxf))
+  // console.log("dxf", JSON.stringify(dxf))
 
   const units = converter.getUnits(dxf)
   const layerHierarchy = converter.convert(dxf)
@@ -37,7 +37,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     //   image: layer.shapes,
     //   ...props,
     // })
-    const layers = api.read_layers(params.project)
+    const layers = api.read_layers_list(params.project)
     let newLayerName = layerName
     if (layers.includes(layerName)) {
       let i = 1
@@ -46,8 +46,8 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
       }
       newLayerName = `${layerName} (${i})`
     }
-    api.create_layer(params.project, newLayerName)
-    api._update_layer_artwork_from_json(params.project, params.step, newLayerName, layer.shapes)
+    await api.create_layer(params.project, newLayerName)
+    await api.update_step_layer_artwork(params.project, params.step, newLayerName, layer.shapes)
   }
 }
 

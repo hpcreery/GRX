@@ -2,7 +2,6 @@ import REGL from "regl"
 import { vec3 } from "gl-matrix"
 
 import type { UniverseContext } from "../engine"
-import { UID } from "../utils"
 
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
@@ -26,7 +25,6 @@ interface LayerAttributes {}
 
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
-  public id: string = UID()
   public dataLayer: StepLayer
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
@@ -36,6 +34,8 @@ export default class LayerRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
 
   private previousContextString = ""
+  private previousTransformString = ""
+  private previousColorString = ""
   private artworkChanged = false
 
   constructor(props: LayerRendererProps) {
@@ -79,17 +79,27 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  private needsRender(context: REGL.DefaultContext & UniverseContext & WorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
+    const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy['tick']
     delete contextCopy['time']
-    contextCopy['color'] = this.color
     const contextCopyStr = JSON.stringify(contextCopy)
-    if (this.previousContextString == contextCopyStr && !this.artworkChanged) {
-      return
+    const transformCopyStr = JSON.stringify(transformCopy)
+    const colorCopyStr = JSON.stringify(this.color)
+    if (this.previousContextString == contextCopyStr && !this.artworkChanged && this.previousTransformString == transformCopyStr && this.previousColorString == colorCopyStr) {
+      return false
     }
     this.previousContextString = contextCopyStr
+    this.previousTransformString = transformCopyStr
+    this.previousColorString = colorCopyStr
     this.artworkChanged = false
+    return true
+  }
+
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+
+    if (!this.needsRender(context)) return
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
@@ -117,6 +127,7 @@ export class SelectionRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
 
   private previousContextString = ""
+  private previousTransformString = ""
   private artworkChanged = false
 
   constructor(props: ShapeRendererProps) {
@@ -146,16 +157,24 @@ export class SelectionRenderer extends ShapeRenderer {
     })
   }
 
-  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  private needsRender(context: REGL.DefaultContext & UniverseContext & WorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
+    const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy['tick']
     delete contextCopy['time']
     const contextCopyStr = JSON.stringify(contextCopy)
-    if (this.previousContextString == contextCopyStr && !this.artworkChanged) {
-      return
+    const transformCopyStr = JSON.stringify(transformCopy)
+    if (this.previousContextString == contextCopyStr && !this.artworkChanged && this.previousTransformString == transformCopyStr) {
+      return false
     }
     this.previousContextString = contextCopyStr
+    this.previousTransformString = transformCopyStr
     this.artworkChanged = false
+    return true
+  }
+
+  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (!this.needsRender(context)) return
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({

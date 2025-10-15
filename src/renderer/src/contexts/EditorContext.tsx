@@ -6,6 +6,10 @@ import { Renderer, DataInterface } from "@src/renderer"
 export interface EditorContext {
   renderer: Renderer
   DataInterface: typeof DataInterface
+  project: {
+    name: string
+    stepName: string
+  }
   units: Units
   setUnits: React.Dispatch<React.SetStateAction<Units>>
 }
@@ -13,6 +17,7 @@ export interface EditorContext {
 export const EditorConfigProvider = React.createContext<EditorContext>({
   renderer: new Renderer({ container: document.createElement("div") }),
   DataInterface: DataInterface,
+  project: { name: "main", stepName: "main" },
   units: "mm",
   setUnits: () => {},
 })

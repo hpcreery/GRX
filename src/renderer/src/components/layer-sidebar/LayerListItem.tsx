@@ -4,7 +4,6 @@ import { notifications } from "@mantine/notifications"
 import chroma from "chroma-js"
 import { useGesture } from "@use-gesture/react"
 import { animated, SpringValue, useSpring } from "@react-spring/web"
-import { UploadFile } from "./LayersSidebar"
 import {
   IconCircleFilled,
   IconCircleDotted,
@@ -19,7 +18,6 @@ import {
   IconGripVertical,
 } from "@tabler/icons-react"
 import { ContextMenuContent, ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
-// import type { LayerInfo } from "@src/renderer/engine/engine"
 import { vec3 } from "gl-matrix"
 import LayerTransform from "./transform/LayerTransform"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
@@ -27,10 +25,8 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { CSS } from "@dnd-kit/utilities"
 import { useSortable } from "@dnd-kit/sortable"
 import { ReactDOMAttributes } from "@use-gesture/react/dist/declarations/src/types"
-import * as Comlink from "comlink"
 
 interface LayerListItemProps {
-  // file: UploadFile
   layer: string
   actions: {
     download: () => void
@@ -43,7 +39,7 @@ interface LayerListItemProps {
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
-  const { renderer, DataInterface } = useContext(EditorConfigProvider)
+  const { renderer } = useContext(EditorConfigProvider)
   const { showContextMenu } = useContextMenu()
   // const { file, actions } = props
   const { actions, layer } = props
@@ -262,103 +258,15 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     },
   ]
 
-  // function registerLayers(rendererLayers: LayerInfo[]): void {
-  //   // console.log("registerlayers", rendererLayers, file.id)
-  //   const thisLayer = rendererLayers.find((l) => l.id === file.id)
-  //   if (thisLayer) {
-  //     setColor(thisLayer.color)
-  //     setVisible(thisLayer.visible)
-  //     // setzIndex(thisLayer.zIndex)
-  //     setLoading(false)
-  //   }
-  // }
-
   useEffect(() => {
     renderer.engine.then(async (renderer) => {
       const color = await renderer.getLayerColor("main", layer)
       setColor(color)
       const vis = await renderer.getLayerVisibility("main", layer)
       setVisible(vis)
-      // setLoading(false)
-      // const layers = await renderer.getLayers("main")
-      // registerLayers(layers)
-      // if (layers.find((l) => l.id === file.id)) {
-      //   setLoading(false)
-      //   return
-      // }
-
-    //   const reader = new FileReader()
-    //   reader.onerror = (err): void => {
-    //     console.error(err, `${file.name} Error reading file.`)
-    //     notifications.show({
-    //       title: "Error reading file",
-    //       message: `${file.name} Error reading file.`,
-    //       color: "red",
-    //       autoClose: 5000,
-    //     })
-    //   }
-    //   reader.onabort = (err): void => {
-    //     console.warn(err, `${file.name} File read aborted.`)
-    //     notifications.show({
-    //       title: "File read aborted",
-    //       message: `${file.name} File read aborted.`,
-    //       color: "red",
-    //       autoClose: 5000,
-    //     })
-    //   }
-    //   reader.onprogress = (e): void => {
-    //     const percent = Math.round((e.loaded / e.total) * 100)
-    //     console.info(`${file.name} ${percent}% read`)
-    //   }
-    //   reader.onload = async (_e): Promise<void> => {
-    //     if (reader.result !== null && reader.result !== undefined) {
-    //       try {
-    //         // console.time(`${file.name} file parse time`)
-    //         // await renderer.addFile("main",
-    //         //   Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]),
-    //         //   {
-    //         //   format: file.format,
-    //         //   props: {
-    //         //     name: file.name,
-    //         //     // id: file.id,
-    //         //   },
-    //         // })
-    //         DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
-    //           project: "main",
-    //           step: "main",
-    //           layer: file.id,
-    //         })
-    //         // console.timeEnd(`${file.name} file parse time`)
-    //         // notifications.show({
-    //         //   title: 'File read',
-    //         //   message: `${file.name} file read.`,
-    //         //   color: 'green',
-    //         //   autoClose: 5000
-    //         // })
-    //       } catch (fileParseError) {
-    //         console.error(fileParseError)
-    //         notifications.show({
-    //           title: "File parse error",
-    //           message: `${file.name} file parse error.`,
-    //           color: "red",
-    //           autoClose: 5000,
-    //         })
-    //       }
-    //       registerLayers(await renderer.getLayers("main"))
-    //     } else {
-    //       notifications.show({
-    //         title: "File upload failed",
-    //         message: `${file.name} file upload failed.`,
-    //         color: "red",
-    //         autoClose: 5000,
-    //       })
-    //     }
-    //   }
-    //   reader.readAsArrayBuffer(file)
     })
-
     return (): void => {}
-  }, [])
+  })
 
   return (
     <div

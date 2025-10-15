@@ -591,6 +591,10 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
     const height = Math.ceil(length / width)
     return { width, height }
   }
+
+  public toJSON(): Shapes.Surface[] {
+    return this.surfaces.filter((s): s is Shapes.Surface => s !== null)
+  }
 }
 
 export class SurfacesBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Surface> {

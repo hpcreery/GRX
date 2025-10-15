@@ -28,8 +28,8 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const layerHierarchy = convert(bnf)
 
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
-    if (!(await api.read_layers(params.project)).includes(layer)) api.create_layer(params.project, layer)
-    api._update_layer_artwork_from_json(params.project, params.step, layer, shapes.shapes)
+    if (!(await api.read_layers_list(params.project)).includes(layer)) await api.create_layer(params.project, layer)
+    await api.update_step_layer_artwork(params.project, params.step, layer, shapes.shapes)
   }
 }
 

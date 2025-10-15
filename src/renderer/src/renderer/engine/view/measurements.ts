@@ -7,11 +7,13 @@ import * as Shapes from "@src/renderer/data/shape/shape"
 import { WorldContext } from "./view"
 import { measurementSettings } from "@src/renderer/engine/settings"
 import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
+import { Units } from '../types'
 
 export class SimpleMeasurement extends ShapeRenderer {
   public measurements: { point1: vec2; point2: vec2 }[] = []
   public currentMeasurement: { point1: vec2; point2: vec2 } | null = null
   public framebuffer: REGL.Framebuffer2D
+  public units: Units = measurementSettings.units
   constructor(props: RendererProps) {
     super({ ...props, image: new ArtworkBufferCollection() })
     this.framebuffer = this.regl.framebuffer()
@@ -24,12 +26,12 @@ export class SimpleMeasurement extends ShapeRenderer {
     allMeasurements.forEach((measurement) => {
       const [x1, y1] = measurement.point1
       const [x2, y2] = measurement.point2
-      const length = Math.hypot(x1 - x2, y1 - y2) / baseUnitsConversionFactor(measurementSettings.units)
-      const x = Math.abs(x1 - x2) / baseUnitsConversionFactor(measurementSettings.units)
-      const y = Math.abs(y1 - y2) / baseUnitsConversionFactor(measurementSettings.units)
+      const length = Math.hypot(x1 - x2, y1 - y2) / baseUnitsConversionFactor(this.units)
+      const x = Math.abs(x1 - x2) / baseUnitsConversionFactor(this.units)
+      const y = Math.abs(y1 - y2) / baseUnitsConversionFactor(this.units)
       this.artwork.create(
         new Shapes.DatumText({
-          text: `↙${parseFloat(length.toFixed(4))}${typeof measurementSettings.units == "string" ? measurementSettings.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
+          text: `↙${parseFloat(length.toFixed(4))}${typeof this.units == "string" ? this.units : ""}\n(ΔX:${parseFloat(x.toFixed(4))} ΔY:${parseFloat(y.toFixed(4))})`,
           x: (x1 + x2) / 2,
           y: (y1 + y2) / 2,
           attributes: {
@@ -89,12 +91,11 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  // public setMeasurementUnits(units: Units): void {
-  //   this.units = units
-  //   this.refresh()
-  // }
-
   public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+    if (this.units != measurementSettings.units) {
+      this.units = measurementSettings.units
+      this.refresh()
+    }
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,

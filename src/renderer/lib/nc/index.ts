@@ -26,7 +26,8 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const visitor = new NCToShapesVisitor()
   visitor.visit(result)
   // console.timeEnd("visit")
-  api._update_layer_artwork_from_json(params.project, params.step, params.layer, visitor.result)
+  await api.create_layer(params.project, params.layer)
+  await api.update_step_layer_artwork(params.project, params.step, params.layer, visitor.result)
 }
 
 // Comlink.expose(plugin)

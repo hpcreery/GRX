@@ -1242,7 +1242,7 @@ function DemoApp(): JSX.Element {
 
     // DataInterface._update_layer_artwork_from_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
     // DataInterface._update_layer_artwork_from_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
-    DataInterface._update_layer_artwork_from_json(project, step1, layer, POLYLINE_RECORDS_ARRAY)
+    DataInterface.update_step_layer_artwork(project, step1, layer, POLYLINE_RECORDS_ARRAY)
 
     Engine.addManagedView(box2Ref.current, {
       project,
@@ -1750,7 +1750,7 @@ function DemoApp(): JSX.Element {
           <MouseCoordinates engine={renderer} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
-              const layers = await DataInterface.read_layers(project)
+              const layers = await DataInterface.read_layers_list(project)
               setLayers(layers)
               const engine = await renderer.engine
               layers.map((l) => engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
@@ -1777,7 +1777,7 @@ function DemoApp(): JSX.Element {
             onChange={async (e): Promise<void> => {
               renderer.settings.OUTLINE_MODE = e.target.checked
               setOutlineMode(e.target.checked)
-              const layers = await DataInterface.read_layers(project)
+              const layers = await DataInterface.read_layers_list(project)
               setLayers(layers)
             }}
           />
@@ -1787,7 +1787,7 @@ function DemoApp(): JSX.Element {
             onChange={async (e): Promise<void> => {
               renderer.settings.SKELETON_MODE = e.target.checked
               setSkeletonMode(e.target.checked)
-              const layers = await DataInterface.read_layers(project)
+              const layers = await DataInterface.read_layers_list(project)
               setLayers(layers)
             }}
           />
@@ -1828,7 +1828,7 @@ function DemoApp(): JSX.Element {
                   // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     const engine = await renderer.engine
-                    DataInterface.read_steps(project).then((allSteps) => {
+                    DataInterface.read_steps_list(project).then((allSteps) => {
                       allSteps.map((step) => {
                         engine.setLayerVisibility(step, layer, e.target.checked)
                       })

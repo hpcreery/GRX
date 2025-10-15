@@ -3,6 +3,7 @@ import { parse } from "@hpcreery/tracespace-parser"
 import { registerFunction } from "@src/renderer/data/import-plugins"
 import type { DataInterface } from "@src/renderer/data/interface"
 import * as z from "zod"
+// import * as Comlink from "comlink"
 
 const Parameters = z.object({
   step: z.string(),
@@ -17,7 +18,11 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const tree = parse(file)
   const image = plot(tree)
   // const units = image.units
-  api._update_layer_artwork_from_json(params.project, params.step, params.layer, image.children)
+
+  await api.create_layer(params.project, params.layer)
+  await api.update_step_layer_artwork(params.project, params.step, params.layer, image.children)
+
+
 }
 
 // Comlink.expose(plugin)
