@@ -68,7 +68,7 @@ function ensureLayer(layers: Layers, layerName: string): void {
 //   return false
 // }
 
-function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | undefined {
+function parseEntity(entity: DxfParser.IEntity, blocks: Blocks, units: "inch" | "mm"): Shapes.Shape | undefined {
   // console.log('entity', JSON.stringify(entity))
   // EntityName = 'POINT' | '3DFACE' | 'ARC' | 'ATTDEF' | 'CIRCLE' | 'DIMENSION' | 'ELLIPSE' | 'INSERT' | 'LINE' | 'LWPOLYLINE' | 'MTEXT' | 'POLYLINE' | 'SOLID' | 'SPLINE' | 'TEXT' | 'VERTEX';
   if (entity.type === "ARC") {
@@ -96,6 +96,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       xe: arc.center.x + arc.radius * Math.cos(arc.endAngle),
       ye: arc.center.y + arc.radius * Math.sin(arc.endAngle),
       clockwise: cw,
+      units
     })
     return shape
   } else if (entity.type === "CIRCLE") {
@@ -107,6 +108,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       ys: circle.center.y + circle.radius * Math.sin(0),
       xe: circle.center.x + circle.radius * Math.cos(2 * Math.PI),
       ye: circle.center.y + circle.radius * Math.sin(2 * Math.PI),
+      units
     })
     return shape
   } else if (entity.type === "LINE") {
@@ -120,6 +122,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       ys: line.vertices[0].y,
       xe: line.vertices[1].x,
       ye: line.vertices[1].y,
+      units
     })
     return shape
   } else if (entity.type === "SPLINE") {
@@ -179,6 +182,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       xs: lines[0].x,
       ys: lines[0].y,
       polarity: 1,
+      units
       // width: width
     }).addLines(lines)
 
@@ -228,6 +232,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       ys: lines[0].y,
       polarity: 1,
       width: polyline.thickness || 0, // TODO: verify
+      units
     }).addLines(lines)
     return shape
   } else if (entity.type === "INSERT") {
@@ -263,6 +268,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
     const shape = new Shapes.StepAndRepeat({
       shapes: referenceBlock.shapes,
       repeats: repeats,
+      units
     })
 
     return shape
@@ -299,6 +305,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
       ys: lines[0].y,
       polarity: 1,
       width: lwpolyline.width || 0, // TODO: verify
+      units
     }).addLines(lines)
     return shape
   } else if (entity.type === "POINT") {
@@ -308,7 +315,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
   } else if (entity.type === "3DFACE") {
     console.warn("DXF entity type not supported", entity) // TODO: support
   } else if (entity.type === "ATTDEF") {
-    console.warn("DXF entity type not supported", entity) // TODO: support when GRX supports shape attrubutes
+    console.warn("DXF entity type not supported", entity) // TODO: support when GRX supports shape attrubutes. Shape attributes are now supported
   } else if (entity.type === "DIMENSION") {
     console.warn("DXF entity type not supported", entity) // TODO: support
   } else if (entity.type === "ELLIPSE") {
@@ -327,6 +334,7 @@ function parseEntity(entity: DxfParser.IEntity, blocks: Blocks): Shapes.Shape | 
 }
 
 export function convert(dxf: DxfParser.IDxf): Layers {
+  const units = getUnits(dxf)
   const layers: Layers = {}
   const blocks: Blocks = {}
 
@@ -347,7 +355,7 @@ export function convert(dxf: DxfParser.IDxf): Layers {
       // console.log('block', JSON.stringify(block))
       if (!block.entities) continue
       for (const entity of block.entities) {
-        const shape = parseEntity(entity, blocks)
+        const shape = parseEntity(entity, blocks, units)
         if (shape) {
           ensureLayer(layers, entity.layer)
           blocks[block.name].shapes.push(shape)
@@ -359,7 +367,7 @@ export function convert(dxf: DxfParser.IDxf): Layers {
   // Parse entities
   if (dxf.entities) {
     for (const entity of dxf.entities) {
-      const shape = parseEntity(entity, blocks)
+      const shape = parseEntity(entity, blocks, units)
       if (shape) {
         ensureLayer(layers, entity.layer)
         layers[entity.layer].shapes.push(shape)

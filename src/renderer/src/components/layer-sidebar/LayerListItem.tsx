@@ -1,6 +1,5 @@
 import { useState, useEffect, useContext } from "react"
 import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme } from "@mantine/core"
-import { notifications } from "@mantine/notifications"
 import chroma from "chroma-js"
 import { useGesture } from "@use-gesture/react"
 import { animated, SpringValue, useSpring } from "@react-spring/web"
@@ -173,8 +172,8 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const [visible, setVisible] = useState<boolean>(false)
-  const [loading, setLoading] = useState<boolean>(false)
-  const { renderer, DataInterface } = useContext(EditorConfigProvider)
+  // const [loading, setLoading] = useState<boolean>(false)
+  const { renderer } = useContext(EditorConfigProvider)
 
   function deleteLayer(): void {
     actions.remove(layer)
@@ -325,7 +324,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
               onClick={(): void => {
                 toggleVisible()
               }}
-              loading={loading}
+              // loading={loading}
             >
               {layer}
             </Button>

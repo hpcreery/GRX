@@ -25,13 +25,12 @@ import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp
 // import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
-import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
+// import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
-import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
+// import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
-import { LayerRendererProps } from "./engine/view/layer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1903,12 +1902,12 @@ function DemoApp(): JSX.Element {
 
 function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
   const [count, setCount] = React.useState<number>(0)
-  const [cpuTime, setCPUTime] = React.useState<number>(0)
-  const [gpuTime, setGPUTime] = React.useState<number>(0)
-  const [averageGPUTime, setAverageGPUTime] = React.useState<number>(0)
-  const [averageCPUTime, setAverageCPUTime] = React.useState<number>(0)
-  const [fps, setFPS] = React.useState<number>(0)
-  const [gpuFPS, setGPUFPS] = React.useState<number>(0)
+  // const [cpuTime, setCPUTime] = React.useState<number>(0)
+  // const [gpuTime, setGPUTime] = React.useState<number>(0)
+  // const [averageGPUTime, setAverageGPUTime] = React.useState<number>(0)
+  // const [averageCPUTime, setAverageCPUTime] = React.useState<number>(0)
+  // const [fps, setFPS] = React.useState<number>(0)
+  // const [gpuFPS, setGPUFPS] = React.useState<number>(0)
   const [textureSize, setTextureSize] = React.useState<number>(0)
   const [bufferSize, setBufferSize] = React.useState<number>(0)
   const [renderBufferSize, setRenderBufferSize] = React.useState<number>(0)
@@ -1919,24 +1918,24 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
   const [elementsCount, setElementsCount] = React.useState<number>(0)
   const [calculatedFPS, setCalculatedFPS] = React.useState<number>(0)
 
-  const round = (value: number, precision: number): number => {
-    const multiplier = Math.pow(10, precision || 0)
-    return Math.round(value * multiplier) / multiplier
-  }
+  // const round = (value: number, precision: number): number => {
+  //   const multiplier = Math.pow(10, precision || 0)
+  //   return Math.round(value * multiplier) / multiplier
+  // }
 
   const update = async (): Promise<void> => {
-    const precision = 3
+    // const precision = 3
     const stats = await props.engine.getStats()
     // console.log(stats)
-    const averageGPU = stats.universe.gpuTime / stats.universe.count
-    setAverageGPUTime(round(averageGPU, precision))
-    const averageCPU = stats.universe.cpuTime / stats.universe.count
-    setAverageCPUTime(round(averageCPU, precision))
+    // const averageGPU = stats.universe.gpuTime / stats.universe.count
+    // setAverageGPUTime(round(averageGPU, precision))
+    // const averageCPU = stats.universe.cpuTime / stats.universe.count
+    // setAverageCPUTime(round(averageCPU, precision))
     setCount(stats.universe.count)
-    setCPUTime(round(stats.universe.cpuTime, precision))
-    setGPUTime(round(stats.universe.gpuTime, precision))
-    setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
-    setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
+    // setCPUTime(round(stats.universe.cpuTime, precision))
+    // setGPUTime(round(stats.universe.gpuTime, precision))
+    // setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
+    // setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))

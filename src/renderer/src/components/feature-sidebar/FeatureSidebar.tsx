@@ -145,18 +145,12 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
 interface FeatureInfoProps {
   layer: string
   selection: ShapeDistance
-  // units: Units
   renderer: Renderer
-  // layer?: string
 }
 
 function FeatureInfo(props: FeatureInfoProps): JSX.Element {
-  // const [features, setFeatures] = useState<QuerySelection[]>([])
-  // const [mounted, setMounted] = useState<boolean>(false)
   const { units, renderer } = useContext(EditorConfigProvider)
   const [color, setColor] = useState<vec3>([0, 0, 0])
-  // const [layers, setLayers] = useState<string[]>([])
-  const theme = useMantineTheme()
   const { layer, selection } = props
 
   useEffect(() => {

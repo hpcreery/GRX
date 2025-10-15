@@ -1564,6 +1564,8 @@ export const test = (): void => {
 /**
  * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
  */
+// @ts-ignore not using but will in future
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
   const newImage: Shapes.Shape[] = []
   for (const repeat of stepRepeat.repeats) {

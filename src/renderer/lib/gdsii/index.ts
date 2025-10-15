@@ -9,7 +9,7 @@
 import { recordReader } from "./lexer"
 import { parse } from "./parser"
 import { convert } from "./converter"
-import messages from "./messages"
+// import messages from "./messages"
 import type { DataInterface } from "@src/renderer/data/interface"
 import * as z from "zod"
 import { registerFunction } from "@src/renderer/data/import-plugins"

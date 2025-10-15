@@ -25,18 +25,10 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
 
   // console.log("dxf", JSON.stringify(dxf))
 
-  const units = converter.getUnits(dxf)
   const layerHierarchy = converter.convert(dxf)
 
   for (const [layerName, layer] of Object.entries(layerHierarchy)) {
-    // delete props.name
-    // addLayer({
-    //   name: layerName,
-    //   units: units,
-    //   color: layer.color,
-    //   image: layer.shapes,
-    //   ...props,
-    // })
+
     const layers = api.read_layers_list(params.project)
     let newLayerName = layerName
     if (layers.includes(layerName)) {
