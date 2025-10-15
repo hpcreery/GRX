@@ -191,6 +191,13 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     }
     reader.onload = async (_e): Promise<void> => {
       if (reader.result !== null && reader.result !== undefined) {
+        const loadingNotificationID = notifications.show({
+          title: "Importing file",
+          message: `${file.name} file is being imported...`,
+          color: "yellow",
+          autoClose: false,
+          loading: true,
+        })
         try {
           // console.time(`${file.name} file parse time`)
           // await DataInterface.create_layer("main", file.id)
@@ -201,20 +208,36 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           })
           setLayers(await DataInterface.read_layers_list("main"))
           // console.timeEnd(`${file.name} file parse time`)
-          notifications.show({
+          notifications.update({
+            id: loadingNotificationID,
             title: "File imported successfully",
             message: `${file.name} file imported.`,
             color: "green",
             autoClose: 5000,
+            loading: false,
           })
+          // notifications.show({
+          //   title: "File imported successfully",
+          //   message: `${file.name} file imported.`,
+          //   color: "green",
+          //   autoClose: 5000,
+          // })
         } catch (fileImportError) {
           if (fileImportError instanceof Error) {
           console.error(fileImportError)
-          notifications.show({
+          // notifications.show({
+          //   title: "Failed to import file",
+          //   message: `${file.name} file import error. ${fileImportError.message}`,
+          //   color: "red",
+          //   autoClose: 5000,
+          // })
+          notifications.update({
+            id: loadingNotificationID,
             title: "Failed to import file",
             message: `${file.name} file import error. ${fileImportError.message}`,
             color: "red",
             autoClose: 5000,
+            loading: false,
           })
         }
         }
