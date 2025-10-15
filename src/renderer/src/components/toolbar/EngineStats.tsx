@@ -5,13 +5,8 @@ import { EditorConfigProvider } from "@src/contexts/EditorContext"
 interface EngineStatsProps {}
 export default function EngineStats(_props: EngineStatsProps): JSX.Element {
   const { renderer } = useContext(EditorConfigProvider)
-  const [count, setCount] = useState<number>(0)
-  const [cpuTime, setCPUTime] = useState<number>(0)
-  const [gpuTime, setGPUTime] = useState<number>(0)
-  const [averageGPUTime, setAverageGPUTime] = useState<number>(0)
-  const [averageCPUTime, setAverageCPUTime] = useState<number>(0)
   const [fps, setFPS] = useState<number>(0)
-  const [gpuFPS, setGPUFPS] = useState<number>(0)
+  const [renderTime, setRenderTime] = useState<number>(0)
   const [textureSize, setTextureSize] = useState<number>(0)
   const [bufferSize, setBufferSize] = useState<number>(0)
   const [renderBufferSize, setRenderBufferSize] = useState<number>(0)
@@ -21,23 +16,10 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
   const [framebufferCount, setFramebufferCount] = useState<number>(0)
   const [elementsCount, setElementsCount] = useState<number>(0)
 
-  const round = (value: number, precision: number): number => {
-    const multiplier = Math.pow(10, precision || 0)
-    return Math.round(value * multiplier) / multiplier
-  }
-
   const update = async (): Promise<void> => {
-    const precision = 3
     const stats = await renderer.getStats()
-    const averageGPU = stats.universe.gpuTime / stats.universe.count
-    setAverageGPUTime(round(averageGPU, precision))
-    const averageCPU = stats.universe.cpuTime / stats.universe.count
-    setAverageCPUTime(round(averageCPU, precision))
-    setCount(stats.universe.count)
-    setCPUTime(round(stats.universe.cpuTime, precision))
-    setGPUTime(round(stats.universe.gpuTime, precision))
-    setFPS(Math.round(1000 / ((stats.universe.cpuTime + stats.universe.gpuTime) / stats.universe.count)))
-    setGPUFPS(Math.round(1000 / (stats.universe.gpuTime / stats.universe.count)))
+    setRenderTime(Math.round(stats.engine.renderTimeMilliseconds))
+    setFPS(Math.round(1000 / stats.engine.renderTimeMilliseconds))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
@@ -57,13 +39,8 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
     caption: "Engine Stats",
     head: ["Name", "Value"],
     body: [
-      ["Frame Count*", count],
-      ["Total CPU Time", `${cpuTime}ms`],
-      ["Total GPU Time", `${gpuTime}ms`],
-      ["Avg CPU Time", `${averageCPUTime}ms`],
-      ["Avg GPU Time", `${averageGPUTime}ms`],
       ["Theoretical FPS", fps],
-      ["GPU FPS", gpuFPS],
+      ["Render Time", `${renderTime}ms`],
       ["Texture Size*", `${textureSize}MB`],
       ["Buffer Size*", `${bufferSize}MB`],
       ["Render Buffer Size*", `${renderBufferSize}MB`],
