@@ -415,10 +415,10 @@ export class ShapeRenderer extends UpdateEventTarget {
         this.drawSufaces(context)
         this.drawSurfaceWithHoles(context)
       }
+      this.drawSurfaceEdges(context)
       this.drawMacros(context)
       this.drawStepAndRepeats(context)
       this.drawDatums(context)
-      this.drawSurfaceEdges(context)
       this.drawPolyLines(context)
     })
     context.transformMatrix = origMatrix

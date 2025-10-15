@@ -80,7 +80,7 @@ export class Engine {
   private universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
 
   // public calculatedFPS: number = 0
-  public renderTime: number = 0
+  public renderTimeMilliseconds: number = 0
 
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
@@ -376,7 +376,7 @@ export class Engine {
         })
       })
       const endTime = performance.now()
-      this.renderTime = endTime - startTime
+      this.renderTimeMilliseconds = endTime - startTime
       // console.log(`Render Time: ${endTime - startTime} milliseconds`)
       // console.log(`FPS: ${Math.round(1000 / (endTime - startTime))}`)
       // this.calculatedFPS = Math.round(1000 / (endTime - startTime))
@@ -402,6 +402,9 @@ export class Engine {
         vaoCount: this.regl.stats.vaoCount,
       },
       universe: this.universe.stats,
+      engine: {
+        renderTimeMilliseconds: this.renderTimeMilliseconds,
+      }
     }
   }
 
@@ -421,6 +424,9 @@ export class Engine {
 export interface Stats {
   regl: ReglStats
   universe: REGL.CommandStats
+  engine: {
+    renderTimeMilliseconds: number
+  }
 }
 
 interface ReglStats extends REGL.Stats {

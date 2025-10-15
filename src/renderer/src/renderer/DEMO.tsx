@@ -1944,7 +1944,7 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
     setShaderCount(stats.regl.shaderCount)
     setFramebufferCount(stats.regl.framebufferCount)
     setElementsCount(stats.regl.elementsCount)
-    const renderTime = await props.engine.engine.then((e) => e.renderTime)
+    const renderTime = await props.engine.engine.then((e) => e.renderTimeMilliseconds)
     const calculatedFPS = Math.round(1000 / renderTime)
     setCalculatedFPS(calculatedFPS)
     requestAnimationFrame(update)
