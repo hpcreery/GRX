@@ -2,7 +2,6 @@ import gdsiiPluginWorker from "@lib/gdsii?worker"
 import gerberPluginWorker from "@lib/gerber?worker"
 import dxfPluginWorker from "@lib/dxf?worker"
 import ncPluginWorker from "@lib/nc?worker"
-import * as Comlink from "comlink"
 import { DataInterface } from "./interface"
 
 
@@ -31,8 +30,6 @@ export type importFormatName = keyof typeof importFormats
 export const importFormatList = Object.keys(importFormats) as importFormatName[]
 export const defaultImportFormat = importFormatList["RS-274X"]
 
-export function registerFunction(plugin: ImportPluginSignature): void {
-  Comlink.expose(plugin)
-}
+
 
 export default importFormats

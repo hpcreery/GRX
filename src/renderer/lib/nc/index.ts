@@ -1,8 +1,8 @@
 // import * as Comlink from "comlink"
 
+import { retisterPlugin } from '@lib/register';
 import { parser, NCLexer, NCToShapesVisitor } from "./parser/parser"
 import type { DataInterface } from "@src/renderer/data/interface";
-import { registerFunction } from "@src/renderer/data/import-plugins"
 import * as z from "zod"
 
 const Parameters = z.object({
@@ -31,4 +31,4 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
 }
 
 // Comlink.expose(plugin)
-registerFunction(plugin)
+retisterPlugin(plugin)

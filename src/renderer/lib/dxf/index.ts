@@ -1,7 +1,7 @@
 // see https://github.com/vagran/dxf-viewer/tree/master/src/parser
 import DxfParser from "dxf-parser"
 import * as converter from "./converter"
-import { registerFunction } from "@src/renderer/data/import-plugins"
+import { retisterPlugin as registerPlugin } from '@lib/register';
 import type { DataInterface } from "@src/renderer/data/interface"
 import * as z from "zod"
 // import file from './testdata/noentities.dxf?url'
@@ -43,4 +43,4 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   }
 }
 
-registerFunction(plugin)
+registerPlugin(plugin)

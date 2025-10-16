@@ -12,7 +12,7 @@ import { convert } from "./converter"
 // import messages from "./messages"
 import type { DataInterface } from "@src/renderer/data/interface"
 import * as z from "zod"
-import { registerFunction } from "@src/renderer/data/import-plugins"
+import { retisterPlugin } from '@lib/register';
 
 const Parameters = z.object({
   step: z.string(),
@@ -33,4 +33,4 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   }
 }
 
-registerFunction(plugin)
+retisterPlugin(plugin)

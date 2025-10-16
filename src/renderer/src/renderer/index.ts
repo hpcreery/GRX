@@ -11,7 +11,7 @@ import { UID } from "./engine/utils"
 const EngineWorkerInstance = new EngineWorker()
 export const EngineComWorker = Comlink.wrap<typeof Engine>(EngineWorkerInstance)
 
-export const DataInterface = await EngineComWorker.DataInterfaceProxy
+export const DataInterface = EngineComWorker.DataInterfaceProxy
 
 
 export interface RenderEngineFrontendConfig {
