@@ -4,20 +4,7 @@ import react from "@vitejs/plugin-react"
 import { comlink } from "vite-plugin-comlink"
 import glslify from "rollup-plugin-glslify"
 import arraybuffer from "vite-plugin-arraybuffer"
-import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
-
-// function crossOriginIsolationMiddleware(_, response, next) {
-//   response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-//   response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-//   response.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-//   next();
-// }
-
-// const crossOriginIsolation = {
-//   name: 'cross-origin-isolation',
-//   configureServer: server => { server.middlewares.use(crossOriginIsolationMiddleware); },
-//   configurePreviewServer: server => { server.middlewares.use(crossOriginIsolationMiddleware); },
-// };
+// import crossOriginIsolation from 'vite-plugin-cross-origin-isolation'
 
 export default defineConfig({
   base: "./",
@@ -35,12 +22,12 @@ export default defineConfig({
   },
   build: {
     outDir: resolve("out/web"),
-    lib: {
-      entry: resolve(__dirname, 'src/renderer/src/renderer/index.ts'),
-      name: 'GRX',
-      // the proper extensions will be added
-      fileName: 'grx',
-    },
+    // lib: {
+    //   entry: resolve(__dirname, 'src/renderer/src/renderer/index.ts'),
+    //   name: 'GRX',
+    //   // the proper extensions will be added
+    //   fileName: 'grx',
+    // },
   },
   server: {
     headers: {
@@ -58,19 +45,7 @@ export default defineConfig({
       // @ts-ignore - glslify options are not typed
       transform: ["glslify-import"],
     }),
-    // crossOriginIsolation
-    crossOriginIsolation()
-    // {
-    //   name: "configure-response-headers",
-    //   configureServer: (server) => {
-    //     server.middlewares.use((_req, res, next) => {
-    //       res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-    //       // res.setHeader("Cross-Origin-Resource-Policy", "same-site");
-    //       res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-    //       next();
-    //     });
-    //   },
-    // },
+    // crossOriginIsolation()
   ],
   worker: {
     format: "es",
@@ -83,18 +58,7 @@ export default defineConfig({
         transform: ["glslify-import"],
       }),
       // crossOriginIsolation
-      crossOriginIsolation()
-      // {
-      //   name: "configure-response-headers",
-      //   configureServer: (server) => {
-      //     server.middlewares.use((_req, res, next) => {
-      //       res.setHeader("Cross-Origin-Resource-Policy", "same-site");
-      //       // res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-      //       // res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-      //       next();
-      //     });
-      //   },
-      // },
+      // crossOriginIsolation()
     ],
   },
 })
