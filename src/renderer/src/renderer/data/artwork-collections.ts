@@ -26,6 +26,7 @@ export abstract class SymbolBufferCollection {
   public static buffer: ArrayBuffer = new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1) // 1 symbol
   public static length: number = 1
   public static events: UpdateEventTarget = new UpdateEventTarget()
+  private static map: Map<string, number> = new Map<string, number>()
 
   /**
    * Create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
@@ -35,24 +36,17 @@ export abstract class SymbolBufferCollection {
    */
   static create(symbol: Symbols.StandardSymbol): number {
     let view = new Float32Array(this.buffer)
-    for (let i = 0; i < this.length; i += 1) {
-      let existingSymbol = true
-      const offset = i * Symbols.SYMBOL_PARAMETERS.length
-      for (let j = 0; j < Symbols.SYMBOL_PARAMETERS.length; j++) {
-        // Check if the symbol already exists in the collection
-        const precision = Math.pow(10, 8) // 8 decimal places
-        const compareValue = Math.round(view[offset + j] * precision) / precision // Round to avoid floating point precision issues
-        if (compareValue !== symbol[Symbols.SYMBOL_PARAMETERS[j]]) {
-          existingSymbol = false
-          break
-        }
-      }
-      if (existingSymbol) {
-        // If we found an existing symbol, we return its index
-        symbol.sym_num.value = i
-        return i
-      }
+    const precision = Math.pow(10, 8) // 8 decimal places
+    const symbolKey = Symbols.SYMBOL_PARAMETERS.map((key) => {
+      return Math.round(symbol[key] * precision) / precision
+    }).join("_")
+    if (this.map.has(symbolKey)) {
+      const existingIndex = this.map.get(symbolKey)!
+      symbol.sym_num.value = existingIndex
+      return existingIndex
     }
+    this.map.set(symbolKey, this.length)
+    // console.log("Creating new symbol:", symbolKey, "at index", this.length)
     const index = this.length
     // if the buffer isn't large enough, we need to expand it
     if (view.length < (index + 1) * Symbols.SYMBOL_PARAMETERS.length) {
@@ -1380,12 +1374,10 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     super()
     // Initialize the artwork with the provided shapes
     // artwork.unshift(new Shapes.DatumPoint({ x: 0, y: 0 })) // Ensure there is always a datum point at index 0
-    artwork.forEach((shape) => {
-      this.create(shape)
-    })
+    this.fromJSON(artwork)
   }
 
-  create(shape: Shapes.Shape): number {
+  createWithoutUpdate(shape: Shapes.Shape): number {
     const collection = this.shapes[shape.type]
     if (!collection) {
       throw new Error(`No collection found for shape type: ${shape.type} when creating shape`)
@@ -1399,8 +1391,14 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       collectionIndex,
     })
     this.attributeMap.push(shape.attributes || {}) // Store attributes
-    this.dispatchTypedEvent("update", new Event("update"))
+    // this.dispatchTypedEvent("update", new Event("update"))
     return shape.index // return the index of the artwork
+  }
+
+  create(shape: Shapes.Shape): number {
+    const index = this.createWithoutUpdate(shape)
+    this.dispatchTypedEvent("update", new Event("update"))
+    return index
   }
 
   read(index: number): Shapes.Shape {
@@ -1473,8 +1471,9 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
 
   fromJSON(artwork: Shapes.Shape[]): void {
     artwork.forEach((shape) => {
-      this.create(shape)
+      this.createWithoutUpdate(shape)
     })
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   clear(): void {
