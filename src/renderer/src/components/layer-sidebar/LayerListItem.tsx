@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react"
-import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme } from "@mantine/core"
+import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme, Input } from "@mantine/core"
 import chroma from "chroma-js"
 import { useGesture } from "@use-gesture/react"
 import { animated, SpringValue, useSpring } from "@react-spring/web"
@@ -15,6 +15,8 @@ import {
   IconContrast,
   IconClearAll,
   IconGripVertical,
+  IconCursorText,
+  IconCheck,
 } from "@tabler/icons-react"
 import { ContextMenuContent, ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
 import { vec3 } from "gl-matrix"
@@ -25,16 +27,19 @@ import { CSS } from "@dnd-kit/utilities"
 import { useSortable } from "@dnd-kit/sortable"
 import { ReactDOMAttributes } from "@use-gesture/react/dist/declarations/src/types"
 
+interface LayerActions {
+  download: () => void
+  preview: () => void
+  remove: (layer: string) => Promise<void>
+  hideAll: () => void
+  showAll: () => void
+  deleteAll: () => void
+  rename: (oldName: string, newName: string) => Promise<void>
+}
+
 interface LayerListItemProps {
   layer: string
-  actions: {
-    download: () => void
-    preview: () => void
-    remove: (layer: string) => Promise<void>
-    hideAll: () => void
-    showAll: () => void
-    deleteAll: () => void
-  }
+  actions: LayerActions
 }
 
 export default function LayerListItem(props: LayerListItemProps): JSX.Element | null {
@@ -145,14 +150,7 @@ interface DraggableLayerProps {
   colorPickerVisible: boolean
   width: SpringValue<number>
   setLayerTransformVisible: (visible: boolean) => void
-  actions: {
-    download: () => void
-    preview: () => void
-    remove: (layer: string) => Promise<void>
-    hideAll: () => void
-    showAll: () => void
-    deleteAll: () => void
-  }
+  actions: LayerActions
 }
 
 function DraggableLayer(props: DraggableLayerProps): JSX.Element {
@@ -172,8 +170,9 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const [visible, setVisible] = useState<boolean>(false)
-  // const [loading, setLoading] = useState<boolean>(false)
   const { renderer } = useContext(EditorConfigProvider)
+  const [editing, setEditing] = useState<string | undefined>(undefined)
+  const [renameError, setRenameError] = useState<boolean>(false)
 
   function deleteLayer(): void {
     actions.remove(layer)
@@ -192,6 +191,14 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   }
 
   const items: ContextMenuContent = [
+    {
+      title: "Rename Layer",
+      key: "0",
+      icon: <IconCursorText stroke={1.5} size={18} />,
+      onClick: (): void => {
+        setEditing(layer)
+      },
+    },
     {
       title: "Change Color",
       key: "1",
@@ -267,6 +274,21 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     return (): void => {}
   })
 
+  const rename = (): void => {
+    if (editing === "") {
+      setEditing(undefined)
+      return
+    }
+    actions
+      .rename(layer, editing!)
+      .then(() => {
+        setEditing(undefined)
+      })
+      .catch(() => {
+        setRenameError(true)
+      })
+  }
+
   return (
     <div
       onContextMenu={showContextMenu(items)}
@@ -277,75 +299,106 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       }}
       ref={setNodeRef}
     >
-      <animated.div {...bind()} style={{ width: "100%", overflow: "hidden", touchAction: "none", overscrollBehaviorX: "none" }}>
-        <Tooltip label={layer} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
-          <Popover.Target>
-            <Button
-              style={{
-                textAlign: "left",
-                width: "100%",
-                overflow: "hidden",
-                overscrollBehaviorX: "none",
-                padding: 0,
-                paddingLeft: 0,
-              }}
-              variant="default"
-              color={colors.colorScheme === "dark" ? theme.colors.gray[1] : theme.colors.gray[9]}
-              radius="sm"
-              leftSection={
-                <>
-                  <IconGripVertical size={14} {...attributes} {...listeners} />
-                  {visible ? (
-                    <IconCircleFilled
-                      size={18}
-                      style={{
-                        color: chroma.gl(color[0], color[1], color[2]).hex(),
-                      }}
-                      onClick={(e): void => {
-                        e.stopPropagation()
-                        setShowColorPicker(!showColorPicker)
-                      }}
-                    />
-                  ) : (
-                    <IconCircleDotted
-                      size={18}
-                      style={{
-                        color: chroma.gl(color[0], color[1], color[2]).hex(),
-                      }}
-                      onClick={(e): void => {
-                        e.stopPropagation()
-                        setShowColorPicker(!showColorPicker)
-                      }}
-                    />
-                  )}
-                </>
-              }
-              justify="flex-start"
-              onClick={(): void => {
-                toggleVisible()
-              }}
-              // loading={loading}
-            >
-              {layer}
-            </Button>
-          </Popover.Target>
-        </Tooltip>
-      </animated.div>
-      <animated.div {...bind()} style={{ width }}>
-        <Button
-          radius="sm"
-          style={{ padding: 0, width: `calc(100% - 4px)`, overflow: "hidden", marginLeft: 4 }}
-          leftSection={<IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />}
-          onClick={deleteLayer}
-          variant="default"
-          color="gray"
-          styles={{
-            section: {
-              margin: 0,
-            },
+      {editing != undefined ? (
+        <Input
+          style={{
+            textAlign: "left",
+            width: "100%",
+            overflow: "hidden",
+            overscrollBehaviorX: "none",
+            padding: 0,
+            paddingLeft: 0,
           }}
+          autoFocus
+          error={renameError}
+          radius="sm"
+          value={editing}
+          placeholder={layer}
+          onBlur={rename}
+          onChange={(e): void => setEditing(e.target.value)}
+          onKeyDown={(e): void => {
+            if (e.key === "Enter") {
+              rename()
+            } else if (e.key === "Escape") {
+              setEditing(undefined)
+            }
+          }}
+          rightSectionPointerEvents="auto"
+          rightSection={<IconCheck aria-label="Accept" onClick={rename} style={{ display: editing ? undefined : "none", cursor: "pointer" }} />}
         />
-      </animated.div>
+      ) : (
+        <>
+          <animated.div {...bind()} style={{ width: "100%", overflow: "hidden", touchAction: "none", overscrollBehaviorX: "none" }}>
+            <Tooltip label={layer} withArrow openDelay={1000} transitionProps={{ transition: "slide-up", duration: 300 }}>
+              <Popover.Target>
+                <Button
+                  style={{
+                    textAlign: "left",
+                    width: "100%",
+                    overflow: "hidden",
+                    overscrollBehaviorX: "none",
+                    padding: 0,
+                    paddingLeft: 0,
+                  }}
+                  variant="default"
+                  color={colors.colorScheme === "dark" ? theme.colors.gray[1] : theme.colors.gray[9]}
+                  radius="sm"
+                  leftSection={
+                    <>
+                      <IconGripVertical size={14} {...attributes} {...listeners} />
+                      {visible ? (
+                        <IconCircleFilled
+                          size={18}
+                          style={{
+                            color: chroma.gl(color[0], color[1], color[2]).hex(),
+                          }}
+                          onClick={(e): void => {
+                            e.stopPropagation()
+                            setShowColorPicker(!showColorPicker)
+                          }}
+                        />
+                      ) : (
+                        <IconCircleDotted
+                          size={18}
+                          style={{
+                            color: chroma.gl(color[0], color[1], color[2]).hex(),
+                          }}
+                          onClick={(e): void => {
+                            e.stopPropagation()
+                            setShowColorPicker(!showColorPicker)
+                          }}
+                        />
+                      )}
+                    </>
+                  }
+                  justify="flex-start"
+                  onClick={(): void => {
+                    toggleVisible()
+                  }}
+                  // loading={loading}
+                >
+                  {layer}
+                </Button>
+              </Popover.Target>
+            </Tooltip>
+          </animated.div>
+          <animated.div {...bind()} style={{ width }}>
+            <Button
+              radius="sm"
+              style={{ padding: 0, width: `calc(100% - 4px)`, overflow: "hidden", marginLeft: 4 }}
+              leftSection={<IconTrashX style={{ color: theme.colors.red[7] }} stroke={1.5} size={18} />}
+              onClick={deleteLayer}
+              variant="default"
+              color="gray"
+              styles={{
+                section: {
+                  margin: 0,
+                },
+              }}
+            />
+          </animated.div>
+        </>
+      )}
     </div>
   )
 }

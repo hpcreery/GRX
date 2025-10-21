@@ -18,7 +18,6 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
   })
 
   React.useEffect(() => {
-    // renderer.engine.then((engine) => engine.setMeasurementUnits(units))
     renderer.engine.then((engine) => engine.setMeasurementSettings({ units }))
   }, [units])
   React.useEffect(() => {

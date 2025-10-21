@@ -20,7 +20,7 @@ import { Resizable } from "re-resizable"
 
 import { useLocalStorage } from "@mantine/hooks"
 
-import { DataInterface } from "@src/renderer"
+// import { DataInterface } from "@src/renderer"
 
 import type { importFormatName } from "@src/renderer/data/import-plugins"
 
@@ -32,7 +32,7 @@ export interface UploadFile extends FileWithPath {
 }
 
 export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
-  const { renderer } = useContext(EditorConfigProvider)
+  const { renderer, DataInterface, project } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<string[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
   const [renderID, setRenderID] = useState<number>(0)
@@ -68,16 +68,16 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     layers.forEach(async (layer) => {
       const engine = await renderer.engine
       if (!engine) return
-      await DataInterface.delete_layer("main", layer)
-      setLayers(await DataInterface.read_layers_list("main"))
+      await DataInterface.delete_layer(project.name, layer)
+      setLayers(await DataInterface.read_layers_list(project.name))
       setRenderID(0)
     })
   }
 
   useEffect(() => {
     const reg = async (): Promise<void> => {
-      renderer.engine.then((engine) => engine.zoomFit("main"))
-      return setLayers(await DataInterface.read_layers_list("main"))
+      renderer.engine.then((engine) => engine.zoomFit(project.name))
+      return setLayers(await DataInterface.read_layers_list(project.name))
     }
     reg()
   }, [])
@@ -96,15 +96,15 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     remove: async (layer: string): Promise<void> => {
       const engine = await renderer.engine
       if (!engine) return
-      await DataInterface.delete_layer("main", layer)
-      setLayers(await DataInterface.read_layers_list("main"))
+      await DataInterface.delete_layer(project.name, layer)
+      setLayers(await DataInterface.read_layers_list(project.name))
       return
     },
     hideAll: (): void => {
       layers.forEach(async (layer) => {
         const engine = await renderer.engine
         if (!engine) return
-        await engine.setLayerVisibility("main", layer, false)
+        await engine.setLayerVisibility(project.name, layer, false)
         setRenderID(renderID + 1)
       })
     },
@@ -112,11 +112,15 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       layers.forEach(async (layer) => {
         const engine = await renderer.engine
         if (!engine) return
-        await engine.setLayerVisibility("main", layer, true)
+        await engine.setLayerVisibility(project.name, layer, true)
         setRenderID(renderID + 1)
       })
     },
     deleteAll: openDeleteConfirmModal,
+    rename: async (oldName: string, newName: string): Promise<void> => {
+      await DataInterface.update_layer_name(project.name, oldName, newName)
+      setLayers(await DataInterface.read_layers_list(project.name))
+    },
   }
 
   const contextItems = [
@@ -159,8 +163,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       // temp set the new order
       setLayers((items) => arrayMove(items, oldIndex, newIndex))
       // update the real order
-      DataInterface.update_layer_position("main", layerName, newIndex).then(() => {
-        DataInterface.read_layers_list("main").then(setLayers)
+      DataInterface.update_layer_position(project.name, layerName, newIndex).then(() => {
+        DataInterface.read_layers_list(project.name).then(setLayers)
       })
     }
   }
@@ -200,13 +204,13 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         })
         try {
           // console.time(`${file.name} file parse time`)
-          // await DataInterface.create_layer("main", file.id)
+          // await DataInterface.create_layer(project.name, file.id)
           await DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
-            project: "main",
-            step: "main",
+            project: project.name,
+            step: project.name,
             layer: file.id,
           })
-          setLayers(await DataInterface.read_layers_list("main"))
+          setLayers(await DataInterface.read_layers_list(project.name))
           // console.timeEnd(`${file.name} file parse time`)
           notifications.update({
             id: loadingNotificationID,
