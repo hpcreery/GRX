@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, JSX } from "react"
 import { Group, Modal, NumberInput, Switch, Space, Button, Stack, Paper, Input } from "@mantine/core"
 import { Binary } from "@src/renderer/engine/types"
 import { TransformOrder } from "@src/renderer/engine/transform"

@@ -1,6 +1,6 @@
 import { ActionIcon, Affix, Badge, Code, Divider, ScrollArea, ThemeIcon, Transition, useMantineTheme } from "@mantine/core"
 import { Card, Text } from "@mantine/core"
-import { useEffect, useState, useContext } from "react"
+import { useEffect, useState, useContext, JSX } from "react"
 import { PointerEvents } from "@src/renderer"
 import {
   IconCircle,

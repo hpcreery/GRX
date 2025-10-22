@@ -1,4 +1,4 @@
-import React, { useMemo } from "react"
+import React, { JSX, useMemo } from "react"
 import "../App.css"
 import * as Symbols from "./data/shape/symbol/symbol"
 import * as Shapes from "./data/shape/shape"

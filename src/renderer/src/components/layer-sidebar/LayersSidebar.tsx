@@ -1,4 +1,4 @@
-import { useEffect, useState, useContext } from "react"
+import { useEffect, useState, useContext, JSX } from "react"
 import { Card, Group, Text, Button, FileButton, Stack, ScrollArea, Modal, Select, useMantineTheme, Input, Divider } from "@mantine/core"
 import { Dropzone, FileWithPath } from "@mantine/dropzone"
 import { IconFileX, IconFileVector, IconContrast, IconContrastOff, IconClearAll } from "@tabler/icons-react"

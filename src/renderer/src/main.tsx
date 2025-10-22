@@ -18,6 +18,7 @@ import "@mantine/dropzone/styles.css"
 import "@mantine/notifications/styles.css"
 import "@mantine/spotlight/styles.css"
 import "@mantine/code-highlight/styles.css"
+import { JSX } from 'react'
 
 function Main(): JSX.Element | null {
   // BufferCollection.test()

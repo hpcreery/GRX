@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react"
+import { useEffect, useContext, useState, JSX } from "react"
 import { Table, TableData } from "@mantine/core"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 

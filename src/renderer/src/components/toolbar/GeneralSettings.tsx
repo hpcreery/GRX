@@ -1,4 +1,4 @@
-import React from "react"
+import React, { JSX } from "react"
 import { ThemeConfigProvider } from "@src/contexts/ThemeContext"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import chroma from "chroma-js"

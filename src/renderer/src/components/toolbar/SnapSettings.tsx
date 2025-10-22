@@ -1,4 +1,4 @@
-import { useEffect, useContext } from "react"
+import { useEffect, useContext, JSX } from "react"
 import { Kbd, SegmentedControl } from "@mantine/core"
 import { IconPointerPin } from "@tabler/icons-react"
 import { SnapMode, SNAP_MODES } from "@src/renderer/engine/types"

@@ -1,4 +1,4 @@
-import React from "react"
+import React, { JSX } from "react"
 import { Flex, Textarea } from "@mantine/core"
 import { Shape } from "@src/renderer/data/shape/shape"
 import { parser, NCLexer, NCToShapesVisitor } from "./parser/parser"

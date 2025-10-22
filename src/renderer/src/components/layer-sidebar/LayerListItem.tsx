@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react"
+import { useState, useEffect, useContext, JSX } from "react"
 import { Button, Popover, ColorPicker, useMantineTheme, Tooltip, useMantineColorScheme, Input } from "@mantine/core"
 import chroma from "chroma-js"
 import { useGesture } from "@use-gesture/react"

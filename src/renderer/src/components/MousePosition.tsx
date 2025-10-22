@@ -1,4 +1,4 @@
-import React from "react"
+import React, { JSX } from "react"
 import { PointerEvent } from "@src/renderer"
 import { PointerEvents } from "@src/renderer"
 import { Card, Group, Text, Tooltip } from "@mantine/core"

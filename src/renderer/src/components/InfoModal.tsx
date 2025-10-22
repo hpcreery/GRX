@@ -3,6 +3,7 @@ import { useDisclosure } from "@mantine/hooks"
 import { IconUserQuestion } from "@tabler/icons-react"
 import { actions } from "@src/contexts/Spotlight"
 import EngineStats from "./toolbar/EngineStats"
+import { JSX } from 'react'
 
 export default function InfoModal(): JSX.Element | null {
   const [helpModalOpen, { open, close }] = useDisclosure(false)

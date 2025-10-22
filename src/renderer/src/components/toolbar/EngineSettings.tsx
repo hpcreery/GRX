@@ -1,4 +1,4 @@
-import { useEffect, useContext } from "react"
+import { useEffect, useContext, JSX } from "react"
 import { Text, Flex, Select, Switch, Divider, Kbd } from "@mantine/core"
 import {
   IconZoom,

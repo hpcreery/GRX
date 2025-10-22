@@ -560,6 +560,10 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
   flatten?: boolean
 }
 
+
+// !IDEA render macro to a texture first, then render that texture as a quad. Only re-render the macro texture when the transform changes zoom. Switch back to hard render when macro is larger than viewport.
+// !IDEA optimize render by manually performing culling and disabling render outside viewport
+
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean

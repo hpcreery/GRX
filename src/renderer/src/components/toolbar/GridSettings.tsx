@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { JSX, useEffect } from "react"
 import { EditorConfigProvider } from "../../contexts/EditorContext"
 import chroma from "chroma-js"
 import { Text, Switch, Divider, Group, Flex, ColorPicker, SegmentedControl, NumberInput, Button, Space } from "@mantine/core"

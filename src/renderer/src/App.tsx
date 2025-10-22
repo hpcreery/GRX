@@ -1,5 +1,5 @@
 import "./App.css"
-import { useRef, useEffect, useState, useContext } from "react"
+import { useRef, useEffect, useState, useContext, JSX } from "react"
 import { DataInterface, Renderer } from "./renderer"
 import chroma from "chroma-js"
 import InfoModal from "./components/InfoModal"
