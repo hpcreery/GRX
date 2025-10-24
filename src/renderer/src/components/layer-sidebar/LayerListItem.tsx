@@ -91,6 +91,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   return (
     <Popover position="right" withArrow trapFocus shadow="md" opened={colorPickerVisible} onChange={setColorPickerVisible}>
       <DraggableLayer
+        key={layer}
         actions={actions}
         setLayerTransformVisible={setLayerTransformVisible}
         showContextMenu={showContextMenu}
@@ -266,10 +267,20 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
 
   useEffect(() => {
     renderer.engine.then(async (renderer) => {
-      const color = await renderer.getLayerColor("main", layer)
-      setColor(color)
-      const vis = await renderer.getLayerVisibility("main", layer)
-      setVisible(vis)
+      const newColor = await renderer.getLayerColor("main", layer)
+      const newVisible = await renderer.getLayerVisibility("main", layer)
+      // check if color changed
+      if (
+        newColor[0] !== color[0] ||
+        newColor[1] !== color[1] ||
+        newColor[2] !== color[2]
+      ) {
+        setColor(newColor)
+      }
+      // check if visibility changed
+      if (newVisible !== visible) {
+        setVisible(newVisible)
+      }
     })
     return (): void => {}
   })
