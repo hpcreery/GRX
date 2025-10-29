@@ -147,49 +147,10 @@ export class Renderer {
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
     this.render()
     this.pollViews()
-    // this.pollEmbeddedViews()
   }
-
-  // private pollEmbeddedViews(): void {
-  //   this.engine.then((engine) => {
-  //     const views = this.getEmbeddedViews()
-  //     views.forEach(async (viewElement) => {
-  //       const viewName = viewElement.getAttribute("view")
-  //       if (viewName == null) {
-  //         return
-  //       }
-  //       const project = viewElement.getAttribute("project")
-  //       if (project == null) {
-  //         return
-  //       }
-  //       if (viewElement.id == undefined || viewElement.id === "") {
-  //         viewElement.id = UID()
-  //       }
-  //       const viewExists = this.managedViews.find((view) => view.id === viewElement.id)
-  //       if (viewExists) return
-  //       await engine.addView(viewElement.id, project, viewName, viewElement.getBoundingClientRect())
-  //       await this.addControls(viewElement)
-  //       this.managedViews.push(viewElement)
-  //     })
-  //   })
-  // }
-
-  // public getEmbeddedViews(): HTMLElement[] {
-  //   const views = this.CONTAINER.querySelectorAll("[view]")
-  //   const HTMLViews: HTMLElement[] = []
-  //   views.forEach((viewElement) => {
-  //     if (!(viewElement instanceof HTMLElement)) return
-  //     const viewName = viewElement.getAttribute("view")
-  //     if (viewName == null) return
-  //     HTMLViews.push(viewElement)
-  //   })
-  //   return HTMLViews
-  // }
 
   public addManagedView(view: HTMLElement, attributes: {project: string, step: string}): string {
     const { project, step } = attributes
-    // view.setAttribute("view", step)
-    // view.setAttribute("project", project)
     let id = UID()
     if (view.id == null || view.id === "") {
       view.id = id
@@ -244,8 +205,6 @@ export class Renderer {
 
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
-    // this.canvasGL.style.zIndex = "1"
-    // console.log("resize", JSON.stringify(this.canvas2D.style.width))
 
     this.engine.then((engine) => {
       engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
@@ -257,11 +216,6 @@ export class Renderer {
       })
     })
   }
-
-  // public async zoomFit(view: string): Promise<void> {
-  //   const engine = await this.engine
-  //   engine.zoomFit(view)
-  // }
 
   public async pollViews(): Promise<void> {
     this.resize()
@@ -336,7 +290,7 @@ export class Renderer {
       if (settings.ZOOM_TO_CURSOR) {
         engine.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        engine.zoomAtPoint(element.id, width / 2 + offsetX, height / 2 + offsetY, e.deltaY * moveScale)
+        engine.zoomAtPoint(element.id, width / 2, height / 2, e.deltaY * moveScale)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
