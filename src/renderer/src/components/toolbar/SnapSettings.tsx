@@ -12,11 +12,22 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
   const { renderer } = useContext(EditorConfigProvider)
   const [snapMode, setSnapMode] = useLocalStorage<SnapMode>({
     key: "engine:SNAP_MODE",
-    defaultValue: renderer.settings.SNAP_MODE,
+    // defaultValue: renderer.settings.SNAP_MODE,
+    defaultValue: SnapMode.OFF,
   })
 
+  async function getSnapMode(): Promise<void> {
+    const mode = await renderer.engine.getSettings().then(settings => settings.SNAP_MODE)
+    setSnapMode(mode)
+  }
+
   useEffect(() => {
-    renderer.settings.SNAP_MODE = snapMode
+    getSnapMode()
+  }, [])
+
+  useEffect(() => {
+    // renderer.settings.SNAP_MODE = snapMode
+    renderer.engine.setSettings({ SNAP_MODE: snapMode })
   }, [snapMode])
 
   useEffect(() => {

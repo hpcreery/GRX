@@ -63,12 +63,10 @@ export function FeatureSidebar(_props: ToolbarProps): JSX.Element {
     onClick: clearSelection,
   })
 
-  function clearSelection(): void {
+  async function clearSelection(): Promise<void> {
     setMounted(false)
-    renderer.engine.then(async (engine) => {
-      await engine.clearSelection("main")
-      await engine.render()
-    })
+    await renderer.engine.clearSelection("main")
+    await renderer.engine.render()
   }
 
   useEffect(() => {
@@ -154,10 +152,8 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
   const { layer, selection } = props
 
   useEffect(() => {
-    renderer.engine.then((engine) => {
-      engine.getLayerColor("main", layer).then((color) => {
-        setColor(color)
-      })
+    renderer.engine.getLayerColor("main", layer).then((color) => {
+      setColor(color)
     })
   }, [layer])
 

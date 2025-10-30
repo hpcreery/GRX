@@ -32,7 +32,7 @@ export interface UploadFile extends FileWithPath {
 }
 
 export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
-  const { renderer, DataInterface, project } = useContext(EditorConfigProvider)
+  const { renderer, project } = useContext(EditorConfigProvider)
   const [layers, setLayers] = useState<string[]>([])
   const [files, setFiles] = useState<UploadFile[]>([])
   const [renderID, setRenderID] = useState<number>(0)
@@ -66,18 +66,17 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
 
   async function deleteAllLayers(): Promise<void> {
     layers.forEach(async (layer) => {
-      const engine = await renderer.engine
-      if (!engine) return
-      await DataInterface.delete_layer(project.name, layer)
-      setLayers(await DataInterface.read_layers_list(project.name))
+      if (!renderer.engine) return
+      await renderer.DataInterface.delete_layer(project.name, layer)
+      setLayers(await renderer.DataInterface.read_layers_list(project.name))
       setRenderID(0)
     })
   }
 
   useEffect(() => {
     const reg = async (): Promise<void> => {
-      renderer.engine.then((engine) => engine.zoomFit(project.name))
-      return setLayers(await DataInterface.read_layers_list(project.name))
+      await renderer.engine.zoomFit(project.name)
+      return setLayers(await renderer.DataInterface.read_layers_list(project.name))
     }
     reg()
   }, [])
@@ -96,8 +95,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     remove: async (layer: string): Promise<void> => {
       const engine = await renderer.engine
       if (!engine) return
-      await DataInterface.delete_layer(project.name, layer)
-      setLayers(await DataInterface.read_layers_list(project.name))
+      await renderer.DataInterface.delete_layer(project.name, layer)
+      setLayers(await renderer.DataInterface.read_layers_list(project.name))
       return
     },
     hideAll: (): void => {
@@ -118,8 +117,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     },
     deleteAll: openDeleteConfirmModal,
     rename: async (oldName: string, newName: string): Promise<void> => {
-      await DataInterface.update_layer_name(project.name, oldName, newName)
-      setLayers(await DataInterface.read_layers_list(project.name))
+      await renderer.DataInterface.update_layer_name(project.name, oldName, newName)
+      setLayers(await renderer.DataInterface.read_layers_list(project.name))
     },
   }
 
@@ -163,9 +162,9 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       // temp set the new order
       setLayers((items) => arrayMove(items, oldIndex, newIndex))
       // update the real order
-      DataInterface.update_layer_position(project.name, layerName, newIndex).then(() => {
-        DataInterface.read_layers_list(project.name).then(setLayers)
-      })
+      renderer.DataInterface.update_layer_position(project.name, layerName, newIndex)
+      const newLayers = await renderer.DataInterface.read_layers_list(project.name)
+      setLayers(newLayers)
     }
   }
 
@@ -205,12 +204,12 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         try {
           // console.time(`${file.name} file parse time`)
           // await DataInterface.create_layer(project.name, file.id)
-          await DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
+          await renderer.DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
             project: project.name,
             step: project.name,
             layer: file.id,
           })
-          setLayers(await DataInterface.read_layers_list(project.name))
+          setLayers(await renderer.DataInterface.read_layers_list(project.name))
           // console.timeEnd(`${file.name} file parse time`)
           notifications.update({
             id: loadingNotificationID,

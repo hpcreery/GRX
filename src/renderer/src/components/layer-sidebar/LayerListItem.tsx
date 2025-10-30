@@ -265,23 +265,24 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     },
   ]
 
+  async function getLayerColor(): Promise<void> {
+    const newColor = await renderer.engine.getLayerColor("main", layer)
+    if (newColor[0] !== color[0] || newColor[1] !== color[1] || newColor[2] !== color[2]) {
+      setColor(newColor)
+    }
+  }
+
+  async function getLayerVisibility(): Promise<void> {
+    const newVisible = await renderer.engine.getLayerVisibility("main", layer)
+    if (newVisible !== visible) {
+      setVisible(newVisible)
+    }
+  }
+
   useEffect(() => {
-    renderer.engine.then(async (renderer) => {
-      const newColor = await renderer.getLayerColor("main", layer)
-      const newVisible = await renderer.getLayerVisibility("main", layer)
-      // check if color changed
-      if (
-        newColor[0] !== color[0] ||
-        newColor[1] !== color[1] ||
-        newColor[2] !== color[2]
-      ) {
-        setColor(newColor)
-      }
-      // check if visibility changed
-      if (newVisible !== visible) {
-        setVisible(newVisible)
-      }
-    })
+    getLayerColor()
+    getLayerVisibility()
+
     return (): void => {}
   })
 

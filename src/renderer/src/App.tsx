@@ -1,6 +1,6 @@
 import "./App.css"
 import { useRef, useEffect, useState, useContext, JSX } from "react"
-import { DataInterface, Renderer } from "./renderer"
+import { Renderer } from "./renderer"
 import chroma from "chroma-js"
 import InfoModal from "./components/InfoModal"
 import Toolbar from "./components/toolbar/Toolbar"
@@ -10,19 +10,14 @@ import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme }
 import { EditorConfigProvider } from "./contexts/EditorContext"
 import { ThemeConfigProvider } from "./contexts/ThemeContext"
 import { FeatureSidebar } from "./components/feature-sidebar/FeatureSidebar"
-// import { EngineEvents, MessageData } from "./renderer/engine/engine"
-// import * as Comlink from "comlink"
-// import { notifications } from "@mantine/notifications"
 import { useContextMenu } from "mantine-contextmenu"
 import { menuItems } from "./contexts/EditorContext"
 import { useLocalStorage } from "@mantine/hooks"
 import { Units } from "./renderer/engine/types"
 import { IconPhotoDown } from "@tabler/icons-react"
 
-const PROJECT_NAME = 'main'
-const STEP_NAME = 'main'
-DataInterface.create_project(PROJECT_NAME)
-DataInterface.create_step(PROJECT_NAME, STEP_NAME)
+const PROJECT_NAME = "main"
+const STEP_NAME = "main"
 
 export default function App(): JSX.Element | null {
   const { transparency } = useContext(ThemeConfigProvider)
@@ -37,7 +32,9 @@ export default function App(): JSX.Element | null {
   // Load in the render engine
   useEffect(() => {
     console.log("Loading Engine Application")
-    const renderer = new Renderer({ container: elementRef.current })
+    const renderer = new Renderer({ container: elementRef.current, attributes: { powerPreference: "high-performance", antialias: false } })
+    renderer.DataInterface.create_project(PROJECT_NAME)
+    renderer.DataInterface.create_step(PROJECT_NAME, STEP_NAME)
     renderer.addManagedView(viewRef.current, {
       project: PROJECT_NAME,
       step: STEP_NAME,
@@ -47,13 +44,6 @@ export default function App(): JSX.Element | null {
     renderer.onLoad(() => {
       console.log("Engine Application Loaded", renderer)
       setReady(true)
-      // renderer.engine.then((engine) => {
-      //   engine.addEventCallback(
-      //     "main",
-      //     EngineEvents.MESSAGE,
-      //     Comlink.proxy((e) => msg(e as MessageData)),
-      //   )
-      // })
       menuItems.push({
         key: "download-canvas",
         icon: <IconPhotoDown stroke={1.5} size={18} />,
@@ -68,9 +58,10 @@ export default function App(): JSX.Element | null {
 
   function setEngineBackgroundColor(): void {
     if (renderer != undefined) {
-      renderer.settings.BACKGROUND_COLOR = chroma(colors.colorScheme == "dark" ? theme.colors.dark[8] : theme.colors.gray[1])
+      const color = chroma(colors.colorScheme == "dark" ? theme.colors.dark[8] : theme.colors.gray[1])
         .alpha(0)
         .gl()
+      renderer.engine.setSettings({ BACKGROUND_COLOR: color })
     }
   }
 
@@ -79,14 +70,6 @@ export default function App(): JSX.Element | null {
     setEngineBackgroundColor()
     // removed this use effect deps to ensure background color was set in setup
   })
-
-  // function msg(e: MessageData): void {
-  //   notifications.show({
-  //     color: e.level,
-  //     title: e.title,
-  //     message: e.message,
-  //   })
-  // }
 
   const [units, setUnits] = useLocalStorage<Units>({
     key: "units",
@@ -99,7 +82,6 @@ export default function App(): JSX.Element | null {
         <EditorConfigProvider.Provider
           value={{
             renderer: renderer,
-            DataInterface: DataInterface,
             project: { name: PROJECT_NAME, stepName: STEP_NAME },
             units: units,
             setUnits: setUnits,

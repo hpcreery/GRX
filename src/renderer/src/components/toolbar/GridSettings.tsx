@@ -14,41 +14,72 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
   const { units, renderer } = React.useContext(EditorConfigProvider)
   const [spacingX, setSpacingX] = useLocalStorage<number>({
     key: "engine:grid:spacing_x",
-    defaultValue: renderer.grid.spacing_x,
+    // defaultValue: renderer.grid.spacing_x,
+    defaultValue: 0
   })
   const [spacingY, setSpacingY] = useLocalStorage<number>({
     key: "engine:grid:spacing_y",
-    defaultValue: renderer.grid.spacing_y,
+    // defaultValue: renderer.grid.spacing_y,
+    defaultValue: 0
   })
   const [offsetX, setOffsetX] = useLocalStorage<number>({
     key: "engine:grid:offset_x",
-    defaultValue: renderer.grid.offset_x,
+    // defaultValue: renderer.grid.offset_x,
+    defaultValue: 0
   })
   const [offsetY, setOffsetY] = useLocalStorage<number>({
     key: "engine:grid:offset_y",
-    defaultValue: renderer.grid.offset_y,
+    // defaultValue: renderer.grid.offset_y,
+    defaultValue: 0
   })
   const [enabled, setEnabled] = useLocalStorage<boolean>({
     key: "engine:grid:enabled",
-    defaultValue: renderer.grid.enabled,
+    // defaultValue: renderer.grid.enabled,
+    defaultValue: false
   })
   const [type, setType] = useLocalStorage<"lines" | "dots">({
     key: "engine:grid:type",
-    defaultValue: renderer.grid.type,
+    // defaultValue: renderer.grid.type,
+    defaultValue: "lines"
   })
   const [color, setColor] = useLocalStorage<vec4>({
     key: "engine:grid:color",
-    defaultValue: renderer.grid.color,
+    // defaultValue: renderer.grid.color,
+    defaultValue: vec4.fromValues(0.5, 0.5, 0.5, 1)
   })
 
+  async function getGridSettings(): Promise<void> {
+    const grid = await renderer.engine.getGrid()
+    setSpacingX(grid.spacing_x)
+    setSpacingY(grid.spacing_y)
+    setOffsetX(grid.offset_x)
+    setOffsetY(grid.offset_y)
+    setEnabled(grid.enabled)
+    setType(grid.type)
+    setColor(grid.color)
+  }
+
   useEffect(() => {
-    renderer.grid.spacing_x = spacingX
-    renderer.grid.spacing_y = spacingY
-    renderer.grid.offset_x = offsetX
-    renderer.grid.offset_y = offsetY
-    renderer.grid.enabled = enabled
-    renderer.grid.type = type
-    renderer.grid.color = color
+    getGridSettings()
+  }, [])
+
+  useEffect(() => {
+    // renderer.grid.spacing_x = spacingX
+    // renderer.grid.spacing_y = spacingY
+    // renderer.grid.offset_x = offsetX
+    // renderer.grid.offset_y = offsetY
+    // renderer.grid.enabled = enabled
+    // renderer.grid.type = type
+    // renderer.grid.color = color
+    renderer.engine.setGrid({
+      spacing_x: spacingX,
+      spacing_y: spacingY,
+      offset_x: offsetX,
+      offset_y: offsetY,
+      enabled: enabled,
+      type: type,
+      color: color,
+    })
   }, [spacingX, spacingY, offsetX, offsetY, enabled, type, color])
 
   return (

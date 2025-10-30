@@ -2,7 +2,7 @@ import React, { JSX, useMemo } from "react"
 import "../App.css"
 import * as Symbols from "./data/shape/symbol/symbol"
 import * as Shapes from "./data/shape/shape"
-import { Renderer, DataInterface } from "."
+import { Renderer } from "."
 import { Button, Switch, Box, SegmentedControl } from "@mantine/core"
 import { PointerEvent, PointerEvents } from "."
 import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
@@ -1194,14 +1194,16 @@ function DemoApp(): JSX.Element {
   const containerRef = React.useRef<HTMLDivElement>(document.createElement("div"))
   const box1Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
   const box2Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
-  const [renderer, setEngine] = React.useState<Renderer>()
-  const [_outlineMode, setOutlineMode] = React.useState<boolean>(false)
-  const [_skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
+  const [renderer, setRenderer] = React.useState<Renderer>()
+  const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
+  const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
+  const [zoomToCursor, setZoomToCursor] = React.useState<boolean>(false)
+  const [_showDatums, setShowDatums] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<string[]>([])
 
   React.useEffect(() => {
     if (renderer) return
-    const Engine = new Renderer({
+    const render = new Renderer({
       // container: containerRef.current,
 
       attributes: {
@@ -1209,10 +1211,14 @@ function DemoApp(): JSX.Element {
       },
     })
 
-    Engine.settings.OUTLINE_MODE = false
-    Engine.settings.SHOW_DATUMS = true
-    // Engine.settings.FPS = 30
-    // Engine.SETTINGS.BACKGROUND_COLOR = [1, 1, 1, 1]
+    const settings = render.engine.getSettings()
+    settings.then(setting => {
+      setOutlineMode(setting.OUTLINE_MODE)
+      setSkeletonMode(setting.SKELETON_MODE)
+      setZoomToCursor(setting.ZOOM_TO_CURSOR)
+      setShowDatums(setting.SHOW_DATUMS)
+    })
+    const DataInterface = render.DataInterface
 
     console.log(box1Ref.current)
 
@@ -1243,11 +1249,11 @@ function DemoApp(): JSX.Element {
     // DataInterface._update_layer_artwork_from_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
     DataInterface.update_step_layer_artwork(project, step1, layer, POLYLINE_RECORDS_ARRAY)
 
-    Engine.addManagedView(box2Ref.current, {
+    render.addManagedView(box2Ref.current, {
       project,
       step: step2,
     })
-    Engine.addManagedView(box1Ref.current, {
+    render.addManagedView(box1Ref.current, {
       project,
       step: step1,
     })
@@ -1597,11 +1603,11 @@ function DemoApp(): JSX.Element {
     //   ],
     // })
 
-    Engine.render()
+    render.engine.render()
 
     // Engine.pointer.addEventListener('pointerdown', console.log)
 
-    setEngine(Engine)
+    setRenderer(render)
     // Engine.SUPERTEST()
 
     function dragElement(elmnt: HTMLElement): void {
@@ -1651,7 +1657,7 @@ function DemoApp(): JSX.Element {
 
     return (): void => {
       // Engine.pointer.removeEventListener('pointerdown', console.log)
-      Engine.destroy()
+      render.destroy()
     }
   }, [])
 
@@ -1745,69 +1751,58 @@ function DemoApp(): JSX.Element {
           }}
         >
           {/* <StatsWidget /> */}
-          <REGLStatsWidget engine={renderer} />
+          <REGLStatsWidget renderer={renderer} />
           <MouseCoordinates engine={renderer} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
-              const layers = await DataInterface.read_layers_list(project)
+              const layers = await renderer.DataInterface.read_layers_list(project)
               setLayers(layers)
-              const engine = await renderer.engine
-              layers.map((l) => engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
+              layers.map((l) => renderer.engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
             }}
           >
             Randomize Colors
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-              renderer.engine.then((engine) => {
-                engine.zoomFit("box1")
-              })
+                renderer.engine.zoomFit("box1")
             }}
           >
             Zoom Fit
           </Button>
-          <Button onClick={async (): Promise<void> => renderer.engine.then((engine) => engine.setTransform("box1", { position: [0, 0], zoom: 16 }))}>
+          <Button onClick={async (): Promise<void> => renderer.engine.setTransform("box1", { position: [0, 0], zoom: 16 })}>
             (0,0)
           </Button>
           <br />
           Outline Mode
           <Switch
-            defaultChecked={renderer.settings.OUTLINE_MODE}
+            checked={outlineMode}
             onChange={async (e): Promise<void> => {
-              renderer.settings.OUTLINE_MODE = e.target.checked
+              // renderer.settings.OUTLINE_MODE = e.target.checked
+              renderer.engine.setSettings({ OUTLINE_MODE: e.target.checked })
               setOutlineMode(e.target.checked)
-              const layers = await DataInterface.read_layers_list(project)
+              const layers = await renderer.DataInterface.read_layers_list(project)
               setLayers(layers)
             }}
           />
           Skeleton Mode
           <Switch
-            defaultChecked={renderer.settings.SKELETON_MODE}
+            checked={skeletonMode}
             onChange={async (e): Promise<void> => {
-              renderer.settings.SKELETON_MODE = e.target.checked
+              // renderer.settings.SKELETON_MODE = e.target.checked
+              renderer.engine.setSettings({ SKELETON_MODE: e.target.checked })
               setSkeletonMode(e.target.checked)
-              const layers = await DataInterface.read_layers_list(project)
+              const layers = await renderer.DataInterface.read_layers_list(project)
               setLayers(layers)
             }}
           />
-          {/* Grid Toggle
-          <Switch
-            defaultChecked={engine.settings.OUTLINE_MODE}
-            onChange={(e): void => {
-              engine.engine.then(engine => engine.setGridProps({ enabled: e.target.checked }))
-            }} />
-          Grid Type
-          <Switch
-            defaultChecked={engine.settings.OUTLINE_MODE}
-            onChange={(e): void => {
-              engine.engine.then(engine => engine.setGridProps({ type: e.target.checked ? 'dots' : 'lines' }))
-            }} /> */}
           <br />
           Zoom To Cursor
           <Switch
-            defaultChecked={renderer.settings.ZOOM_TO_CURSOR}
+            checked={zoomToCursor}
             onChange={(e): void => {
-              renderer.settings.ZOOM_TO_CURSOR = e.target.checked
+              // renderer.settings.ZOOM_TO_CURSOR = e.target.checked
+              renderer.engine.setSettings({ ZOOM_TO_CURSOR: e.target.checked })
+              setZoomToCursor(e.target.checked)
             }}
           />
           Mouse Mode
@@ -1818,7 +1813,10 @@ function DemoApp(): JSX.Element {
             onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)}
           />
           Snap Mode
-          <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => (renderer.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)} />
+          <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => {
+            // (renderer.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)
+            renderer.engine.setSettings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
+            }} />
           {layers.map((layer, i) => {
             return (
               <div key={i}>
@@ -1826,10 +1824,10 @@ function DemoApp(): JSX.Element {
                 <Switch
                   // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
-                    const engine = await renderer.engine
-                    DataInterface.read_steps_list(project).then((allSteps) => {
+                    // const engine = await renderer.engine
+                    renderer.DataInterface.read_steps_list(project).then((allSteps) => {
                       allSteps.map((step) => {
-                        engine.setLayerVisibility(step, layer, e.target.checked)
+                        renderer.engine.setLayerVisibility(step, layer, e.target.checked)
                       })
                     })
                   }}
@@ -1900,7 +1898,7 @@ function DemoApp(): JSX.Element {
 //   )
 // }
 
-function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
+function REGLStatsWidget(props: { renderer: Renderer }): JSX.Element {
   const [count, setCount] = React.useState<number>(0)
   // const [cpuTime, setCPUTime] = React.useState<number>(0)
   // const [gpuTime, setGPUTime] = React.useState<number>(0)
@@ -1925,7 +1923,7 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
 
   const update = async (): Promise<void> => {
     // const precision = 3
-    const stats = await props.engine.getStats()
+    const stats = await props.renderer.engine.getStats()
     // console.log(stats)
     // const averageGPU = stats.universe.gpuTime / stats.universe.count
     // setAverageGPUTime(round(averageGPU, precision))
@@ -1944,15 +1942,15 @@ function REGLStatsWidget(props: { engine: Renderer }): JSX.Element {
     setShaderCount(stats.regl.shaderCount)
     setFramebufferCount(stats.regl.framebufferCount)
     setElementsCount(stats.regl.elementsCount)
-    const renderTime = await props.engine.engine.then((e) => e.renderTimeMilliseconds)
+    const renderTime = await props.renderer.engine.renderTimeMilliseconds
     const calculatedFPS = Math.round(1000 / renderTime)
     setCalculatedFPS(calculatedFPS)
     requestAnimationFrame(update)
   }
 
-  React.useEffect(() => {
-    requestAnimationFrame(update)
-  }, [])
+  // React.useEffect(() => {
+  //   requestAnimationFrame(update)
+  // }, [])
 
   return (
     <div

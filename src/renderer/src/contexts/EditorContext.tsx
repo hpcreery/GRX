@@ -1,11 +1,10 @@
 import React from "react"
 import { ContextMenuItemOptions } from "mantine-contextmenu"
 import { Units } from "@src/renderer/engine/types"
-import { Renderer, DataInterface } from "@src/renderer"
+import { Renderer } from "@src/renderer"
 
 export interface EditorContext {
   renderer: Renderer
-  DataInterface: typeof DataInterface
   project: {
     name: string
     stepName: string
@@ -16,7 +15,6 @@ export interface EditorContext {
 
 export const EditorConfigProvider = React.createContext<EditorContext>({
   renderer: new Renderer({ container: document.createElement("div") }),
-  DataInterface: DataInterface,
   project: { name: "main", stepName: "main" },
   units: "mm",
   setUnits: () => {},

@@ -17,7 +17,7 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
   const [elementsCount, setElementsCount] = useState<number>(0)
 
   const update = async (): Promise<void> => {
-    const stats = await renderer.getStats()
+    const stats = await renderer.engine.getStats()
     setRenderTime(Math.round(stats.engine.renderTimeMilliseconds))
     setFPS(Math.round(1000 / stats.engine.renderTimeMilliseconds))
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))

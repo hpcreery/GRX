@@ -17,21 +17,34 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
   const { renderer } = useContext(EditorConfigProvider)
   const [colorBlend, setColorBlend] = useLocalStorage<ColorBlend>({
     key: "engine:COLOR_BLEND",
-    defaultValue: renderer.settings.COLOR_BLEND,
+    defaultValue: "Contrast",
   })
   const [zoomToCursor, setZoomToCursor] = useLocalStorage<boolean>({
     key: "engine:ZOOM_TO_CURSOR",
-    defaultValue: renderer.settings.ZOOM_TO_CURSOR,
+    defaultValue: true,
   })
   const [showDatums, setShowDatums] = useLocalStorage<boolean>({
     key: "engine:SHOW_DATUMS",
-    defaultValue: renderer.settings.SHOW_DATUMS,
+    defaultValue: true,
   })
 
+  async function getEngineSettings(): Promise<void> {
+    const settings = await renderer.engine.getSettings()
+    setColorBlend(settings.COLOR_BLEND)
+    setZoomToCursor(settings.ZOOM_TO_CURSOR)
+    setShowDatums(settings.SHOW_DATUMS)
+  }
+
   useEffect(() => {
-    renderer.settings.COLOR_BLEND = colorBlend
-    renderer.settings.ZOOM_TO_CURSOR = zoomToCursor
-    renderer.settings.SHOW_DATUMS = showDatums
+    getEngineSettings()
+  }, [])
+
+  useEffect(() => {
+    renderer.engine.setSettings({
+      COLOR_BLEND: colorBlend,
+      ZOOM_TO_CURSOR: zoomToCursor,
+      SHOW_DATUMS: showDatums
+    })
   }, [colorBlend, zoomToCursor, showDatums])
 
   useEffect(() => {

@@ -36,18 +36,6 @@ export interface RenderTransform {
   update: () => void
 }
 
-// export interface LayerInfo {
-//   name: string
-//   id: string
-//   color: vec3
-//   // context: string
-//   // type: string
-//   units: Units
-//   visible: boolean
-//   // format: string
-//   transform: Transform
-// }
-
 export interface Pointer {
   x: number
   y: number
@@ -58,38 +46,27 @@ export interface QuerySelection extends ShapeDistance {
   sourceLayer: string
 }
 
-export type RenderProps = Partial<typeof Engine.defaultRenderProps>
+export abstract class Engine {
 
-export class Engine {
-
-  public static readonly DataInterfaceProxy = Comlink.proxy(DataInterface)
-
-  static defaultRenderProps = { force: false, updateLayers: true }
-
-  public offscreenCanvasGL: OffscreenCanvas
-
-  public boundingBox: DOMRect
-
-  public pointer: Pointer = {
+  public static readonly DataInterface = Comlink.proxy(DataInterface)
+  public static offscreenCanvasGL: OffscreenCanvas
+  public static regl: REGL.Regl
+  private static universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
+  public static views: Map<string, ViewRenderer> = new Map()
+  public static boundingBox: DOMRect
+  public static pointer: Pointer = {
     x: 0,
     y: 0,
     down: false,
   }
-
-  public regl: REGL.Regl
-  private universe: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, UniverseProps>
-
-  // public calculatedFPS: number = 0
-  public renderTimeMilliseconds: number = 0
+  public static renderTimeMilliseconds: number = 0
+  private static renderNowInterval: NodeJS.Timeout | null = null
 
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
-  public views: Map<string, ViewRenderer> = new Map()
 
-  private renderNowInterval: NodeJS.Timeout | null = null
-
-  constructor(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineConfig) {
+  public static init(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: RenderEngineConfig): void {
     this.offscreenCanvasGL = offscreenCanvasGL
     this.boundingBox = {
       ...container,
@@ -128,38 +105,43 @@ export class Engine {
     this.universe = this.regl<UniverseUniforms, UniverseAttributes, UniverseProps, UniverseContext>({})
 
     this.render()
+    console.log("Render Engine Initialized")
   }
 
-  public setSettings(newSettings: Partial<RenderSettings>): void {
+  public static onLoad(): void {
+    console.log("Engine onLoad called")
+  }
+
+  public static setSettings(newSettings: Partial<RenderSettings>): void {
     Object.assign(settings, newSettings)
     this.render()
   }
 
-  public getSettings(): RenderSettings {
+  public static getSettings(): RenderSettings {
     return settings
   }
 
-  public setGrid(newGrid: Partial<GridSettings>): void {
+  public static setGrid(newGrid: Partial<GridSettings>): void {
     Object.assign(gridSettings, newGrid)
     this.render()
   }
 
-  public getGrid(): GridSettings {
+  public static getGrid(): GridSettings {
     return gridSettings
   }
 
-  public getMeasurementSettings(): MeasurementSettings {
+  public static getMeasurementSettings(): MeasurementSettings {
     return measurementSettings
   }
 
-  public setMeasurementSettings(newSettings: Partial<MeasurementSettings>): void {
+  public static setMeasurementSettings(newSettings: Partial<MeasurementSettings>): void {
     Object.assign(measurementSettings, newSettings)
     this.render()
   }
 
-  public renderDispatch = (): void => this.render()
+  public static renderDispatch = (): void => this.render()
 
-  public addView(id: string, project: string, step: string, viewBox: DOMRect): void {
+  public static addView(id: string, project: string, step: string, viewBox: DOMRect): void {
     const stepObject = DataInterface.read_step_info(project, step)
     const newStep = new ViewRenderer({
       regl: this.regl,
@@ -172,7 +154,7 @@ export class Engine {
     this.render()
   }
 
-  public removeView(id: string): void {
+  public static removeView(id: string): void {
     if (!this.views.has(id)) throw new Error(`View ${id} not found`)
     const view = this.views.get(id)!
     view.destroy()
@@ -180,7 +162,7 @@ export class Engine {
     this.render()
   }
 
-  public updateBoundingBox(box: DOMRect): void {
+  public static updateBoundingBox(box: DOMRect): void {
     // this.boundingBox.width = box.width * dpr
     // this.boundingBox.height = box.height * dpr
     let boxChanged = false
@@ -200,129 +182,129 @@ export class Engine {
     // this.updateTransform()
   }
 
-  public updateViewBox(view: string, viewBox: DOMRect): void {
+  public static updateViewBox(view: string, viewBox: DOMRect): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     viewBox.y = this.boundingBox.height - viewBox.bottom + this.boundingBox.y
     viewBox.x = viewBox.x - this.boundingBox.x
     this.views.get(view)!.updateViewBox(viewBox)
   }
 
-  public toss(view: string): void {
+  public static toss(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.toss()
   }
 
-  public moveViewport(view: string, x: number, y: number): void {
+  public static moveViewport(view: string, x: number, y: number): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.moveViewport(x, y)
   }
 
-  public grabViewport(view: string): void {
+  public static grabViewport(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.grabViewport()
   }
 
-  public releaseViewport(view: string): void {
+  public static releaseViewport(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.releaseViewport()
   }
 
-  public zoom(view: string, x: number, y: number, s: number): void {
+  public static zoom(view: string, x: number, y: number, s: number): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.zoom(x, y, s)
   }
 
-  public isDragging(view: string): boolean {
+  public static isDragging(view: string): boolean {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.isDragging()
   }
 
-  public updateTransform(view: string): void {
+  public static updateTransform(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     const transform = this.views.get(view)!.updateTransform()
     return transform
   }
 
-  public zoomAtPoint(view: string, x: number, y: number, s: number): void {
+  public static zoomAtPoint(view: string, x: number, y: number, s: number): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.zoomAtPoint(x, y, s)
   }
 
-  public getWorldPosition(view: string, x: number, y: number): [number, number] {
+  public static getWorldPosition(view: string, x: number, y: number): [number, number] {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getWorldPosition(x, y)
   }
 
-  public getTransform(view: string): Partial<RenderTransform> {
+  public static getTransform(view: string): Partial<RenderTransform> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getTransform()
   }
 
-  public setTransform(view: string, transform: Partial<RenderTransform>): void {
+  public static setTransform(view: string, transform: Partial<RenderTransform>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setTransform(transform)
   }
 
-  public getLayerVisibility(view: string, layer: string): boolean {
+  public static getLayerVisibility(view: string, layer: string): boolean {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getLayerVisibility(layer)
   }
 
-  public setLayerVisibility(view: string, layer: string, visible: boolean): void {
+  public static setLayerVisibility(view: string, layer: string, visible: boolean): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerVisibility(layer, visible)
   }
 
-  public getLayerColor(view: string, layer: string): vec3 {
+  public static getLayerColor(view: string, layer: string): vec3 {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getLayerColor(layer)
   }
 
-  public setLayerColor(view: string, layer: string, color: vec3): void {
+  public static setLayerColor(view: string, layer: string, color: vec3): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerColor(layer, color)
   }
 
-  public getLayerTransform(view: string, layer: string): Transform {
+  public static getLayerTransform(view: string, layer: string): Transform {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getLayerTransform(layer)
   }
 
-  public setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
+  public static setLayerTransform(view: string, layer: string, transform: Partial<Transform>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setLayerTransform(layer, transform)
   }
 
-  public sample(view: string, x: number, y: number): void {
+  public static sample(view: string, x: number, y: number): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.sample(x, y)
   }
 
-  public select(view: string, pointer: vec2): QuerySelection[] {
+  public static select(view: string, pointer: vec2): QuerySelection[] {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     let selection: QuerySelection[] = []
     selection = this.views.get(view)!.select(pointer)
     return selection
   }
 
-  public snap(view: string, pointer: vec2): vec2 {
+  public static snap(view: string, pointer: vec2): vec2 {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     let snapped: vec2 = pointer
     snapped = this.views.get(view)!.snap(pointer)
     return snapped
   }
 
-  public clearSelection(view: string): void {
+  public static clearSelection(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.clearSelection()
   }
 
-  public setPointer(view: string, mouse: Partial<Pointer>): void {
+  public static setPointer(view: string, mouse: Partial<Pointer>): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.setPointer(mouse)
   }
 
-  public async zoomFit(view: string): Promise<void> {
+  public static async zoomFit(view: string): Promise<void> {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.zoomFit()
   }
@@ -335,37 +317,37 @@ export class Engine {
   //   this.loadingFrame.stop()
   // }
 
-  public addMeasurement(view: string, point: vec2): void {
+  public static addMeasurement(view: string, point: vec2): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.addMeasurement(point)
   }
 
-  public updateMeasurement(view: string, point: vec2): void {
+  public static updateMeasurement(view: string, point: vec2): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.updateMeasurement(point)
   }
 
-  public finishMeasurement(view: string, point: vec2): void {
+  public static finishMeasurement(view: string, point: vec2): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     this.views.get(view)!.finishMeasurement(point)
   }
 
-  public getMeasurements(view: string): { point1: vec2; point2: vec2 }[] {
+  public static getMeasurements(view: string): { point1: vec2; point2: vec2 }[] {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getMeasurements()
   }
 
-  public getCurrentMeasurement(view: string): { point1: vec2; point2: vec2 } | null {
+  public static getCurrentMeasurement(view: string): { point1: vec2; point2: vec2 } | null {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.getCurrentMeasurement()
   }
 
-  public clearMeasurements(view: string): void {
+  public static learMeasurements(view: string): void {
     if (!this.views.has(view)) throw new Error(`View ${view} not found`)
     return this.views.get(view)!.clearMeasurements()
   }
 
-  public render(): void {
+  public static render(): void {
     if (this.renderNowInterval) return
     this.renderNowInterval = setTimeout(() => {
       this.renderNowInterval = null
@@ -383,7 +365,7 @@ export class Engine {
     }, settings.MSPFRAME)
   }
 
-  public getStats(): Stats {
+  public static getStats(): Stats {
     return {
       regl: {
         totalTextureSize: this.regl.stats.getTotalTextureSize ? this.regl.stats!.getTotalTextureSize() : -1,
@@ -408,11 +390,11 @@ export class Engine {
     }
   }
 
-  public initializeFontRenderer(fontData: Uint8ClampedArray): void {
+  public static initializeFontRenderer(fontData: Uint8ClampedArray): void {
     initializeFontRenderer(this.regl, fontData)
   }
 
-  public destroy(): void {
+  public static destroy(): void {
     this.views.forEach((view) => {
       view.removeEventListener("update", this.renderDispatch)
       view.destroy()

@@ -71,39 +71,40 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
     }
   }
 
-  useEffect(() => {
-    renderer.engine.then(async (engine) => {
-      const transform = await engine.getLayerTransform("main", props.layerID)
-      setLayerName(props.layerID)
-      setDatumX(transform.datum[0])
-      setDatumY(transform.datum[1])
-      setRotation(transform.rotation)
-      setScale(transform.scale)
-      setMirrorX(transform.mirror_x)
-      setMirrorY(transform.mirror_y)
-      if (transform.order != undefined) {
-        setTransformOrder(transform.order)
-      } else {
-        setTransformOrder(["translate", "rotate", "mirror", "scale"])
-      }
-    })
-    return (): void => {
-      console.log("LayerTransform Unloaded")
+  async function getLayerTransform(): Promise<void> {
+    const transform = await renderer.engine.getLayerTransform("main", props.layerID)
+    setLayerName(props.layerID)
+    setDatumX(transform.datum[0])
+    setDatumY(transform.datum[1])
+    setRotation(transform.rotation)
+    setScale(transform.scale)
+    setMirrorX(transform.mirror_x)
+    setMirrorY(transform.mirror_y)
+    if (transform.order != undefined) {
+      setTransformOrder(transform.order)
+    } else {
+      setTransformOrder(["translate", "rotate", "mirror", "scale"])
     }
+  }
+
+  async function setLayerTransform(): Promise<void> {
+    await renderer.engine.setLayerTransform("main", props.layerID, {
+      datum: vec2.fromValues(datumX, datumY),
+      rotation: rotation,
+      scale: scale,
+      mirror_x: mirror_x,
+      mirror_y: mirror_y,
+      order: transformOrder,
+    })
+    await renderer.engine.render()
+  }
+
+  useEffect(() => {
+    getLayerTransform()
   }, [])
 
   useEffect(() => {
-    renderer.engine.then((engine) => {
-      engine.setLayerTransform("main", props.layerID, {
-        datum: vec2.fromValues(datumX, datumY),
-        rotation: rotation,
-        scale: scale,
-        mirror_x: mirror_x,
-        mirror_y: mirror_y,
-        order: transformOrder,
-      })
-      engine.render()
-    })
+    setLayerTransform()
   })
 
   const roundToThree = (num: number): number => {

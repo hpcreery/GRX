@@ -150,9 +150,16 @@ export class StepLayer {
   }
 }
 
-// export const Interface = {
+// export const TEST = {
 // }
-// Comlink.expose(Interface);
+// export abstract class TEST {
+//   public static A = '1'
+//   private static B = '2'
+//   public static goB(): string {
+//     return TEST.B
+//   }
+// }
+// Comlink.expose(TEST);
 
 ;("THIS SECTION IS USED WHEN SHARED WORKER IS ENABLED, BUT NOT USED IN THE CURRENT IMPLEMENTATION")
 // console.log('crossOriginIsolated:', crossOriginIsolated);

@@ -47,7 +47,7 @@ export interface MatrixEventDetail {
 
 
 /**
- * dataInterface object provides all the methods to manage projects.
+ * DataInterface object provides all the methods to manage projects.
  * Rules for methods:
  *   - All methods are static and can be called without instantiating the class.
  *   - All methods throw CommandError on failure. Other errors are considered internal errors.

@@ -1,18 +1,11 @@
 import * as Comlink from "comlink"
 import EngineWorker from "./engine/engine?worker"
-import type { QuerySelection, Engine, Stats } from "./engine/engine"
+import type { QuerySelection, Engine } from "./engine/engine"
 import { PointerMode } from "./engine/types"
-import type { GridSettings, RenderSettings } from "./engine/settings"
-import { gridSettings, settings } from "./engine/settings"
 import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import { UID } from "./engine/utils"
-
-const EngineWorkerInstance = new EngineWorker()
-export const EngineComWorker = Comlink.wrap<typeof Engine>(EngineWorkerInstance)
-
-export const DataInterface = EngineComWorker.DataInterfaceProxy
-
+import type { DataInterface } from "./data/interface"
 
 export interface RenderEngineFrontendConfig {
   container?: HTMLElement
@@ -44,30 +37,6 @@ export const PointerEvents = {
 export type PointerEvent = CustomEvent<PointerCoordinates>
 
 export class Renderer {
-  public settings: RenderSettings = new Proxy(
-    settings,
-    {
-      set: (target, name, value): boolean => {
-        this.engine.then((engine) => {
-          engine.setSettings({ [name]: value })
-        })
-        target[name] = value
-        return true
-      },
-    },
-  )
-  public grid: GridSettings = new Proxy(
-    gridSettings,
-    {
-      set: (target, name, value): boolean => {
-        this.engine.then((engine) => {
-          engine.setGrid({ [name]: value })
-        })
-        target[name] = value
-        return true
-      },
-    },
-  )
   public pointerSettings: PointerSettings = new Proxy(
     {
       mode: PointerMode.MOVE,
@@ -80,7 +49,8 @@ export class Renderer {
             if (value === PointerMode.SELECT) viewElement.style.cursor = "crosshair"
             if (value === PointerMode.MEASURE) {
               viewElement.style.cursor = "crosshair"
-              this.settings.SHOW_DATUMS = true
+              // this.settings.SHOW_DATUMS = true
+              this.engine.setSettings({ SHOW_DATUMS: true })
             }
           })
         }
@@ -109,26 +79,20 @@ export class Renderer {
     },
   )
 
+  public canvasGL: HTMLCanvasElement
   public managedViews: HTMLElement[] = []
-
   public readonly CONTAINER: HTMLElement
+
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
-  public engine: Promise<Comlink.Remote<Engine>>
-  public canvasGL: HTMLCanvasElement
+
+  private engineWorker: Worker
+  public engine: Comlink.Remote<typeof Engine>
+  public DataInterface: Comlink.Remote<typeof DataInterface>
+
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
-      container = document.createElement("div")
-      container.style.cursor = "auto"
-      // container.style.zIndex = "100"
-      container.style.top = "0px"
-      container.style.left = "0px"
-      container.style.width = "100vw"
-      container.style.height = "100vh"
-      container.style.pointerEvents = "none"
-      container.style.position = "absolute"
-      // document.append(container)
-      document.body.append(container)
+      container = this.createContainer()
     }
     this.CONTAINER = container
 
@@ -136,20 +100,24 @@ export class Renderer {
 
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
 
-    this.engine = new EngineComWorker(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
+    this.engineWorker = new EngineWorker()
+    this.engine = Comlink.wrap<typeof Engine>(this.engineWorker)
+    this.engine.init(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
       attributes,
       container: this.CONTAINER.getBoundingClientRect(),
       // dpr: this.canvasSettings.dpr,
+    }).then(() => {
+      this.resize()
     })
-
+    this.DataInterface = this.engine.DataInterface
 
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
-    this.render()
+    this.engine.render()
     this.pollViews()
   }
 
-  public addManagedView(view: HTMLElement, attributes: {project: string, step: string}): string {
+  public addManagedView(view: HTMLElement, attributes: { project: string; step: string }): string {
     const { project, step } = attributes
     let id = UID()
     if (view.id == null || view.id === "") {
@@ -158,30 +126,32 @@ export class Renderer {
       id = view.id
     }
     this.managedViews.push(view)
-    this.engine.then(async (engine) => {
-      await engine.addView(id, project, step, view.getBoundingClientRect())
-      await this.addControls(view)
-    })
+    this.engine.addView(id, project, step, view.getBoundingClientRect())
+    this.addControls(view)
     return id
+  }
+
+  private createContainer(): HTMLElement {
+    const container = document.createElement("div")
+    container.style.cursor = "auto"
+    container.style.top = "0px"
+    container.style.left = "0px"
+    container.style.width = "100vw"
+    container.style.height = "100vh"
+    container.style.pointerEvents = "none"
+    container.style.position = "absolute"
+    document.body.append(container)
+    return container
   }
 
   public removeManagedView(view: HTMLElement): void {
     this.managedViews.splice(this.managedViews.indexOf(view), 1)
   }
 
-  public async onLoad(cb: () => void): Promise<void> {
-    await this.engine
-    cb()
+  public async onLoad(callback: () => void): Promise<void> {
+    await this.engine.onLoad()
+    callback()
   }
-
-  // private updateViewboxes() {
-  //   // const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-  //   const { x: containerOffsetX, y: containerOffsetY, width: _containerWidth, height: containerHeight } = this.CONTAINER.getBoundingClientRect()
-  //   const viewbox = element.getBoundingClientRect()
-  //   viewbox.y = containerHeight - viewbox.bottom + containerOffsetY
-  //   viewbox.x = viewbox.x - containerOffsetX
-  //   await engine.updateViewBox(view, viewbox)
-  // }
 
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas")
@@ -202,18 +172,11 @@ export class Renderer {
 
   private resize(): void {
     const { width, height } = this.CONTAINER.getBoundingClientRect()
-
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
-
-    this.engine.then((engine) => {
-      engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
-    })
-
-    this.engine.then((engine) => {
-      this.managedViews.forEach(async (node) => {
-        await engine.updateViewBox(node.id, node.getBoundingClientRect())
-      })
+    this.engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
+    this.managedViews.forEach((node) => {
+      this.engine.updateViewBox(node.id, node.getBoundingClientRect())
     })
   }
 
@@ -226,7 +189,7 @@ export class Renderer {
     if (!element.id) {
       throw new Error("Element must have a 'id' attribute")
     }
-    const engine = await this.engine
+    const engine = this.engine
     const sendPointerEvent = async (
       element: HTMLElement,
       mouse: MouseEvent,
@@ -268,8 +231,8 @@ export class Renderer {
         return mouse_normalize_pos
       }
 
-      const engine = await this.engine
-      return engine.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
+      // const engine = await this.engine
+      return this.engine.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -398,31 +361,26 @@ export class Renderer {
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         const isDragging = await engine.isDragging(element.id)
         if (isDragging) return
-        this.engine.then((engine) => {
-          engine.grabViewport(element.id)
-          switch (e.key) {
-            case "ArrowUp":
-              engine.moveViewport(element.id, 0, 10)
-              break
-            case "ArrowDown":
-              engine.moveViewport(element.id, 0, -10)
-              break
-            case "ArrowLeft":
-              engine.moveViewport(element.id, 10, 0)
-              break
-            case "ArrowRight":
-              engine.moveViewport(element.id, -10, 0)
-              break
-          }
-          engine.releaseViewport(element.id)
-        })
+        // this.engine.then((engine) => {
+        // })
+        engine.grabViewport(element.id)
+        switch (e.key) {
+          case "ArrowUp":
+            engine.moveViewport(element.id, 0, 10)
+            break
+          case "ArrowDown":
+            engine.moveViewport(element.id, 0, -10)
+            break
+          case "ArrowLeft":
+            engine.moveViewport(element.id, 10, 0)
+            break
+          case "ArrowRight":
+            engine.moveViewport(element.id, -10, 0)
+            break
+        }
+        engine.releaseViewport(element.id)
       }
     }
-  }
-
-  public async render(): Promise<void> {
-    const engine = await this.engine
-    engine.render()
   }
 
   private sendFontData(): void {
@@ -447,9 +405,7 @@ export class Renderer {
       }
 
       const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0], cozetteFontInfo.textureSize[1])
-      this.engine.then((engine) => {
-        engine.initializeFontRenderer(imageData.data)
-      })
+      this.engine.initializeFontRenderer(imageData.data)
 
       // download font image sample
       // const canvasUrl = canvas.toDataURL("image/png", 1);
@@ -473,17 +429,14 @@ export class Renderer {
     createEl.remove()
   }
 
-  public async getStats(): Promise<Stats> {
-    const engine = await this.engine
-    return engine.getStats()
-  }
+  // public async getStats(): Promise<Stats> {
+  //   return this.engine.getStats()
+  // }
 
   public async destroy(): Promise<void> {
-    const engine = await this.engine
-    engine.destroy()
-    EngineComWorker[Comlink.releaseProxy]()
-    EngineWorkerInstance.terminate()
-    // DataComWorker[Comlink.releaseProxy]()
+    this.engine.destroy()
+    this.engine[Comlink.releaseProxy]()
+    this.engineWorker.terminate()
 
     this.CONTAINER.childNodes.forEach((node) => {
       if (node instanceof HTMLElement) {
