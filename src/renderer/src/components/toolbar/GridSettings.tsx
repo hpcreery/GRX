@@ -49,7 +49,7 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
   })
 
   async function getGridSettings(): Promise<void> {
-    const grid = await renderer.engine.getGrid()
+    const grid = await renderer.engine.interface.read_grid_settings()
     setSpacingX(grid.spacing_x)
     setSpacingY(grid.spacing_y)
     setOffsetX(grid.offset_x)
@@ -71,7 +71,7 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
     // renderer.grid.enabled = enabled
     // renderer.grid.type = type
     // renderer.grid.color = color
-    renderer.engine.setGrid({
+    renderer.engine.interface.update_grid_settings({
       spacing_x: spacingX,
       spacing_y: spacingY,
       offset_x: offsetX,

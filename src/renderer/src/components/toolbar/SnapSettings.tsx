@@ -17,7 +17,7 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
   })
 
   async function getSnapMode(): Promise<void> {
-    const mode = await renderer.engine.getSettings().then(settings => settings.SNAP_MODE)
+    const mode = await renderer.engine.interface.read_engine_settings().then(settings => settings.SNAP_MODE)
     setSnapMode(mode)
   }
 
@@ -27,7 +27,7 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
 
   useEffect(() => {
     // renderer.settings.SNAP_MODE = snapMode
-    renderer.engine.setSettings({ SNAP_MODE: snapMode })
+    renderer.engine.interface.set_engine_settings({ SNAP_MODE: snapMode })
   }, [snapMode])
 
   useEffect(() => {

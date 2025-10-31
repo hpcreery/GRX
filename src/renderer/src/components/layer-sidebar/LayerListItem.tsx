@@ -55,7 +55,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   async function changeColor(color: vec3): Promise<void> {
     const engine = await renderer.engine
     if (!engine) return
-    await engine.setLayerColor("main", layer, color)
+    await engine.interface.update_view_layer_color("main", layer, color)
     setColor(color)
   }
 
@@ -183,10 +183,10 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     const engine = await renderer.engine
     if (!engine) return
     if (visible) {
-      engine.setLayerVisibility("main", layer, false)
+      engine.interface.update_view_layer_visibility("main", layer, false)
       setVisible(false)
     } else {
-      engine.setLayerVisibility("main", layer, true)
+      engine.interface.update_view_layer_visibility("main", layer, true)
       setVisible(true)
     }
   }
@@ -266,14 +266,14 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   ]
 
   async function getLayerColor(): Promise<void> {
-    const newColor = await renderer.engine.getLayerColor("main", layer)
+    const newColor = await renderer.engine.interface.read_view_layer_color("main", layer)
     if (newColor[0] !== color[0] || newColor[1] !== color[1] || newColor[2] !== color[2]) {
       setColor(newColor)
     }
   }
 
   async function getLayerVisibility(): Promise<void> {
-    const newVisible = await renderer.engine.getLayerVisibility("main", layer)
+    const newVisible = await renderer.engine.interface.read_view_layer_visibility("main", layer)
     if (newVisible !== visible) {
       setVisible(newVisible)
     }

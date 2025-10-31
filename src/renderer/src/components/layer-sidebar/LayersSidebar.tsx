@@ -67,16 +67,16 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
   async function deleteAllLayers(): Promise<void> {
     layers.forEach(async (layer) => {
       if (!renderer.engine) return
-      await renderer.DataInterface.delete_layer(project.name, layer)
-      setLayers(await renderer.DataInterface.read_layers_list(project.name))
+      await renderer.interface.delete_layer(project.name, layer)
+      setLayers(await renderer.interface.read_layers_list(project.name))
       setRenderID(0)
     })
   }
 
   useEffect(() => {
     const reg = async (): Promise<void> => {
-      await renderer.engine.zoomFit(project.name)
-      return setLayers(await renderer.DataInterface.read_layers_list(project.name))
+      await renderer.engine.interface.update_view_zoom_fit_artwork(project.name)
+      return setLayers(await renderer.interface.read_layers_list(project.name))
     }
     reg()
   }, [])
@@ -93,32 +93,26 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
     download: (): void => {},
     preview: (): void => {},
     remove: async (layer: string): Promise<void> => {
-      const engine = await renderer.engine
-      if (!engine) return
-      await renderer.DataInterface.delete_layer(project.name, layer)
-      setLayers(await renderer.DataInterface.read_layers_list(project.name))
+      await renderer.interface.delete_layer(project.name, layer)
+      setLayers(await renderer.interface.read_layers_list(project.name))
       return
     },
     hideAll: (): void => {
       layers.forEach(async (layer) => {
-        const engine = await renderer.engine
-        if (!engine) return
-        await engine.setLayerVisibility(project.name, layer, false)
+        await renderer.engine.interface.update_view_layer_visibility(project.name, layer, false)
         setRenderID(renderID + 1)
       })
     },
     showAll: (): void => {
       layers.forEach(async (layer) => {
-        const engine = await renderer.engine
-        if (!engine) return
-        await engine.setLayerVisibility(project.name, layer, true)
+        await renderer.engine.interface.update_view_layer_visibility(project.name, layer, true)
         setRenderID(renderID + 1)
       })
     },
     deleteAll: openDeleteConfirmModal,
     rename: async (oldName: string, newName: string): Promise<void> => {
-      await renderer.DataInterface.update_layer_name(project.name, oldName, newName)
-      setLayers(await renderer.DataInterface.read_layers_list(project.name))
+      await renderer.interface.update_layer_name(project.name, oldName, newName)
+      setLayers(await renderer.interface.read_layers_list(project.name))
     },
   }
 
@@ -162,8 +156,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
       // temp set the new order
       setLayers((items) => arrayMove(items, oldIndex, newIndex))
       // update the real order
-      renderer.DataInterface.update_layer_position(project.name, layerName, newIndex)
-      const newLayers = await renderer.DataInterface.read_layers_list(project.name)
+      renderer.interface.update_layer_position(project.name, layerName, newIndex)
+      const newLayers = await renderer.interface.read_layers_list(project.name)
       setLayers(newLayers)
     }
   }
@@ -204,12 +198,12 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         try {
           // console.time(`${file.name} file parse time`)
           // await DataInterface.create_layer(project.name, file.id)
-          await renderer.DataInterface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
+          await renderer.interface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
             project: project.name,
             step: project.name,
             layer: file.id,
           })
-          setLayers(await renderer.DataInterface.read_layers_list(project.name))
+          setLayers(await renderer.interface.read_layers_list(project.name))
           // console.timeEnd(`${file.name} file parse time`)
           notifications.update({
             id: loadingNotificationID,

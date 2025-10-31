@@ -33,8 +33,8 @@ export default function App(): JSX.Element | null {
   useEffect(() => {
     console.log("Loading Engine Application")
     const renderer = new Renderer({ container: elementRef.current, attributes: { powerPreference: "high-performance", antialias: false } })
-    renderer.DataInterface.create_project(PROJECT_NAME)
-    renderer.DataInterface.create_step(PROJECT_NAME, STEP_NAME)
+    renderer.interface.create_project(PROJECT_NAME)
+    renderer.interface.create_step(PROJECT_NAME, STEP_NAME)
     renderer.addManagedView(viewRef.current, {
       project: PROJECT_NAME,
       step: STEP_NAME,
@@ -61,7 +61,7 @@ export default function App(): JSX.Element | null {
       const color = chroma(colors.colorScheme == "dark" ? theme.colors.dark[8] : theme.colors.gray[1])
         .alpha(0)
         .gl()
-      renderer.engine.setSettings({ BACKGROUND_COLOR: color })
+      renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: color })
     }
   }
 

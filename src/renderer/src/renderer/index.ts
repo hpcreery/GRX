@@ -50,7 +50,7 @@ export class Renderer {
             if (value === PointerMode.MEASURE) {
               viewElement.style.cursor = "crosshair"
               // this.settings.SHOW_DATUMS = true
-              this.engine.setSettings({ SHOW_DATUMS: true })
+              this.engine.interface.set_engine_settings({ SHOW_DATUMS: true })
             }
           })
         }
@@ -88,7 +88,7 @@ export class Renderer {
 
   private engineWorker: Worker
   public engine: Comlink.Remote<typeof Engine>
-  public DataInterface: Comlink.Remote<typeof DataInterface>
+  public interface: Comlink.Remote<typeof DataInterface>
 
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
@@ -109,7 +109,7 @@ export class Renderer {
     }).then(() => {
       this.resize()
     })
-    this.DataInterface = this.engine.DataInterface
+    this.interface = this.engine.interface
 
     this.sendFontData()
     new ResizeObserver(() => this.resize()).observe(this.CONTAINER)
@@ -126,7 +126,7 @@ export class Renderer {
       id = view.id
     }
     this.managedViews.push(view)
-    this.engine.addView(id, project, step, view.getBoundingClientRect())
+    this.engine.interface.create_view(id, project, step, view.getBoundingClientRect())
     this.addControls(view)
     return id
   }
@@ -174,9 +174,9 @@ export class Renderer {
     const { width, height } = this.CONTAINER.getBoundingClientRect()
     this.canvasGL.style.width = String(width) + "px"
     this.canvasGL.style.height = String(height) + "px"
-    this.engine.updateBoundingBox(this.CONTAINER.getBoundingClientRect())
+    this.engine.interface.update_engine_bounding_box(this.CONTAINER.getBoundingClientRect())
     this.managedViews.forEach((node) => {
-      this.engine.updateViewBox(node.id, node.getBoundingClientRect())
+      this.engine.interface.update_view_box(node.id, node.getBoundingClientRect())
     })
   }
 
@@ -207,32 +207,7 @@ export class Renderer {
       if (!element.id) {
         throw new Error("Element must have a 'id' attribute")
       }
-      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-
-      // console.log(offsetX, offsetY, width, height)
-
-      // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
-      // but rather the coordinates of the world
-      function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-        // Get the mouse position relative to the canvas
-        return [e.clientX - offsetX, height - (e.clientY - offsetY)]
-      }
-
-      function getMouseNormalizedWorldCoordinates(e: MouseEvent): [number, number] {
-        // const { width, height } = this.CONTAINER.getBoundingClientRect()
-        const mouse_element_pos = getMouseCanvasCoordinates(e)
-        // console.log(mouse_element_pos)
-
-        // Normalize the mouse position to the canvas
-        const mouse_normalize_pos = [mouse_element_pos[0] / width, mouse_element_pos[1] / height] as [number, number]
-        // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-        // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
-
-        return mouse_normalize_pos
-      }
-
-      // const engine = await this.engine
-      return this.engine.getWorldPosition(element.id, ...getMouseNormalizedWorldCoordinates(e))
+      return this.engine.interface.read_world_position_from_dom_position(element.id, e.clientX, e.clientY)
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -241,19 +216,19 @@ export class Renderer {
       this.pointerCache.splice(index, 1)
     }
 
-    await engine.updateViewBox(element.id, element.getBoundingClientRect())
+    await engine.interface.update_view_box(element.id, element.getBoundingClientRect())
 
     element.style.cursor = "grab"
 
     element.onwheel = async (e): Promise<void> => {
       const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
-      const settings = await engine.getSettings()
+      const settings = await engine.interface.read_engine_settings()
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
-        engine.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
-        engine.zoomAtPoint(element.id, width / 2, height / 2, e.deltaY * moveScale)
+        engine.interface.zoom_at_point(element.id, width / 2, height / 2, e.deltaY * moveScale)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -263,10 +238,10 @@ export class Renderer {
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
-        await engine.grabViewport(element.id)
+        await engine.interface.view_pointer_grab(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await engine.select(element.id, [x, y])
+        const features = await engine.interface.read_view_select(element.id, [x, y])
         // console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -277,11 +252,11 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x1, y1] = await getMouseWorldCoordinates(element, e)
-        const currentMeasurement = await engine.getCurrentMeasurement(element.id)
+        const currentMeasurement = await engine.interface.read_view_current_measurement(element.id)
         if (currentMeasurement != null) {
-          engine.finishMeasurement(element.id, [x1, y1])
+          engine.interface.finish_view_measurement(element.id, [x1, y1])
         } else {
-          engine.addMeasurement(element.id, [x1, y1])
+          engine.interface.create_view_measurement(element.id, [x1, y1])
         }
       }
     }
@@ -290,21 +265,21 @@ export class Renderer {
       // const [x, y] = await this.getMouseWorldCoordinates(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grab"
-        await engine.releaseViewport(element.id)
+        await engine.interface.view_pointer_release(element.id)
       }
       removePointerCache(e)
     }
     element.onpointercancel = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await engine.releaseViewport(element.id)
+        await engine.interface.view_pointer_release(element.id)
       }
       removePointerCache(e)
     }
     element.onpointerleave = async (e): Promise<void> => {
       sendPointerEvent(element, e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
-        await engine.releaseViewport(element.id)
+        await engine.interface.view_pointer_release(element.id)
       }
       removePointerCache(e)
     }
@@ -320,10 +295,10 @@ export class Renderer {
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x, y] = await getMouseWorldCoordinates(element, e)
-        engine.updateMeasurement(element.id, [x, y])
+        engine.interface.update_view_measurement(element.id, [x, y])
       }
 
-      if (!(await engine.isDragging(element.id))) {
+      if (!(await engine.interface.read_pointer_grab(element.id))) {
         await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
         return
       }
@@ -339,16 +314,16 @@ export class Renderer {
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
-          const settings = await engine.getSettings()
+          const settings = await engine.interface.read_engine_settings()
           const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
           if (settings.ZOOM_TO_CURSOR) {
-            engine.zoomAtPoint(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
           } else {
-            engine.zoomAtPoint(element.id, width / 2, height / 2, zoomFactor)
+            engine.interface.zoom_at_point(element.id, width / 2, height / 2, zoomFactor)
           }
-          engine.moveViewport(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          engine.interface.view_move(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await engine.moveViewport(element.id, e.movementX * moveScale, e.movementY * moveScale)
+          await engine.interface.view_move(element.id, e.movementX * moveScale, e.movementY * moveScale)
         }
       }
     }
@@ -359,26 +334,26 @@ export class Renderer {
       //   element.style.cursor = 'grab'
       // }
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-        const isDragging = await engine.isDragging(element.id)
+        const isDragging = await engine.interface.read_pointer_grab(element.id)
         if (isDragging) return
         // this.engine.then((engine) => {
         // })
-        engine.grabViewport(element.id)
+        engine.interface.view_pointer_grab(element.id)
         switch (e.key) {
           case "ArrowUp":
-            engine.moveViewport(element.id, 0, 10)
+            engine.interface.view_move(element.id, 0, 10)
             break
           case "ArrowDown":
-            engine.moveViewport(element.id, 0, -10)
+            engine.interface.view_move(element.id, 0, -10)
             break
           case "ArrowLeft":
-            engine.moveViewport(element.id, 10, 0)
+            engine.interface.view_move(element.id, 10, 0)
             break
           case "ArrowRight":
-            engine.moveViewport(element.id, -10, 0)
+            engine.interface.view_move(element.id, -10, 0)
             break
         }
-        engine.releaseViewport(element.id)
+        engine.interface.view_pointer_release(element.id)
       }
     }
   }

@@ -29,7 +29,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
   })
 
   async function getEngineSettings(): Promise<void> {
-    const settings = await renderer.engine.getSettings()
+    const settings = await renderer.engine.interface.read_engine_settings()
     setColorBlend(settings.COLOR_BLEND)
     setZoomToCursor(settings.ZOOM_TO_CURSOR)
     setShowDatums(settings.SHOW_DATUMS)
@@ -40,7 +40,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
   }, [])
 
   useEffect(() => {
-    renderer.engine.setSettings({
+    renderer.engine.interface.set_engine_settings({
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
       SHOW_DATUMS: showDatums

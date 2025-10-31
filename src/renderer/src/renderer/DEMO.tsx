@@ -1211,14 +1211,14 @@ function DemoApp(): JSX.Element {
       },
     })
 
-    const settings = render.engine.getSettings()
+    const settings = render.engine.interface.read_engine_settings()
     settings.then(setting => {
       setOutlineMode(setting.OUTLINE_MODE)
       setSkeletonMode(setting.SKELETON_MODE)
       setZoomToCursor(setting.ZOOM_TO_CURSOR)
       setShowDatums(setting.SHOW_DATUMS)
     })
-    const DataInterface = render.DataInterface
+    const DataInterface = render.interface
 
     console.log(box1Ref.current)
 
@@ -1755,21 +1755,21 @@ function DemoApp(): JSX.Element {
           <MouseCoordinates engine={renderer} key="coordinates" />
           <Button
             onClick={async (): Promise<void> => {
-              const layers = await renderer.DataInterface.read_layers_list(project)
+              const layers = await renderer.interface.read_layers_list(project)
               setLayers(layers)
-              layers.map((l) => renderer.engine.setLayerColor("box1", l, [Math.random(), Math.random(), Math.random()]))
+              layers.map((l) => renderer.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random()]))
             }}
           >
             Randomize Colors
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-                renderer.engine.zoomFit("box1")
+                renderer.engine.interface.update_view_zoom_fit_artwork("box1")
             }}
           >
             Zoom Fit
           </Button>
-          <Button onClick={async (): Promise<void> => renderer.engine.setTransform("box1", { position: [0, 0], zoom: 16 })}>
+          <Button onClick={async (): Promise<void> => renderer.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
             (0,0)
           </Button>
           <br />
@@ -1778,9 +1778,9 @@ function DemoApp(): JSX.Element {
             checked={outlineMode}
             onChange={async (e): Promise<void> => {
               // renderer.settings.OUTLINE_MODE = e.target.checked
-              renderer.engine.setSettings({ OUTLINE_MODE: e.target.checked })
+              renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: e.target.checked })
               setOutlineMode(e.target.checked)
-              const layers = await renderer.DataInterface.read_layers_list(project)
+              const layers = await renderer.interface.read_layers_list(project)
               setLayers(layers)
             }}
           />
@@ -1789,9 +1789,9 @@ function DemoApp(): JSX.Element {
             checked={skeletonMode}
             onChange={async (e): Promise<void> => {
               // renderer.settings.SKELETON_MODE = e.target.checked
-              renderer.engine.setSettings({ SKELETON_MODE: e.target.checked })
+              renderer.engine.interface.set_engine_settings({ SKELETON_MODE: e.target.checked })
               setSkeletonMode(e.target.checked)
-              const layers = await renderer.DataInterface.read_layers_list(project)
+              const layers = await renderer.interface.read_layers_list(project)
               setLayers(layers)
             }}
           />
@@ -1801,7 +1801,7 @@ function DemoApp(): JSX.Element {
             checked={zoomToCursor}
             onChange={(e): void => {
               // renderer.settings.ZOOM_TO_CURSOR = e.target.checked
-              renderer.engine.setSettings({ ZOOM_TO_CURSOR: e.target.checked })
+              renderer.engine.interface.set_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
               setZoomToCursor(e.target.checked)
             }}
           />
@@ -1815,7 +1815,7 @@ function DemoApp(): JSX.Element {
           Snap Mode
           <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => {
             // (renderer.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)
-            renderer.engine.setSettings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
+            renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
             }} />
           {layers.map((layer, i) => {
             return (
@@ -1825,9 +1825,9 @@ function DemoApp(): JSX.Element {
                   // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
                     // const engine = await renderer.engine
-                    renderer.DataInterface.read_steps_list(project).then((allSteps) => {
+                    renderer.interface.read_steps_list(project).then((allSteps) => {
                       allSteps.map((step) => {
-                        renderer.engine.setLayerVisibility(step, layer, e.target.checked)
+                        renderer.engine.interface.update_view_layer_visibility(step, layer, e.target.checked)
                       })
                     })
                   }}

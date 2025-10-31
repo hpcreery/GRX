@@ -123,7 +123,7 @@ export class ViewRenderer extends UpdateEventTarget {
     matrix: mat3.create(),
     matrixInverse: mat3.create(),
     update: (): void => {
-      this.updateTransform()
+      this.refreshTransform()
     },
   }
 
@@ -259,7 +259,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
     this.viewBox = newViewBox
     if (viewBoxChanged) {
-      this.updateTransform()
+      this.refreshTransform()
       this.dispatchTypedEvent("update", new Event("update"))
     }
   }
@@ -314,7 +314,7 @@ export class ViewRenderer extends UpdateEventTarget {
     return this.transform.dragging
   }
 
-  public updateTransform(): void {
+  public refreshTransform(): void {
     // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
     const { zoom, position } = this.transform
     const { width, height } = this.viewBox
@@ -356,7 +356,15 @@ export class ViewRenderer extends UpdateEventTarget {
   }
 
   public getWorldPosition(x: number, y: number): [number, number] {
-    const mousePosViewbox: vec2 = [x * 2 - 1, y * 2 - 1]
+    const { width, height, x: offsetX, y: offsetY } = this.viewBox
+    const mouse_element_pos = [x - offsetX, height - (y - offsetY)]
+
+    // Normalize the mouse position to the canvas
+    const mouse_normalize_pos = {x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height}
+    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
+    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+
+    const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
     const mousePos = vec2.transformMat3(vec2.create(), mousePosViewbox, this.transform.matrixInverse)
     return [mousePos[0], mousePos[1]]
   }
@@ -418,7 +426,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
-  public setTransform(transform: Partial<RenderTransform>): void {
+  public updateTransform(transform: Partial<RenderTransform>): void {
     if (transform.zoom) {
       if (transform.zoom < settings.MIN_ZOOM) {
         transform.zoom = settings.MIN_ZOOM
@@ -427,7 +435,7 @@ export class ViewRenderer extends UpdateEventTarget {
       }
     }
     Object.assign(this.transform, transform)
-    this.updateTransform()
+    this.refreshTransform()
   }
 
   /**
@@ -642,13 +650,13 @@ export class ViewRenderer extends UpdateEventTarget {
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
       const offsetX = bbTopLeftToOriginScaled[0]
       const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx / 2 - (bbHeightPx * zoom) / 2
-      this.setTransform({ position: [offsetX, offsetY], zoom })
+      this.updateTransform({ position: [offsetX, offsetY], zoom })
     } else {
       const zoom = screenHeightPx / bbHeightPx
       const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
       const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx / 2 - (bbWidthPx * zoom) / 2
       const offsetY = -bbTopLeftToOriginScaled[1]
-      this.setTransform({ position: [offsetX, offsetY], zoom })
+      this.updateTransform({ position: [offsetX, offsetY], zoom })
     }
     this.dispatchTypedEvent("update", new Event("update"))
   }

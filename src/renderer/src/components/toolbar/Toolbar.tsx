@@ -49,7 +49,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const theme = useMantineTheme()
 
   async function getModes(): Promise<void> {
-    const settings = await renderer.engine.getSettings()
+    const settings = await renderer.engine.interface.read_engine_settings()
     setOutlineMode(settings.OUTLINE_MODE)
     setSkeletonMode(settings.SKELETON_MODE)
   }
@@ -64,7 +64,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       title: "Clear Measurements",
       icon: <IconTrashX stroke={1.5} size={18} color={theme.colors.red[7]} />,
       onClick: async (): Promise<void> => {
-        renderer.engine.learMeasurements("main")
+        renderer.engine.interface.clear_view_measurements("main")
       },
     })
     actions.push({
@@ -72,7 +72,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Outline Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderer.engine.setSettings({ OUTLINE_MODE: false })
+        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: false })
         setOutlineMode(false)
       },
       leftSection: <IconCube />,
@@ -83,7 +83,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Outline Mode",
       description: "Show outline of all features",
       onClick: () => {
-        renderer.engine.setSettings({ OUTLINE_MODE: true })
+        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: true })
         setOutlineMode(true)
       },
       leftSection: <IconCube3dSphere />,
@@ -94,7 +94,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Skeleton Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderer.engine.setSettings({ SKELETON_MODE: false })
+        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: false })
         setSkeletonMode(false)
       },
       leftSection: <IconBoneOff />,
@@ -105,7 +105,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Skeleton Mode",
       description: "Show skeleton of all lines and arcs, outline of the rest of feature types",
       onClick: () => {
-        renderer.engine.setSettings({ SKELETON_MODE: true })
+        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: true })
         setSkeletonMode(true)
       },
       leftSection: <IconBone />,
@@ -140,7 +140,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Clear Measurements",
       description: "Delete and remove all measurements",
       onClick: async (): Promise<void> => {
-        renderer.engine.learMeasurements("main")
+        renderer.engine.interface.clear_view_measurements("main")
       },
       leftSection: <IconTrashX />,
       // rightSection: <Kbd>A</Kbd>
@@ -205,16 +205,16 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "o",
       async (): Promise<void> => {
-        const currentSettings = await renderer.engine.getSettings()
-        renderer.engine.setSettings({ OUTLINE_MODE: !currentSettings.OUTLINE_MODE })
+        const currentSettings = await renderer.engine.interface.read_engine_settings()
+        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: !currentSettings.OUTLINE_MODE })
         setOutlineMode(!currentSettings.OUTLINE_MODE)
       },
     ],
     [
       "p",
       async (): Promise<void> => {
-        const currentSettings = await renderer.engine.getSettings()
-        renderer.engine.setSettings({ SKELETON_MODE: !currentSettings.SKELETON_MODE })
+        const currentSettings = await renderer.engine.interface.read_engine_settings()
+        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: !currentSettings.SKELETON_MODE })
         setSkeletonMode(!currentSettings.SKELETON_MODE)
       },
     ],
@@ -223,7 +223,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "f",
       (): void => {
-        renderer.engine.zoomFit("main")
+        renderer.engine.interface.update_view_zoom_fit_artwork("main")
       },
     ],
   ])
@@ -235,13 +235,13 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: async (): Promise<void> => {
         const engine = await renderer.engine
-        engine.learMeasurements("main")
+        engine.interface.clear_view_measurements("main")
       },
     },
   ]
 
   React.useEffect(() => {
-    renderer.engine.setMeasurementSettings({ units })
+    renderer.engine.interface.update_measurement_settings({ units })
   }, [])
 
   return (
@@ -310,7 +310,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 variant="default"
                 onClick={async (): Promise<void> => {
                   const engine = await renderer.engine
-                  engine.zoomFit("main")
+                  engine.interface.update_view_zoom_fit_artwork("main")
                 }}
               >
                 <IconZoomReset size={18} />
@@ -338,7 +338,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderer.engine.setSettings({ OUTLINE_MODE: !outlineMode })
+                  renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: !outlineMode })
                   setOutlineMode(!outlineMode)
                 }}
               >
@@ -351,7 +351,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderer.engine.setSettings({ SKELETON_MODE: !skeletonMode })
+                  renderer.engine.interface.set_engine_settings({ SKELETON_MODE: !skeletonMode })
                   setSkeletonMode(!skeletonMode)
                 }}
               >

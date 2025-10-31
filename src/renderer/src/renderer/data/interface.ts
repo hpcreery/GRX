@@ -63,22 +63,22 @@ export interface MatrixEventDetail {
  *   - Methods should not have side effects outside of the project management context.
  *   - Methods, when applicable, should be named using verbs that clearly indicate their action. ie CRUD operations should be named create_*, read_*, update_*, delete_*.
  */
-export const DataInterface = {
-  eventTarget: new TypedEventTarget<DataEventsMap>(),
+export abstract class DataInterface {
+  static eventTarget = new TypedEventTarget<DataEventsMap>()
 
-  subscribe_to_matrix(project: Project, callback: (event: CustomEvent<MatrixEventDetail>) => void, options?: AddEventListenerOptions): void {
+  static subscribe_to_matrix(project: Project, callback: (event: CustomEvent<MatrixEventDetail>) => void, options?: AddEventListenerOptions): void {
     this.eventTarget.addEventListener("matrix_changed", (event) => {
       if (event.detail.project === project) {
         callback(event)
       }
     }, options)
-  },
+  }
 
-  subscribe_to_projects_list(callback: (event: CustomEvent<ProjectListEventDetail>) => void, options?: AddEventListenerOptions): void {
+  static subscribe_to_projects_list(callback: (event: CustomEvent<ProjectListEventDetail>) => void, options?: AddEventListenerOptions): void {
     this.eventTarget.addEventListener("projects_list_changed", (event) => {
       callback(event)
     }, options)
-  },
+  }
 
   /**
    * PROJECT MANAGEMENT
@@ -91,7 +91,7 @@ export const DataInterface = {
    * @return void
    * @throws CommandError if a project with the same name already exists.
    */
-  create_project(project_name: string): void {
+  static create_project(project_name: string): void {
     if (PROJECTS.has(project_name)) {
       throw new CommandError(`Project with name ${project_name} already exists`, ErrorCode.INVALID_INPUT)
     }
@@ -100,7 +100,7 @@ export const DataInterface = {
       "projects_list_changed",
       new CustomEvent("projects_list_changed"),
     )
-  },
+  }
 
   /**
    * Retrieves a project by name.
@@ -108,21 +108,21 @@ export const DataInterface = {
    * @returns The project object.
    * @throws CommandError if the project is not found.
    */
-  _read_project_object(project_name: string): Project {
+  static _read_project_object(project_name: string): Project {
     const project = PROJECTS.get(project_name)
     if (!project) {
       throw new CommandError(`Project with name ${project_name} not found`, ErrorCode.PROJECT_NOT_FOUND)
     }
     return project
-  },
+  }
 
   /**
    * Lists all existing project names.
    * @returns An array of project names. In JSON format.
    */
-  read_projects(): string[] {
+  static read_projects(): string[] {
     return Array.from(PROJECTS.keys())
-  },
+  }
 
   /**
    * Renames an existing project.
@@ -131,7 +131,7 @@ export const DataInterface = {
    * @returns void
    * @throws CommandError if the project is not found or if a project with the new name already exists.
    */
-  update_project_name(old_name: string, new_name: string): void {
+  static update_project_name(old_name: string, new_name: string): void {
     if (!PROJECTS.has(old_name)) {
       throw new CommandError(`Project with name ${old_name} not found.`, ErrorCode.PROJECT_NOT_FOUND)
     }
@@ -142,7 +142,7 @@ export const DataInterface = {
     PROJECTS.delete(old_name)
     project.name = new_name
     PROJECTS.set(new_name, project)
-  },
+  }
 
 
   /**
@@ -158,7 +158,7 @@ export const DataInterface = {
    * @throws CommandError if the project is not found, if there are no steps in
    * the project, or if a layer with the same name already exists.
    */
-  create_layer(project_name: string, layer_name: string): void {
+  static create_layer(project_name: string, layer_name: string): void {
     const project = this._read_project_object(project_name)
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Please add a step before adding layers.", ErrorCode.STEP_NOT_FOUND)
@@ -179,7 +179,7 @@ export const DataInterface = {
         },
       }),
     )
-  },
+  }
 
   /**
    * Lists all layer names in the specified step of the specified project.
@@ -187,38 +187,38 @@ export const DataInterface = {
    * @param step_name Name of the step whose layers are to be listed.
    * @returns An array of layer names. In JSON format.
    */
-  read_layers_list(project_name: string): string[] {
+  static read_layers_list(project_name: string): string[] {
     return this.read_layers(project_name).map((layer) => layer.name)
-  },
+  }
 
   /**
    * Lists all layer objects in the specified project.
    * @param project_name Name of the project containing the step.
    * @returns An array of layer objects.
    */
-  read_layers(project_name: string): Layer[] {
+  static read_layers(project_name: string): Layer[] {
     const project = this._read_project_object(project_name)
     return project.matrix.layers
-  },
+  }
 
   /**
    * Lists all step names in the specified project.
    * @param project_name Name of the project containing the steps.
    * @returns An array of step names. In JSON format.
    */
-  read_steps_list(project_name: string): string[] {
+  static read_steps_list(project_name: string): string[] {
     return this.read_steps_info(project_name).map((step) => step.name)
-  },
+  }
 
   /**
    * Lists all step objects in the specified project.
    * @param project_name Name of the project containing the steps.
    * @returns An array of step objects.
    */
-  read_steps_info(project_name: string): Step[] {
+  static read_steps_info(project_name: string): Step[] {
     const project = this._read_project_object(project_name)
     return project.matrix.steps
-  },
+  }
 
   /**
    * Retrieves a step by name from the specified project.
@@ -227,14 +227,14 @@ export const DataInterface = {
    * @returns The step object.
    * @throws CommandError if the project or step is not found.
    */
-  read_step_info(project_name: string, step_name: string): Step {
+  static read_step_info(project_name: string, step_name: string): Step {
     const project = this._read_project_object(project_name)
     const step = project.matrix.steps.find((step) => step.name === step_name)
     if (!step) {
       throw new CommandError(`Step with name ${step_name} does not exist.`, ErrorCode.STEP_NOT_FOUND)
     }
     return step
-  },
+  }
 
   /**
    * Retrieves a layer by name from the specified step in the specified project.
@@ -244,14 +244,14 @@ export const DataInterface = {
    * @returns The layer object.
    * @throws CommandError if the project, step, or layer is not found.
    */
-  read_step_layer_info(project_name: string, step_name: string, layer_name: string): StepLayer {
+  static read_step_layer_info(project_name: string, step_name: string, layer_name: string): StepLayer {
     const step = this.read_step_info(project_name, step_name)
     const layer = step.layers.find((layer) => layer.layer.name === layer_name)
     if (!layer) {
       throw new CommandError(`Layer with name ${layer_name} does not exist.`, ErrorCode.LAYER_NOT_FOUND)
     }
     return layer
-  },
+  }
 
   /**
    * Removes a layer from all steps in the specified project.
@@ -261,7 +261,7 @@ export const DataInterface = {
    * @throws CommandError if the project is not found, if there are no steps in
    * the project, or if the layer does not exist.
    */
-  delete_layer(project_name: string, layer_name: string): void {
+  static delete_layer(project_name: string, layer_name: string): void {
     const project = this._read_project_object(project_name)
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Cannot remove layer.", ErrorCode.STEP_NOT_FOUND)
@@ -287,7 +287,7 @@ export const DataInterface = {
         },
       }),
     )
-  },
+  }
 
   /**
    * Renames a layer in all steps of the specified project.
@@ -295,7 +295,7 @@ export const DataInterface = {
    * @param old_name Current name of the layer to rename.
    * @param new_name New name for the layer.
    */
-  update_layer_name(project_name: string, old_name: string, new_name: string): void {
+  static update_layer_name(project_name: string, old_name: string, new_name: string): void {
     const project = this._read_project_object(project_name)
     if (project.matrix.steps.length === 0) {
       throw new CommandError("No steps available. Cannot rename layer.", ErrorCode.STEP_NOT_FOUND)
@@ -308,7 +308,7 @@ export const DataInterface = {
       throw new CommandError(`Layer with name ${new_name} already exists.`, ErrorCode.INVALID_INPUT)
     }
     layer.name = new_name
-  },
+  }
 
   /**
    * Updates the position of a layer in the layer stack of the specified project.
@@ -316,7 +316,7 @@ export const DataInterface = {
    * @param layer_name Name of the layer to move.
    * @param new_index New index for the layer in the layer stack.
    */
-  update_layer_position(project_name: string, layer_name: string, new_index: number): void {
+  static update_layer_position(project_name: string, layer_name: string, new_index: number): void {
     const project = this._read_project_object(project_name)
     const layer = project.matrix.layers.find((layer) => layer.name === layer_name)
     if (layer === undefined) {
@@ -329,7 +329,7 @@ export const DataInterface = {
     project.matrix.layers.splice(old_index, 1)
     project.matrix.layers.splice(new_index, 0, layer)
     return
-  },
+  }
 
   /**
    * STEP MANAGEMENT
@@ -344,7 +344,7 @@ export const DataInterface = {
    * @throws CommandError if the project is not found or if a step with the same
    * name already exists.
    */
-  create_step(project_name: string, step_name: string): void {
+  static create_step(project_name: string, step_name: string): void {
     const project = this._read_project_object(project_name)
     if (project.matrix.steps.find((step) => step.name === step_name)) {
       throw new CommandError(`Step with name ${step_name} already exists.`, ErrorCode.INVALID_INPUT)
@@ -362,7 +362,7 @@ export const DataInterface = {
         },
       }),
     )
-  },
+  }
 
   /**
    * Removes a step from the specified project.
@@ -370,7 +370,7 @@ export const DataInterface = {
    * @param step_name Name of the step to remove.
    * @returns void
    */
-  delete_step(project_name: string, step_name: string): void {
+  static delete_step(project_name: string, step_name: string): void {
     const project = this._read_project_object(project_name)
     const step = this.read_step_info(project_name, step_name) // to throw error if not found
     const index = project.matrix.steps.indexOf(step)
@@ -383,7 +383,7 @@ export const DataInterface = {
         },
       }),
     )
-  },
+  }
 
   /**
    * STEP LAYER ARTWORK MANAGEMENT
@@ -397,10 +397,10 @@ export const DataInterface = {
    * @param layer_name Name of the layer whose artwork collection is to be retrieved.
    * @returns A reference to the ArtworkBufferCollection of the specified layer.
    */
-  _read_step_layer_artwork_collection_ref(project_name: string, step_name: string, layer_name: string): ArtworkBufferCollection {
+  static _read_step_layer_artwork_collection_ref(project_name: string, step_name: string, layer_name: string): ArtworkBufferCollection {
     const layer = this.read_step_layer_info(project_name, step_name, layer_name)
     return layer.artwork
-  },
+  }
 
   /**
    * Retrieves the artwork data as JSON for the specified layer in the specified step of the specified project.
@@ -409,10 +409,10 @@ export const DataInterface = {
    * @param layer_name Name of the layer whose artwork data is to be retrieved.
    * @returns - An array of Shapes representing the artwork data.
    */
-  read_step_layer_artwork(project_name: string, step_name: string, layer_name: string): Shapes.Shape[] {
+  static read_step_layer_artwork(project_name: string, step_name: string, layer_name: string): Shapes.Shape[] {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     return artwork.toJSON()
-  },
+  }
 
 
   /**
@@ -423,10 +423,10 @@ export const DataInterface = {
    * @param artworkData An array of Shapes representing the artwork data to set.
    * @returns void
    */
-  update_step_layer_artwork(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
+  static update_step_layer_artwork(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     artwork.fromJSON(artworkData)
-  },
+  }
 
   /**
    * Resets the artwork data as JSON for the specified layer in the specified step of the specified project.
@@ -436,11 +436,11 @@ export const DataInterface = {
    * @param artworkData An array of Shapes representing the artwork data to set.
    * @returns void
    */
-  create_step_layer_artwork(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
+  static create_step_layer_artwork(project_name: string, step_name: string, layer_name: string, artworkData: Shapes.Shape[]): void {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     artwork.clear()
     artwork.fromJSON(artworkData)
-  },
+  }
 
 
   /**
@@ -451,11 +451,11 @@ export const DataInterface = {
    * @param shape The shape to add to the artwork collection.
    * @returns The index of the newly added shape in the artwork collection.
    */
-  create_step_layer_shape(project_name: string, step_name: string, layer_name: string, shape: Shapes.Shape): number {
+  static create_step_layer_shape(project_name: string, step_name: string, layer_name: string, shape: Shapes.Shape): number {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     const return_value = artwork.create(shape)
     return return_value
-  },
+  }
 
   /**
    * Retrieves a feature from the artwork collection for the specified layer in the specified step of the specified project.
@@ -465,10 +465,10 @@ export const DataInterface = {
    * @param index The index of the shape to retrieve from the artwork collection.
    * @returns The shape at the specified index in the artwork collection.
    */
-  read_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number): Shapes.Shape {
+  static read_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number): Shapes.Shape {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     return artwork.read(index)
-  },
+  }
 
   /**
    * Updates a feature in the artwork collection for the specified layer in the specified step of the specified project.
@@ -479,10 +479,10 @@ export const DataInterface = {
    * @param shape The new shape to replace the existing shape at the specified index.
    * @returns void
    */
-  update_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number, shape: Shapes.Shape): void {
+  static update_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number, shape: Shapes.Shape): void {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     artwork.update(index, shape)
-  },
+  }
 
   /**
    * Deletes a feature from the artwork collection for the specified layer in the specified step of the specified project.
@@ -492,12 +492,12 @@ export const DataInterface = {
    * @param index The index of the shape to delete from the artwork collection.
    * @returns void
    */
-  delete_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number): void {
+  static delete_step_layer_shape(project_name: string, step_name: string, layer_name: string, index: number): void {
     const artwork = this._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
     artwork.delete(index)
-  },
+  }
 
-  _import_file,
+  static _import_file = _import_file
 }
 
 /**

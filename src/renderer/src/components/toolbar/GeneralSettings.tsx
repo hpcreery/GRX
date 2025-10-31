@@ -18,7 +18,7 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
   })
 
   React.useEffect(() => {
-    renderer.engine.setMeasurementSettings({ units })
+    renderer.engine.interface.update_measurement_settings({ units })
   }, [units])
   React.useEffect(() => {
     renderer.canvasSettings.hidpi = useHiDPI
@@ -43,10 +43,10 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
           onChange={(event): void => {
             if (event.currentTarget.checked) {
               colors.setColorScheme("dark")
-              renderer.engine.setSettings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
+              renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
             } else {
               colors.setColorScheme("light")
-              renderer.engine.setSettings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
+              renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
             }
           }}
         />

@@ -72,7 +72,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   async function getLayerTransform(): Promise<void> {
-    const transform = await renderer.engine.getLayerTransform("main", props.layerID)
+    const transform = await renderer.engine.interface.read_view_layer_transform("main", props.layerID)
     setLayerName(props.layerID)
     setDatumX(transform.datum[0])
     setDatumY(transform.datum[1])
@@ -88,7 +88,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
   }
 
   async function setLayerTransform(): Promise<void> {
-    await renderer.engine.setLayerTransform("main", props.layerID, {
+    await renderer.engine.interface.update_view_layer_transform("main", props.layerID, {
       datum: vec2.fromValues(datumX, datumY),
       rotation: rotation,
       scale: scale,
