@@ -22,7 +22,6 @@ import FullScreenQuad from "./../shaders/src/FullScreenQuad.vert"
 
 import { GridSettings, OriginRenderProps } from "../settings"
 
-import { UniverseContext } from "../engine"
 import { vec2, vec4 } from "gl-matrix"
 
 import { settings } from "../settings"
@@ -200,37 +199,37 @@ interface OriginRenderUniforms {
 }
 
 export interface TLoadedReglRenderers {
-  drawPads: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, PadAttachments>
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, ArcAttachments>
-  drawLines: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, LineAttachments>
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, SurfaceAttachments>
-  drawDatums: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, DatumAttachments>
-  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, DatumTextAttachments>
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & UniverseContext, FrameBufferRenderAttachments>
+  drawPads: REGL.DrawCommand<REGL.DefaultContext, PadAttachments>
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext, ArcAttachments>
+  drawLines: REGL.DrawCommand<REGL.DefaultContext, LineAttachments>
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext, SurfaceAttachments>
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext, DatumAttachments>
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext, DatumTextAttachments>
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderAttachments>
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
   blend: REGL.DrawCommand
   overlayBlendFunc: REGL.DrawCommand
   contrastBlendFunc: REGL.DrawCommand
   overlay: REGL.DrawCommand
-  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings>
-  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps>
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridSettings>
+  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
 }
 
 export interface TReglRenderers {
-  drawPads: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, PadAttachments> | undefined
-  drawArcs: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, ArcAttachments> | undefined
-  drawLines: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, LineAttachments> | undefined
-  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, SurfaceAttachments> | undefined
-  drawDatums: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, DatumAttachments> | undefined
-  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, DatumTextAttachments> | undefined
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, FrameBufferRenderAttachments> | undefined
+  drawPads: REGL.DrawCommand<REGL.DefaultContext & WorldContext, PadAttachments> | undefined
+  drawArcs: REGL.DrawCommand<REGL.DefaultContext & WorldContext, ArcAttachments> | undefined
+  drawLines: REGL.DrawCommand<REGL.DefaultContext & WorldContext, LineAttachments> | undefined
+  drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
+  drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments> | undefined
+  drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
+  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
   renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
   blend: REGL.DrawCommand | undefined
   overlayBlendFunc: REGL.DrawCommand | undefined
   contrastBlendFunc: REGL.DrawCommand | undefined
   overlay: REGL.DrawCommand | undefined
-  renderGrid: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, GridSettings> | undefined
-  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext, OriginRenderProps> | undefined
+  renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridSettings> | undefined
+  renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps> | undefined
 }
 
 export const ReglRenderers: TReglRenderers = {
@@ -266,7 +265,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
     DatumTextAttributes,
     DatumTextAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: GlyphtextFrag,
     vert: GlyphtextVert,
@@ -319,7 +318,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     PadAttributes,
     PadAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: PadFrag,
     vert: PadVert,
@@ -392,7 +391,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     ArcAttributes,
     ArcAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: ArcFrag,
 
@@ -459,7 +458,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     LineAttributes,
     LineAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: LineFrag,
 
@@ -512,7 +511,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     SurfaceAttributes,
     SurfaceAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: SurfaceFrag,
 
@@ -599,7 +598,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     FrameBufferRendeAttributes,
     FrameBufferRenderAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     vert: `
   precision highp float;
@@ -715,7 +714,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     DatumAttributes,
     DatumAttachments,
     Record<string, never>,
-    REGL.DefaultContext & UniverseContext & WorldContext
+    REGL.DefaultContext & WorldContext
   >({
     frag: DatumFrag,
 
@@ -735,7 +734,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<DatumAttachments, "length">("length"),
   })
 
-  ReglRenderers.renderGrid = regl<GridRenderUniforms, Record<string, never>, GridSettings, UniverseContext & WorldContext>({
+  ReglRenderers.renderGrid = regl<GridRenderUniforms, Record<string, never>, GridSettings, WorldContext>({
     vert: FullScreenQuad,
     frag: GridFrag,
     uniforms: {
@@ -746,7 +745,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
   })
 
-  ReglRenderers.renderOrigin = regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, UniverseContext & WorldContext>({
+  ReglRenderers.renderOrigin = regl<OriginRenderUniforms, Record<string, never>, OriginRenderProps, WorldContext>({
     vert: FullScreenQuad,
     frag: OriginFrag,
     uniforms: {

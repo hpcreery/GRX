@@ -1,6 +1,5 @@
 import REGL from "regl"
 import { vec2 } from "gl-matrix"
-import { UniverseContext } from "../engine"
 import { baseUnitsConversionFactor } from "../utils"
 import { RendererProps, ShapeRenderer } from "./shape-renderer"
 import * as Shapes from "@src/renderer/data/shape/shape"
@@ -91,7 +90,7 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & WorldContext): void {
     if (this.units != measurementSettings.units) {
       this.units = measurementSettings.units
       this.refresh()

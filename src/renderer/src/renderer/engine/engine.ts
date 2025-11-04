@@ -521,7 +521,7 @@ export abstract class Engine {
     Engine.renderNowInterval = setTimeout(() => {
       Engine.renderNowInterval = null
       const startTime = performance.now()
-      Engine.universe((_context) => {
+      Engine.universe(() => {
         Engine.views.forEach((view) => {
           view.render()
         })

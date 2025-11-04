@@ -1,8 +1,6 @@
 import REGL from "regl"
 import { vec3 } from "gl-matrix"
 
-import type { UniverseContext } from "../engine"
-
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
 import { Layer, StepLayer } from '@src/renderer/data/project'
@@ -29,7 +27,7 @@ export default class LayerRenderer extends ShapeRenderer {
   public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
   public alpha: number = 1
 
-  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
+  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
 
@@ -57,7 +55,7 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, UniverseContext & WorldContext>({
+    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>,  WorldContext>({
       depth: {
         enable: true,
         mask: true,
@@ -79,7 +77,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  private needsRender(context: REGL.DefaultContext & UniverseContext & WorldContext): boolean {
+  private needsRender(context: REGL.DefaultContext & WorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
     const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy['tick']
@@ -97,7 +95,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & WorldContext): void {
 
     if (!this.needsRender(context)) return
 
@@ -126,7 +124,7 @@ interface SelectionRendererProps extends ShapeRendererProps {
 
 export class SelectionRenderer extends ShapeRenderer {
 
-  private selectionConfig: REGL.DrawCommand<REGL.DefaultContext & UniverseContext & WorldContext>
+  private selectionConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
   public framebuffer: REGL.Framebuffer2D
 
@@ -142,7 +140,7 @@ export class SelectionRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.selectionConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, UniverseContext & WorldContext>({
+    this.selectionConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
       depth: {
         enable: true,
         mask: true,
@@ -164,7 +162,7 @@ export class SelectionRenderer extends ShapeRenderer {
     })
   }
 
-  private needsRender(context: REGL.DefaultContext & UniverseContext & WorldContext): boolean {
+  private needsRender(context: REGL.DefaultContext & WorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
     const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy['tick']
@@ -180,7 +178,7 @@ export class SelectionRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & UniverseContext & WorldContext): void {
+  public render(context: REGL.DefaultContext & WorldContext): void {
     if (!this.needsRender(context)) return
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
