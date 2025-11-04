@@ -123,15 +123,19 @@ export abstract class EngineInterface extends DataInterface {
     Engine.render()
   }
 
+  private static _get_view(viewId: string): ViewRenderer {
+    if (!Engine.views.has(viewId)) throw new Error(`View ${viewId} not found`)
+    return Engine.views.get(viewId)!
+  }
+
   /**
    * Delete a view
-   * @param id View ID
+   * @param viewId View ID
    */
-  public static delete_view(id: string): void {
-    if (!Engine.views.has(id)) throw new Error(`View ${id} not found`)
-    const view = Engine.views.get(id)!
+  public static delete_view(viewId: string): void {
+    const view = this._get_view(viewId)
     view.destroy()
-    Engine.views.delete(id)
+    Engine.views.delete(viewId)
     Engine.render()
   }
 
@@ -161,189 +165,285 @@ export abstract class EngineInterface extends DataInterface {
 
   /**
    * Update view box for a view
-   * @param view update view's viewbox
+   * @param viewId update view's viewbox
    * @param viewBox view box (DomRect)
    */
-  public static update_view_box(view: string, viewBox: DOMRect): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
+  public static update_view_box(viewId: string, viewBox: DOMRect): void {
     viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
     viewBox.x = viewBox.x - Engine.boundingBox.x
-    Engine.views.get(view)!.updateViewBox(viewBox)
+    const view = this._get_view(viewId)
+    view.updateViewBox(viewBox)
   }
 
   /**
    * Perform a toss on the view to continue momentum scrolling
    * @param view Toss View with momentum
    */
-  public static view_toss(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.toss()
+  public static view_toss(viewId: string): void {
+    this._get_view(viewId).toss()
   }
 
   /**
    * Move view viewport
-   * @param view View ID
+   * @param viewId View ID
    * @param x X movement
    * @param y Y movement
    */
-  public static view_move(view: string, x: number, y: number): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.moveViewport(x, y)
+  public static view_move(viewId: string, x: number, y: number): void {
+    this._get_view(viewId).moveViewport(x, y)
   }
 
   /**
    * Grab view pointer
-   * @param view View ID
+   * @param viewId View ID
    */
-  public static view_pointer_grab(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.grabViewport()
+  public static view_pointer_grab(viewId: string): void {
+    this._get_view(viewId).grabViewport()
   }
 
   /**
    * Release view pointer
-   * @param view View ID
+   * @param viewId View ID
    */
-  public static view_pointer_release(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.releaseViewport()
+  public static view_pointer_release(viewId: string): void {
+    this._get_view(viewId).releaseViewport()
   }
 
   /**
    * Zoom view
-   * @param view View ID
+   * @param viewId View ID
    * @param x X position
    * @param y Y Position
    * @param s Scale factor
    */
-  public static zoom(view: string, x: number, y: number, s: number): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.zoom(x, y, s)
+  public static zoom(viewId: string, x: number, y: number, s: number): void {
+    this._get_view(viewId).zoom(x, y, s)
   }
 
-  public static read_pointer_grab(view: string): boolean {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.isDragging()
+  /**
+   * Read if view is currently being dragged
+   * @param viewId View ID
+   * @returns Dragging State boolean
+   */
+  public static read_pointer_grab(viewId: string): boolean {
+    return this._get_view(viewId).isDragging()
   }
 
-  public static refresh_view_transfrom(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    const transform = Engine.views.get(view)!.refreshTransform()
-    return transform
+  /**
+   * Refresh view transform
+   * @param viewId View ID
+   */
+  public static refresh_view_transfrom(viewId: string): void {
+    return this._get_view(viewId).refreshTransform()
   }
 
-  public static zoom_at_point(view: string, x: number, y: number, s: number): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.zoomAtPoint(x, y, s)
+  /**
+   * Zoom at point
+   * @param viewId View ID
+   * @param x X position
+   * @param y Y position
+   * @param s Scale factor
+   */
+  public static zoom_at_point(viewId: string, x: number, y: number, s: number): void {
+    this._get_view(viewId).zoomAtPoint(x, y, s)
   }
 
-  public static read_world_position_from_dom_position(view: string, x: number, y: number): [number, number] {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getWorldPosition(x, y)
+  /**
+   * Read world position from DOM position
+   * @param viewId View ID
+   * @param x X position
+   * @param y Y position
+   * @returns World Position [x, y]
+   */
+  public static read_world_position_from_dom_position(viewId: string, x: number, y: number): [number, number] {
+    return this._get_view(viewId).getWorldPosition(x, y)
   }
 
-  public static read_view_transform(view: string): Partial<RenderTransform> {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getTransform()
+  /**
+   * Read view transform
+   * @param viewId View ID
+   * @returns Render Transform
+   */
+  public static read_view_transform(viewId: string): Partial<RenderTransform> {
+    return this._get_view(viewId).getTransform()
   }
 
-  public static update_view_transform(view: string, transform: Partial<RenderTransform>): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.updateTransform(transform)
+  /**
+   * Update view transform
+   * @param viewId View ID
+   * @param transform Render Transform
+   */
+  public static update_view_transform(viewId: string, transform: Partial<RenderTransform>): void {
+    this._get_view(viewId).updateTransform(transform)
   }
 
-  public static read_view_layer_visibility(view: string, layer: string): boolean {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getLayerVisibility(layer)
+  /**
+   * Read view layer visibility
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @returns Visibility boolean
+   */
+  public static read_view_layer_visibility(viewId: string, layer: string): boolean {
+    return this._get_view(viewId).getLayerVisibility(layer)
   }
 
-  public static update_view_layer_visibility(view: string, layer: string, visible: boolean): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.setLayerVisibility(layer, visible)
+  /**
+   * Update view layer visibility
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @param visible Visibility boolean
+   */
+  public static update_view_layer_visibility(viewId: string, layer: string, visible: boolean): void {
+    this._get_view(viewId).setLayerVisibility(layer, visible)
   }
 
-  public static read_view_layer_color(view: string, layer: string): vec3 {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getLayerColor(layer)
+  /**
+   * Read view layer color
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @returns Color vec3 in gl format
+   */
+  public static read_view_layer_color(viewId: string, layer: string): vec3 {
+    return this._get_view(viewId).getLayerColor(layer)
   }
 
-  public static update_view_layer_color(view: string, layer: string, color: vec3): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.setLayerColor(layer, color)
+  /**
+   * Update view layer color
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @param color Color vec3 in gl format
+   */
+  public static update_view_layer_color(viewId: string, layer: string, color: vec3): void {
+    this._get_view(viewId).setLayerColor(layer, color)
   }
 
-  public static read_view_layer_transform(view: string, layer: string): Transform {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getLayerTransform(layer)
+  /**
+   * Read view layer transform
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @returns Transform
+   */
+  public static read_view_layer_transform(viewId: string, layer: string): Transform {
+    return this._get_view(viewId).getLayerTransform(layer)
   }
 
-  public static update_view_layer_transform(view: string, layer: string, transform: Partial<Transform>): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.setLayerTransform(layer, transform)
+  /**
+   * Update view layer transform
+   * @param viewId View ID
+   * @param layer Layer Name
+   * @param transform Partial Transform
+   */
+  public static update_view_layer_transform(viewId: string, layer: string, transform: Partial<Transform>): void {
+    this._get_view(viewId).setLayerTransform(layer, transform)
   }
 
-  public static sample_view(view: string, x: number, y: number): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.sample(x, y)
+  // /**
+  //  * Sample view at position
+  //  * @param viewId View ID
+  //  * @param x X position
+  //  * @param y Y position
+  //  */
+  // public static sample_view(viewId: string, x: number, y: number): void {
+  //   this._get_view(viewId).sample(x, y)
+  // }
+
+  /**
+   * Read view selection at pointer position
+   * @param viewId View ID
+   * @param pointer Pointer position vec2
+   * @returns Array of Query Selections
+   */
+  public static read_view_select(viewId: string, pointer: vec2): QuerySelection[] {
+    return this._get_view(viewId).select(pointer)
   }
 
-  public static read_view_select(view: string, pointer: vec2): QuerySelection[] {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    let selection: QuerySelection[] = []
-    selection = Engine.views.get(view)!.select(pointer)
-    return selection
+  /**
+   * Read view snap point at pointer position
+   * @param viewId View ID
+   * @param pointer Pointer position vec2
+   * @returns Snap Point vec2
+   */
+  public static read_view_snap_point(viewId: string, pointer: vec2): vec2 {
+    return this._get_view(viewId).snap(pointer)
   }
 
-  public static read_view_snap_point(view: string, pointer: vec2): vec2 {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    let snapped: vec2 = pointer
-    snapped = Engine.views.get(view)!.snap(pointer)
-    return snapped
+  /**
+   * Update view selection
+   * @param viewId View ID
+   * @param selection Array of Query Selections
+   */
+  public static delete_view_selection(viewId: string): void {
+    this._get_view(viewId).clearSelection()
   }
 
-  public static delete_view_selection(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.clearSelection()
+  /**
+   * Update view pointer
+   * @param viewId View ID
+   * @param mouse Partial Pointer
+   */
+  public static update_view_pointer(viewId: string, mouse: Partial<Pointer>): void {
+    this._get_view(viewId).setPointer(mouse)
   }
 
-  public static update_view_pointer(view: string, mouse: Partial<Pointer>): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.setPointer(mouse)
+  /**
+   * Zoom fit artwork in view
+   * @param viewId View ID
+   */
+  public static update_view_zoom_fit_artwork(viewId: string): void {
+    this._get_view(viewId).zoomFit()
   }
 
-  public static async update_view_zoom_fit_artwork(view: string): Promise<void> {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.zoomFit()
+  /**
+   * Create a measurement in view
+   * @param viewId View ID
+   * @param point vec2 point to start measurement
+   */
+  public static create_view_measurement(viewId: string, point: vec2): void {
+    this._get_view(viewId).addMeasurement(point)
   }
 
-  public static create_view_measurement(view: string, point: vec2): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.addMeasurement(point)
+  /**
+   * Update current measurement in view
+   * @param viewId View ID
+   * @param point vec2 point to set current measurement to
+   */
+  public static update_view_measurement(viewId: string, point: vec2): void {
+    this._get_view(viewId).updateMeasurement(point)
   }
 
-  public static update_view_measurement(view: string, point: vec2): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.updateMeasurement(point)
+  /**
+   * Finish current measurement in view
+   * @param viewId View ID
+   * @param point vec2 point to finish measurement at
+   */
+  public static finish_view_measurement(viewId: string, point: vec2): void {
+    this._get_view(viewId).finishMeasurement(point)
   }
 
-  public static finish_view_measurement(view: string, point: vec2): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    Engine.views.get(view)!.finishMeasurement(point)
+  /**
+   * Read all measurements in view
+   * @param viewId View ID
+   * @returns Array of measurements with point1 and point2 vec2
+   */
+  public static read_view_measurement(viewId: string): { point1: vec2; point2: vec2 }[] {
+    return this._get_view(viewId).getMeasurements()
   }
 
-  public static read_view_measurement(view: string): { point1: vec2; point2: vec2 }[] {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getMeasurements()
+  /**
+   * Read current measurement in view
+   * @param viewId View ID
+   * @returns Current measurement with point1 and point2 vec2 or null if no current measurement
+   */
+  public static read_view_current_measurement(viewId: string): { point1: vec2; point2: vec2 } | null {
+    return this._get_view(viewId).getCurrentMeasurement()
   }
 
-  public static read_view_current_measurement(view: string): { point1: vec2; point2: vec2 } | null {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.getCurrentMeasurement()
-  }
-
-  public static clear_view_measurements(view: string): void {
-    if (!Engine.views.has(view)) throw new Error(`View ${view} not found`)
-    return Engine.views.get(view)!.clearMeasurements()
+  /**
+   * Clear all measurements in view
+   * @param viewId View ID
+   */
+  public static clear_view_measurements(viewId: string): void {
+    this._get_view(viewId).clearMeasurements()
   }
 }
 

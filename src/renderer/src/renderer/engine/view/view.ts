@@ -609,7 +609,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
-  public async zoomFit(): Promise<void> {
+  public zoomFit(): void {
     const boundingBox: BoundingBox = {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity),
