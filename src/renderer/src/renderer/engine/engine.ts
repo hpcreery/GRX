@@ -230,14 +230,6 @@ export abstract class EngineInterface extends DataInterface {
   }
 
   /**
-   * Refresh view transform
-   * @param viewId View ID
-   */
-  public static refresh_view_transfrom(viewId: string): void {
-    return this._get_view(viewId).refreshTransform()
-  }
-
-  /**
    * Zoom at point
    * @param viewId View ID
    * @param x X position

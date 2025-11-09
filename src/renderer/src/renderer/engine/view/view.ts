@@ -1,6 +1,6 @@
 import REGL from "regl"
 import { mat3, vec2, vec3 } from "gl-matrix"
-import LayerRenderer, {SelectionRenderer} from "./layer"
+import LayerRenderer, { SelectionRenderer } from "./layer"
 import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import * as Shapes from "../../data/shape/shape"
 import { type Units, type BoundingBox, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
@@ -11,9 +11,9 @@ import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
 import { settings, origin, gridSettings } from "../settings"
 import ShapeTransform from "../transform"
-import { StepLayer, Step } from '@src/renderer/data/project'
-import { DataInterface } from '@src/renderer/data/interface'
-import { ArtworkBufferCollection } from '@src/renderer/data/artwork-collections'
+import { StepLayer, Step } from "@src/renderer/data/project"
+import { DataInterface } from "@src/renderer/data/interface"
+import { ArtworkBufferCollection } from "@src/renderer/data/artwork-collections"
 
 export interface WorldProps {}
 
@@ -95,7 +95,6 @@ export interface QuerySelection extends ShapeDistance {
 
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
-
 export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
   public dataStep: Step
@@ -116,14 +115,23 @@ export class ViewRenderer extends UpdateEventTarget {
 
   public transform: RenderTransform = {
     zoom: 1,
-    position: [0, 0],
+    position: [this.viewBox.width / 2, -this.viewBox.height / 2],
     velocity: [0, 0],
     timestamp: new Date(),
     dragging: false,
     matrix: mat3.create(),
     matrixInverse: mat3.create(),
     update: (): void => {
-      this.refreshTransform()
+      // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
+      const { zoom, position } = this.transform
+      const { width, height } = this.viewBox
+      mat3.projection(this.transform.matrix, width, height)
+      mat3.translate(this.transform.matrix, this.transform.matrix, position)
+      mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, -zoom])
+      mat3.invert(this.transform.matrixInverse, this.transform.matrix)
+
+      // logMatrix(this.transform.matrix)
+      this.dispatchTypedEvent("update", new Event("update"))
     },
   }
 
@@ -150,6 +158,7 @@ export class ViewRenderer extends UpdateEventTarget {
     this.dataStep = dataStep
 
     this.viewBox = viewBox
+    this.transform.position = [this.viewBox.width / 2, this.viewBox.height / 2]
 
     this.regl = regl
 
@@ -238,7 +247,7 @@ export class ViewRenderer extends UpdateEventTarget {
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
-    this.layersSubscriptionControler = new AbortController();
+    this.layersSubscriptionControler = new AbortController()
     this.createLayers()
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
@@ -259,7 +268,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
     this.viewBox = newViewBox
     if (viewBoxChanged) {
-      this.refreshTransform()
+      this.transform.update()
       this.dispatchTypedEvent("update", new Event("update"))
     }
   }
@@ -314,26 +323,6 @@ export class ViewRenderer extends UpdateEventTarget {
     return this.transform.dragging
   }
 
-  public refreshTransform(): void {
-    // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
-    const { zoom, position } = this.transform
-    const { width, height } = this.viewBox
-    mat3.projection(this.transform.matrix, width, height)
-    mat3.translate(this.transform.matrix, this.transform.matrix, position)
-    mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, zoom])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [height / width, 1])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [1, width / height])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [width, height])
-    mat3.translate(this.transform.matrix, this.transform.matrix, [width / 2, height / 2])
-    mat3.scale(this.transform.matrix, this.transform.matrix, [width / 2, -height / 2])
-    // mat3.scale(this.transform.matrix, this.transform.matrix, [height / width / 2, width / height / 2])
-
-    mat3.invert(this.transform.matrixInverse, this.transform.matrix)
-
-    // logMatrix(this.transform.matrix)
-    this.dispatchTypedEvent("update", new Event("update"))
-  }
-
   public zoomAtPoint(x: number, y: number, s: number): void {
     const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
@@ -360,7 +349,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const mouse_element_pos = [x - offsetX, height - (y - offsetY)]
 
     // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = {x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height}
+    const mouse_normalize_pos = { x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height }
     // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
@@ -369,13 +358,16 @@ export class ViewRenderer extends UpdateEventTarget {
     return [mousePos[0], mousePos[1]]
   }
 
-
   private createLayers(): void {
     this.layersSubscriptionControler.abort()
-    this.layersSubscriptionControler = new AbortController();
-    DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
-      this.updateLayers()
-    }, { signal: this.layersSubscriptionControler.signal });
+    this.layersSubscriptionControler = new AbortController()
+    DataInterface.subscribe_to_matrix(
+      this.dataStep.matrix.project,
+      () => {
+        this.updateLayers()
+      },
+      { signal: this.layersSubscriptionControler.signal },
+    )
     this.updateLayers()
   }
 
@@ -435,7 +427,7 @@ export class ViewRenderer extends UpdateEventTarget {
       }
     }
     Object.assign(this.transform, transform)
-    this.refreshTransform()
+    this.transform.update()
   }
 
   /**
@@ -622,42 +614,35 @@ export class ViewRenderer extends UpdateEventTarget {
       boundingBox.max = vec2.max(boundingBox.max, boundingBox.max, layerBoundingBox.max)
     }
 
-    const screenWidthPx = this.viewBox.width
-    const screenHeightPx = this.viewBox.height
-    const screenAR = screenWidthPx / screenHeightPx
-    const unitToPx = screenHeightPx / 2 / 1 // px per unit
-    const bbWidthPx = (boundingBox.max[0] - boundingBox.min[0]) * unitToPx
-    const bbHeightPx = (boundingBox.max[1] - boundingBox.min[1]) * unitToPx
-    const bbAR = bbWidthPx / bbHeightPx
-    // console.log('Screen Width, Height:', screenWidthPx, screenHeightPx)
-    // console.log('Screen AR:', screenAR)
-    // console.log('BB Width, Height:', bbWidthPx, bbHeightPx)
-    // console.log('BB AR:', bbAR)
-    // zooming zooms to canvas -1,-1
-    const origin = vec2.fromValues(-1, 1)
-    const originPx = vec2.scale(vec2.create(), origin, unitToPx)
-    const bbTopLeft = vec2.fromValues(boundingBox.min[0] * unitToPx, boundingBox.max[1] * unitToPx)
-    const bbTopLeftToOrigin = vec2.sub(vec2.create(), originPx, bbTopLeft)
+    const layerWidth = boundingBox.max[0] - boundingBox.min[0]
+    const layerHeight = boundingBox.max[1] - boundingBox.min[1]
+    const viewWidth = this.viewBox.width
+    const viewHeight = this.viewBox.height
 
-    // boundingBox logic validation
+    const zoomX = viewWidth / layerWidth
+    const zoomY = viewHeight / layerHeight
+    let zoom = Math.min(zoomX, zoomY) * 1.0 // add some padding
+    if (zoom > settings.MAX_ZOOM) zoom = settings.MAX_ZOOM
+    if (zoom < settings.MIN_ZOOM) zoom = settings.MIN_ZOOM
+
+    const position = vec2.create()
+    if (zoomX < zoomY) {
+      // fit to width
+      const centerY = viewHeight / 2 + ((boundingBox.min[1] + boundingBox.max[1]) / 2) * zoom
+      vec2.set(position, boundingBox.min[0] * zoom, centerY)
+    } else {
+      // fit to height
+      const centerX = viewWidth / 2 - ((boundingBox.min[0] + boundingBox.max[0]) / 2) * zoom
+      vec2.set(position, centerX, viewHeight - boundingBox.min[1] * zoom)
+    }
+
+    // validation checks
+    if (isNaN(boundingBox.min[0]) || isNaN(boundingBox.min[1]) || isNaN(boundingBox.max[0]) || isNaN(boundingBox.max[1])) return
+    if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
     if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity)
       return
-    if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
-    if (isNaN(boundingBox.min[0]) || isNaN(boundingBox.min[1]) || isNaN(boundingBox.max[0]) || isNaN(boundingBox.max[1])) return
 
-    if (bbAR > screenAR) {
-      const zoom = screenWidthPx / bbWidthPx
-      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
-      const offsetX = bbTopLeftToOriginScaled[0]
-      const offsetY = -bbTopLeftToOriginScaled[1] + screenHeightPx / 2 - (bbHeightPx * zoom) / 2
-      this.updateTransform({ position: [offsetX, offsetY], zoom })
-    } else {
-      const zoom = screenHeightPx / bbHeightPx
-      const bbTopLeftToOriginScaled = vec2.scale(vec2.create(), bbTopLeftToOrigin, zoom)
-      const offsetX = bbTopLeftToOriginScaled[0] + screenWidthPx / 2 - (bbWidthPx * zoom) / 2
-      const offsetY = -bbTopLeftToOriginScaled[1]
-      this.updateTransform({ position: [offsetX, offsetY], zoom })
-    }
+    this.updateTransform({ zoom, position })
     this.dispatchTypedEvent("update", new Event("update"))
   }
 
@@ -705,8 +690,9 @@ export class ViewRenderer extends UpdateEventTarget {
   // }
 
   public render(): void {
+    // console.log(this.transform.zoom)
+    console.log(this.transform.position[0], this.transform.position[1])
     this.world((context) => {
-
       this.regl.clear({
         color: [0, 0, 0, 0],
         depth: 1,
