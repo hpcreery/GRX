@@ -7,6 +7,7 @@ attribute vec2 a_CharPosition;
 
 // uniform mat4 u_matrix;
 uniform mat3 u_Transform;
+uniform mat4 u_Transform3D;
 uniform vec2 u_Resolution;
 uniform vec2 u_TextureDimensions;
 uniform float u_PixelSize;
@@ -15,12 +16,21 @@ uniform vec2 u_CharSpacing;
 
 varying vec2 v_Texcoord;
 
+#pragma glslify: import('../modules/Constants.glsl')
+
+vec4 transformLocation3D(vec2 coordinate) {
+  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, 0.0, 1.0);
+  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
+  return transformed_position_3d;
+}
+
 void main() {
   // Multiply the position by the matrix.
 
   vec2 character_move = vec2(u_PixelSize * a_CharPosition * ((u_CharDimensions + u_CharSpacing) / u_Resolution));
 
   vec2 Transformed_Position = (u_Transform * vec3(a_Position, 1)).xy;
+  Transformed_Position = transformLocation3D(Transformed_Position.xy).xy;
   gl_Position = vec4(Transformed_Position + (a_VertexPosition/u_Resolution) * u_CharDimensions * u_PixelSize + character_move, 0, 1);
 
   // Pass the texcoord to the fragment shader.

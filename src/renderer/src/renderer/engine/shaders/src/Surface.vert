@@ -4,6 +4,7 @@ precision highp float;
 
 // COMMON UNIFROMS
 uniform mat3 u_Transform;
+uniform mat4 u_Transform3D;
 uniform vec2 u_Resolution;
 uniform float u_QtyFeatures;
 uniform float u_PixelSize;
@@ -58,6 +59,12 @@ vec2 getVertexPosition(float index) {
   return vec2(x, y);
 }
 
+vec4 transformLocation3D(vec2 coordinate) {
+  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, 0.0, 1.0);
+  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
+  return transformed_position_3d;
+}
+
 
 void main() {
 
@@ -106,6 +113,7 @@ void main() {
 
   // vec2 OffsetPosition = getVertexPosition(index * 2.0 + a_ContourOffset);
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
+  FinalPosition = transformLocation3D(FinalPosition.xy).xyz;
 
   v_ContourIndex = a_ContourIndex;
   v_ContourPolarity = a_ContourPolarity;

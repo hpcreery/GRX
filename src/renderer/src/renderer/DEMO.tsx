@@ -25,12 +25,11 @@ import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp
 // import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
-// import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
+import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
-
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1198,6 +1197,7 @@ function DemoApp(): JSX.Element {
   const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [zoomToCursor, setZoomToCursor] = React.useState<boolean>(false)
+  const [enable3d, setEnable3d] = React.useState<boolean>(false)
   const [_showDatums, setShowDatums] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<string[]>([])
 
@@ -1212,15 +1212,14 @@ function DemoApp(): JSX.Element {
     })
 
     const settings = render.engine.interface.read_engine_settings()
-    settings.then(setting => {
+    settings.then((setting) => {
       setOutlineMode(setting.OUTLINE_MODE)
       setSkeletonMode(setting.SKELETON_MODE)
       setZoomToCursor(setting.ZOOM_TO_CURSOR)
       setShowDatums(setting.SHOW_DATUMS)
+      setEnable3d(setting.ENABLE_3D)
     })
     const DataInterface = render.interface
-
-    console.log(box1Ref.current)
 
     DataInterface.create_project(project)
     DataInterface.create_step(project, step1)
@@ -1228,25 +1227,25 @@ function DemoApp(): JSX.Element {
     DataInterface.create_layer(project, layer)
 
     DataInterface._import_file(cmp, "RS-274X", {
-      layer,
+      layer: "cmp",
       step: step1,
       project,
     })
 
-    // DataInterface._import_file(nested_aperture_macro, "RS-274X", {
-    //   layer,
-    //   step: step2,
-    //   project,
-    // })
-
-    DataInterface._import_file(gdsiiFile, "GDSII", {
-      layer,
+    DataInterface._import_file(nested_aperture_macro, "RS-274X", {
+      layer: "nested-aperture-macro",
       step: step2,
       project,
     })
 
-    // DataInterface._update_layer_artwork_from_json(project, step1, layer, MAMA_STEP_AND_REPEAT)
-    // DataInterface._update_layer_artwork_from_json(project, step1, layer, SURFACE_RECORDS_ARRAY)
+    DataInterface._import_file(gdsiiFile, "GDSII", {
+      // layer,
+      step: step2,
+      project,
+    })
+
+    // DataInterface.update_step_layer_artwork(project, step1, layer, MAMA_STEP_AND_REPEAT)
+    DataInterface.update_step_layer_artwork(project, step1, layer, SURFACE_RECORDS_ARRAY)
     DataInterface.update_step_layer_artwork(project, step1, layer, POLYLINE_RECORDS_ARRAY)
 
     render.addManagedView(box2Ref.current, {
@@ -1705,8 +1704,8 @@ function DemoApp(): JSX.Element {
           {...{ view: "box2", step: step2, project: project }}
           ref={box2Ref}
           style={{
-            width: "300px",
-            height: "300px",
+            width: "600px",
+            height: "600px",
             position: "relative",
           }}
         />
@@ -1737,8 +1736,8 @@ function DemoApp(): JSX.Element {
           id="box1"
           {...{ view: "box1", step: step1, project: project }}
           style={{
-            width: "300px",
-            height: "300px",
+            width: "600px",
+            height: "600px",
             pointerEvents: "all",
             position: "relative",
           }}
@@ -1764,7 +1763,7 @@ function DemoApp(): JSX.Element {
           </Button>
           <Button
             onClick={async (): Promise<void> => {
-                renderer.engine.interface.update_view_zoom_fit_artwork("box1")
+              renderer.engine.interface.update_view_zoom_fit_artwork("box1")
             }}
           >
             Zoom Fit
@@ -1777,7 +1776,6 @@ function DemoApp(): JSX.Element {
           <Switch
             checked={outlineMode}
             onChange={async (e): Promise<void> => {
-              // renderer.settings.OUTLINE_MODE = e.target.checked
               renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: e.target.checked })
               setOutlineMode(e.target.checked)
               const layers = await renderer.interface.read_layers_list(project)
@@ -1788,35 +1786,37 @@ function DemoApp(): JSX.Element {
           <Switch
             checked={skeletonMode}
             onChange={async (e): Promise<void> => {
-              // renderer.settings.SKELETON_MODE = e.target.checked
               renderer.engine.interface.set_engine_settings({ SKELETON_MODE: e.target.checked })
               setSkeletonMode(e.target.checked)
               const layers = await renderer.interface.read_layers_list(project)
               setLayers(layers)
             }}
           />
-          <br />
           Zoom To Cursor
           <Switch
             checked={zoomToCursor}
             onChange={(e): void => {
-              // renderer.settings.ZOOM_TO_CURSOR = e.target.checked
               renderer.engine.interface.set_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
               setZoomToCursor(e.target.checked)
             }}
           />
-          Mouse Mode
-          <SegmentedControl
-            // data={["move", "select", "measure"] as const}
-            // onChange={(mode) => (engine.pointerSettings.mode = mode as "select" | "move" | "measure")}
-            data={[...POINTER_MODES]}
-            onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)}
+          3D View
+          <Switch
+            checked={enable3d}
+            onChange={(e): void => {
+              renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
+              setEnable3d(e.target.checked)
+            }}
           />
+          Mouse Mode
+          <SegmentedControl data={[...POINTER_MODES]} onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)} />
           Snap Mode
-          <SegmentedControl data={[...SNAP_MODES]} onChange={(mode) => {
-            // (renderer.settings.SNAP_MODE = mode as keyof typeof SNAP_MODES_MAP)
-            renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
-            }} />
+          <SegmentedControl
+            data={[...SNAP_MODES]}
+            onChange={(mode) => {
+              renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
+            }}
+          />
           {layers.map((layer, i) => {
             return (
               <div key={i}>
@@ -1824,7 +1824,6 @@ function DemoApp(): JSX.Element {
                 <Switch
                   // defaultChecked={layer.visible}
                   onChange={async (e): Promise<void> => {
-                    // const engine = await renderer.engine
                     renderer.interface.read_steps_list(project).then((allSteps) => {
                       allSteps.map((step) => {
                         renderer.engine.interface.update_view_layer_visibility(step, layer, e.target.checked)

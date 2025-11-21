@@ -176,7 +176,7 @@ export class Renderer {
     this.canvasGL.style.height = String(height) + "px"
     this.engine.interface.update_engine_bounding_box(this.CONTAINER.getBoundingClientRect())
     this.managedViews.forEach((node) => {
-      this.engine.interface.update_view_box(node.id, node.getBoundingClientRect())
+      this.engine.interface.update_view_box_from_dom_rect(node.id, node.getBoundingClientRect())
     })
   }
 
@@ -207,7 +207,18 @@ export class Renderer {
       if (!element.id) {
         throw new Error("Element must have a 'id' attribute")
       }
-      return this.engine.interface.read_world_position_from_dom_position(element.id, e.clientX, e.clientY)
+
+      // console.log(offsetX, offsetY, width, height)
+
+      // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
+      // but rather the coordinates of the world
+      function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+        // Get the mouse position relative to the canvas
+        const { x, y, height } = element.getBoundingClientRect()
+        return [e.clientX - x, height - (e.clientY - y)]
+      }
+      // return this.engine.interface.read_world_position_from_dom_position(element.id, e.clientX, e.clientY)
+      return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e))
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -216,7 +227,7 @@ export class Renderer {
       this.pointerCache.splice(index, 1)
     }
 
-    await engine.interface.update_view_box(element.id, element.getBoundingClientRect())
+    await engine.interface.update_view_box_from_dom_rect(element.id, element.getBoundingClientRect())
 
     element.style.cursor = "grab"
 
@@ -232,7 +243,15 @@ export class Renderer {
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
-      if (e.button !== 0) return // Only handle left mouse button
+      if (e.button == 2) return // ignore
+      // console.log(e.button)
+      if (e.button == 1 ) {
+        // middle mouse button pressed
+        this.pointerSettings.mode = PointerMode.MOVE
+        element.style.cursor = "grabbing"
+        await engine.interface.view_pointer_grab(element.id)
+        return
+      }
       sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
       const [x, y] = await getMouseWorldCoordinates(element, e)
       this.pointerCache.push(e)
@@ -323,7 +342,11 @@ export class Renderer {
           }
           engine.interface.view_move(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
         } else {
-          await engine.interface.view_move(element.id, e.movementX * moveScale, e.movementY * moveScale)
+          if (e.buttons == 4) {
+            await engine.interface.view_rotate(element.id, e.movementY * moveScale, e.movementX * moveScale)
+          } else {
+            await engine.interface.view_move(element.id, e.movementX * moveScale, e.movementY * moveScale)
+          }
         }
       }
     }
@@ -333,6 +356,7 @@ export class Renderer {
       //   this.pointerSettings.mode = 'move'
       //   element.style.cursor = 'grab'
       // }
+      console.log(e.key)
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         const isDragging = await engine.interface.read_pointer_grab(element.id)
         if (isDragging) return

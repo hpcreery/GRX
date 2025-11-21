@@ -2,6 +2,8 @@
 precision highp float;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
+uniform mat4 u_Transform3D;
+uniform mat4 u_InverseTransform3D;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform vec2 u_Spacing;
@@ -20,9 +22,20 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
+vec4 transformLocation3D(vec2 coordinate) {
+  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
+  float denom = 1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR;
+  if (denom <= 0.0 ) {
+    discard;
+  }
+  transformed_position_3d.xy /= abs(denom);
+  return transformed_position_3d;
+}
+
 vec2 transformLocation(vec2 pixel_coord) {
   vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
-  vec3 transformed_position = u_InverseTransform * vec3(normal_frag_coord, 1.0);
+  vec3 transformed_position = transformLocation3D(normal_frag_coord).xyz;
+  transformed_position = u_InverseTransform * vec3(transformed_position.xy, 1.0);
   return transformed_position.xy;
 }
 
@@ -32,6 +45,20 @@ float max2(vec2 v) {
 
 float log10(float x) {
   return log(x) / log(10.0);
+}
+
+float lines(vec2 uv){
+    return max(
+        smoothstep(2.*length(vec2(dFdx(uv.x), dFdy(uv.x))), 0., abs(fract(uv.x)-.5)),
+        smoothstep(2.*length(vec2(dFdx(uv.y), dFdy(uv.y))), 0., abs(fract(uv.y)-.5))
+    );
+}
+
+vec2 lines2(vec2 uv){
+    return vec2(
+        smoothstep(2.*length(vec2(dFdx(uv.x), dFdy(uv.x))), 0., abs(fract(uv.x)-.5)),
+        smoothstep(2.*length(vec2(dFdx(uv.y), dFdy(uv.y))), 0., abs(fract(uv.y)-.5))
+    );
 }
 
 // https://www.shadertoy.com/view/7tGBDK
@@ -112,7 +139,6 @@ void main() {
   // float pixel_size = u_PixelSize / scale;
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  FragCoord = FragCoord;
   gl_FragColor = grid(FragCoord - u_Offset);
   return;
 }

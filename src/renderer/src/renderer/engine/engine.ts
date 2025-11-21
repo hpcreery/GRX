@@ -9,6 +9,7 @@ import type { RenderSettings, GridSettings, MeasurementSettings } from "./settin
 import { settings, gridSettings, measurementSettings } from "./settings"
 import { DataInterface } from "../data/interface"
 import { initStaticShaderCollections } from "./view/buffer-collections"
+import { ViewBox } from './types'
 
 
 export interface RenderTransform {
@@ -164,13 +165,23 @@ export abstract class EngineInterface extends DataInterface {
   }
 
   /**
+   * Update view box for a view from a DOMRect
+   * @param viewId update view's viewbox
+   * @param viewBox view box (DomRect)
+   */
+  public static update_view_box_from_dom_rect(viewId: string, viewBox: DOMRect): void {
+    viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
+    viewBox.x = viewBox.x - Engine.boundingBox.x
+    const view = this._get_view(viewId)
+    view.updateViewBox(viewBox)
+  }
+
+  /**
    * Update view box for a view
    * @param viewId update view's viewbox
    * @param viewBox view box (DomRect)
    */
-  public static update_view_box(viewId: string, viewBox: DOMRect): void {
-    viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
-    viewBox.x = viewBox.x - Engine.boundingBox.x
+  public static update_view_box(viewId: string, viewBox: ViewBox): void {
     const view = this._get_view(viewId)
     view.updateViewBox(viewBox)
   }
@@ -191,6 +202,16 @@ export abstract class EngineInterface extends DataInterface {
    */
   public static view_move(viewId: string, x: number, y: number): void {
     this._get_view(viewId).moveViewport(x, y)
+  }
+
+    /**
+   * Move view viewport
+   * @param viewId View ID
+   * @param x X rotation degrees
+   * @param y Y rotation degrees
+   */
+  public static view_rotate(viewId: string, x: number, y: number): void {
+    this._get_view(viewId).rotateViewport(x, y)
   }
 
   /**
@@ -247,8 +268,8 @@ export abstract class EngineInterface extends DataInterface {
    * @param y Y position
    * @returns World Position [x, y]
    */
-  public static read_world_position_from_dom_position(viewId: string, x: number, y: number): [number, number] {
-    return this._get_view(viewId).getWorldPosition(x, y)
+  public static read_world_position_from_canvas_position(viewId: string, x: number, y: number): [number, number] {
+    return this._get_view(viewId).getWorldPositionFromCanvasPosition(x, y)
   }
 
   /**

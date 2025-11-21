@@ -1,11 +1,11 @@
 import REGL from "regl"
-import { mat3, vec2, vec3 } from "gl-matrix"
+import { mat3, vec2, vec3, mat4, vec4 } from "gl-matrix"
 import LayerRenderer, { SelectionRenderer } from "./layer"
 import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import * as Shapes from "../../data/shape/shape"
 import { type Units, type BoundingBox, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
-import { UID, UpdateEventTarget } from "../utils"
+import { UID, UpdateEventTarget, mat4Extended } from "../utils"
 import { SimpleMeasurement } from "./measurements"
 import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
@@ -14,12 +14,16 @@ import ShapeTransform from "../transform"
 import { StepLayer, Step } from "@src/renderer/data/project"
 import { DataInterface } from "@src/renderer/data/interface"
 import { ArtworkBufferCollection } from "@src/renderer/data/artwork-collections"
+import { PERSPECTIVE_CORRECTION_FACTOR } from "../constants"
+// import { Engine } from '../engine'
 
 export interface WorldProps {}
 
 interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
+  u_Transform3D: mat4
+  u_InverseTransform3D: mat4
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
@@ -53,7 +57,7 @@ export interface WorldContext {
 export interface ViewRendererConfig {
   id?: string
   dataStep: Step
-  viewBox: DOMRect
+  viewBox: ViewBox
   // dpr: number
   regl: REGL.Regl
 }
@@ -66,6 +70,9 @@ export interface RenderTransform {
   dragging: boolean
   matrix: mat3
   matrixInverse: mat3
+  rotation: vec2
+  matrix3D: mat4
+  matrix3DInverse: mat4
   update: () => void
 }
 
@@ -121,17 +128,34 @@ export class ViewRenderer extends UpdateEventTarget {
     dragging: false,
     matrix: mat3.create(),
     matrixInverse: mat3.create(),
+    rotation: vec2.create(),
+    matrix3D: mat4.create(),
+    matrix3DInverse: mat4.create(),
     update: (): void => {
       // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
       const { zoom, position } = this.transform
       const { width, height } = this.viewBox
+      const [rotateX, rotateY] = this.transform.rotation
       mat3.projection(this.transform.matrix, width, height)
       mat3.translate(this.transform.matrix, this.transform.matrix, position)
+      // rotate here (if needed)
       mat3.scale(this.transform.matrix, this.transform.matrix, [zoom, -zoom])
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
-      // logMatrix(this.transform.matrix)
-      this.dispatchTypedEvent("update", new Event("update"))
+      if (settings.ENABLE_3D) {
+        // mat4.identity(this.transform.matrix3D)
+        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, width / height, 0, Infinity)
+        mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
+        mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
+
+        // mat4.identity(this.transform.matrix3DInverse)
+        mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, width / height, 0, Infinity)
+        mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
+        mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
+      } else {
+        mat4.identity(this.transform.matrix3D)
+        mat4.identity(this.transform.matrix3DInverse)
+      }
     },
   }
 
@@ -175,6 +199,8 @@ export class ViewRenderer extends UpdateEventTarget {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
+        u_Transform3D: () => this.transform.matrix3D,
+        u_InverseTransform3D: () => this.transform.matrix3DInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         u_PixelSize: 2,
@@ -251,14 +277,18 @@ export class ViewRenderer extends UpdateEventTarget {
     this.createLayers()
 
     this.zoomAtPoint(0, 0, this.transform.zoom)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
 
     // DataInterface.subscribe_to_matrix(this.dataStep.matrix.project, () => {
     //   this.updateLayers()
     // }, { signal: this.layersSubscriptionControler.signal });
   }
 
-  public updateViewBox(newViewBox: DOMRect): void {
+  public announceUpdate(): void {
+    this.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  public updateViewBox(newViewBox: ViewBox): void {
     let viewBoxChanged = false
     for (const key in this.viewBox) {
       if (newViewBox[key] !== this.viewBox[key]) {
@@ -268,8 +298,7 @@ export class ViewRenderer extends UpdateEventTarget {
     }
     this.viewBox = newViewBox
     if (viewBoxChanged) {
-      this.transform.update()
-      this.dispatchTypedEvent("update", new Event("update"))
+      this.announceUpdate()
     }
   }
 
@@ -279,7 +308,7 @@ export class ViewRenderer extends UpdateEventTarget {
     if (dragging) return
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
     vec2.scale(this.transform.velocity, this.transform.velocity, 0.95)
-    this.transform.update()
+    this.announceUpdate()
     if (Math.abs(this.transform.velocity[0]) < 0.05 && Math.abs(this.transform.velocity[1]) < 0.05) {
       this.transform.velocity[0] = 0
       this.transform.velocity[1] = 0
@@ -290,9 +319,23 @@ export class ViewRenderer extends UpdateEventTarget {
 
   public moveViewport(x: number, y: number): void {
     if (!this.transform.dragging) return
+    // take into account the 3d rotation to change the x and y movement
+    x = (x * 1) / Math.cos(this.transform.rotation[1] * (Math.PI / 180))
+    y = (y * 1) / Math.cos(this.transform.rotation[0] * (Math.PI / 180))
+
     this.transform.velocity = [x, y]
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
-    this.transform.update()
+    this.announceUpdate()
+    this.transform.timestamp = new Date()
+  }
+
+  public rotateViewport(x: number, y: number): void {
+    if (!settings.ENABLE_3D) return
+    if (!this.transform.dragging) return
+    // this.transform.velocity = [x, y]
+    // vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
+    vec2.add(this.transform.rotation, this.transform.rotation, [x, y])
+    this.announceUpdate()
     this.transform.timestamp = new Date()
   }
 
@@ -340,13 +383,13 @@ export class ViewRenderer extends UpdateEventTarget {
     }
     this.transform.position[0] = x - (x - this.transform.position[0]) * zoomBy
     this.transform.position[1] = y - (y - this.transform.position[1]) * zoomBy
-    this.transform.update()
+    this.announceUpdate()
     // this.transform2.update(this.transform.matrix)
   }
 
-  public getWorldPosition(x: number, y: number): [number, number] {
-    const { width, height, x: offsetX, y: offsetY } = this.viewBox
-    const mouse_element_pos = [x - offsetX, height - (y - offsetY)]
+  public getWorldPositionFromCanvasPosition(x: number, y: number): [number, number] {
+    const { width, height } = this.viewBox
+    const mouse_element_pos = [x, y]
 
     // Normalize the mouse position to the canvas
     const mouse_normalize_pos = { x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height }
@@ -354,7 +397,14 @@ export class ViewRenderer extends UpdateEventTarget {
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
     const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
-    const mousePos = vec2.transformMat3(vec2.create(), mousePosViewbox, this.transform.matrixInverse)
+    const mousePos3D = vec4.transformMat4(
+      vec4.create(),
+      vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1),
+      this.transform.matrix3DInverse,
+    )
+    mousePos3D[0] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
+    mousePos3D[1] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
+    const mousePos = vec2.transformMat3(vec2.create(), vec2.fromValues(mousePos3D[0], mousePos3D[1]), this.transform.matrixInverse)
     return [mousePos[0], mousePos[1]]
   }
 
@@ -391,9 +441,9 @@ export class ViewRenderer extends UpdateEventTarget {
     })
     this.layers.push(layerRenderer)
     layerRenderer.onUpdate(() => {
-      this.dispatchTypedEvent("update", new Event("update"))
+      this.announceUpdate()
     })
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   private deleteLayer(layer: StepLayer): void {
@@ -403,7 +453,7 @@ export class ViewRenderer extends UpdateEventTarget {
     for (const d of deleted) {
       d.destroy()
     }
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   public getTransform(): Partial<RenderTransform> {
@@ -414,6 +464,9 @@ export class ViewRenderer extends UpdateEventTarget {
       dragging: this.transform.dragging,
       matrix: this.transform.matrix,
       matrixInverse: this.transform.matrixInverse,
+      rotation: this.transform.rotation,
+      matrix3D: this.transform.matrix3D,
+      matrix3DInverse: this.transform.matrix3DInverse,
       // update: this.transform.update
     }
   }
@@ -427,7 +480,7 @@ export class ViewRenderer extends UpdateEventTarget {
       }
     }
     Object.assign(this.transform, transform)
-    this.transform.update()
+    this.announceUpdate()
   }
 
   /**
@@ -446,7 +499,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     layer.visible = visible
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   /**
@@ -465,7 +518,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     layer.color = color
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   /**
@@ -484,7 +537,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     Object.assign(layer.transform, transform)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   public sample(x: number, y: number): void {
@@ -533,12 +586,12 @@ export class ViewRenderer extends UpdateEventTarget {
           sourceLayer: layer.dataLayer.layer,
         })
         // newSelectionLayer.onUpdate(() => {
-        //   this.dispatchTypedEvent("update", new Event("update"))
+        //   this.announceUpdate()
         // })
         this.selections.push(newSelectionLayer)
       }
     })
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return selection
   }
 
@@ -597,7 +650,7 @@ export class ViewRenderer extends UpdateEventTarget {
   public setPointer(mouse: Partial<Pointer>): void {
     Object.assign(this.pointer, mouse)
     if (this.pointer.down) {
-      this.dispatchTypedEvent("update", new Event("update"))
+      this.announceUpdate()
     }
   }
 
@@ -643,7 +696,7 @@ export class ViewRenderer extends UpdateEventTarget {
       return
 
     this.updateTransform({ zoom, position })
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   // public startLoading(): void {
@@ -657,18 +710,18 @@ export class ViewRenderer extends UpdateEventTarget {
   public addMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.addMeasurement(pointSnap)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   public updateMeasurement(point: vec2): void {
     this.measurements.updateMeasurement(point)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   public finishMeasurement(point: vec2): void {
     const pointSnap = this.snap(point)
     this.measurements.finishMeasurement(pointSnap)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   public getMeasurements(): { point1: vec2; point2: vec2 }[] {
@@ -681,7 +734,7 @@ export class ViewRenderer extends UpdateEventTarget {
 
   public clearMeasurements(): void {
     this.measurements.clearMeasurements()
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   // public setMeasurementUnits(units: Units): void {
@@ -690,8 +743,7 @@ export class ViewRenderer extends UpdateEventTarget {
   // }
 
   public render(): void {
-    // console.log(this.transform.zoom)
-    console.log(this.transform.position[0], this.transform.position[1])
+    this.transform.update()
     this.world((context) => {
       this.regl.clear({
         color: [0, 0, 0, 0],
