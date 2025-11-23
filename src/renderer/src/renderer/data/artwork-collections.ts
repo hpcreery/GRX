@@ -1511,10 +1511,10 @@ export abstract class MacroArtworkCollection {
     symbol.sym_num.value = 0
     const id = cyrb64(JSON.stringify([shapes, flatten])).toString() // generate a new unique ID
     const existing = this.macros.get(id)
+    symbol.id = id
     if (existing) {
       return existing // If a macro with the same ID already exists, return it
     }
-    symbol.id = id
     const macro = new MacroArtworkBufferCollection(shapes, flatten)
     this.macros.set(symbol.id, macro)
     this.events.dispatchTypedEvent("update", new Event("update"))
