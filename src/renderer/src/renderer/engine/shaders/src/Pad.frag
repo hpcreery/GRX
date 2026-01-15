@@ -20,6 +20,7 @@ uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform mat4 u_Transform3D;
 uniform mat4 u_InverseTransform3D;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
@@ -86,8 +87,13 @@ float draw(float dist, float pixel_size) {
 }
 
 vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
-  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
+  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, -u_ZOffset, 1.0);
+  // TODO: create perspective
+  // float denom = 1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR);
+  // if (denom <= 0.0 ) {
+  //   discard;
+  // }
+  // transformed_position_3d.xy /= abs(denom);
   return transformed_position_3d;
 }
 
@@ -118,14 +124,7 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = u_PointerPosition - v_Location;
-    if (v_Mirror_X == 1.0) {
-      FragCoord.x = -FragCoord.x;
-    }
-    if (v_Mirror_Y == 1.0) {
-      FragCoord.y = -FragCoord.y;
-    }
-    FragCoord = FragCoord * rotateCCW(radians(v_Rotation)) / v_ResizeFactor;
+    FragCoord = transformLocation(u_PointerPosition);
   }
 
   float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;

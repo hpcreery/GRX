@@ -16,6 +16,7 @@ uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat4 u_Transform3D;
 uniform mat4 u_InverseTransform3D;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
@@ -75,8 +76,8 @@ mat2 rotateCW(float angle) {
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
 vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, 0.0, 1.0);
-  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
+  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, u_ZOffset, 1.0);
+  // transformed_position_3d.xy /= clamp(1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR), -1.0, 1.0);
   return transformed_position_3d;
 }
 
@@ -100,7 +101,7 @@ void main() {
     Size.y = OD;
   }
 
-  Size += vec2(pixel_size, pixel_size);
+  Size += vec2(pixel_size);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
@@ -111,7 +112,7 @@ void main() {
     RotatedPostion.y = -RotatedPostion.y;
   }
   vec2 OffsetPosition = RotatedPostion + a_Location;
-  vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
+  vec3 FinalPosition = u_Transform * vec3(OffsetPosition, 1.0);
   FinalPosition = transformLocation3D(FinalPosition.xy).xyz;
 
   v_Aspect = Aspect;

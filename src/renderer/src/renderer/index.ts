@@ -218,7 +218,8 @@ export class Renderer {
         return [e.clientX - x, height - (e.clientY - y)]
       }
       // return this.engine.interface.read_world_position_from_dom_position(element.id, e.clientX, e.clientY)
-      return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e))
+      // return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e))
+      return getMouseCanvasCoordinates(e)
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -237,6 +238,8 @@ export class Renderer {
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
+        // const [x, y] = await getMouseWorldCoordinates(element, e)
+        // engine.interface.zoom_at_point(element.id, x, y, e.deltaY * moveScale)
         engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
         engine.interface.zoom_at_point(element.id, width / 2, height / 2, e.deltaY * moveScale)

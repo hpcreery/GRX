@@ -7,6 +7,7 @@ attribute vec2 a_Location;
 
 // uniform mat4 u_matrix;
 uniform mat3 u_Transform;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 

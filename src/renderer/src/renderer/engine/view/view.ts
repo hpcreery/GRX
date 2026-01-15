@@ -44,6 +44,7 @@ export interface WorldContext {
   transform: RenderTransform
   resolution: vec2
   transformMatrix: mat3
+  zOffset: number
 }
 
 // interface ScreenRenderProps {
@@ -102,6 +103,37 @@ export interface QuerySelection extends ShapeDistance {
 
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
+function makeZToWMatrix(fudgeFactor: number): mat4 {
+  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, fudgeFactor, 0, 0, 0, 1]
+}
+
+function perspective(out: mat4, fovy: number, aspect: number, near: number, far: number): mat4 {
+  var f = 1.0 / Math.tan(fovy / 2)
+  out[0] = 1 / (f / aspect)
+  out[1] = 0
+  out[2] = 0
+  out[3] = 0
+  out[4] = 0
+  out[5] = 1 / f
+  out[6] = 0
+  out[7] = 0
+  out[8] = 0
+  out[9] = 0
+  out[11] = 1 / -1
+  out[12] = 0
+  out[13] = 0
+  out[15] = 0
+  if (far != null && far !== Infinity) {
+    var nf = 1 / (near - far)
+    out[10] = 1 / ((far + near) * nf)
+    out[14] = 1 / (2 * far * near * nf)
+  } else {
+    out[10] = 1 / -1
+    out[14] = 1 / (-2 * near)
+  }
+  return out
+}
+
 export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
   public dataStep: Step
@@ -135,6 +167,8 @@ export class ViewRenderer extends UpdateEventTarget {
       // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
       const { zoom, position } = this.transform
       const { width, height } = this.viewBox
+      if (this.transform.rotation[0] % 90 == 0) this.transform.rotation[0] += 1
+      if (this.transform.rotation[1] % 90 == 0) this.transform.rotation[1] += 1
       const [rotateX, rotateY] = this.transform.rotation
       mat3.projection(this.transform.matrix, width, height)
       mat3.translate(this.transform.matrix, this.transform.matrix, position)
@@ -143,15 +177,15 @@ export class ViewRenderer extends UpdateEventTarget {
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
       if (settings.ENABLE_3D) {
-        // mat4.identity(this.transform.matrix3D)
         mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, width / height, 0, Infinity)
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
+        mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
 
-        // mat4.identity(this.transform.matrix3DInverse)
         mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, width / height, 0, Infinity)
         mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
         mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
+        mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [1, 1, zoom])
       } else {
         mat4.identity(this.transform.matrix3D)
         mat4.identity(this.transform.matrix3DInverse)
@@ -194,11 +228,13 @@ export class ViewRenderer extends UpdateEventTarget {
         transformMatrix: () => this.transform.matrix,
         transform: () => this.transform,
         resolution: () => [this.viewBox.width, this.viewBox.height],
+        zOffset: 0.0,
       },
 
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
+        // u_ZOffset: 0.0,
         u_Transform3D: () => this.transform.matrix3D,
         u_InverseTransform3D: () => this.transform.matrix3DInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
@@ -387,7 +423,7 @@ export class ViewRenderer extends UpdateEventTarget {
     // this.transform2.update(this.transform.matrix)
   }
 
-  public getWorldPositionFromCanvasPosition(x: number, y: number): [number, number] {
+  public getWorldPositionFromCanvasPosition(x: number, y: number, z: number): [number, number] {
     const { width, height } = this.viewBox
     const mouse_element_pos = [x, y]
 
@@ -399,7 +435,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
     const mousePos3D = vec4.transformMat4(
       vec4.create(),
-      vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1),
+      vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1),
       this.transform.matrix3DInverse,
     )
     mousePos3D[0] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
@@ -563,6 +599,17 @@ export class ViewRenderer extends UpdateEventTarget {
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
+
+        // set z_offset context
+        for (const matrixLayer in this.dataStep.matrix.layers) {
+          if (this.dataStep.matrix.layers[matrixLayer] === layer.dataLayer.layer) {
+            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
+            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
+            context.zOffset = zOffset
+            break
+          }
+        }
+
         const distances = layer.queryDistance(pointer, context)
         if (distances.length === 0) continue
         for (const select of distances) {
@@ -660,6 +707,7 @@ export class ViewRenderer extends UpdateEventTarget {
       max: vec2.fromValues(-Infinity, -Infinity),
     }
     this.transform.velocity = vec2.fromValues(0, 0)
+    this.transform.rotation = vec2.fromValues(0, 0)
     for (const layer of this.layers) {
       // TODO: make for loop parallel
       const layerBoundingBox = layer.getBoundingBox()
@@ -751,25 +799,59 @@ export class ViewRenderer extends UpdateEventTarget {
       })
 
       this.utilitiesRenderer.render(context)
-      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
+      this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
 
       for (const layer of this.layers) {
         if (!layer.visible) continue
+
+        for (const matrixLayer in this.dataStep.matrix.layers) {
+          if (this.dataStep.matrix.layers[matrixLayer] === layer.dataLayer.layer) {
+            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
+            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
+            context.zOffset = zOffset
+            break
+          }
+        }
+
         layer.render(context)
         this.drawCollections.blend(() => {
           if (settings.COLOR_BLEND == ColorBlend.OVERLAY) {
-            this.drawCollections.overlayBlendFunc(() => this.drawCollections.renderToScreen({ renderTexture: layer.framebuffer }))
+            this.drawCollections.overlayBlendFunc(() =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+                // transform3D: this.transform.matrix3D,
+                // inverseTransform3D: this.transform.matrix3DInverse,
+                // zOffset: 0,
+              }),
+            )
           } else {
-            this.drawCollections.contrastBlendFunc(() => this.drawCollections.renderToScreen({ renderTexture: layer.framebuffer }))
+            this.drawCollections.contrastBlendFunc(() =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+                // transform3D: this.transform.matrix3D,
+                // inverseTransform3D: this.transform.matrix3DInverse,
+                // zOffset: 0,
+              }),
+            )
           }
         })
       }
       for (const selection of this.selections) {
+
+        for (const matrixLayer in this.dataStep.matrix.layers) {
+          if (this.dataStep.matrix.layers[matrixLayer] === selection.sourceLayer) {
+            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
+            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
+            context.zOffset = zOffset
+            break
+          }
+        }
+
         selection.render(context)
-        this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: selection.framebuffer }))
+        this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: selection.framebuffer }))
       }
       this.measurements.render(context)
-      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
+      this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.measurements.framebuffer }))
     })
   }
 

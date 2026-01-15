@@ -2,6 +2,7 @@ precision highp float;
 
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform vec3 u_Color;

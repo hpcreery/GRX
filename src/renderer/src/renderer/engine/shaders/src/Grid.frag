@@ -24,11 +24,12 @@ mat2 rotateCW(float angle) {
 
 vec4 transformLocation3D(vec2 coordinate) {
   vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
-  float denom = 1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR;
-  if (denom <= 0.0 ) {
-    discard;
-  }
-  transformed_position_3d.xy /= abs(denom);
+  // TODO: create perspective
+  // float denom = 1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR);
+  // if (denom <= 0.0 ) {
+  //   discard;
+  // }
+  // transformed_position_3d.xy /= abs(denom);
   return transformed_position_3d;
 }
 
@@ -139,6 +140,11 @@ void main() {
   // float pixel_size = u_PixelSize / scale;
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  gl_FragColor = grid(FragCoord - u_Offset);
+  // gl_FragColor = grid(FragCoord - u_Offset);
+  vec4 color = grid(FragCoord - u_Offset);
+  if (color.a == 0.0) {
+    discard;
+  }
+  gl_FragColor = color;
   return;
 }

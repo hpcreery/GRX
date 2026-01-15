@@ -8,6 +8,7 @@ attribute vec2 a_CharPosition;
 // uniform mat4 u_matrix;
 uniform mat3 u_Transform;
 uniform mat4 u_Transform3D;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform vec2 u_TextureDimensions;
 uniform float u_PixelSize;
@@ -19,8 +20,8 @@ varying vec2 v_Texcoord;
 #pragma glslify: import('../modules/Constants.glsl')
 
 vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, 0.0, 1.0);
-  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
+  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, u_ZOffset, 1.0);
+  // transformed_position_3d.xy /= clamp(1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR), -1.0, 1.0);
   return transformed_position_3d;
 }
 

@@ -268,8 +268,8 @@ export abstract class EngineInterface extends DataInterface {
    * @param y Y position
    * @returns World Position [x, y]
    */
-  public static read_world_position_from_canvas_position(viewId: string, x: number, y: number): [number, number] {
-    return this._get_view(viewId).getWorldPositionFromCanvasPosition(x, y)
+  public static read_world_position_from_canvas_position(viewId: string, x: number, y: number, z: number): [number, number] {
+    return this._get_view(viewId).getWorldPositionFromCanvasPosition(x, y, z)
   }
 
   /**

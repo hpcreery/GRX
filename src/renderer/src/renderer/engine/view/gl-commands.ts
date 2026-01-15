@@ -22,10 +22,9 @@ import FullScreenQuad from "./../shaders/src/FullScreenQuad.vert"
 
 import { GridSettings, OriginRenderProps } from "../settings"
 
-import { vec2, vec4 } from "gl-matrix"
+import { mat4, vec2, vec4 } from "gl-matrix"
 
 import { settings } from "../settings"
-
 
 import { fontInfo as cozetteFontInfo } from "../../data/shape/text/cozette/font"
 import { WorldContext } from "./view"
@@ -178,13 +177,34 @@ export interface FrameBufferRenderAttachments {
   renderTexture: REGL.Framebuffer2D
 }
 
-export interface ScreenRenderProps {
+export interface TextureToScreenRendererProps {
   renderTexture: REGL.Framebuffer | REGL.Texture2D
-  blend?: boolean
 }
 
-export interface ScreenRenderUniforms {
+export interface TextureToScreenRendererUniforms {
   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
+}
+
+export interface TextureToScreenRendererAttributes {
+  a_Vertex_Position: number[][]
+}
+
+export interface TextureToScreen3DRendererProps {
+  renderTexture: REGL.Framebuffer | REGL.Texture2D
+  transform3D: mat4
+  inverseTransform3D: mat4
+  zOffset: number
+}
+
+export interface TextureToScreen3DRendererUniforms {
+  u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
+  u_Transform3D: mat4
+  u_InverseTransform3D: mat4
+  u_ZOffset: number
+}
+
+export interface TextureToScreen3DRendererAttributes {
+  a_Vertex_Position: number[][]
 }
 
 interface GridRenderUniforms {
@@ -205,8 +225,9 @@ export interface TLoadedReglRenderers {
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext, SurfaceAttachments>
   drawDatums: REGL.DrawCommand<REGL.DefaultContext, DatumAttachments>
   drawDatumText: REGL.DrawCommand<REGL.DefaultContext, DatumTextAttachments>
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderAttachments>
-  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps>
+  drawGroupedShapes: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderAttachments>
+  renderTextureToScreen: REGL.DrawCommand<REGL.DefaultContext, TextureToScreenRendererProps>
+  renderTextureToScreen3D: REGL.DrawCommand<REGL.DefaultContext, TextureToScreen3DRendererProps>
   blend: REGL.DrawCommand
   overlayBlendFunc: REGL.DrawCommand
   contrastBlendFunc: REGL.DrawCommand
@@ -222,8 +243,9 @@ export interface TReglRenderers {
   drawSurfaces: REGL.DrawCommand<REGL.DefaultContext & WorldContext, SurfaceAttachments> | undefined
   drawDatums: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumAttachments> | undefined
   drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
-  drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
-  renderToScreen: REGL.DrawCommand<REGL.DefaultContext, ScreenRenderProps> | undefined
+  drawGroupedShapes: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
+  renderTextureToScreen: REGL.DrawCommand<REGL.DefaultContext, TextureToScreenRendererProps> | undefined
+  renderTextureToScreen3D: REGL.DrawCommand<REGL.DefaultContext, TextureToScreen3DRendererProps> | undefined
   blend: REGL.DrawCommand | undefined
   overlayBlendFunc: REGL.DrawCommand | undefined
   contrastBlendFunc: REGL.DrawCommand | undefined
@@ -239,8 +261,9 @@ export const ReglRenderers: TReglRenderers = {
   drawSurfaces: undefined,
   drawDatums: undefined,
   drawDatumText: undefined,
-  drawFrameBuffer: undefined,
-  renderToScreen: undefined,
+  drawGroupedShapes: undefined,
+  renderTextureToScreen: undefined,
+  renderTextureToScreen3D: undefined,
   blend: undefined,
   overlayBlendFunc: undefined,
   contrastBlendFunc: undefined,
@@ -313,13 +336,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
 }
 
 export function initializeRenderers(regl: REGL.Regl): void {
-  ReglRenderers.drawPads = regl<
-    PadUniforms,
-    PadAttributes,
-    PadAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawPads = regl<PadUniforms, PadAttributes, PadAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: PadFrag,
     vert: PadVert,
 
@@ -386,13 +403,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<PadAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawArcs = regl<
-    ArcUniforms,
-    ArcAttributes,
-    ArcAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawArcs = regl<ArcUniforms, ArcAttributes, ArcAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: ArcFrag,
 
     vert: ArcVert,
@@ -453,13 +464,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     instances: regl.prop<ArcAttachments, "length">("length"),
   })
 
-  ReglRenderers.drawLines = regl<
-    LineUniforms,
-    LineAttributes,
-    LineAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
-  >({
+  ReglRenderers.drawLines = regl<LineUniforms, LineAttributes, LineAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: LineFrag,
 
     vert: LineVert,
@@ -593,14 +598,14 @@ export function initializeRenderers(regl: REGL.Regl): void {
     // primitive: 'line loop'
   })
 
-  ReglRenderers.drawFrameBuffer = regl<
+  ReglRenderers.drawGroupedShapes = regl<
     FrameBufferRenderUniforms,
     FrameBufferRendeAttributes,
     FrameBufferRenderAttachments,
     Record<string, never>,
     REGL.DefaultContext & WorldContext
   >({
-    vert: `
+    vert: /* glsl */ `
   precision highp float;
 
   uniform float u_Index;
@@ -618,7 +623,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     gl_Position = vec4(a_Vertex_Position, Index, 1.0);
   }
 `,
-    frag: `
+    frag: /* glsl */ `
   precision highp float;
 
   uniform sampler2D u_RenderTexture;
@@ -655,8 +660,8 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
   })
 
-  ReglRenderers.renderToScreen = regl<ScreenRenderUniforms, Record<string, never>, ScreenRenderProps>({
-    vert: `
+  ReglRenderers.renderTextureToScreen = regl<TextureToScreenRendererUniforms, TextureToScreenRendererAttributes, TextureToScreenRendererProps>({
+    vert: /* glsl */ `
       precision highp float;
       attribute vec2 a_Vertex_Position;
       varying vec2 v_UV;
@@ -665,37 +670,20 @@ export function initializeRenderers(regl: REGL.Regl): void {
         gl_Position = vec4(a_Vertex_Position, 1, 1);
       }
     `,
-    frag: `
+    frag: /* glsl */ `
       precision highp float;
       uniform sampler2D u_RenderTexture;
       varying vec2 v_UV;
       void main () {
 
-        // gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        if (color.a == 0.0) {
-          discard;
-        }
-        gl_FragColor = color;
+        gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        // vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        // if (color.a == 0.0) {
+        //   discard;
+        // }
+        // gl_FragColor = color;
       }
     `,
-
-    // blend: {
-    //   enable: true,
-
-    //   func: {
-    //     srcRGB: 'one minus dst color',
-    //     srcAlpha: 'one',
-    //     dstRGB: 'one minus src color',
-    //     dstAlpha: 'one'
-    //   },
-
-    //   equation: {
-    //     rgb: 'add',
-    //     alpha: 'add'
-    //   },
-    //   color: [0, 0, 0, 0.1]
-    // },
 
     depth: {
       enable: false,
@@ -705,17 +693,89 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
 
     uniforms: {
-      u_RenderTexture: regl.prop<ScreenRenderProps, "renderTexture">("renderTexture"),
+      u_RenderTexture: regl.prop<TextureToScreenRendererProps, "renderTexture">("renderTexture"),
+    },
+
+    attributes: {
+      a_Vertex_Position: [
+        [-1, -1],
+        [+1, -1],
+        [-1, +1],
+        [+1, +1],
+        [-1, +1],
+        [+1, -1],
+      ],
     },
   })
 
-  ReglRenderers.drawDatums = regl<
-    DatumUniforms,
-    DatumAttributes,
-    DatumAttachments,
-    Record<string, never>,
-    REGL.DefaultContext & WorldContext
+  ReglRenderers.renderTextureToScreen3D = regl<
+    TextureToScreen3DRendererUniforms,
+    TextureToScreen3DRendererAttributes,
+    TextureToScreen3DRendererProps
   >({
+    vert: /* glsl */ `
+      precision highp float;
+      attribute vec2 a_Vertex_Position;
+      uniform mat4 u_Transform3D;
+      uniform mat4 u_InverseTransform3D;
+      varying vec2 v_UV;
+      void main () {
+        v_UV = a_Vertex_Position;
+        gl_Position = vec4(a_Vertex_Position, 1, 1);
+      }
+    `,
+    frag: /* glsl */ `
+      precision highp float;
+      uniform sampler2D u_RenderTexture;
+      uniform float u_ZOffset;
+      uniform mat4 u_Transform3D;
+      uniform mat4 u_InverseTransform3D;
+      varying vec2 v_UV;
+      void main () {
+
+        // gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        // vec4 ndcPos = vec4(v_UV, u_ZOffset, 1.0);
+        // vec4 worldPos = u_InverseTransform3D * ndcPos;
+        // vec4 projectedPos = u_Transform3D * worldPos;
+        // vec2 uv = (worldPos.xy / worldPos.z) * 0.5 + 0.5;
+        // vec4 color = texture2D(u_RenderTexture, worldPos.xy);
+        vec2 offsetUV = (v_UV * 0.5) + 0.5 + vec2(0.1, 0.1);
+        vec4 color = texture2D(u_RenderTexture, offsetUV);
+        // vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
+        if (color.a == 0.0) {
+          discard;
+        }
+        gl_FragColor = color;
+      }
+    `,
+
+    depth: {
+      enable: false,
+      mask: false,
+      func: "greater",
+      range: [0, 1],
+    },
+
+    uniforms: {
+      u_RenderTexture: regl.prop<TextureToScreen3DRendererProps, "renderTexture">("renderTexture"),
+      u_Transform3D: regl.prop<TextureToScreen3DRendererProps, "transform3D">("transform3D"),
+      u_InverseTransform3D: regl.prop<TextureToScreen3DRendererProps, "inverseTransform3D">("inverseTransform3D"),
+      u_ZOffset: regl.prop<TextureToScreen3DRendererProps, "zOffset">("zOffset"),
+    },
+
+    attributes: {
+      a_Vertex_Position: [
+        [-1, -1],
+        [+1, -1],
+        [-1, +1],
+        [+1, +1],
+        [-1, +1],
+        [+1, -1],
+      ],
+    },
+  })
+
+  ReglRenderers.drawDatums = regl<DatumUniforms, DatumAttributes, DatumAttachments, Record<string, never>, REGL.DefaultContext & WorldContext>({
     frag: DatumFrag,
 
     vert: DatumVert,
