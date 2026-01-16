@@ -22,16 +22,23 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
-  // TODO: create perspective
-  // float denom = 1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR);
-  // if (denom <= 0.0 ) {
-  //   discard;
-  // }
-  // transformed_position_3d.xy /= abs(denom);
-  return transformed_position_3d;
-}
+
+// vec4 transformLocation3D(vec2 coordinate) {
+//   vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
+//   // TODO: create perspective
+//   // float denom = 1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR);
+//   // if (denom <= 0.0 ) {
+//   //   discard;
+//   // }
+//   // transformed_position_3d.xy /= abs(denom);
+//   return transformed_position_3d;
+// }
+
+float u_ZOffset = 0.0;
+
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+
 
 vec2 transformLocation(vec2 pixel_coord) {
   vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);

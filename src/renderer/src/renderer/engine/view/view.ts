@@ -239,7 +239,7 @@ export class ViewRenderer extends UpdateEventTarget {
         u_InverseTransform3D: () => this.transform.matrix3DInverse,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
-        u_PixelSize: 2,
+        u_PixelSize: 1,
         u_OutlineMode: () => settings.OUTLINE_MODE,
         u_SkeletonMode: () => settings.SKELETON_MODE,
         u_SnapMode: () => SNAP_MODES_MAP[settings.SNAP_MODE],
@@ -355,9 +355,12 @@ export class ViewRenderer extends UpdateEventTarget {
 
   public moveViewport(x: number, y: number): void {
     if (!this.transform.dragging) return
-    // take into account the 3d rotation to change the x and y movement
-    x = (x * 1) / Math.cos(this.transform.rotation[1] * (Math.PI / 180))
-    y = (y * 1) / Math.cos(this.transform.rotation[0] * (Math.PI / 180))
+
+    if (settings.ENABLE_3D) {
+      // take into account the 3d rotation to change the x and y movement
+      x = (x * 1) / Math.cos(this.transform.rotation[1] * (Math.PI / 180))
+      y = (y * 1) / Math.cos(this.transform.rotation[0] * (Math.PI / 180))
+    }
 
     this.transform.velocity = [x, y]
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
@@ -433,14 +436,23 @@ export class ViewRenderer extends UpdateEventTarget {
     // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
 
     const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
-    const mousePos3D = vec4.transformMat4(
-      vec4.create(),
-      vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1),
-      this.transform.matrix3DInverse,
-    )
-    mousePos3D[0] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
-    mousePos3D[1] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
-    const mousePos = vec2.transformMat3(vec2.create(), vec2.fromValues(mousePos3D[0], mousePos3D[1]), this.transform.matrixInverse)
+    const mousePos = vec4.create()
+    if (settings.ENABLE_3D) {
+      vec4.transformMat4(
+        mousePos,
+        vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1),
+        this.transform.matrix3DInverse,
+      )
+      mousePos[0] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+      mousePos[1] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+    } else {
+      vec4.transformMat4(
+        mousePos,
+        vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1),
+        mat4.create(),
+      )
+    }
+    vec2.transformMat3(mousePos, vec2.fromValues(mousePos[0], mousePos[1]), this.transform.matrixInverse)
     return [mousePos[0], mousePos[1]]
   }
 

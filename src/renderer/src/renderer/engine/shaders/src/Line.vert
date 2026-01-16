@@ -66,15 +66,13 @@ mat2 rotateCW(float angle) {
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, u_ZOffset, 1.0);
-  // transformed_position_3d.xy /= clamp(1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR), -1.0, 1.0);
-  return transformed_position_3d;
-}
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
 
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-  float pixel_size = u_PixelSize / scale;
+  // float pixel_size = u_PixelSize / scale;
+  vec4 v = transformLocation3D(a_Vertex_Position);
+  float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 

@@ -60,11 +60,7 @@ vec2 getVertexPosition(float index) {
   return vec2(x, y);
 }
 
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, u_ZOffset, 1.0);
-  // transformed_position_3d.xy /= clamp(1.0 + (transformed_position_3d.z * PERSPECTIVE_CORRECTION_FACTOR), -1.0, 1.0);
-  return transformed_position_3d;
-}
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
 
 
 void main() {

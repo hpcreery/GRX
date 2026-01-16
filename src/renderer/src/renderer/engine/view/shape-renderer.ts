@@ -19,6 +19,7 @@ interface CommonAttributes {}
 interface CommonUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
+  u_ZOffset: number
   u_QtyFeatures: number
   u_IndexOffset: number
   u_Polarity: number
@@ -119,7 +120,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       CommonAttributes,
       Record<string, never>,
       ShapeRendererCommonContext,
-      REGL.DefaultContext
+      REGL.DefaultContext & WorldContext
     >({
       depth: {
         enable: true,
@@ -138,6 +139,7 @@ export class ShapeRenderer extends UpdateEventTarget {
           this.qtyFeatures * (context.qtyFeaturesRef ?? 1),
       },
       uniforms: {
+        u_ZOffset: (context) => context.zOffset || 0.0,
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
         u_SymbolsTexture: () => SymbolShaderCollection.texture,

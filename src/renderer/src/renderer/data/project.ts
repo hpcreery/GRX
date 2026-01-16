@@ -65,7 +65,7 @@ export class Layer {
   public name: string = ""
   public function: string = "copper"
   public context: string = "default"
-  public thickness: number = 0.000254 // in mm
+  public thickness: number = 0.0005 // in mm
   constructor(name: string, matrix: Matrix) {
     this.name = name
     this.matrix = matrix
