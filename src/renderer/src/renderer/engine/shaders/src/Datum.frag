@@ -9,13 +9,14 @@ uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform vec3 u_Color;
 uniform float u_Alpha;
+uniform bool u_Perspective3D;
 
 varying vec2 v_Location;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
-#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_InverseTransform3D=u_InverseTransform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 
 mat2 rotateCCW(float angle) {

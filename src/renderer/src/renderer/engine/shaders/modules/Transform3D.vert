@@ -5,12 +5,14 @@ vec4 transformLocation3D(vec2 coordinate) {
   }
 
   vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, u_ZOffset, 1.0);
-  if (1.0 + transformed_position_3d.w < 0.0) {
-    transformed_position_3d.w = -0.9999;
-  }
+  // if (1.0 + transformed_position_3d.w < 0.0) {
+  //   transformed_position_3d.w = -0.9999;
+  // }
   // transformed_position_3d.xy /= max(1.0 + (transformed_position_3d.z), 0.0);
   // transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z));
-  transformed_position_3d.xy /= 1.0 + transformed_position_3d.w;
+  if (u_Perspective3D) {
+    transformed_position_3d.xy /= 1.0 + transformed_position_3d.z;
+  }
   return transformed_position_3d;
 }
 

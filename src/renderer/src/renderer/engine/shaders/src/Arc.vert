@@ -20,6 +20,7 @@ uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
 uniform bool u_QueryMode;
+uniform bool u_Perspective3D;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -69,7 +70,7 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 

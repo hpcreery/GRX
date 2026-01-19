@@ -23,6 +23,7 @@ export interface RenderSettings {
   ZOOM_TO_CURSOR: boolean
   SHOW_DATUMS: boolean
   ENABLE_3D: boolean
+  PERSPECTIVE_3D: boolean
 }
 
 export const settings: RenderSettings = {
@@ -43,6 +44,7 @@ export const settings: RenderSettings = {
   ZOOM_TO_CURSOR: true,
   SHOW_DATUMS: false,
   ENABLE_3D: false,
+  PERSPECTIVE_3D: false,
 }
 
 // GRID SETTINGS

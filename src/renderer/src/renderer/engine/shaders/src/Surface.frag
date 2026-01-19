@@ -22,6 +22,7 @@ uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
 uniform float u_Polarity;
+uniform bool u_Perspective3D;
 
 // SURFACE UNIFORMS
 uniform sampler2D u_Vertices;
@@ -88,8 +89,8 @@ float draw(float dist, float pixel_size) {
 //   return transformed_position.xy;
 // }
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
-#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_InverseTransform3D=u_InverseTransform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 
 vec2 transformLocation(vec2 pixel_coord) {

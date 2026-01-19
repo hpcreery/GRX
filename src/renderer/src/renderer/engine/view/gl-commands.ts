@@ -227,7 +227,6 @@ export interface TLoadedReglRenderers {
   drawDatumText: REGL.DrawCommand<REGL.DefaultContext, DatumTextAttachments>
   drawGroupedShapes: REGL.DrawCommand<REGL.DefaultContext, FrameBufferRenderAttachments>
   renderTextureToScreen: REGL.DrawCommand<REGL.DefaultContext, TextureToScreenRendererProps>
-  renderTextureToScreen3D: REGL.DrawCommand<REGL.DefaultContext, TextureToScreen3DRendererProps>
   blend: REGL.DrawCommand
   overlayBlendFunc: REGL.DrawCommand
   contrastBlendFunc: REGL.DrawCommand
@@ -245,7 +244,6 @@ export interface TReglRenderers {
   drawDatumText: REGL.DrawCommand<REGL.DefaultContext & WorldContext, DatumTextAttachments> | undefined
   drawGroupedShapes: REGL.DrawCommand<REGL.DefaultContext & WorldContext, FrameBufferRenderAttachments> | undefined
   renderTextureToScreen: REGL.DrawCommand<REGL.DefaultContext, TextureToScreenRendererProps> | undefined
-  renderTextureToScreen3D: REGL.DrawCommand<REGL.DefaultContext, TextureToScreen3DRendererProps> | undefined
   blend: REGL.DrawCommand | undefined
   overlayBlendFunc: REGL.DrawCommand | undefined
   contrastBlendFunc: REGL.DrawCommand | undefined
@@ -263,7 +261,6 @@ export const ReglRenderers: TReglRenderers = {
   drawDatumText: undefined,
   drawGroupedShapes: undefined,
   renderTextureToScreen: undefined,
-  renderTextureToScreen3D: undefined,
   blend: undefined,
   overlayBlendFunc: undefined,
   contrastBlendFunc: undefined,
@@ -694,73 +691,6 @@ export function initializeRenderers(regl: REGL.Regl): void {
 
     uniforms: {
       u_RenderTexture: regl.prop<TextureToScreenRendererProps, "renderTexture">("renderTexture"),
-    },
-
-    attributes: {
-      a_Vertex_Position: [
-        [-1, -1],
-        [+1, -1],
-        [-1, +1],
-        [+1, +1],
-        [-1, +1],
-        [+1, -1],
-      ],
-    },
-  })
-
-  ReglRenderers.renderTextureToScreen3D = regl<
-    TextureToScreen3DRendererUniforms,
-    TextureToScreen3DRendererAttributes,
-    TextureToScreen3DRendererProps
-  >({
-    vert: /* glsl */ `
-      precision highp float;
-      attribute vec2 a_Vertex_Position;
-      uniform mat4 u_Transform3D;
-      uniform mat4 u_InverseTransform3D;
-      varying vec2 v_UV;
-      void main () {
-        v_UV = a_Vertex_Position;
-        gl_Position = vec4(a_Vertex_Position, 1, 1);
-      }
-    `,
-    frag: /* glsl */ `
-      precision highp float;
-      uniform sampler2D u_RenderTexture;
-      uniform float u_ZOffset;
-      uniform mat4 u_Transform3D;
-      uniform mat4 u_InverseTransform3D;
-      varying vec2 v_UV;
-      void main () {
-
-        // gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        // vec4 ndcPos = vec4(v_UV, u_ZOffset, 1.0);
-        // vec4 worldPos = u_InverseTransform3D * ndcPos;
-        // vec4 projectedPos = u_Transform3D * worldPos;
-        // vec2 uv = (worldPos.xy / worldPos.z) * 0.5 + 0.5;
-        // vec4 color = texture2D(u_RenderTexture, worldPos.xy);
-        vec2 offsetUV = (v_UV * 0.5) + 0.5 + vec2(0.1, 0.1);
-        vec4 color = texture2D(u_RenderTexture, offsetUV);
-        // vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        if (color.a == 0.0) {
-          discard;
-        }
-        gl_FragColor = color;
-      }
-    `,
-
-    depth: {
-      enable: false,
-      mask: false,
-      func: "greater",
-      range: [0, 1],
-    },
-
-    uniforms: {
-      u_RenderTexture: regl.prop<TextureToScreen3DRendererProps, "renderTexture">("renderTexture"),
-      u_Transform3D: regl.prop<TextureToScreen3DRendererProps, "transform3D">("transform3D"),
-      u_InverseTransform3D: regl.prop<TextureToScreen3DRendererProps, "inverseTransform3D">("inverseTransform3D"),
-      u_ZOffset: regl.prop<TextureToScreen3DRendererProps, "zOffset">("zOffset"),
     },
 
     attributes: {

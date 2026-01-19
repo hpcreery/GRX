@@ -9,7 +9,6 @@ import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
 import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 // import * as BufferCollection from './engine/buffer-collection'
 
-
 // import gdsiiFile from '@lib/gdsii/testdata/various.gds?arraybuffer'
 import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
@@ -1194,6 +1193,7 @@ function DemoApp(): JSX.Element {
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [zoomToCursor, setZoomToCursor] = React.useState<boolean>(false)
   const [enable3d, setEnable3d] = React.useState<boolean>(false)
+  const [perspective3D, setPerspective3D] = React.useState<boolean>(false)
   const [_showDatums, setShowDatums] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<string[]>([])
 
@@ -1220,7 +1220,6 @@ function DemoApp(): JSX.Element {
       setEnable3d(setting.ENABLE_3D)
     })
     const DataInterface = render.interface
-
 
     // const layer_cmp = "cmp"
     // const layer_sol = "sol"
@@ -1695,6 +1694,8 @@ function DemoApp(): JSX.Element {
           backgroundColor: "black",
           border: "1px solid #d3d3d3",
           textAlign: "center",
+          top: 100,
+          left: 100,
         }}
       >
         <div
@@ -1727,6 +1728,8 @@ function DemoApp(): JSX.Element {
           backgroundColor: "black",
           border: "1px solid #d3d3d3",
           textAlign: "center",
+          top: 120,
+          left: 120,
         }}
       >
         <div
@@ -1816,6 +1819,14 @@ function DemoApp(): JSX.Element {
             onChange={(e): void => {
               renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
               setEnable3d(e.target.checked)
+            }}
+          />
+          3D Perspective
+          <Switch
+            checked={perspective3D}
+            onChange={(e): void => {
+              renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: e.target.checked })
+              setPerspective3D(e.target.checked)
             }}
           />
           Mouse Mode

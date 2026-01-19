@@ -225,19 +225,19 @@ export class ShapeRenderer extends UpdateEventTarget {
   //   return newPointer
   // }
 
-  // /**
-  //  * Converts the point applying the current transform
-  //  * Mutates the original direction
-  //  * @param point vec2 - the point to transform
-  //  * @returns vec2 - the transformed point
-  //  */
-  // protected transformPoint(point: vec2): vec2 {
-  //   const directionTransform = new ShapeTransform()
-  //   Object.assign(directionTransform, this.transform)
-  //   directionTransform.update(mat3.create())
-  //   vec2.transformMat3(point, point, directionTransform.matrix)
-  //   return point
-  // }
+  /**
+   * Converts the point applying the current transform
+   * Mutates the original direction
+   * @param point vec2 - the point to transform
+   * @returns vec2 - the transformed point
+   */
+  protected transformPoint(point: vec2): vec2 {
+    const directionTransform = new ShapeTransform()
+    Object.assign(directionTransform, this.transform)
+    directionTransform.update(mat3.create())
+    vec2.transformMat3(point, point, directionTransform.matrix)
+    return point
+  }
 
   /**
    * Queries the distance from the pointer to all shapes in the renderer
@@ -308,7 +308,6 @@ export class ShapeRenderer extends UpdateEventTarget {
     renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
-    console.log("distances")
     const distances: ShapeDistance[] = []
     // let closestIndex: number | undefined = undefined
     for (let i = 0; i < distData.length; i += 4) {
@@ -344,7 +343,7 @@ export class ShapeRenderer extends UpdateEventTarget {
 
       const snapPoint = vec2.create()
       vec2.sub(snapPoint, pointer, vec2.scale(vec2.create(), direction, distance))
-      // this.transformPoint(snapPoint)
+      this.transformPoint(snapPoint)
 
       distances.push({
         // shape: this.image[i / 4],

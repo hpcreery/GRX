@@ -4,6 +4,11 @@ vec4 transformLocation3D(vec2 ndc) {
     return vec4(ndc.xy, 0.0, 1.0);
   }
 
+  // no perspective case: simply invert the transform
+  if (!u_Perspective3D) {
+    return u_InverseTransform3D * vec4(ndc, -u_ZOffset, 1.0);
+  }
+
   // Extract columns of the 4x4 transform (mat4 is column-major)
   vec4 c0 = u_Transform3D[0];
   vec4 c1 = u_Transform3D[1];
@@ -21,6 +26,7 @@ vec4 transformLocation3D(vec2 ndc) {
   float a_y1 = c0.y; float a_y2 = c1.y;
   float a_z1 = c0.z; float a_z2 = c1.z;
 
+  // perspective correction factor
   float f = 1.0;
 
   // Build 2x2 linear system: M * [cx,cy] = r

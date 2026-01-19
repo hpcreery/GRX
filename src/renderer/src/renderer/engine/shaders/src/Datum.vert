@@ -11,10 +11,11 @@ uniform mat4 u_Transform3D;
 uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
+uniform bool u_Perspective3D;
 
 varying vec2 v_Location;
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 void main() {
   vec2 Transformed_Position = (u_Transform * vec3(a_Location, 1)).xy;

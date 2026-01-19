@@ -12,6 +12,7 @@ uniform float u_PixelSize;
 uniform float u_IndexOffset;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
+uniform bool u_Perspective3D;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_VertexPosition;
@@ -60,7 +61,7 @@ vec2 getVertexPosition(float index) {
   return vec2(x, y);
 }
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 
 void main() {

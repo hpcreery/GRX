@@ -14,12 +14,13 @@ uniform vec2 u_TextureDimensions;
 uniform float u_PixelSize;
 uniform vec2 u_CharDimensions;
 uniform vec2 u_CharSpacing;
+uniform bool u_Perspective3D;
 
 varying vec2 v_Texcoord;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 void main() {
   // Multiply the position by the matrix.

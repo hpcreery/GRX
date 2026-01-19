@@ -251,23 +251,9 @@ export class Renderer {
       // console.log(e.button)
       if (e.button == 1 ) {
         // middle mouse button pressed
-        const pointerModeBackup = this.pointerSettings.mode
-        const cursorStyleBackup = element.style.cursor
         this.pointerSettings.mode = PointerMode.MOVE
         element.style.cursor = "grabbing"
         await engine.interface.view_pointer_grab(element.id)
-        const onPointerUp = async (ev: PointerEvent): Promise<void> => {
-          if (ev.detail.x === e.clientX && ev.detail.y === e.clientY) {
-            element.style.cursor = "grab"
-            await engine.interface.view_pointer_release(element.id)
-            this.pointerSettings.mode = pointerModeBackup
-            element.style.cursor = cursorStyleBackup
-            element.removeEventListener("pointerup", onPointerUp as EventListener)
-          }
-        }
-        element.addEventListener("pointerup", onPointerUp as EventListener)
-        // this.pointerSettings.mode = pointerModeBackup
-        // element.style.cursor = cursorStyleBackup
         return
       }
       sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
@@ -290,6 +276,7 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [x1, y1] = await getMouseWorldCoordinates(element, e)
+        const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
         const currentMeasurement = await engine.interface.read_view_current_measurement(element.id)
         if (currentMeasurement != null) {
           engine.interface.finish_view_measurement(element.id, [x1, y1])

@@ -24,6 +24,7 @@ interface WorldUniforms {
   u_InverseTransform: mat3
   u_Transform3D: mat4
   u_InverseTransform3D: mat4
+  u_Perspective3D: boolean
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
@@ -237,9 +238,10 @@ export class ViewRenderer extends UpdateEventTarget {
         // u_ZOffset: 0.0,
         u_Transform3D: () => this.transform.matrix3D,
         u_InverseTransform3D: () => this.transform.matrix3DInverse,
+        u_Perspective3D: () => settings.PERSPECTIVE_3D,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
-        u_PixelSize: 1,
+        u_PixelSize: 2,
         u_OutlineMode: () => settings.OUTLINE_MODE,
         u_SkeletonMode: () => settings.SKELETON_MODE,
         u_SnapMode: () => SNAP_MODES_MAP[settings.SNAP_MODE],
@@ -632,8 +634,8 @@ export class ViewRenderer extends UpdateEventTarget {
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
-          // this.measurements.addMeasurement(pointer)
-          // this.measurements.finishMeasurement(select.snapPoint || pointer)
+          this.measurements.addMeasurement(pointer)
+          this.measurements.finishMeasurement(select.snapPoint || pointer)
         }
         const selectionImage = new ArtworkBufferCollection()
         selectionImage.fromJSON(this.copySelectionToImage(distances))
