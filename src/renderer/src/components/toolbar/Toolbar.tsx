@@ -18,6 +18,8 @@ import {
   IconPointerPin,
   IconBone,
   IconBoneOff,
+  IconBadge3d,
+  IconBadge3dFilled
 } from "@tabler/icons-react"
 // import chroma from 'chroma-js'
 import { Modal, ActionIcon, Card, Group, Tooltip, useMantineTheme, Kbd, Popover } from "@mantine/core"
@@ -42,6 +44,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
   const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
+  const [enable3dMode, setEnable3dMode] = React.useState<boolean>(false)
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderer.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderer.pointerSettings.mode)
@@ -332,6 +335,19 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 <SnapSettings />
               </Popover.Dropdown>
             </Popover>
+            <Tooltip openDelay={1000} withArrow label="3D Mode">
+              <ActionIcon
+                size="lg"
+                radius="sm"
+                variant="default"
+                onClick={async (): Promise<void> => {
+                  renderer.engine.interface.set_engine_settings({ ENABLE_3D: !enable3dMode })
+                  setEnable3dMode(!enable3dMode)
+                }}
+              >
+                {enable3dMode ? <IconBadge3dFilled size={18} /> : <IconBadge3d size={18} />}
+              </ActionIcon>
+            </Tooltip>
             <Tooltip openDelay={1000} withArrow label="Outline Mode">
               <ActionIcon
                 size="lg"

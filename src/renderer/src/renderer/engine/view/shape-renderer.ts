@@ -63,7 +63,9 @@ interface ShapeRendererCommonContext {
 }
 
 export type ShapeDistance = {
-  snapPoint?: vec2
+  // snapPoint?: vec2
+  direction?: vec2
+  distance?: number
   shape: Shapes.Shape
   children: ShapeDistance[]
 }
@@ -211,39 +213,39 @@ export class ShapeRenderer extends UpdateEventTarget {
     })
   }
 
+  /**
+   * Converts the pointer applying the current transform
+   * Does not mutate the original pointer, returns a new pointer
+   * @param pointer vec2 - the pointer to transform
+   * @returns vec2 - the transformed pointer
+   */
+  protected transformPointer(pointer: vec2): vec2 {
+    const pointerTransform = new ShapeTransform()
+    Object.assign(pointerTransform, this.transform)
+    pointerTransform.update(mat3.create())
+    const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
+    return newPointer
+  }
+
   // /**
-  //  * Converts the pointer applying the current transform
-  //  * Does not mutate the original pointer, returns a new pointer
-  //  * @param pointer vec2 - the pointer to transform
-  //  * @returns vec2 - the transformed pointer
+  //  * Converts the point applying the current transform
+  //  * Mutates the original direction
+  //  * @param point vec2 - the point to transform
+  //  * @returns vec2 - the transformed point
   //  */
-  // protected transformPointer(pointer: vec2): vec2 {
-  //   const pointerTransform = new ShapeTransform()
-  //   Object.assign(pointerTransform, this.transform)
-  //   pointerTransform.update(mat3.create())
-  //   const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
-  //   return newPointer
+  // protected transformPoint(point: vec2): vec2 {
+  //   const directionTransform = new ShapeTransform()
+  //   Object.assign(directionTransform, this.transform)
+  //   directionTransform.update(mat3.create())
+  //   vec2.transformMat3(point, point, directionTransform.matrix)
+  //   return point
   // }
 
   /**
-   * Converts the point applying the current transform
-   * Mutates the original direction
-   * @param point vec2 - the point to transform
-   * @returns vec2 - the transformed point
-   */
-  protected transformPoint(point: vec2): vec2 {
-    const directionTransform = new ShapeTransform()
-    Object.assign(directionTransform, this.transform)
-    directionTransform.update(mat3.create())
-    vec2.transformMat3(point, point, directionTransform.matrix)
-    return point
-  }
-
-  /**
    * Queries the distance from the pointer to all shapes in the renderer
-   * @param pointer the pointer to query
+   * @param pointer the pointer in gl screen/view coordinates
    * @param context the regl context
-   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance
+   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance. Returned distances are in world coordinates.
    */
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
@@ -320,7 +322,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       //   // shape: this.artwork.read(i / 4),
       // })
       let distance = distData[i]
-      distance *= this.transform.scale
+      // distance *= this.transform.scale
 
       // const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
       const direction = vec2.fromValues(
@@ -329,26 +331,23 @@ export class ShapeRenderer extends UpdateEventTarget {
       )
       vec2.normalize(direction, direction)
       // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
-      vec2.scale(direction, direction, 1 / this.transform.scale)
+      // vec2.scale(direction, direction, 1 / this.transform.scale)
 
       // sanity check for if the distances of the four directions are the same
-      let validSnap = true
+      let validDistance = true
       if (
         [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
           (d, _i, arr) => d === arr[0],
         )
       ) {
-        validSnap = false
+        validDistance = false
       }
-
-      const snapPoint = vec2.create()
-      vec2.sub(snapPoint, pointer, vec2.scale(vec2.create(), direction, distance))
-      this.transformPoint(snapPoint)
 
       distances.push({
         // shape: this.image[i / 4],
         shape: this.artwork.read(i / 4),
-        snapPoint: validSnap ? snapPoint : undefined,
+        direction: validDistance ? direction : undefined,
+        distance: validDistance ? distance : undefined,
         children: [],
       })
       // if (closestIndex == undefined) {
@@ -370,17 +369,15 @@ export class ShapeRenderer extends UpdateEventTarget {
       macroRenderer.transform.index = 0
       const macroFeatures = macroRenderer.queryDistance(pointer, context)
       if (macroFeatures.length > 0) {
-        // macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
         const closest = macroFeatures.reduce((prev, current) => {
-          if (prev.snapPoint == undefined) return current
-          if (current.snapPoint == undefined) return prev
-          const prevDist = vec2.distance(pointer, prev.snapPoint)
-          const currentDist = vec2.distance(pointer, current.snapPoint)
-          return prevDist < currentDist ? prev : current
+          if (prev.distance == undefined) return current
+          if (current.distance == undefined) return prev
+          return prev.distance < current.distance ? prev : current
         })
         distances.push({
           shape: macro,
-          snapPoint: closest.snapPoint,
+          direction: closest.direction,
+          distance: closest.distance,
           children: macroFeatures,
         })
       }
@@ -389,17 +386,15 @@ export class ShapeRenderer extends UpdateEventTarget {
     this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
       const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, context)
       if (stepAndRepeatFeatures.length > 0) {
-        // stepAndRepeatFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
         const closest = stepAndRepeatFeatures.reduce((prev, current) => {
-          if (prev.snapPoint == undefined) return current
-          if (current.snapPoint == undefined) return prev
-          const prevDist = vec2.distance(pointer, prev.snapPoint)
-          const currentDist = vec2.distance(pointer, current.snapPoint)
-          return prevDist < currentDist ? prev : current
+          if (prev.distance == undefined) return current
+          if (current.distance == undefined) return prev
+          return prev.distance < current.distance ? prev : current
         })
         distances.push({
           shape: this.artwork.read(stepAndRepeat.transform.index),
-          snapPoint: closest.snapPoint,
+          direction: closest.direction,
+          distance: closest.distance,
           children: stepAndRepeatFeatures,
         })
       }

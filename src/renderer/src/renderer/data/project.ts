@@ -46,6 +46,17 @@ export class Matrix {
     this.project = project
   }
 
+  getZOffsetForLayer(targetLayer: Layer): number {
+    let zOffset = 0
+    for (const layer of this.layers) {
+      if (layer === targetLayer) {
+        return zOffset
+      }
+      zOffset += layer.thickness
+    }
+    return zOffset
+  }
+
   toJSON(): MatrixJSON {
     return {
       steps: this.steps.map((step) => step.toJSON()),

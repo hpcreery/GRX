@@ -178,12 +178,12 @@ export class ViewRenderer extends UpdateEventTarget {
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
       if (settings.ENABLE_3D) {
-        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, width / height, 0, Infinity)
+        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, Infinity)
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
         mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
 
-        mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, width / height, 0, Infinity)
+        mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, 1 / 1, 0, Infinity)
         mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
         mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
         mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [1, 1, zoom])
@@ -428,7 +428,7 @@ export class ViewRenderer extends UpdateEventTarget {
     // this.transform2.update(this.transform.matrix)
   }
 
-  public getWorldPositionFromCanvasPosition(x: number, y: number, z: number): [number, number] {
+  public getWorldCoordFromScreenCoord(x: number, y: number, z: number): [number, number] {
     const { width, height } = this.viewBox
     const mouse_element_pos = [x, y]
 
@@ -445,8 +445,10 @@ export class ViewRenderer extends UpdateEventTarget {
         vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1),
         this.transform.matrix3DInverse,
       )
-      mousePos[0] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
-      mousePos[1] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+      if (settings.PERSPECTIVE_3D) {
+        mousePos[0] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+        mousePos[1] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+      }
     } else {
       vec4.transformMat4(
         mousePos,
@@ -606,6 +608,11 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Select shapes at pointer position
+   * @param pointer vec2 of gl screen/view coordinates
+   * @returns list of QuerySelection objects
+   */
   public select(pointer: vec2): QuerySelection[] {
     const selection: QuerySelection[] = []
     this.selections.forEach((layer) => layer.destroy())
@@ -614,15 +621,7 @@ export class ViewRenderer extends UpdateEventTarget {
       for (const layer of this.layers) {
         if (!layer.visible) continue
 
-        // set z_offset context
-        for (const matrixLayer in this.dataStep.matrix.layers) {
-          if (this.dataStep.matrix.layers[matrixLayer] === layer.dataLayer.layer) {
-            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
-            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
-            context.zOffset = zOffset
-            break
-          }
-        }
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
 
         const distances = layer.queryDistance(pointer, context)
         if (distances.length === 0) continue
@@ -634,8 +633,15 @@ export class ViewRenderer extends UpdateEventTarget {
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
-          this.measurements.addMeasurement(pointer)
-          this.measurements.finishMeasurement(select.snapPoint || pointer)
+          // const pointerWorldCoord = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+          // const snapPoint = vec2.clone(pointerWorldCoord)
+          // if (select.direction != undefined && select.distance != undefined ) {
+          //   const offset = vec2.create()
+          //   vec2.scale(offset, select.direction, select.distance)
+          //   vec2.sub(snapPoint, snapPoint, offset)
+          // }
+          // this.measurements.addMeasurement(pointerWorldCoord)
+          // this.measurements.finishMeasurement(snapPoint)
         }
         const selectionImage = new ArtworkBufferCollection()
         selectionImage.fromJSON(this.copySelectionToImage(distances))
@@ -656,8 +662,14 @@ export class ViewRenderer extends UpdateEventTarget {
     return selection
   }
 
+  /**
+   * Snap pointer to closest shape point. If no snap points found, return original pointer. Snap mode/position is determined by global settings.
+   * @param pointer vec2 of gl screen/view coordinates
+   * @returns vec2 snapped point in world coordinates
+   */
   public snap(pointer: vec2): vec2 {
-    if (settings.SNAP_MODE == SnapMode.OFF) return pointer
+    const pointerWorldCoord = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+    if (settings.SNAP_MODE == SnapMode.OFF) return pointerWorldCoord
 
     let closest: ShapeDistance | undefined = undefined
     this.world((context) => {
@@ -669,21 +681,30 @@ export class ViewRenderer extends UpdateEventTarget {
             closest = select
             continue
           }
-          if (closest.snapPoint == undefined) {
+          if (closest.distance == undefined) {
             closest = select
             continue
           }
-          if (select.snapPoint == undefined) continue
-          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, closest.snapPoint)) {
+          if (select.distance == undefined) continue
+          if (select.distance < closest.distance) {
             closest = select
           }
         }
       }
     })
+    closest = closest as ShapeDistance | undefined
     // console.log(closest)
-    if (closest == undefined) return pointer
-    if ((closest as ShapeDistance).snapPoint == undefined) return pointer
-    return (closest as ShapeDistance).snapPoint!
+    if (closest == undefined) return pointerWorldCoord
+    if (closest.distance == undefined) return pointerWorldCoord
+    // return (closest as ShapeDistance).snapPoint!
+    const snapPoint = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+    // const snapPoint = vec2.clone(pointerWorldCoord)
+    if (closest.direction != undefined && closest.distance != undefined ) {
+      const offset = vec2.create()
+      vec2.scale(offset, closest.direction, closest.distance)
+      vec2.sub(snapPoint, snapPoint, offset)
+    }
+    return snapPoint
   }
 
   private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
@@ -769,20 +790,33 @@ export class ViewRenderer extends UpdateEventTarget {
   //   this.loadingFrame.stop()
   // }
 
+  /**
+   * Create a measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public addMeasurement(point: vec2): void {
-    const pointSnap = this.snap(point)
-    this.measurements.addMeasurement(pointSnap)
+    const snapCoord = this.snap(point)
+    this.measurements.addMeasurement(snapCoord)
     this.announceUpdate()
   }
 
+  /**
+   * Update current measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public updateMeasurement(point: vec2): void {
-    this.measurements.updateMeasurement(point)
+    const coord = this.getWorldCoordFromScreenCoord(point[0], point[1], 0)
+    this.measurements.updateMeasurement(coord)
     this.announceUpdate()
   }
 
+  /**
+   * Finish current measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public finishMeasurement(point: vec2): void {
-    const pointSnap = this.snap(point)
-    this.measurements.finishMeasurement(pointSnap)
+    const snapCoord = this.snap(point)
+    this.measurements.finishMeasurement(snapCoord)
     this.announceUpdate()
   }
 
@@ -818,14 +852,7 @@ export class ViewRenderer extends UpdateEventTarget {
       for (const layer of this.layers) {
         if (!layer.visible) continue
 
-        for (const matrixLayer in this.dataStep.matrix.layers) {
-          if (this.dataStep.matrix.layers[matrixLayer] === layer.dataLayer.layer) {
-            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
-            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
-            context.zOffset = zOffset
-            break
-          }
-        }
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
 
         layer.render(context)
         this.drawCollections.blend(() => {
@@ -852,18 +879,14 @@ export class ViewRenderer extends UpdateEventTarget {
       }
       for (const selection of this.selections) {
 
-        for (const matrixLayer in this.dataStep.matrix.layers) {
-          if (this.dataStep.matrix.layers[matrixLayer] === selection.sourceLayer) {
-            const layersBelow = this.dataStep.matrix.layers.slice(0, parseInt(matrixLayer))
-            const zOffset = layersBelow.reduce((acc, layer) => acc + layer.thickness, 0)
-            context.zOffset = zOffset
-            break
-          }
-        }
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(selection.sourceLayer)
 
         selection.render(context)
         this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: selection.framebuffer }))
       }
+
+      context.zOffset = 0.0
+
       this.measurements.render(context)
       this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.measurements.framebuffer }))
     })

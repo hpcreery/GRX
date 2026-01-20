@@ -1,9 +1,10 @@
 import { useEffect, useContext, JSX } from "react"
-import { Text, Flex, Select, Switch, Divider, Kbd } from "@mantine/core"
+import { Text, Flex, Select, Switch, Divider, Kbd, Badge, Alert } from "@mantine/core"
 import {
   IconZoom,
   IconZoomScan,
   IconHexagonPlus,
+  IconAlertTriangleFilled,
   // IconHexagonOff,
 } from "@tabler/icons-react"
 import { ColorBlend } from "@src/renderer/engine/types"
@@ -27,6 +28,14 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
     key: "engine:SHOW_DATUMS",
     defaultValue: true,
   })
+  // const [enable3D, setEnable3D] = useLocalStorage<boolean>({
+  //   key: "engine:ENABLE_3D",
+  //   defaultValue: false,
+  // })
+  const [perspective3D, setPerspective3D] = useLocalStorage<boolean>({
+    key: "engine:PERSPECTIVE_3D",
+    defaultValue: false,
+  })
 
   async function getEngineSettings(): Promise<void> {
     const settings = await renderer.engine.interface.read_engine_settings()
@@ -43,9 +52,11 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
     renderer.engine.interface.set_engine_settings({
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
-      SHOW_DATUMS: showDatums
+      SHOW_DATUMS: showDatums,
+      // ENABLE_3D: enable3D,
+      PERSPECTIVE_3D: perspective3D,
     })
-  }, [colorBlend, zoomToCursor, showDatums])
+  }, [colorBlend, zoomToCursor, showDatums, perspective3D])
 
   useEffect(() => {
     actions.push({
@@ -97,6 +108,15 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
         <Text>Show Datums</Text>
         <Switch checked={showDatums} onChange={(event): void => setShowDatums(event.currentTarget.checked)} />
       </Flex>
+      <Divider my="sm" />
+      <Flex align="center" style={{ width: "100%" }} justify="space-between">
+        <Text>3D Perspective View</Text>
+        <Switch checked={perspective3D} onChange={(event): void => setPerspective3D(event.currentTarget.checked)} />
+      </Flex>
+      <Divider my="sm" />
+      <Alert variant="light" color="red" radius="lg" title="Alert title" icon={<IconAlertTriangleFilled />}>
+        WARNING! Enabling 3D Perspective View May Cause Feature Display Anomalies when zoomed too close. Use With Caution until Fully Supported.
+      </Alert>
     </>
   )
 }

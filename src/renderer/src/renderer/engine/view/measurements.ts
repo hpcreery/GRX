@@ -18,6 +18,9 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.framebuffer = this.regl.framebuffer()
   }
 
+  /**
+   * Refresh Measurements Display
+   */
   public refresh(): void {
     // TODO: Optimize by only updating changed or new measurements
     this.artwork.clear()
@@ -46,44 +49,70 @@ export class SimpleMeasurement extends ShapeRenderer {
     })
   }
 
-  public addMeasurement(point: vec2): void {
+  /**
+   * Add/Start Measurement Point
+   * @param coordinate vec2 world coordinates
+   */
+  public addMeasurement(coordinate: vec2): void {
     if (this.currentMeasurement) {
       this.measurements.push(this.currentMeasurement)
     }
-    this.currentMeasurement = { point1: point, point2: point }
+    this.currentMeasurement = { point1: coordinate, point2: coordinate }
     this.refresh()
   }
 
-  public updateMeasurement(point: vec2): void {
+  /**
+   * Update Current Measurement Point
+   * @param coordinate vec2 world coordinates
+   */
+  public updateMeasurement(coordinate: vec2): void {
     if (this.currentMeasurement) {
-      this.currentMeasurement.point2 = point
+      this.currentMeasurement.point2 = coordinate
       this.refresh()
     }
   }
 
-  public finishMeasurement(point: vec2): void {
+  /**
+   * Complete Current Measurement
+   * @param coordinate vec2 world coordinates
+   */
+  public finishMeasurement(coordinate: vec2): void {
     if (this.currentMeasurement) {
-      // this.currentMeasurement.point2 = point
-      this.updateMeasurement(point)
+      // this.currentMeasurement.point2 = coordinate
+      this.updateMeasurement(coordinate)
       this.measurements.push(this.currentMeasurement)
       this.currentMeasurement = null
       this.refresh()
     }
   }
 
+  /**
+   * Cancel Current Active Measurement
+   */
   public cancelMeasurement(): void {
     this.currentMeasurement = null
     this.refresh()
   }
 
+  /**
+   * Gets all measurement points
+   * @returns list of measurements points. measurement points are a set of vec2 world coordinates, point1 & point2 being of value vec2.
+   */
   public getMeasurements(): { point1: vec2; point2: vec2 }[] {
     return this.measurements
   }
 
+  /**
+   * Gets current measurement points
+   * @returns current measurement, null if no current measurement
+   */
   public getCurrentMeasurement(): { point1: vec2; point2: vec2 } | null {
     return this.currentMeasurement
   }
 
+  /**
+   * Clear all measurements
+   */
   public clearMeasurements(): void {
     this.measurements.length = 0
     this.currentMeasurement = null

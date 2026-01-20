@@ -269,7 +269,7 @@ export abstract class EngineInterface extends DataInterface {
    * @returns World Position [x, y]
    */
   public static read_world_position_from_canvas_position(viewId: string, x: number, y: number, z: number): [number, number] {
-    return this._get_view(viewId).getWorldPositionFromCanvasPosition(x, y, z)
+    return this._get_view(viewId).getWorldCoordFromScreenCoord(x, y, z)
   }
 
   /**
@@ -363,7 +363,7 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Read view selection at pointer position
    * @param viewId View ID
-   * @param pointer Pointer position vec2
+   * @param pointer Pointer position vec2 in screen/view coordinates
    * @returns Array of Query Selections
    */
   public static read_view_select(viewId: string, pointer: vec2): QuerySelection[] {
@@ -373,7 +373,7 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Read view snap point at pointer position
    * @param viewId View ID
-   * @param pointer Pointer position vec2
+   * @param pointer Pointer position vec2 in screen/view coordinates
    * @returns Snap Point vec2
    */
   public static read_view_snap_point(viewId: string, pointer: vec2): vec2 {
@@ -409,7 +409,7 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Create a measurement in view
    * @param viewId View ID
-   * @param point vec2 point to start measurement
+   * @param point vec2 point to start measurement, in gl/view coordinates
    */
   public static create_view_measurement(viewId: string, point: vec2): void {
     this._get_view(viewId).addMeasurement(point)
@@ -418,7 +418,7 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Update current measurement in view
    * @param viewId View ID
-   * @param point vec2 point to set current measurement to
+   * @param point vec2 point to set current measurement to, in gl/view coordinates
    */
   public static update_view_measurement(viewId: string, point: vec2): void {
     this._get_view(viewId).updateMeasurement(point)
@@ -427,7 +427,7 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Finish current measurement in view
    * @param viewId View ID
-   * @param point vec2 point to finish measurement at
+   * @param point vec2 point to finish measurement at, in gl/view coordinates
    */
   public static finish_view_measurement(viewId: string, point: vec2): void {
     this._get_view(viewId).finishMeasurement(point)
