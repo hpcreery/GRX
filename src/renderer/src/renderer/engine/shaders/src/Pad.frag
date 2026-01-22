@@ -45,7 +45,6 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror_X;
 varying float v_Mirror_Y;
-varying float v_Z;
 
 //////////////////////////////
 // Rotation and translation //

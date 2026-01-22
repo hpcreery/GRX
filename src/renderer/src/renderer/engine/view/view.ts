@@ -178,14 +178,18 @@ export class ViewRenderer extends UpdateEventTarget {
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
       if (settings.ENABLE_3D) {
-        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, Infinity)
+        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, 1)
+        // mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [2,2,1])
+        // mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0,0,-1])
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
         mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
 
         mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, 1 / 1, 0, Infinity)
+        // mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [0.5,0.5,1])
         mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
         mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
+        // mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0,0,-1])
         mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [1, 1, zoom])
       } else {
         mat4.identity(this.transform.matrix3D)
@@ -677,6 +681,7 @@ export class ViewRenderer extends UpdateEventTarget {
         if (!layer.visible) continue
         const layerSelection = layer.queryDistance(pointer, context)
         for (const select of layerSelection) {
+          if (select.distance == undefined) continue
           if (closest == undefined) {
             closest = select
             continue
@@ -685,7 +690,6 @@ export class ViewRenderer extends UpdateEventTarget {
             closest = select
             continue
           }
-          if (select.distance == undefined) continue
           if (select.distance < closest.distance) {
             closest = select
           }
@@ -697,8 +701,8 @@ export class ViewRenderer extends UpdateEventTarget {
     if (closest == undefined) return pointerWorldCoord
     if (closest.distance == undefined) return pointerWorldCoord
     // return (closest as ShapeDistance).snapPoint!
-    const snapPoint = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
-    // const snapPoint = vec2.clone(pointerWorldCoord)
+    // const snapPoint = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+    const snapPoint = vec2.clone(pointerWorldCoord)
     if (closest.direction != undefined && closest.distance != undefined ) {
       const offset = vec2.create()
       vec2.scale(offset, closest.direction, closest.distance)

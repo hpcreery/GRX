@@ -126,7 +126,7 @@ void main() {
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);
   vec2 OffsetPosition = RotatedPostion + a_Center_Location;
   vec3 FinalPosition = u_Transform * vec3(OffsetPosition, 1);
-  FinalPosition = transformLocation3D(FinalPosition.xy).xyz;
+  vec4 FinalPosition3D = transformLocation3D(FinalPosition.xy);
 
   v_Aspect = Aspect;
   v_Index = a_Index;
@@ -139,9 +139,14 @@ void main() {
 
 
   if (u_QueryMode) {
-    FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    FinalPosition3D.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    FinalPosition3D.zw = vec2(0.0);
   }
 
   float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  // affix the index to the z position, this sorts the rendering order without perspective issues
+  FinalPosition3D.z = Index;
+  // add 1.0 to w to avoid issues with w=0 in perspective divide
+  FinalPosition3D.w += 1.0;
+  gl_Position = vec4(FinalPosition3D);
 }

@@ -19,9 +19,11 @@ varying vec2 v_Location;
 
 void main() {
   vec2 Transformed_Position = (u_Transform * vec3(a_Location, 1)).xy;
-  Transformed_Position = transformLocation3D(Transformed_Position.xy).xy;
+  vec4 Transformed_Position3D = transformLocation3D(Transformed_Position.xy);
 
   v_Location = a_Location;
 
-  gl_Position = vec4(Transformed_Position + (a_Vertex_Position/u_Resolution)*20.0, 0, 1);
+  // add 1.0 to w to avoid issues with w=0 in perspective divide
+  Transformed_Position3D.w += 1.0;
+  gl_Position = vec4(Transformed_Position + (a_Vertex_Position/u_Resolution)*20.0, 0, Transformed_Position3D.w);
 }
