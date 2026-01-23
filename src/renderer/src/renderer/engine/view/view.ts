@@ -14,7 +14,6 @@ import ShapeTransform from "../transform"
 import { StepLayer, Step } from "@src/renderer/data/project"
 import { DataInterface } from "@src/renderer/data/interface"
 import { ArtworkBufferCollection } from "@src/renderer/data/artwork-collections"
-import { PERSPECTIVE_CORRECTION_FACTOR } from "../constants"
 // import { Engine } from '../engine'
 
 export interface WorldProps {}
@@ -104,37 +103,6 @@ export interface QuerySelection extends ShapeDistance {
 
 export type ViewRendererProps = Partial<typeof ViewRenderer.defaultRenderProps>
 
-function makeZToWMatrix(fudgeFactor: number): mat4 {
-  return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, fudgeFactor, 0, 0, 0, 1]
-}
-
-function perspective(out: mat4, fovy: number, aspect: number, near: number, far: number): mat4 {
-  var f = 1.0 / Math.tan(fovy / 2)
-  out[0] = 1 / (f / aspect)
-  out[1] = 0
-  out[2] = 0
-  out[3] = 0
-  out[4] = 0
-  out[5] = 1 / f
-  out[6] = 0
-  out[7] = 0
-  out[8] = 0
-  out[9] = 0
-  out[11] = 1 / -1
-  out[12] = 0
-  out[13] = 0
-  out[15] = 0
-  if (far != null && far !== Infinity) {
-    var nf = 1 / (near - far)
-    out[10] = 1 / ((far + near) * nf)
-    out[14] = 1 / (2 * far * near * nf)
-  } else {
-    out[10] = 1 / -1
-    out[14] = 1 / (-2 * near)
-  }
-  return out
-}
-
 export class ViewRenderer extends UpdateEventTarget {
   public id: string = UID()
   public dataStep: Step
@@ -179,8 +147,11 @@ export class ViewRenderer extends UpdateEventTarget {
 
       if (settings.ENABLE_3D) {
         mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, 1)
-        // mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [2,2,1])
-        // mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0,0,-1])
+        // this little hack lets us move the shapes back so they dont get clipped by the near plane
+        if (settings.PERSPECTIVE_3D) {
+          mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [2, 2, 1])
+          mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0, 0, -1])
+        }
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
         mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
@@ -245,7 +216,8 @@ export class ViewRenderer extends UpdateEventTarget {
         u_Perspective3D: () => settings.PERSPECTIVE_3D,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
         // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
-        u_PixelSize: 2,
+        // u_PixelSize: 2,
+        u_PixelSize: () => (settings.PERSPECTIVE_3D && settings.ENABLE_3D ? 1 : 2),
         u_OutlineMode: () => settings.OUTLINE_MODE,
         u_SkeletonMode: () => settings.SKELETON_MODE,
         u_SnapMode: () => SNAP_MODES_MAP[settings.SNAP_MODE],
@@ -444,21 +416,13 @@ export class ViewRenderer extends UpdateEventTarget {
     const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
     const mousePos = vec4.create()
     if (settings.ENABLE_3D) {
-      vec4.transformMat4(
-        mousePos,
-        vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1),
-        this.transform.matrix3DInverse,
-      )
+      vec4.transformMat4(mousePos, vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1), this.transform.matrix3DInverse)
       if (settings.PERSPECTIVE_3D) {
-        mousePos[0] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
-        mousePos[1] /= 1 + mousePos[2]// * PERSPECTIVE_CORRECTION_FACTOR
+        mousePos[0] /= 1 + mousePos[2]
+        mousePos[1] /= 1 + mousePos[2]
       }
     } else {
-      vec4.transformMat4(
-        mousePos,
-        vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1),
-        mat4.create(),
-      )
+      vec4.transformMat4(mousePos, vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1), mat4.create())
     }
     vec2.transformMat3(mousePos, vec2.fromValues(mousePos[0], mousePos[1]), this.transform.matrixInverse)
     return [mousePos[0], mousePos[1]]
@@ -639,7 +603,7 @@ export class ViewRenderer extends UpdateEventTarget {
           // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
           // const pointerWorldCoord = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
           // const snapPoint = vec2.clone(pointerWorldCoord)
-          // if (select.direction != undefined && select.distance != undefined ) {
+          // if (select.direction != undefined && select.distance != undefined) {
           //   const offset = vec2.create()
           //   vec2.scale(offset, select.direction, select.distance)
           //   vec2.sub(snapPoint, snapPoint, offset)
@@ -703,7 +667,7 @@ export class ViewRenderer extends UpdateEventTarget {
     // return (closest as ShapeDistance).snapPoint!
     // const snapPoint = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
     const snapPoint = vec2.clone(pointerWorldCoord)
-    if (closest.direction != undefined && closest.distance != undefined ) {
+    if (closest.direction != undefined && closest.distance != undefined) {
       const offset = vec2.create()
       vec2.scale(offset, closest.direction, closest.distance)
       vec2.sub(snapPoint, snapPoint, offset)
@@ -864,25 +828,26 @@ export class ViewRenderer extends UpdateEventTarget {
             this.drawCollections.overlayBlendFunc(() =>
               this.drawCollections.renderTextureToScreen({
                 renderTexture: layer.framebuffer,
-                // transform3D: this.transform.matrix3D,
-                // inverseTransform3D: this.transform.matrix3DInverse,
-                // zOffset: 0,
               }),
             )
-          } else {
+          } else if (settings.COLOR_BLEND == ColorBlend.CONTRAST) {
             this.drawCollections.contrastBlendFunc(() =>
               this.drawCollections.renderTextureToScreen({
                 renderTexture: layer.framebuffer,
-                // transform3D: this.transform.matrix3D,
-                // inverseTransform3D: this.transform.matrix3DInverse,
-                // zOffset: 0,
               }),
             )
           }
+          // TODO: add more blend modes here
+          // else {
+          //   this.drawCollections.opaqueBlendFunc({ color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) }, () =>
+          //     this.drawCollections.renderTextureToScreen({
+          //       renderTexture: layer.framebuffer,
+          //     }),
+          //   )
+          // }
         })
       }
       for (const selection of this.selections) {
-
         context.zOffset = this.dataStep.matrix.getZOffsetForLayer(selection.sourceLayer)
 
         selection.render(context)

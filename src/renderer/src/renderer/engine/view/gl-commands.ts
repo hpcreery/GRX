@@ -230,6 +230,7 @@ export interface TLoadedReglRenderers {
   blend: REGL.DrawCommand
   overlayBlendFunc: REGL.DrawCommand
   contrastBlendFunc: REGL.DrawCommand
+  opaqueBlendFunc: REGL.DrawCommand
   overlay: REGL.DrawCommand
   renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridSettings>
   renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps>
@@ -247,6 +248,7 @@ export interface TReglRenderers {
   blend: REGL.DrawCommand | undefined
   overlayBlendFunc: REGL.DrawCommand | undefined
   contrastBlendFunc: REGL.DrawCommand | undefined
+  opaqueBlendFunc: REGL.DrawCommand | undefined
   overlay: REGL.DrawCommand | undefined
   renderGrid: REGL.DrawCommand<REGL.DefaultContext & WorldContext, GridSettings> | undefined
   renderOrigin: REGL.DrawCommand<REGL.DefaultContext & WorldContext, OriginRenderProps> | undefined
@@ -264,6 +266,7 @@ export const ReglRenderers: TReglRenderers = {
   blend: undefined,
   overlayBlendFunc: undefined,
   contrastBlendFunc: undefined,
+  opaqueBlendFunc: undefined,
   overlay: undefined,
   renderGrid: undefined,
   renderOrigin: undefined,
@@ -778,6 +781,14 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
   })
 
+  // this is a good blend mode
+      //   func: {
+      //   srcRGB: "one",
+      //   srcAlpha: "one",
+      //   dstRGB: "one",
+      //   dstAlpha: "one",
+      // },
+
   ReglRenderers.contrastBlendFunc = regl({
     blend: {
       func: {
@@ -787,6 +798,30 @@ export function initializeRenderers(regl: REGL.Regl): void {
         dstAlpha: "one",
       },
     },
+  })
+
+  ReglRenderers.opaqueBlendFunc = regl({
+    blend: {
+      enable: true,
+      equation: {
+        rgb: "add",
+        alpha: "add",
+      },
+      func: {
+        srcRGB: "constant color",
+        srcAlpha: "constant alpha",
+        dstRGB: "one",
+        dstAlpha: "one",
+        // src: 'zero',
+        // dst: 'one',
+      },
+      color: [1, 0, 0, 1],
+      // color: regl.prop('color')
+    },
+    // uniforms: {
+    //   u_Color: [1, 1, 1],
+    //   u_Alpha: 1,
+    // },
   })
 
   ReglRenderers.overlay = regl({

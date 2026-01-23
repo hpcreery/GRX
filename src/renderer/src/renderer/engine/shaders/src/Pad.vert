@@ -80,6 +80,10 @@ mat2 rotateCW(float angle) {
 
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
+  if (u_Perspective3D) {
+    scale *= 0.5;
+  }
+  // float scale3D = sqrt(pow(u_Transform3D[0][0], 2.0) + pow(u_Transform3D[1][0], 2.0)) * u_Resolution.x;
   // float pixel_size = u_PixelSize / scale;
   vec4 v = transformLocation3D(a_Vertex_Position);
   float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);

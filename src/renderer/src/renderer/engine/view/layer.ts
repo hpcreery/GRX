@@ -4,7 +4,8 @@ import { vec3 } from "gl-matrix"
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
 import { Layer, StepLayer } from '@src/renderer/data/project'
-import { settings } from '../settings'
+// import { settings } from '../settings'
+// import { ColorBlend } from '../types'
 
 export interface LayerProps {
   dataLayer: StepLayer
@@ -70,6 +71,7 @@ export default class LayerRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: () => this.color,
+        // u_Color: () => settings.COLOR_BLEND == ColorBlend.OPAQUE ? vec3.fromValues(1,1,1) : this.color,
         u_Alpha: () => this.alpha,
         u_ZOffset: (context) => context.zOffset || 0.0,
       },
