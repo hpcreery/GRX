@@ -101,7 +101,7 @@ vec2 transformLocation(vec2 pixel_coord) {
 
 float surfaceDistMain(vec2 FragCoord) {
   float dist = SDF_FAR_AWAY;
-  for (float i = -5.0; i <= 4.0; i += 1.0) {
+  for (float i = -6.0; i <= 5.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
     vec2 point1_p = getVertexPosition(indx * 2.0 + v_ContourOffset + v_SurfaceOffset);
@@ -167,10 +167,12 @@ void main() {
     FragCoord = transformLocation(u_PointerPosition);
   }
 
-  float dist = surfaceDistMain(FragCoord);
+  // float dist = surfaceDistMain(FragCoord);
+  float dist = SDF_FAR_AWAY;
 
 
   if (u_QueryMode) {
+    // dist = surfaceDistMain(FragCoord);
     // vec2 pointx = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
     // vec2 pointy = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
     // vec2 pointz = getVertexPosition(v_Indicies.z * 2.0 + v_ContourOffset + v_SurfaceOffset);
@@ -198,14 +200,13 @@ void main() {
     vec2 directiony = normalize(normalize(abs(normalize(pointy1) - normalize(pointy))) + normalize(abs(normalize(pointy2) - normalize(pointy))));
     vec2 directionz = normalize(normalize(abs(normalize(pointz1) - normalize(pointz))) + normalize(abs(normalize(pointz2) - normalize(pointz))));
     vec2 centroid = (pointx + pointy + pointz) / 3.0;
-    float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-    float pixel_size = u_PixelSize / scale;
     directionx = directionx * sign(pointx - centroid);
     directiony = directiony * sign(pointy - centroid);
     directionz = directionz * sign(pointz - centroid);
-    pointx = pointx + directionx * (pixel_size * SNAP_DISTANCE_PIXELS);
-    pointy = pointy + directiony * (pixel_size * SNAP_DISTANCE_PIXELS);
-    pointz = pointz + directionz * (pixel_size * SNAP_DISTANCE_PIXELS);
+    // disabled for now because it is causing issues.
+    // pointx = pointx + directionx * (pixel_size * SNAP_DISTANCE_PIXELS);
+    // pointy = pointy + directiony * (pixel_size * SNAP_DISTANCE_PIXELS);
+    // pointz = pointz + directionz * (pixel_size * SNAP_DISTANCE_PIXELS);
 
 
     if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
@@ -219,6 +220,7 @@ void main() {
           // the second value is the direction of the border of the shape
           // the third value is the indicator of a measurement
           // gl_FragColor = vec4(-dist, -direction, 1.0);
+          dist = surfaceDistMain(FragCoord);
           gl_FragColor = vec4(-dist, 0.0, 0.0, 1.0);
           return;
         } else {

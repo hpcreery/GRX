@@ -783,7 +783,7 @@ export class ViewRenderer extends UpdateEventTarget {
             closest = select
             continue
           }
-          if (select.distance < closest.distance) {
+          if (select.distance > closest.distance) {
             closest = select
           }
         }
