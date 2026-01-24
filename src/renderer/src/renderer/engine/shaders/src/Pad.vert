@@ -15,12 +15,13 @@ uniform vec2 u_SymbolsTextureDimensions;
 uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat4 u_Transform3D;
-uniform mat4 u_InverseTransform3D;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;
 uniform float u_PixelSize;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
+uniform bool u_Perspective3D;
 
 // COMMON ATTRIBUTES
 attribute vec2 a_Vertex_Position;
@@ -48,6 +49,7 @@ varying float v_Polarity;
 varying float v_Rotation;
 varying float v_Mirror_X;
 varying float v_Mirror_Y;
+varying float v_Z;
 
 //////////////////////////////
 // Rotation and translation //
@@ -73,16 +75,17 @@ mat2 rotateCW(float angle) {
 
 
 #pragma glslify: pullSymbolParameter = require('../modules/PullSymbolParameter.frag',u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
-
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_Transform3D * vec4(coordinate.xy, 0.0, 1.0);
-  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
-  return transformed_position_3d;
-}
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-  float pixel_size = u_PixelSize / scale;
+  if (u_Perspective3D) {
+    scale *= 0.5;
+  }
+  // float scale3D = sqrt(pow(u_Transform3D[0][0], 2.0) + pow(u_Transform3D[1][0], 2.0)) * u_Resolution.x;
+  // float pixel_size = u_PixelSize / scale;
+  vec4 v = transformLocation3D(a_Vertex_Position);
+  float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);
 
   float Aspect = u_Resolution.y / u_Resolution.x;
 
@@ -100,7 +103,7 @@ void main() {
     Size.y = OD;
   }
 
-  Size += vec2(pixel_size, pixel_size);
+  Size += vec2(pixel_size);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0) * a_ResizeFactor;
   vec2 RotatedPostion = SizedPosition * rotateCW(radians(a_Rotation));
@@ -111,8 +114,8 @@ void main() {
     RotatedPostion.y = -RotatedPostion.y;
   }
   vec2 OffsetPosition = RotatedPostion + a_Location;
-  vec3 FinalPosition = u_Transform * vec3(OffsetPosition.x, OffsetPosition.y, 1);
-  FinalPosition = transformLocation3D(FinalPosition.xy).xyz;
+  vec3 FinalPosition = u_Transform * vec3(OffsetPosition, 1.0);
+  vec4 FinalPosition3D = transformLocation3D(FinalPosition.xy);
 
   v_Aspect = Aspect;
   v_Index = a_Index;
@@ -126,9 +129,14 @@ void main() {
 
 
   if (u_QueryMode) {
-    FinalPosition.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    FinalPosition3D.xy = ((((a_Vertex_Position + vec2(mod(v_Index, u_Resolution.x) + 0.5, floor(v_Index / u_Resolution.x))) / u_Resolution) * 2.0) - vec2(1.0,1.0));
+    FinalPosition3D.zw = vec2(0.0);
   }
 
   float Index = u_IndexOffset + (a_Index / u_QtyFeatures);
-  gl_Position = vec4(FinalPosition.xy, Index, 1);
+  // affix the index to the z position, this sorts the rendering order without perspective issues
+  FinalPosition3D.z = Index;
+  // add 1.0 to w to avoid issues with w=0 in perspective divide
+  FinalPosition3D.w += 1.0;
+  gl_Position = vec4(FinalPosition3D);
 }

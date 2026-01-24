@@ -4,6 +4,8 @@ import { vec3 } from "gl-matrix"
 import { ShapeRenderer, ShapeRendererProps } from "./shape-renderer"
 import { WorldContext } from "./view"
 import { Layer, StepLayer } from '@src/renderer/data/project'
+// import { settings } from '../settings'
+// import { ColorBlend } from '../types'
 
 export interface LayerProps {
   dataLayer: StepLayer
@@ -17,6 +19,7 @@ export interface LayerRendererProps extends Omit<ShapeRendererProps, 'image'>, L
 interface LayerUniforms {
   u_Color: vec3
   u_Alpha: number
+  u_ZOffset: number
 }
 
 interface LayerAttributes {}
@@ -68,7 +71,9 @@ export default class LayerRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: () => this.color,
+        // u_Color: () => settings.COLOR_BLEND == ColorBlend.OPAQUE ? vec3.fromValues(1,1,1) : this.color,
         u_Alpha: () => this.alpha,
+        u_ZOffset: (context) => context.zOffset || 0.0,
       },
     })
 
@@ -154,6 +159,7 @@ export class SelectionRenderer extends ShapeRenderer {
       uniforms: {
         u_Color: vec3.fromValues(0.5, 0.5, 0.5),
         u_Alpha: 0.7,
+        u_ZOffset: (context) => context.zOffset || 0.0,
       },
     })
 
@@ -180,6 +186,7 @@ export class SelectionRenderer extends ShapeRenderer {
 
   public render(context: REGL.DefaultContext & WorldContext): void {
     if (!this.needsRender(context)) return
+    // if (settings.ENABLE_3D) return
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({

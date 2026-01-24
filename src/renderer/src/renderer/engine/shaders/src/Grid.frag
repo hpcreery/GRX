@@ -3,7 +3,6 @@ precision highp float;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform mat4 u_Transform3D;
-uniform mat4 u_InverseTransform3D;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform vec2 u_Spacing;
@@ -11,6 +10,7 @@ uniform vec2 u_Offset;
 uniform int u_Type;
 uniform vec4 u_Color;
 uniform vec4 u_BackgroundColor;
+uniform bool u_Perspective3D;
 
 #pragma glslify: import('../modules/Constants.glsl')
 
@@ -22,15 +22,11 @@ mat2 rotateCW(float angle) {
   return mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
 }
 
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
-  float denom = 1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR;
-  if (denom <= 0.0 ) {
-    discard;
-  }
-  transformed_position_3d.xy /= abs(denom);
-  return transformed_position_3d;
-}
+float u_ZOffset = 0.0;
+
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+
 
 vec2 transformLocation(vec2 pixel_coord) {
   vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
@@ -139,6 +135,11 @@ void main() {
   // float pixel_size = u_PixelSize / scale;
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  gl_FragColor = grid(FragCoord - u_Offset);
+  // gl_FragColor = grid(FragCoord - u_Offset);
+  vec4 color = grid(FragCoord - u_Offset);
+  if (color.a == 0.0) {
+    discard;
+  }
+  gl_FragColor = color;
   return;
 }

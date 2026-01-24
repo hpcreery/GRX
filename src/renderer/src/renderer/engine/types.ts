@@ -76,6 +76,7 @@ export type BoundingBox = {
 export const ColorBlend = {
   CONTRAST: "Contrast",
   OVERLAY: "Overlay",
+  OPAQUE: "Opaque",
 } as const
 export type ColorBlend = (typeof ColorBlend)[keyof typeof ColorBlend]
 

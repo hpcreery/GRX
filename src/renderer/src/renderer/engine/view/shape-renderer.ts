@@ -19,6 +19,7 @@ interface CommonAttributes {}
 interface CommonUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
+  u_ZOffset: number
   u_QtyFeatures: number
   u_IndexOffset: number
   u_Polarity: number
@@ -31,6 +32,7 @@ interface QueryUniforms {
   u_Color: vec3
   u_Alpha: number
   u_PointerPosition: vec2
+  u_ZOffset: number
 }
 interface QueryAttributes {}
 
@@ -61,7 +63,9 @@ interface ShapeRendererCommonContext {
 }
 
 export type ShapeDistance = {
-  snapPoint?: vec2
+  // snapPoint?: vec2
+  direction?: vec2
+  distance?: number
   shape: Shapes.Shape
   children: ShapeDistance[]
 }
@@ -118,7 +122,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       CommonAttributes,
       Record<string, never>,
       ShapeRendererCommonContext,
-      REGL.DefaultContext
+      REGL.DefaultContext & WorldContext
     >({
       depth: {
         enable: true,
@@ -137,6 +141,7 @@ export class ShapeRenderer extends UpdateEventTarget {
           this.qtyFeatures * (context.qtyFeaturesRef ?? 1),
       },
       uniforms: {
+        u_ZOffset: (context) => context.zOffset || 0.0,
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.inverseMatrix,
         u_SymbolsTexture: () => SymbolShaderCollection.texture,
@@ -154,11 +159,12 @@ export class ShapeRenderer extends UpdateEventTarget {
       },
     })
 
-    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext, REGL.DefaultContext>({
+    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext & WorldContext, REGL.DefaultContext>({
       uniforms: {
         u_QueryMode: true,
         u_Color: [1, 1, 1],
         u_Alpha: 1,
+        u_ZOffset: (context) => context.zOffset || 0.0,
         u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
       },
     })
@@ -221,25 +227,25 @@ export class ShapeRenderer extends UpdateEventTarget {
     return newPointer
   }
 
-  /**
-   * Converts the point applying the current transform
-   * Mutates the original direction
-   * @param point vec2 - the point to transform
-   * @returns vec2 - the transformed point
-   */
-  protected transformPoint(point: vec2): vec2 {
-    const directionTransform = new ShapeTransform()
-    Object.assign(directionTransform, this.transform)
-    directionTransform.update(mat3.create())
-    vec2.transformMat3(point, point, directionTransform.matrix)
-    return point
-  }
+  // /**
+  //  * Converts the point applying the current transform
+  //  * Mutates the original direction
+  //  * @param point vec2 - the point to transform
+  //  * @returns vec2 - the transformed point
+  //  */
+  // protected transformPoint(point: vec2): vec2 {
+  //   const directionTransform = new ShapeTransform()
+  //   Object.assign(directionTransform, this.transform)
+  //   directionTransform.update(mat3.create())
+  //   vec2.transformMat3(point, point, directionTransform.matrix)
+  //   return point
+  // }
 
   /**
    * Queries the distance from the pointer to all shapes in the renderer
-   * @param pointer the pointer to query
+   * @param pointer the pointer in gl screen/view coordinates
    * @param context the regl context
-   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance
+   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance. Returned distances are in world coordinates.
    */
   public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
     if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
@@ -251,7 +257,8 @@ export class ShapeRenderer extends UpdateEventTarget {
 
     const origMatrix = mat3.clone(context.transformMatrix)
     this.transform.update(context.transformMatrix)
-    const transformedPointer = this.transformPointer(pointer)
+    // const transformedPointer = this.transformPointer(pointer)
+    // const transformedPointer = pointer
     context.transformMatrix = this.transform.matrix
     this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
@@ -294,16 +301,15 @@ export class ShapeRenderer extends UpdateEventTarget {
       })
     }
 
-    renderDistance(transformedPointer, this.distanceQueryRaw)
+    renderDistance(pointer, this.distanceQueryRaw)
     const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
     const epsilons = 1 / scale
-    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
-    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
-    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
-    renderDistance(vec2.add(vec2.create(), transformedPointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
-
     const distances: ShapeDistance[] = []
     // let closestIndex: number | undefined = undefined
     for (let i = 0; i < distData.length; i += 4) {
@@ -313,11 +319,10 @@ export class ShapeRenderer extends UpdateEventTarget {
       //   i: i / 4,
       //   bit: distData[i + 3],
       //   distance: distData[i],
-      //   // shape: this.image[i / 4],
-      //   shape: this.artwork.read(i / 4),
+      //   // shape: this.artwork.read(i / 4),
       // })
       let distance = distData[i]
-      distance *= this.transform.scale
+      // distance *= this.transform.scale
 
       // const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
       const direction = vec2.fromValues(
@@ -326,26 +331,23 @@ export class ShapeRenderer extends UpdateEventTarget {
       )
       vec2.normalize(direction, direction)
       // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
-      vec2.scale(direction, direction, 1 / this.transform.scale)
+      // vec2.scale(direction, direction, 1 / this.transform.scale)
 
       // sanity check for if the distances of the four directions are the same
-      let validSnap = true
+      let validDistance = true
       if (
         [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
           (d, _i, arr) => d === arr[0],
         )
       ) {
-        validSnap = false
+        validDistance = false
       }
-
-      const snapPoint = vec2.create()
-      vec2.sub(snapPoint, transformedPointer, vec2.scale(vec2.create(), direction, distance))
-      this.transformPoint(snapPoint)
 
       distances.push({
         // shape: this.image[i / 4],
         shape: this.artwork.read(i / 4),
-        snapPoint: validSnap ? snapPoint : undefined,
+        direction: validDistance ? direction : undefined,
+        distance: validDistance ? distance : undefined,
         children: [],
       })
       // if (closestIndex == undefined) {
@@ -359,41 +361,40 @@ export class ShapeRenderer extends UpdateEventTarget {
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
-      if (!macroRenderer) return
+      if (!macroRenderer) {
+        console.warn("Macro renderer not found for macro", macro)
+        return
+      }
       macroRenderer.updateTransformFromPad(macro)
       macroRenderer.transform.index = 0
-      const macroFeatures = macroRenderer.queryDistance(transformedPointer, context)
+      const macroFeatures = macroRenderer.queryDistance(pointer, context)
       if (macroFeatures.length > 0) {
-        macroFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
         const closest = macroFeatures.reduce((prev, current) => {
-          if (prev.snapPoint == undefined) return current
-          if (current.snapPoint == undefined) return prev
-          const prevDist = vec2.distance(pointer, prev.snapPoint)
-          const currentDist = vec2.distance(pointer, current.snapPoint)
-          return prevDist < currentDist ? prev : current
+          if (prev.distance == undefined) return current
+          if (current.distance == undefined) return prev
+          return prev.distance < current.distance ? prev : current
         })
         distances.push({
           shape: macro,
-          snapPoint: closest.snapPoint,
+          direction: closest.direction,
+          distance: closest.distance,
           children: macroFeatures,
         })
       }
     })
 
     this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(transformedPointer, context)
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, context)
       if (stepAndRepeatFeatures.length > 0) {
-        stepAndRepeatFeatures.map((measurement) => measurement.snapPoint && this.transformPoint(measurement.snapPoint))
         const closest = stepAndRepeatFeatures.reduce((prev, current) => {
-          if (prev.snapPoint == undefined) return current
-          if (current.snapPoint == undefined) return prev
-          const prevDist = vec2.distance(pointer, prev.snapPoint)
-          const currentDist = vec2.distance(pointer, current.snapPoint)
-          return prevDist < currentDist ? prev : current
+          if (prev.distance == undefined) return current
+          if (current.distance == undefined) return prev
+          return prev.distance < current.distance ? prev : current
         })
         distances.push({
           shape: this.artwork.read(stepAndRepeat.transform.index),
-          snapPoint: closest.snapPoint,
+          direction: closest.direction,
+          distance: closest.distance,
           children: stepAndRepeatFeatures,
         })
       }
@@ -449,7 +450,10 @@ export class ShapeRenderer extends UpdateEventTarget {
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
-      if (!macroRenderer) return
+      if (!macroRenderer) {
+        console.warn("Macro renderer not found for macro", macro)
+        return
+      }
       macroRenderer.updateTransformFromPad(macro)
       macroRenderer.render(context)
     })
@@ -481,7 +485,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       this.surfaceFrameBuffer.use(() => {
         this.drawCollections.drawSurfaces(attachment)
       })
-      this.drawCollections.drawFrameBuffer({
+      this.drawCollections.drawGroupedShapes({
         renderTexture: this.surfaceFrameBuffer,
         qtyFeatures: this.qtyFeatures,
         index: attachment.surfaceIndex,
@@ -609,7 +613,7 @@ export class MacroRenderer extends ShapeRenderer {
     })
     this.transform.polarity = tempPol
     this.artworkConfig(() => {
-      this.drawCollections.drawFrameBuffer({
+      this.drawCollections.drawGroupedShapes({
         renderTexture: this.framebuffer,
         index: this.transform.index,
         qtyFeatures: context.prevQtyFeaturesRef ?? 1,

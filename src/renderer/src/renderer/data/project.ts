@@ -46,6 +46,17 @@ export class Matrix {
     this.project = project
   }
 
+  getZOffsetForLayer(targetLayer: Layer): number {
+    let zOffset = 0
+    for (const layer of this.layers.toReversed()) {
+      if (layer === targetLayer) {
+        return zOffset
+      }
+      zOffset += layer.thickness
+    }
+    return zOffset
+  }
+
   toJSON(): MatrixJSON {
     return {
       steps: this.steps.map((step) => step.toJSON()),
@@ -65,6 +76,7 @@ export class Layer {
   public name: string = ""
   public function: string = "copper"
   public context: string = "default"
+  public thickness: number = 0.0005 // in mm
   constructor(name: string, matrix: Matrix) {
     this.name = name
     this.matrix = matrix

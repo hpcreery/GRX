@@ -191,11 +191,10 @@ export class Renderer {
     }
     const engine = this.engine
     const sendPointerEvent = async (
-      element: HTMLElement,
       mouse: MouseEvent,
       event_type: (typeof PointerEvents)[keyof typeof PointerEvents],
     ): Promise<void> => {
-      const [x, y] = await getMouseWorldCoordinates(element, mouse)
+      const [x, y] = await getMouseWorldCoordinates(mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
           detail: { x, y },
@@ -203,22 +202,25 @@ export class Renderer {
       )
     }
 
-    const getMouseWorldCoordinates = async (element: HTMLElement, e: MouseEvent): Promise<[number, number]> => {
-      if (!element.id) {
-        throw new Error("Element must have a 'id' attribute")
-      }
+    /**
+     * Get mouse coordinates relative to the canvas. These are not true canvas coordinates, as the y axis is flipped.
+     * @param e MouseEvent
+     * @returns [x, y] coordinates relative to the canvas. Y axis is flipped. [0,0] is bottom-left corner. Similar to WebGL coordinates.
+     */
+    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+      // Get the mouse position relative to the canvas
+      const { x, y, height } = element.getBoundingClientRect()
+      return [e.clientX - x, height - (e.clientY - y)]
+    }
 
-      // console.log(offsetX, offsetY, width, height)
-
-      // really these functions are nested here as we should not have to deal with the coordinates of the canvas,
-      // but rather the coordinates of the world
-      function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
-        // Get the mouse position relative to the canvas
-        const { x, y, height } = element.getBoundingClientRect()
-        return [e.clientX - x, height - (e.clientY - y)]
-      }
-      // return this.engine.interface.read_world_position_from_dom_position(element.id, e.clientX, e.clientY)
-      return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e))
+    /**
+     * Get mouse world coordinates from mouse event
+     * @param element HTMLElement canvas element
+     * @param e MouseEvent
+     * @returns [x, y] world coordinates
+     */
+    const getMouseWorldCoordinates = async (e: MouseEvent): Promise<[number, number]> => {
+      return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e), 0)
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -237,6 +239,8 @@ export class Renderer {
       const moveScale = this.canvasSettings.dpr
 
       if (settings.ZOOM_TO_CURSOR) {
+        // const [x, y] = await getMouseWorldCoordinates(element, e)
+        // engine.interface.zoom_at_point(element.id, x, y, e.deltaY * moveScale)
         engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
       } else {
         engine.interface.zoom_at_point(element.id, width / 2, height / 2, e.deltaY * moveScale)
@@ -244,23 +248,15 @@ export class Renderer {
     }
     element.onpointerdown = async (e): Promise<void> => {
       if (e.button == 2) return // ignore
-      // console.log(e.button)
-      if (e.button == 1 ) {
-        // middle mouse button pressed
-        this.pointerSettings.mode = PointerMode.MOVE
-        element.style.cursor = "grabbing"
-        await engine.interface.view_pointer_grab(element.id)
-        return
-      }
-      sendPointerEvent(element, e, PointerEvents.POINTER_DOWN)
-      const [x, y] = await getMouseWorldCoordinates(element, e)
+      sendPointerEvent(e, PointerEvents.POINTER_DOWN)
+      const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
       this.pointerCache.push(e)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
         await engine.interface.view_pointer_grab(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await engine.interface.read_view_select(element.id, [x, y])
+        const features = await engine.interface.read_view_select(element.id, [xcanvas, ycanvas])
         // console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -270,18 +266,17 @@ export class Renderer {
         element.style.cursor = "crosshair"
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
-        const [x1, y1] = await getMouseWorldCoordinates(element, e)
+        const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
         const currentMeasurement = await engine.interface.read_view_current_measurement(element.id)
         if (currentMeasurement != null) {
-          engine.interface.finish_view_measurement(element.id, [x1, y1])
+          engine.interface.finish_view_measurement(element.id, [xcanvas, ycanvas])
         } else {
-          engine.interface.create_view_measurement(element.id, [x1, y1])
+          engine.interface.create_view_measurement(element.id, [xcanvas, ycanvas])
         }
       }
     }
     element.onpointerup = async (e): Promise<void> => {
-      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
-      // const [x, y] = await this.getMouseWorldCoordinates(e)
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grab"
         await engine.interface.view_pointer_release(element.id)
@@ -289,36 +284,36 @@ export class Renderer {
       removePointerCache(e)
     }
     element.onpointercancel = async (e): Promise<void> => {
-      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         await engine.interface.view_pointer_release(element.id)
       }
       removePointerCache(e)
     }
     element.onpointerleave = async (e): Promise<void> => {
-      sendPointerEvent(element, e, PointerEvents.POINTER_UP)
+      sendPointerEvent(e, PointerEvents.POINTER_UP)
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         await engine.interface.view_pointer_release(element.id)
       }
       removePointerCache(e)
     }
     element.onpointerenter = async (e): Promise<void> => {
-      sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
+      sendPointerEvent(e, PointerEvents.POINTER_HOVER)
     }
     element.onpointermove = async (e): Promise<void> => {
-      sendPointerEvent(element, e, PointerEvents.POINTER_MOVE)
+      sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
       const moveScale = this.canvasSettings.dpr
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
-        const [x, y] = await getMouseWorldCoordinates(element, e)
-        engine.interface.update_view_measurement(element.id, [x, y])
+        const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
+        engine.interface.update_view_measurement(element.id, [xcanvas, ycanvas])
       }
 
       if (!(await engine.interface.read_pointer_grab(element.id))) {
-        await sendPointerEvent(element, e, PointerEvents.POINTER_HOVER)
+        await sendPointerEvent(e, PointerEvents.POINTER_HOVER)
         return
       }
 

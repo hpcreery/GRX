@@ -9,11 +9,6 @@ import { SNAP_MODES, SNAP_MODES_MAP } from "./engine/types"
 import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 // import * as BufferCollection from './engine/buffer-collection'
 
-const project = "DEMO"
-const step1 = "box1"
-const step2 = "box2"
-const layer = "layer1"
-
 // import gdsiiFile from '@lib/gdsii/testdata/various.gds?arraybuffer'
 import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
@@ -22,7 +17,7 @@ import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp
 // import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
 // import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
 // import pls from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?arraybuffer"
-// import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
+import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
 import nested_aperture_macro from "@lib/gerber/testdata/gerbers/block-apertures/nested.gbr?arraybuffer"
@@ -1198,8 +1193,13 @@ function DemoApp(): JSX.Element {
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [zoomToCursor, setZoomToCursor] = React.useState<boolean>(false)
   const [enable3d, setEnable3d] = React.useState<boolean>(false)
+  const [perspective3D, setPerspective3D] = React.useState<boolean>(false)
   const [_showDatums, setShowDatums] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<string[]>([])
+
+  const project = "DEMO"
+  const step1 = "box1"
+  const step2 = "box2"
 
   React.useEffect(() => {
     if (renderer) return
@@ -1221,13 +1221,23 @@ function DemoApp(): JSX.Element {
     })
     const DataInterface = render.interface
 
+    // const layer_cmp = "cmp"
+    // const layer_sol = "sol"
+
     DataInterface.create_project(project)
     DataInterface.create_step(project, step1)
     DataInterface.create_step(project, step2)
-    DataInterface.create_layer(project, layer)
+    // DataInterface.create_layer(project, layer_cmp)
+    // DataInterface.create_layer(project, layer_sol)
 
     DataInterface._import_file(cmp, "RS-274X", {
       layer: "cmp",
+      step: step1,
+      project,
+    })
+
+    DataInterface._import_file(sol, "RS-274X", {
+      layer: "sol",
       step: step1,
       project,
     })
@@ -1239,14 +1249,13 @@ function DemoApp(): JSX.Element {
     })
 
     DataInterface._import_file(gdsiiFile, "GDSII", {
-      // layer,
       step: step2,
       project,
     })
 
-    // DataInterface.update_step_layer_artwork(project, step1, layer, MAMA_STEP_AND_REPEAT)
-    DataInterface.update_step_layer_artwork(project, step1, layer, SURFACE_RECORDS_ARRAY)
-    DataInterface.update_step_layer_artwork(project, step1, layer, POLYLINE_RECORDS_ARRAY)
+    // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, MAMA_STEP_AND_REPEAT)
+    // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, SURFACE_RECORDS_ARRAY)
+    // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, POLYLINE_RECORDS_ARRAY)
 
     render.addManagedView(box2Ref.current, {
       project,
@@ -1685,6 +1694,8 @@ function DemoApp(): JSX.Element {
           backgroundColor: "black",
           border: "1px solid #d3d3d3",
           textAlign: "center",
+          top: 100,
+          left: 100,
         }}
       >
         <div
@@ -1717,6 +1728,8 @@ function DemoApp(): JSX.Element {
           backgroundColor: "black",
           border: "1px solid #d3d3d3",
           textAlign: "center",
+          top: 120,
+          left: 120,
         }}
       >
         <div
@@ -1806,6 +1819,14 @@ function DemoApp(): JSX.Element {
             onChange={(e): void => {
               renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
               setEnable3d(e.target.checked)
+            }}
+          />
+          3D Perspective
+          <Switch
+            checked={perspective3D}
+            onChange={(e): void => {
+              renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: e.target.checked })
+              setPerspective3D(e.target.checked)
             }}
           />
           Mouse Mode

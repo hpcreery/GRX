@@ -5,7 +5,7 @@ import { ReglRenderers, TLoadedReglRenderers } from "./gl-commands"
 import * as Shapes from "../../data/shape/shape"
 import { type Units, type BoundingBox, SNAP_MODES_MAP, SnapMode, ColorBlend, ViewBox } from "../types"
 import Transform from "../transform"
-import { UID, UpdateEventTarget, mat4Extended } from "../utils"
+import { UID, UpdateEventTarget } from "../utils"
 import { SimpleMeasurement } from "./measurements"
 import { ShapeDistance } from "./shape-renderer"
 import type { RenderSettings } from "../settings"
@@ -14,7 +14,6 @@ import ShapeTransform from "../transform"
 import { StepLayer, Step } from "@src/renderer/data/project"
 import { DataInterface } from "@src/renderer/data/interface"
 import { ArtworkBufferCollection } from "@src/renderer/data/artwork-collections"
-import { PERSPECTIVE_CORRECTION_FACTOR } from "../constants"
 // import { Engine } from '../engine'
 
 export interface WorldProps {}
@@ -23,7 +22,8 @@ interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_Transform3D: mat4
-  u_InverseTransform3D: mat4
+  u_ZOffset: number
+  u_Perspective3D: boolean
   u_Resolution: vec2
   u_PixelSize: number
   u_OutlineMode: boolean
@@ -44,6 +44,7 @@ export interface WorldContext {
   transform: RenderTransform
   resolution: vec2
   transformMatrix: mat3
+  zOffset: number
 }
 
 // interface ScreenRenderProps {
@@ -72,7 +73,6 @@ export interface RenderTransform {
   matrixInverse: mat3
   rotation: vec2
   matrix3D: mat4
-  matrix3DInverse: mat4
   update: () => void
 }
 
@@ -130,11 +130,12 @@ export class ViewRenderer extends UpdateEventTarget {
     matrixInverse: mat3.create(),
     rotation: vec2.create(),
     matrix3D: mat4.create(),
-    matrix3DInverse: mat4.create(),
     update: (): void => {
       // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
       const { zoom, position } = this.transform
       const { width, height } = this.viewBox
+      if (this.transform.rotation[0] % 90 == 0) this.transform.rotation[0] += 1
+      if (this.transform.rotation[1] % 90 == 0) this.transform.rotation[1] += 1
       const [rotateX, rotateY] = this.transform.rotation
       mat3.projection(this.transform.matrix, width, height)
       mat3.translate(this.transform.matrix, this.transform.matrix, position)
@@ -143,18 +144,17 @@ export class ViewRenderer extends UpdateEventTarget {
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
       if (settings.ENABLE_3D) {
-        // mat4.identity(this.transform.matrix3D)
-        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, width / height, 0, Infinity)
+        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, 1)
+        // this little hack lets us move the shapes back so they dont get clipped by the near plane
+        if (settings.PERSPECTIVE_3D) {
+          mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [2, 2, 1])
+          mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0, 0, -1])
+        }
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
-
-        // mat4.identity(this.transform.matrix3DInverse)
-        mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, width / height, 0, Infinity)
-        mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
-        mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
+        mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
       } else {
         mat4.identity(this.transform.matrix3D)
-        mat4.identity(this.transform.matrix3DInverse)
       }
     },
   }
@@ -194,16 +194,18 @@ export class ViewRenderer extends UpdateEventTarget {
         transformMatrix: () => this.transform.matrix,
         transform: () => this.transform,
         resolution: () => [this.viewBox.width, this.viewBox.height],
+        zOffset: 0.0,
       },
 
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
+        u_ZOffset: 0.0,
         u_Transform3D: () => this.transform.matrix3D,
-        u_InverseTransform3D: () => this.transform.matrix3DInverse,
+        u_Perspective3D: () => settings.PERSPECTIVE_3D,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
-        u_PixelSize: 2,
+        // u_PixelSize: 2,
+        u_PixelSize: () => (settings.PERSPECTIVE_3D && settings.ENABLE_3D ? 1 : 2),
         u_OutlineMode: () => settings.OUTLINE_MODE,
         u_SkeletonMode: () => settings.SKELETON_MODE,
         u_SnapMode: () => SNAP_MODES_MAP[settings.SNAP_MODE],
@@ -235,21 +237,6 @@ export class ViewRenderer extends UpdateEventTarget {
         func: "greater",
         range: [0, 1],
       },
-
-      // stencil: {
-      //   enable: true,
-      //   mask: 0xff,
-      //   func: {
-      //     ref: 0xff,
-      //     cmp: "always",
-      //     mask: 0xff,
-      //   },
-      //   op: {
-      //     fail: "keep",
-      //     zfail: "keep",
-      //     zpass: "keep",
-      //   },
-      // },
 
       scissor: {
         enable: true,
@@ -317,11 +304,22 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Move viewport
+   * @param x x distance in pixels
+   * @param y y distance in pixels
+   * @returns void
+   */
   public moveViewport(x: number, y: number): void {
     if (!this.transform.dragging) return
-    // take into account the 3d rotation to change the x and y movement
-    x = (x * 1) / Math.cos(this.transform.rotation[1] * (Math.PI / 180))
-    y = (y * 1) / Math.cos(this.transform.rotation[0] * (Math.PI / 180))
+
+    // consider inverting x and y based on rotation
+    if (settings.ENABLE_3D) {
+      const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+      const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+      if ((rotatedX > 90 && rotatedX < 270)) y = -y
+      if ((rotatedY > 90 && rotatedY < 270))  x = -x
+    }
 
     this.transform.velocity = [x, y]
     vec2.add(this.transform.position, this.transform.position, this.transform.velocity)
@@ -329,6 +327,12 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.timestamp = new Date()
   }
 
+  /**
+   * Rotate viewport
+   * @param x x rotation in degrees
+   * @param y y rotation in degrees
+   * @returns void
+   */
   public rotateViewport(x: number, y: number): void {
     if (!settings.ENABLE_3D) return
     if (!this.transform.dragging) return
@@ -339,11 +343,17 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.timestamp = new Date()
   }
 
+  /**
+   * Grab viewport for dragging
+   */
   public grabViewport(): void {
     this.transform.velocity = [0, 0]
     this.transform.dragging = true
   }
 
+  /**
+   * Release viewport from dragging
+   */
   public releaseViewport(): void {
     this.transform.dragging = false
     const currentTimestamp = new Date()
@@ -354,6 +364,12 @@ export class ViewRenderer extends UpdateEventTarget {
     this.toss()
   }
 
+  /**
+   * Zoom view, either to cursor or center
+   * @param x x location to zoom to in view pixel coordinates
+   * @param y y location to zoom to in view pixel coordinates
+   * @param s scale factor
+   */
   public zoom(x: number, y: number, s: number): void {
     if (settings.ZOOM_TO_CURSOR) {
       this.zoomAtPoint(x, y, s)
@@ -362,11 +378,27 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Get dragging state
+   * @returns dragging state
+   */
   public isDragging(): boolean {
     return this.transform.dragging
   }
 
+  /**
+   * Zoom at point
+   * @param x x location to zoom to in view pixel coordinates
+   * @param y y location to zoom to in view pixel coordinates
+   * @param s scale factor
+   */
   public zoomAtPoint(x: number, y: number, s: number): void {
+    const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+    const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+    if (settings.ENABLE_3D) {
+      if ((rotatedX > 90 && rotatedX < 270)) y = this.viewBox.height - y
+      if ((rotatedY > 90 && rotatedY < 270))  x = this.viewBox.width - x
+    }
     const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
@@ -384,30 +416,137 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.position[0] = x - (x - this.transform.position[0]) * zoomBy
     this.transform.position[1] = y - (y - this.transform.position[1]) * zoomBy
     this.announceUpdate()
-    // this.transform2.update(this.transform.matrix)
   }
 
-  public getWorldPositionFromCanvasPosition(x: number, y: number): [number, number] {
+  /**
+   * Get world coordinates from screen coordinates
+   * @param x pixel x coord (0,0) is lower left
+   * @param y pixel y coord (0,0) is lower left
+   * @param z z coord used as u_ZOffset (layer z offset)
+   * @returns world coordinates [x, y]
+   */
+  public getWorldCoordFromScreenCoord(x: number, y: number, z: number): [number, number] {
     const { width, height } = this.viewBox
-    const mouse_element_pos = [x, y]
 
-    // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = { x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height }
-    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+    // Normalize the mouse position to NDC (-1 .. 1)
+    const nx = (x / width) * 2 - 1
+    const ny = (y / height) * 2 - 1
 
-    const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
-    const mousePos3D = vec4.transformMat4(
-      vec4.create(),
-      vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1),
-      this.transform.matrix3DInverse,
-    )
-    mousePos3D[0] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
-    mousePos3D[1] /= 1 + mousePos3D[2] * PERSPECTIVE_CORRECTION_FACTOR
-    const mousePos = vec2.transformMat3(vec2.create(), vec2.fromValues(mousePos3D[0], mousePos3D[1]), this.transform.matrixInverse)
-    return [mousePos[0], mousePos[1]]
+    // helper: fallback to simple 2D inverse transform
+    const fallback2D = (cx: number, cy: number): [number, number] => {
+      const out = vec2.create()
+      vec2.transformMat3(out, vec2.fromValues(cx, cy), this.transform.matrixInverse)
+      return [out[0], out[1]]
+    }
+
+    // If transform3D is identity, behave like the shader's early return
+    if (mat4.equals(this.transform.matrix3D, mat4.create())) {
+      return fallback2D(nx, ny)
+    }
+
+    // Extract columns (gl-matrix stores mat4 in column-major)
+    const m = this.transform.matrix3D
+    const c0x = m[0],
+      c0y = m[1],
+      c0z = m[2]
+    const c1x = m[4],
+      c1y = m[5],
+      c1z = m[6]
+    const c2x = m[8],
+      c2y = m[9],
+      c2z = m[10]
+    const c3x = m[12],
+      c3y = m[13],
+      c3z = m[14]
+
+    // Non-perspective (orthographic) branch - matches Transform3D.frag
+    if (!settings.PERSPECTIVE_3D) {
+      const bx = c2x * z + c3x
+      const by = c2y * z + c3y
+
+      const a_x1 = c0x,
+        a_x2 = c1x
+      const a_y1 = c0y,
+        a_y2 = c1y
+
+      const m00 = a_x1,
+        m01 = a_x2
+      const m10 = a_y1,
+        m11 = a_y2
+
+      const r0 = nx - bx
+      const r1 = ny - by
+
+      const det = m00 * m11 - m01 * m10
+      if (Math.abs(det) < 1e-8) {
+        return fallback2D(nx, ny)
+      }
+
+      const cx = (r0 * m11 - m01 * r1) / det
+      const cy = (m00 * r1 - r0 * m10) / det
+
+      return fallback2D(cx, cy)
+    }
+
+    // Perspective branch - matches Transform3D.frag's analytic inverse
+    // using perspective correction factor f = 1.0 (same as shader default)
+    const f = 1.0
+
+    const bx = c2x * z + c3x
+    const by = c2y * z + c3y
+    const bz = c2z * z + c3z
+
+    const a_x1 = c0x,
+      a_x2 = c1x
+    const a_y1 = c0y,
+      a_y2 = c1y
+    const a_z1 = c0z,
+      a_z2 = c1z
+
+    const m00 = a_x1 - nx * f * a_z1
+    const m01 = a_x2 - nx * f * a_z2
+    const m10 = a_y1 - ny * f * a_z1
+    const m11 = a_y2 - ny * f * a_z2
+
+    const r0 = nx * (1.0 + f * bz) - bx
+    const r1 = ny * (1.0 + f * bz) - by
+
+    const det = m00 * m11 - m01 * m10
+    if (Math.abs(det) < 1e-8) {
+      return fallback2D(nx, ny)
+    }
+
+    const cx = (r0 * m11 - m01 * r1) / det
+    const cy = (m00 * r1 - r0 * m10) / det
+
+    // Reconstruct tvec and reprojection check like shader would do.
+    const tvecX = cx
+    const tvecY = cy
+    const tvecZ = z
+
+    // reprojection: apply forward transform (u_Transform3D * vec4(cx,cy,z,1))
+    const reprojX = c0x * tvecX + c1x * tvecY + c2x * tvecZ + c3x
+    const reprojY = c0y * tvecX + c1y * tvecY + c2y * tvecZ + c3y
+    const reprojW = c0z * tvecX + c1z * tvecY + c2z * tvecZ + c3z // corresponds to reproj.w in shader
+
+    const denom = 1.0 + reprojW
+    if (denom <= 1e-6) {
+      return fallback2D(nx, ny)
+    }
+
+    const ndcReprojX = reprojX / denom
+    const ndcReprojY = reprojY / denom
+    // tight tolerance similar to shader
+    if (Math.hypot(ndcReprojX - nx, ndcReprojY - ny) > 1e-3) {
+      return fallback2D(nx, ny)
+    }
+
+    return fallback2D(tvecX, tvecY)
   }
 
+  /**
+   * Init/Create layers from data step
+   */
   private createLayers(): void {
     this.layersSubscriptionControler.abort()
     this.layersSubscriptionControler = new AbortController()
@@ -421,6 +560,9 @@ export class ViewRenderer extends UpdateEventTarget {
     this.updateLayers()
   }
 
+  /**
+   * Sync method to update layers to match data step. Add new layers and remove deleted layers.
+   */
   public updateLayers(): void {
     for (const layer of this.dataStep.layers) {
       if (this.layers.find((l) => l.dataLayer === layer)) continue
@@ -432,6 +574,10 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Add layer to view
+   * @param dataLayer StepLayer to add
+   */
   private addLayer(dataLayer: StepLayer): void {
     const layerRenderer = new LayerRenderer({
       regl: this.regl,
@@ -446,6 +592,10 @@ export class ViewRenderer extends UpdateEventTarget {
     this.announceUpdate()
   }
 
+  /**
+   * Delete layer from view
+   * @param layer StepLayer to delete
+   */
   private deleteLayer(layer: StepLayer): void {
     const index = this.layers.findIndex((l) => l.dataLayer === layer)
     if (index === -1) return
@@ -466,7 +616,6 @@ export class ViewRenderer extends UpdateEventTarget {
       matrixInverse: this.transform.matrixInverse,
       rotation: this.transform.rotation,
       matrix3D: this.transform.matrix3D,
-      matrix3DInverse: this.transform.matrix3DInverse,
       // update: this.transform.update
     }
   }
@@ -556,6 +705,11 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Select shapes at pointer position
+   * @param pointer vec2 of gl screen/view coordinates
+   * @returns list of QuerySelection objects
+   */
   public select(pointer: vec2): QuerySelection[] {
     const selection: QuerySelection[] = []
     this.selections.forEach((layer) => layer.destroy())
@@ -563,6 +717,9 @@ export class ViewRenderer extends UpdateEventTarget {
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
+
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
+
         const distances = layer.queryDistance(pointer, context)
         if (distances.length === 0) continue
         for (const select of distances) {
@@ -573,8 +730,15 @@ export class ViewRenderer extends UpdateEventTarget {
           })
 
           // THIS IS A VISUAL AIDS FOR THE SELECTION SNAP POINT
-          // this.measurements.addMeasurement(pointer)
-          // this.measurements.finishMeasurement(select.snapPoint || pointer)
+          // const pointerWorldCoord = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+          // const snapPoint = vec2.clone(pointerWorldCoord)
+          // if (select.direction != undefined && select.distance != undefined) {
+          //   const offset = vec2.create()
+          //   vec2.scale(offset, select.direction, select.distance)
+          //   vec2.sub(snapPoint, snapPoint, offset)
+          // }
+          // this.measurements.addMeasurement(pointerWorldCoord)
+          // this.measurements.finishMeasurement(snapPoint)
         }
         const selectionImage = new ArtworkBufferCollection()
         selectionImage.fromJSON(this.copySelectionToImage(distances))
@@ -595,8 +759,14 @@ export class ViewRenderer extends UpdateEventTarget {
     return selection
   }
 
+  /**
+   * Snap pointer to closest shape point. If no snap points found, return original pointer. Snap mode/position is determined by global settings.
+   * @param pointer vec2 of gl screen/view coordinates
+   * @returns vec2 snapped point in world coordinates
+   */
   public snap(pointer: vec2): vec2 {
-    if (settings.SNAP_MODE == SnapMode.OFF) return pointer
+    const pointerWorldCoord = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+    if (settings.SNAP_MODE == SnapMode.OFF) return pointerWorldCoord
 
     let closest: ShapeDistance | undefined = undefined
     this.world((context) => {
@@ -604,25 +774,34 @@ export class ViewRenderer extends UpdateEventTarget {
         if (!layer.visible) continue
         const layerSelection = layer.queryDistance(pointer, context)
         for (const select of layerSelection) {
+          if (select.distance == undefined) continue
           if (closest == undefined) {
             closest = select
             continue
           }
-          if (closest.snapPoint == undefined) {
+          if (closest.distance == undefined) {
             closest = select
             continue
           }
-          if (select.snapPoint == undefined) continue
-          if (vec2.dist(pointer, select.snapPoint) < vec2.dist(pointer, closest.snapPoint)) {
+          if (select.distance < closest.distance) {
             closest = select
           }
         }
       }
     })
+    closest = closest as ShapeDistance | undefined
     // console.log(closest)
-    if (closest == undefined) return pointer
-    if ((closest as ShapeDistance).snapPoint == undefined) return pointer
-    return (closest as ShapeDistance).snapPoint!
+    if (closest == undefined) return pointerWorldCoord
+    if (closest.distance == undefined) return pointerWorldCoord
+    // return (closest as ShapeDistance).snapPoint!
+    // const snapPoint = this.getWorldCoordFromScreenCoord(pointer[0], pointer[1], 0)
+    const snapPoint = vec2.clone(pointerWorldCoord)
+    if (closest.direction != undefined && closest.distance != undefined) {
+      const offset = vec2.create()
+      vec2.scale(offset, closest.direction, closest.distance)
+      vec2.sub(snapPoint, snapPoint, offset)
+    }
+    return snapPoint
   }
 
   private copySelectionToImage(selection: ShapeDistance[]): Shapes.Shape[] {
@@ -660,6 +839,7 @@ export class ViewRenderer extends UpdateEventTarget {
       max: vec2.fromValues(-Infinity, -Infinity),
     }
     this.transform.velocity = vec2.fromValues(0, 0)
+    this.transform.rotation = vec2.fromValues(0, 0)
     for (const layer of this.layers) {
       // TODO: make for loop parallel
       const layerBoundingBox = layer.getBoundingBox()
@@ -707,20 +887,33 @@ export class ViewRenderer extends UpdateEventTarget {
   //   this.loadingFrame.stop()
   // }
 
+  /**
+   * Create a measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public addMeasurement(point: vec2): void {
-    const pointSnap = this.snap(point)
-    this.measurements.addMeasurement(pointSnap)
+    const snapCoord = this.snap(point)
+    this.measurements.addMeasurement(snapCoord)
     this.announceUpdate()
   }
 
+  /**
+   * Update current measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public updateMeasurement(point: vec2): void {
-    this.measurements.updateMeasurement(point)
+    const coord = this.getWorldCoordFromScreenCoord(point[0], point[1], 0)
+    this.measurements.updateMeasurement(coord)
     this.announceUpdate()
   }
 
+  /**
+   * Finish current measurement
+   * @param point vec2 of gl screen/view coordinates
+   */
   public finishMeasurement(point: vec2): void {
-    const pointSnap = this.snap(point)
-    this.measurements.finishMeasurement(pointSnap)
+    const snapCoord = this.snap(point)
+    this.measurements.finishMeasurement(snapCoord)
     this.announceUpdate()
   }
 
@@ -751,25 +944,64 @@ export class ViewRenderer extends UpdateEventTarget {
       })
 
       this.utilitiesRenderer.render(context)
-      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
+      this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
 
-      for (const layer of this.layers) {
+      // determine layer draw order based on 3d rotation
+      const sortedLayers = this.layers.slice().sort((a, b) => {
+        // const zOffsetA = this.dataStep.matrix.getZOffsetForLayer(a.dataLayer.layer)
+        // const zOffsetB = this.dataStep.matrix.getZOffsetForLayer(b.dataLayer.layer)
+        // return zOffsetB - zOffsetA
+        const aIndex = this.dataStep.matrix.layers.indexOf(a.dataLayer.layer)
+        const bIndex = this.dataStep.matrix.layers.indexOf(b.dataLayer.layer)
+        return bIndex - aIndex
+      })
+      const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+      const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+      if (settings.ENABLE_3D && ((rotatedX > 90 && rotatedX < 270) != (rotatedY > 90 && rotatedY < 270))) {
+        sortedLayers.reverse()
+      }
+
+      for (const layer of sortedLayers) {
         if (!layer.visible) continue
+
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
+
         layer.render(context)
         this.drawCollections.blend(() => {
           if (settings.COLOR_BLEND == ColorBlend.OVERLAY) {
-            this.drawCollections.overlayBlendFunc(() => this.drawCollections.renderToScreen({ renderTexture: layer.framebuffer }))
-          } else {
-            this.drawCollections.contrastBlendFunc(() => this.drawCollections.renderToScreen({ renderTexture: layer.framebuffer }))
+            this.drawCollections.overlayBlendFunc(() =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+              }),
+            )
+          } else if (settings.COLOR_BLEND == ColorBlend.CONTRAST) {
+            this.drawCollections.contrastBlendFunc(() =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+              }),
+            )
+          }
+          // TODO: add more blend modes here
+          else {
+            this.drawCollections.opaqueBlendFunc({ color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) }, () =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+              }),
+            )
           }
         })
       }
       for (const selection of this.selections) {
+        context.zOffset = this.dataStep.matrix.getZOffsetForLayer(selection.sourceLayer)
+
         selection.render(context)
-        this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: selection.framebuffer }))
+        this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: selection.framebuffer }))
       }
+
+      context.zOffset = 0.0
+
       this.measurements.render(context)
-      this.drawCollections.overlay(() => this.drawCollections.renderToScreen({ renderTexture: this.measurements.framebuffer }))
+      this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.measurements.framebuffer }))
     })
   }
 

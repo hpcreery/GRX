@@ -20,7 +20,7 @@ uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform mat4 u_Transform3D;
-uniform mat4 u_InverseTransform3D;
+uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
@@ -31,6 +31,7 @@ uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
 uniform bool u_QueryMode;
+uniform bool u_Perspective3D;
 
 // COMMON VARYINGS
 varying float v_Aspect;
@@ -246,11 +247,9 @@ float arcDist(vec2 FragCoord) {
   return dist;
 }
 
-vec4 transformLocation3D(vec2 coordinate) {
-  vec4 transformed_position_3d = u_InverseTransform3D * vec4(coordinate, 0.0, 1.0);
-  transformed_position_3d.xy /= abs(1.0 + (transformed_position_3d.z) * PERSPECTIVE_CORRECTION_FACTOR);
-  return transformed_position_3d;
-}
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+#pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+
 
 vec2 transformLocation(vec2 pixel_location) {
   vec2 normal_coord = ((pixel_location.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
@@ -271,7 +270,9 @@ vec2 transformLocation(vec2 pixel_location) {
 
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
-  float pixel_size = u_PixelSize / scale;
+  // float pixel_size = u_PixelSize / scale;
+  vec4 v = transformLocation3DVert(((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0));
+  float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
@@ -279,7 +280,7 @@ void main() {
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
-    FragCoord = u_PointerPosition - v_Center_Location;
+    FragCoord = transformLocation(u_PointerPosition);
   }
 
   float dist = arcDist(FragCoord);
