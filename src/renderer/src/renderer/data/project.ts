@@ -48,7 +48,7 @@ export class Matrix {
 
   getZOffsetForLayer(targetLayer: Layer): number {
     let zOffset = 0
-    for (const layer of this.layers) {
+    for (const layer of this.layers.toReversed()) {
       if (layer === targetLayer) {
         return zOffset
       }

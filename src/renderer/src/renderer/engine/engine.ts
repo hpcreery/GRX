@@ -197,8 +197,8 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Move view viewport
    * @param viewId View ID
-   * @param x X movement
-   * @param y Y movement
+   * @param x X movement in pixels
+   * @param y Y movement in pixels
    */
   public static view_move(viewId: string, x: number, y: number): void {
     this._get_view(viewId).moveViewport(x, y)
@@ -233,8 +233,8 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Zoom view
    * @param viewId View ID
-   * @param x X position
-   * @param y Y Position
+   * @param x X position in view pixel coordinates
+   * @param y Y Position in view pixel coordinates
    * @param s Scale factor
    */
   public static zoom(viewId: string, x: number, y: number, s: number): void {
@@ -253,8 +253,8 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Zoom at point
    * @param viewId View ID
-   * @param x X position
-   * @param y Y position
+   * @param x X position in view pixel coordinates
+   * @param y Y position in view pixel coordinates
    * @param s Scale factor
    */
   public static zoom_at_point(viewId: string, x: number, y: number, s: number): void {
@@ -264,8 +264,8 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Read world position from DOM position
    * @param viewId View ID
-   * @param x X position
-   * @param y Y position
+   * @param x X position in view pixel coordinates
+   * @param y Y position in view pixel coordinates
    * @returns World Position [x, y]
    */
   public static read_world_position_from_canvas_position(viewId: string, x: number, y: number, z: number): [number, number] {

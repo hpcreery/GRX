@@ -4,16 +4,10 @@ vec4 transformLocation3D(vec2 ndc) {
     return vec4(ndc.xy, 0.0, 1.0);
   }
 
-  // // no perspective case: simply invert the transform
-  // if (!u_Perspective3D) {
-  //   return u_InverseTransform3D * vec4(ndc, -u_ZOffset, 1.0);
-  // }
-
     // -----------------------
   // Non-perspective branch
   // -----------------------
   // Inverse the 3D transform analytically for the orthographic case
-  // (do not use u_InverseTransform3D)
   if (!u_Perspective3D) {
     // Extract columns (mat4 is column-major)
     vec4 c0 = u_Transform3D[0];

@@ -15,7 +15,6 @@ uniform vec2 u_SymbolsTextureDimensions;
 uniform float u_QtyFeatures;
 uniform mat3 u_Transform;
 uniform mat4 u_Transform3D;
-uniform mat4 u_InverseTransform3D;
 uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_IndexOffset;

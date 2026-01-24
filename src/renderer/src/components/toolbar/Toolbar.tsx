@@ -19,7 +19,7 @@ import {
   IconBone,
   IconBoneOff,
   IconBadge3d,
-  IconBadge3dFilled
+  IconBadge3dFilled,
 } from "@tabler/icons-react"
 // import chroma from 'chroma-js'
 import { Modal, ActionIcon, Card, Group, Tooltip, useMantineTheme, Kbd, Popover } from "@mantine/core"
@@ -34,6 +34,7 @@ import { actions } from "@src/contexts/Spotlight"
 import { menuItems } from "@src/contexts/EditorContext"
 import { PointerMode } from "@src/renderer/engine/types"
 import SnapSettings from "./SnapSettings"
+import ThreeDSettings from './3DSettings'
 
 interface ToolbarProps {}
 
@@ -43,8 +44,8 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
   const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
+  const [threeDSettingsModal, threeDSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
-  const [enable3dMode, setEnable3dMode] = React.useState<boolean>(false)
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderer.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderer.pointerSettings.mode)
@@ -306,6 +307,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
             </Tooltip>
           </ActionIcon.Group>
           <ActionIcon.Group>
+            {/* ZOOM HOME */}
             <Tooltip openDelay={1000} withArrow label="Zoom Fit">
               <ActionIcon
                 size="lg"
@@ -319,6 +321,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 <IconZoomReset size={18} />
               </ActionIcon>
             </Tooltip>
+            {/* SNAP */}
             <Popover withArrow position="bottom" radius="md">
               <Popover.Target>
                 <Tooltip openDelay={1000} withArrow label="Snap Settings">
@@ -335,19 +338,24 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 <SnapSettings />
               </Popover.Dropdown>
             </Popover>
-            <Tooltip openDelay={1000} withArrow label="3D Mode">
-              <ActionIcon
-                size="lg"
-                radius="sm"
-                variant="default"
-                onClick={async (): Promise<void> => {
-                  renderer.engine.interface.set_engine_settings({ ENABLE_3D: !enable3dMode })
-                  setEnable3dMode(!enable3dMode)
+            {/* 3D */}
+            <Popover withArrow position="bottom" radius="md">
+              <Popover.Target>
+                <Tooltip openDelay={1000} withArrow label="3D Settings">
+                  <ActionIcon size="lg" radius="sm" variant="default">
+                    <IconBadge3d size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </Popover.Target>
+              <Popover.Dropdown
+                style={{
+                  padding: "4px",
                 }}
               >
-                {enable3dMode ? <IconBadge3dFilled size={18} /> : <IconBadge3d size={18} />}
-              </ActionIcon>
-            </Tooltip>
+                <ThreeDSettings />
+              </Popover.Dropdown>
+            </Popover>
+            {/* OUTLINE MODE */}
             <Tooltip openDelay={1000} withArrow label="Outline Mode">
               <ActionIcon
                 size="lg"
@@ -361,6 +369,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube size={18} />}
               </ActionIcon>
             </Tooltip>
+            {/* SKELETON MODE */}
             <Tooltip openDelay={1000} withArrow label="Skeleton Mode">
               <ActionIcon
                 size="lg"
@@ -374,17 +383,20 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 {skeletonMode ? <IconBone size={18} /> : <IconBoneOff size={18} />}
               </ActionIcon>
             </Tooltip>
+            {/* GRID SETTINGS */}
             <Tooltip openDelay={1000} withArrow label="Grid Settings">
               <ActionIcon size="lg" radius="sm" variant="default" onClick={gridSettingsModalHandlers.open}>
                 <IconGrid4x4 size={18} />
               </ActionIcon>
             </Tooltip>
+            {/* ENGINE SETTINGS */}
             <Tooltip openDelay={1000} withArrow label="Engine Settings">
               <ActionIcon size="lg" radius="sm" variant="default" onClick={engineSettingsModalHandlers.open}>
                 <IconEngine size={18} />
               </ActionIcon>
             </Tooltip>
           </ActionIcon.Group>
+          {/* SETTINGS */}
           <Tooltip openDelay={1000} withArrow label="Settings">
             <ActionIcon size="lg" radius="sm" variant="default" onClick={open}>
               <IconAdjustments size={18} />
@@ -403,6 +415,9 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       </Modal>
       <Modal title="Snap Settings" keepMounted opened={snapSettingsModal} onClose={snapSettingsModalHandlers.close}>
         <SnapSettings />
+      </Modal>
+      <Modal title="3D Settings" keepMounted opened={threeDSettingsModal} onClose={threeDSettingsModalHandlers.close}>
+        <ThreeDSettings />
       </Modal>
     </>
   )

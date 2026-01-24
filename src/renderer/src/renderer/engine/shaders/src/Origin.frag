@@ -2,7 +2,6 @@ precision highp float;
 uniform mat3 u_Transform;
 uniform mat3 u_InverseTransform;
 uniform mat4 u_Transform3D;
-uniform mat4 u_InverseTransform3D;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform vec4 u_Color;
@@ -10,7 +9,7 @@ uniform bool u_Perspective3D;
 
 #pragma glslify: import('../modules/Constants.glsl')
 float u_ZOffset = 0.0;
-#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_InverseTransform3D=u_InverseTransform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
+#pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 #pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
 vec2 transformLocation(vec2 pixel_coord) {

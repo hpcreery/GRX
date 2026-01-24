@@ -37,7 +37,7 @@ export const settings: RenderSettings = {
   OUTLINE_MODE: false,
   SKELETON_MODE: false,
   SNAP_MODE: SnapMode.OFF,
-  COLOR_BLEND: ColorBlend.CONTRAST,
+  COLOR_BLEND: ColorBlend.OPAQUE,
   BACKGROUND_COLOR: [0, 0, 0, 0],
   MAX_ZOOM: 1000,
   MIN_ZOOM: 0.001,

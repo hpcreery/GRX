@@ -199,7 +199,6 @@ export interface TextureToScreen3DRendererProps {
 export interface TextureToScreen3DRendererUniforms {
   u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
   u_Transform3D: mat4
-  u_InverseTransform3D: mat4
   u_ZOffset: number
 }
 
@@ -808,20 +807,12 @@ export function initializeRenderers(regl: REGL.Regl): void {
         alpha: "add",
       },
       func: {
-        srcRGB: "constant color",
-        srcAlpha: "constant alpha",
-        dstRGB: "one",
+        srcRGB: "one",
+        srcAlpha: "one",
+        dstRGB: "one minus src alpha",
         dstAlpha: "one",
-        // src: 'zero',
-        // dst: 'one',
       },
-      color: [1, 0, 0, 1],
-      // color: regl.prop('color')
     },
-    // uniforms: {
-    //   u_Color: [1, 1, 1],
-    //   u_Alpha: 1,
-    // },
   })
 
   ReglRenderers.overlay = regl({

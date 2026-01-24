@@ -22,7 +22,7 @@ interface WorldUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
   u_Transform3D: mat4
-  u_InverseTransform3D: mat4
+  u_ZOffset: number
   u_Perspective3D: boolean
   u_Resolution: vec2
   u_PixelSize: number
@@ -73,7 +73,6 @@ export interface RenderTransform {
   matrixInverse: mat3
   rotation: vec2
   matrix3D: mat4
-  matrix3DInverse: mat4
   update: () => void
 }
 
@@ -131,7 +130,6 @@ export class ViewRenderer extends UpdateEventTarget {
     matrixInverse: mat3.create(),
     rotation: vec2.create(),
     matrix3D: mat4.create(),
-    matrix3DInverse: mat4.create(),
     update: (): void => {
       // http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
       const { zoom, position } = this.transform
@@ -155,16 +153,8 @@ export class ViewRenderer extends UpdateEventTarget {
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
         mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
-
-        mat4.perspective(this.transform.matrix3DInverse, (90 * Math.PI) / 180, 1 / 1, 0, Infinity)
-        // mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [0.5,0.5,1])
-        mat4Extended.invertRotateX(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateX * Math.PI) / 180)
-        mat4Extended.invertRotateY(this.transform.matrix3DInverse, this.transform.matrix3DInverse, (rotateY * Math.PI) / 180)
-        // mat4.translate(this.transform.matrix3D, this.transform.matrix3D, [0,0,-1])
-        mat4.scale(this.transform.matrix3DInverse, this.transform.matrix3DInverse, [1, 1, zoom])
       } else {
         mat4.identity(this.transform.matrix3D)
-        mat4.identity(this.transform.matrix3DInverse)
       }
     },
   }
@@ -210,12 +200,10 @@ export class ViewRenderer extends UpdateEventTarget {
       uniforms: {
         u_Transform: () => this.transform.matrix,
         u_InverseTransform: () => this.transform.matrixInverse,
-        // u_ZOffset: 0.0,
+        u_ZOffset: 0.0,
         u_Transform3D: () => this.transform.matrix3D,
-        u_InverseTransform3D: () => this.transform.matrix3DInverse,
         u_Perspective3D: () => settings.PERSPECTIVE_3D,
         u_Resolution: () => [this.viewBox.width, this.viewBox.height],
-        // u_Resolution: (context: REGL.DefaultContext, props: WorldProps) => context.resolution,
         // u_PixelSize: 2,
         u_PixelSize: () => (settings.PERSPECTIVE_3D && settings.ENABLE_3D ? 1 : 2),
         u_OutlineMode: () => settings.OUTLINE_MODE,
@@ -249,21 +237,6 @@ export class ViewRenderer extends UpdateEventTarget {
         func: "greater",
         range: [0, 1],
       },
-
-      // stencil: {
-      //   enable: true,
-      //   mask: 0xff,
-      //   func: {
-      //     ref: 0xff,
-      //     cmp: "always",
-      //     mask: 0xff,
-      //   },
-      //   op: {
-      //     fail: "keep",
-      //     zfail: "keep",
-      //     zpass: "keep",
-      //   },
-      // },
 
       scissor: {
         enable: true,
@@ -331,13 +304,21 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Move viewport
+   * @param x x distance in pixels
+   * @param y y distance in pixels
+   * @returns void
+   */
   public moveViewport(x: number, y: number): void {
     if (!this.transform.dragging) return
 
+    // consider inverting x and y based on rotation
     if (settings.ENABLE_3D) {
-      // take into account the 3d rotation to change the x and y movement
-      x = (x * 1) / Math.cos(this.transform.rotation[1] * (Math.PI / 180))
-      y = (y * 1) / Math.cos(this.transform.rotation[0] * (Math.PI / 180))
+      const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+      const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+      if ((rotatedX > 90 && rotatedX < 270)) y = -y
+      if ((rotatedY > 90 && rotatedY < 270))  x = -x
     }
 
     this.transform.velocity = [x, y]
@@ -346,6 +327,12 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.timestamp = new Date()
   }
 
+  /**
+   * Rotate viewport
+   * @param x x rotation in degrees
+   * @param y y rotation in degrees
+   * @returns void
+   */
   public rotateViewport(x: number, y: number): void {
     if (!settings.ENABLE_3D) return
     if (!this.transform.dragging) return
@@ -356,11 +343,17 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.timestamp = new Date()
   }
 
+  /**
+   * Grab viewport for dragging
+   */
   public grabViewport(): void {
     this.transform.velocity = [0, 0]
     this.transform.dragging = true
   }
 
+  /**
+   * Release viewport from dragging
+   */
   public releaseViewport(): void {
     this.transform.dragging = false
     const currentTimestamp = new Date()
@@ -371,6 +364,12 @@ export class ViewRenderer extends UpdateEventTarget {
     this.toss()
   }
 
+  /**
+   * Zoom view, either to cursor or center
+   * @param x x location to zoom to in view pixel coordinates
+   * @param y y location to zoom to in view pixel coordinates
+   * @param s scale factor
+   */
   public zoom(x: number, y: number, s: number): void {
     if (settings.ZOOM_TO_CURSOR) {
       this.zoomAtPoint(x, y, s)
@@ -379,11 +378,27 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Get dragging state
+   * @returns dragging state
+   */
   public isDragging(): boolean {
     return this.transform.dragging
   }
 
+  /**
+   * Zoom at point
+   * @param x x location to zoom to in view pixel coordinates
+   * @param y y location to zoom to in view pixel coordinates
+   * @param s scale factor
+   */
   public zoomAtPoint(x: number, y: number, s: number): void {
+    const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+    const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+    if (settings.ENABLE_3D) {
+      if ((rotatedX > 90 && rotatedX < 270)) y = this.viewBox.height - y
+      if ((rotatedY > 90 && rotatedY < 270))  x = this.viewBox.width - x
+    }
     const { zoom } = this.transform
     let newZoom = zoom - s / (1000 / zoom / 2)
     let zoomBy = newZoom / zoom
@@ -401,33 +416,137 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.position[0] = x - (x - this.transform.position[0]) * zoomBy
     this.transform.position[1] = y - (y - this.transform.position[1]) * zoomBy
     this.announceUpdate()
-    // this.transform2.update(this.transform.matrix)
   }
 
+  /**
+   * Get world coordinates from screen coordinates
+   * @param x pixel x coord (0,0) is lower left
+   * @param y pixel y coord (0,0) is lower left
+   * @param z z coord used as u_ZOffset (layer z offset)
+   * @returns world coordinates [x, y]
+   */
   public getWorldCoordFromScreenCoord(x: number, y: number, z: number): [number, number] {
     const { width, height } = this.viewBox
-    const mouse_element_pos = [x, y]
 
-    // Normalize the mouse position to the canvas
-    const mouse_normalize_pos = { x: mouse_element_pos[0] / width, y: mouse_element_pos[1] / height }
-    // mouse_normalize_pos[0] = x value from 0 to 1 ( left to right ) of the canvas
-    // mouse_normalize_pos[1] = y value from 0 to 1 ( bottom to top ) of the canvas
+    // Normalize the mouse position to NDC (-1 .. 1)
+    const nx = (x / width) * 2 - 1
+    const ny = (y / height) * 2 - 1
 
-    const mousePosViewbox: vec2 = [mouse_normalize_pos.x * 2 - 1, mouse_normalize_pos.y * 2 - 1]
-    const mousePos = vec4.create()
-    if (settings.ENABLE_3D) {
-      vec4.transformMat4(mousePos, vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], z, 1), this.transform.matrix3DInverse)
-      if (settings.PERSPECTIVE_3D) {
-        mousePos[0] /= 1 + mousePos[2]
-        mousePos[1] /= 1 + mousePos[2]
-      }
-    } else {
-      vec4.transformMat4(mousePos, vec4.fromValues(mousePosViewbox[0], mousePosViewbox[1], 0, 1), mat4.create())
+    // helper: fallback to simple 2D inverse transform
+    const fallback2D = (cx: number, cy: number): [number, number] => {
+      const out = vec2.create()
+      vec2.transformMat3(out, vec2.fromValues(cx, cy), this.transform.matrixInverse)
+      return [out[0], out[1]]
     }
-    vec2.transformMat3(mousePos, vec2.fromValues(mousePos[0], mousePos[1]), this.transform.matrixInverse)
-    return [mousePos[0], mousePos[1]]
+
+    // If transform3D is identity, behave like the shader's early return
+    if (mat4.equals(this.transform.matrix3D, mat4.create())) {
+      return fallback2D(nx, ny)
+    }
+
+    // Extract columns (gl-matrix stores mat4 in column-major)
+    const m = this.transform.matrix3D
+    const c0x = m[0],
+      c0y = m[1],
+      c0z = m[2]
+    const c1x = m[4],
+      c1y = m[5],
+      c1z = m[6]
+    const c2x = m[8],
+      c2y = m[9],
+      c2z = m[10]
+    const c3x = m[12],
+      c3y = m[13],
+      c3z = m[14]
+
+    // Non-perspective (orthographic) branch - matches Transform3D.frag
+    if (!settings.PERSPECTIVE_3D) {
+      const bx = c2x * z + c3x
+      const by = c2y * z + c3y
+
+      const a_x1 = c0x,
+        a_x2 = c1x
+      const a_y1 = c0y,
+        a_y2 = c1y
+
+      const m00 = a_x1,
+        m01 = a_x2
+      const m10 = a_y1,
+        m11 = a_y2
+
+      const r0 = nx - bx
+      const r1 = ny - by
+
+      const det = m00 * m11 - m01 * m10
+      if (Math.abs(det) < 1e-8) {
+        return fallback2D(nx, ny)
+      }
+
+      const cx = (r0 * m11 - m01 * r1) / det
+      const cy = (m00 * r1 - r0 * m10) / det
+
+      return fallback2D(cx, cy)
+    }
+
+    // Perspective branch - matches Transform3D.frag's analytic inverse
+    // using perspective correction factor f = 1.0 (same as shader default)
+    const f = 1.0
+
+    const bx = c2x * z + c3x
+    const by = c2y * z + c3y
+    const bz = c2z * z + c3z
+
+    const a_x1 = c0x,
+      a_x2 = c1x
+    const a_y1 = c0y,
+      a_y2 = c1y
+    const a_z1 = c0z,
+      a_z2 = c1z
+
+    const m00 = a_x1 - nx * f * a_z1
+    const m01 = a_x2 - nx * f * a_z2
+    const m10 = a_y1 - ny * f * a_z1
+    const m11 = a_y2 - ny * f * a_z2
+
+    const r0 = nx * (1.0 + f * bz) - bx
+    const r1 = ny * (1.0 + f * bz) - by
+
+    const det = m00 * m11 - m01 * m10
+    if (Math.abs(det) < 1e-8) {
+      return fallback2D(nx, ny)
+    }
+
+    const cx = (r0 * m11 - m01 * r1) / det
+    const cy = (m00 * r1 - r0 * m10) / det
+
+    // Reconstruct tvec and reprojection check like shader would do.
+    const tvecX = cx
+    const tvecY = cy
+    const tvecZ = z
+
+    // reprojection: apply forward transform (u_Transform3D * vec4(cx,cy,z,1))
+    const reprojX = c0x * tvecX + c1x * tvecY + c2x * tvecZ + c3x
+    const reprojY = c0y * tvecX + c1y * tvecY + c2y * tvecZ + c3y
+    const reprojW = c0z * tvecX + c1z * tvecY + c2z * tvecZ + c3z // corresponds to reproj.w in shader
+
+    const denom = 1.0 + reprojW
+    if (denom <= 1e-6) {
+      return fallback2D(nx, ny)
+    }
+
+    const ndcReprojX = reprojX / denom
+    const ndcReprojY = reprojY / denom
+    // tight tolerance similar to shader
+    if (Math.hypot(ndcReprojX - nx, ndcReprojY - ny) > 1e-3) {
+      return fallback2D(nx, ny)
+    }
+
+    return fallback2D(tvecX, tvecY)
   }
 
+  /**
+   * Init/Create layers from data step
+   */
   private createLayers(): void {
     this.layersSubscriptionControler.abort()
     this.layersSubscriptionControler = new AbortController()
@@ -441,6 +560,9 @@ export class ViewRenderer extends UpdateEventTarget {
     this.updateLayers()
   }
 
+  /**
+   * Sync method to update layers to match data step. Add new layers and remove deleted layers.
+   */
   public updateLayers(): void {
     for (const layer of this.dataStep.layers) {
       if (this.layers.find((l) => l.dataLayer === layer)) continue
@@ -452,6 +574,10 @@ export class ViewRenderer extends UpdateEventTarget {
     }
   }
 
+  /**
+   * Add layer to view
+   * @param dataLayer StepLayer to add
+   */
   private addLayer(dataLayer: StepLayer): void {
     const layerRenderer = new LayerRenderer({
       regl: this.regl,
@@ -466,6 +592,10 @@ export class ViewRenderer extends UpdateEventTarget {
     this.announceUpdate()
   }
 
+  /**
+   * Delete layer from view
+   * @param layer StepLayer to delete
+   */
   private deleteLayer(layer: StepLayer): void {
     const index = this.layers.findIndex((l) => l.dataLayer === layer)
     if (index === -1) return
@@ -486,7 +616,6 @@ export class ViewRenderer extends UpdateEventTarget {
       matrixInverse: this.transform.matrixInverse,
       rotation: this.transform.rotation,
       matrix3D: this.transform.matrix3D,
-      matrix3DInverse: this.transform.matrix3DInverse,
       // update: this.transform.update
     }
   }
@@ -817,7 +946,22 @@ export class ViewRenderer extends UpdateEventTarget {
       this.utilitiesRenderer.render(context)
       this.drawCollections.overlay(() => this.drawCollections.renderTextureToScreen({ renderTexture: this.utilitiesRenderer.framebuffer }))
 
-      for (const layer of this.layers) {
+      // determine layer draw order based on 3d rotation
+      const sortedLayers = this.layers.slice().sort((a, b) => {
+        // const zOffsetA = this.dataStep.matrix.getZOffsetForLayer(a.dataLayer.layer)
+        // const zOffsetB = this.dataStep.matrix.getZOffsetForLayer(b.dataLayer.layer)
+        // return zOffsetB - zOffsetA
+        const aIndex = this.dataStep.matrix.layers.indexOf(a.dataLayer.layer)
+        const bIndex = this.dataStep.matrix.layers.indexOf(b.dataLayer.layer)
+        return bIndex - aIndex
+      })
+      const rotatedX = Math.abs(this.transform.rotation[0]) % 360
+      const rotatedY = Math.abs(this.transform.rotation[1]) % 360
+      if (settings.ENABLE_3D && ((rotatedX > 90 && rotatedX < 270) != (rotatedY > 90 && rotatedY < 270))) {
+        sortedLayers.reverse()
+      }
+
+      for (const layer of sortedLayers) {
         if (!layer.visible) continue
 
         context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
@@ -838,13 +982,13 @@ export class ViewRenderer extends UpdateEventTarget {
             )
           }
           // TODO: add more blend modes here
-          // else {
-          //   this.drawCollections.opaqueBlendFunc({ color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) }, () =>
-          //     this.drawCollections.renderTextureToScreen({
-          //       renderTexture: layer.framebuffer,
-          //     }),
-          //   )
-          // }
+          else {
+            this.drawCollections.opaqueBlendFunc({ color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) }, () =>
+              this.drawCollections.renderTextureToScreen({
+                renderTexture: layer.framebuffer,
+              }),
+            )
+          }
         })
       }
       for (const selection of this.selections) {

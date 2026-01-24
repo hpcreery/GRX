@@ -113,10 +113,6 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
         <Text>3D Perspective View</Text>
         <Switch checked={perspective3D} onChange={(event): void => setPerspective3D(event.currentTarget.checked)} />
       </Flex>
-      <Divider my="sm" />
-      <Alert variant="light" color="red" radius="lg" title="Alert title" icon={<IconAlertTriangleFilled />}>
-        WARNING! Enabling 3D Perspective View May Cause Feature Display Anomalies when zoomed too close. Use With Caution until Fully Supported.
-      </Alert>
     </>
   )
 }
