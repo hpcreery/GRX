@@ -1,7 +1,6 @@
 import { useEffect, useContext, JSX } from "react"
 import { Kbd, SegmentedControl } from "@mantine/core"
-import { IconBadge3d, IconPointerPin } from "@tabler/icons-react"
-// import { SnapMode, SNAP_MODES } from "@src/renderer/engine/types"
+import { IconBadge3d } from "@tabler/icons-react"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { actions } from "@src/contexts/Spotlight"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"

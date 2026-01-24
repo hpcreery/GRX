@@ -1,11 +1,9 @@
 import { useEffect, useContext, JSX } from "react"
-import { Text, Flex, Select, Switch, Divider, Kbd, Badge, Alert } from "@mantine/core"
+import { Text, Flex, Select, Switch, Divider, Kbd } from "@mantine/core"
 import {
   IconZoom,
   IconZoomScan,
   IconHexagonPlus,
-  IconAlertTriangleFilled,
-  // IconHexagonOff,
 } from "@tabler/icons-react"
 import { ColorBlend } from "@src/renderer/engine/types"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"

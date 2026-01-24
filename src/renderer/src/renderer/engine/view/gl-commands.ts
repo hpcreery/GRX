@@ -189,19 +189,6 @@ export interface TextureToScreenRendererAttributes {
   a_Vertex_Position: number[][]
 }
 
-export interface TextureToScreen3DRendererProps {
-  renderTexture: REGL.Framebuffer | REGL.Texture2D
-  transform3D: mat4
-  inverseTransform3D: mat4
-  zOffset: number
-}
-
-export interface TextureToScreen3DRendererUniforms {
-  u_RenderTexture: REGL.Framebuffer | REGL.Texture2D
-  u_Transform3D: mat4
-  u_ZOffset: number
-}
-
 export interface TextureToScreen3DRendererAttributes {
   a_Vertex_Position: number[][]
 }

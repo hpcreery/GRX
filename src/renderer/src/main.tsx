@@ -5,8 +5,8 @@ import { Notifications } from "@mantine/notifications"
 import { useLocalStorage } from "@mantine/hooks"
 import { ContextMenuProvider } from "mantine-contextmenu"
 import App from "./App"
-import DemoApp from "./renderer/DEMO"
-import NCDemo from '@lib/nc/DEMO'
+// import DemoApp from "./renderer/DEMO"
+// import NCDemo from '@lib/nc/DEMO'
 
 import { Spotlight } from "@mantine/spotlight"
 import { spotlightStore, actions } from "./contexts/Spotlight"
