@@ -22,7 +22,7 @@ import FullScreenQuad from "./../shaders/src/FullScreenQuad.vert"
 
 import { GridSettings, OriginRenderProps } from "../settings"
 
-import { mat4, vec2, vec4 } from "gl-matrix"
+import { vec2, vec4 } from "gl-matrix"
 
 import { settings } from "../settings"
 
