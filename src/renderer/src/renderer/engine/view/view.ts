@@ -144,7 +144,7 @@ export class ViewRenderer extends UpdateEventTarget {
       mat3.invert(this.transform.matrixInverse, this.transform.matrix)
 
       if (settings.ENABLE_3D) {
-        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, 1 / 1, 0, 1)
+        mat4.perspective(this.transform.matrix3D, (90 * Math.PI) / 180, width / height, 0, 1)
         // this little hack lets us move the shapes back so they dont get clipped by the near plane
         if (settings.PERSPECTIVE_3D) {
           mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [2, 2, 1])
@@ -152,7 +152,7 @@ export class ViewRenderer extends UpdateEventTarget {
         }
         mat4.rotateX(this.transform.matrix3D, this.transform.matrix3D, (rotateX * Math.PI) / 180)
         mat4.rotateY(this.transform.matrix3D, this.transform.matrix3D, (rotateY * Math.PI) / 180)
-        mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [1, 1, zoom])
+        mat4.scale(this.transform.matrix3D, this.transform.matrix3D, [width/height, 1, zoom])
       } else {
         mat4.identity(this.transform.matrix3D)
       }
