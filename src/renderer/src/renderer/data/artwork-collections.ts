@@ -886,7 +886,7 @@ class DatumTextBufferCollection extends UpdateEventTarget implements BufferColle
   create(shape: Shapes.DatumText): number {
     const index = this.datumTexts.push(shape)
     this.updateBuffers(index - 1) // Update the buffers for the newly created text
-    return index // Return the index of the newly created text
+    return index - 1 // Return the index of the newly created text
   }
 
   read(index: number): Shapes.DatumText {
