@@ -146,29 +146,33 @@ export abstract class EngineInterface extends DataInterface {
    * @param dpr Device Pixel Ratio
    */
   public static update_engine_bounding_box(box: DOMRect, dpr: number): void {
-    const width = box.width * dpr
-    const height = box.height * dpr
-    
+    // const width = box.width * dpr
+    // const height = box.height * dpr
+    box.width = box.width * dpr
+    box.height = box.height * dpr
+
     Engine.dpr = dpr
-    
+
     let boxChanged = false
-    if (Engine.boundingBox.width !== width || Engine.boundingBox.height !== height) {
-      boxChanged = true
+    // if (Engine.boundingBox.width !== width || Engine.boundingBox.height !== height) {
+    //   boxChanged = true
+    // }
+
+    for (const key in Engine.boundingBox) {
+      if (box[key] !== Engine.boundingBox[key]) {
+        boxChanged = true
+        break
+      }
     }
-    
-    Engine.boundingBox = {
-      ...box,
-      width,
-      height,
-    }
-    
+
+    Engine.boundingBox = box
+
     // Resize offscreen canvas to match DPI-scaled dimensions
-    Engine.offscreenCanvasGL.width = width
-    Engine.offscreenCanvasGL.height = height
+    Engine.offscreenCanvasGL.width = Engine.boundingBox.width
+    Engine.offscreenCanvasGL.height = Engine.boundingBox.height
     Engine.regl.poll()
-    
+
     if (boxChanged) {
-      console.log("Updated engine bounding box to", Engine.boundingBox)
       Engine.render()
     }
   }
@@ -185,7 +189,7 @@ export abstract class EngineInterface extends DataInterface {
     viewBox.x = (viewBox.x - Engine.boundingBox.x / dpr) * dpr
     viewBox.width = viewBox.width * dpr
     viewBox.height = viewBox.height * dpr
-    
+
     const view = this._get_view(viewId)
     view.updateViewBox(viewBox)
   }
