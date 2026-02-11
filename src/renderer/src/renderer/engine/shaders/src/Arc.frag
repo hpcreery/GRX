@@ -158,10 +158,10 @@ float draw(float dist, float pixel_size) {
 
 
 float arcDistMain(vec2 FragCoord) {
-  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, int(v_SymNum));
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, v_SymNum);
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, v_SymNum);
+  float t_Width = pullSymbolParameter(u_Parameters.width, v_SymNum);
+  float t_Height = pullSymbolParameter(u_Parameters.height, v_SymNum);
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
   // ? radius can be different bewtween these two

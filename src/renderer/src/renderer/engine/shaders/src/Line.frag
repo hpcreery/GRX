@@ -134,10 +134,10 @@ float draw(float dist, float pixel_size) {
 
 float lineDistMain(vec2 coord) {
   vec2 Center_Location = (v_Start_Location + v_End_Location) / 2.0;
-  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, int(v_SymNum));
-  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, int(v_SymNum));
-  float t_Width = pullSymbolParameter(u_Parameters.width, int(v_SymNum));
-  float t_Height = pullSymbolParameter(u_Parameters.height, int(v_SymNum));
+  float t_Symbol = pullSymbolParameter(u_Parameters.symbol, v_SymNum);
+  float t_Outer_Dia = pullSymbolParameter(u_Parameters.outer_dia, v_SymNum);
+  float t_Width = pullSymbolParameter(u_Parameters.width, v_SymNum);
+  float t_Height = pullSymbolParameter(u_Parameters.height, v_SymNum);
   float OD = max(t_Outer_Dia, max(t_Width, t_Height));
 
   float dX = v_Start_Location.x - v_End_Location.x;

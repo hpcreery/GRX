@@ -121,7 +121,7 @@ void main() {
     FragCoord = transformLocation(u_PointerPosition);
   }
 
-  float dist = drawShape(FragCoord, int(v_SymNum)) * v_ResizeFactor;
+  float dist = drawShape(FragCoord, v_SymNum) * v_ResizeFactor;
 
 
   // intuitive way to calculate the distance to the border of the shape at an angle/axis
@@ -129,8 +129,8 @@ void main() {
   // float y = 0.0;
   // float angle = 0.0;
   // float offset = dist;
-  // float offsetRight = drawShape(FragCoord + vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
-  // float offsetLeft = drawShape(FragCoord - vec2(cos(angle), sin(angle)) * 0.01, int(v_SymNum)) * v_ResizeFactor;
+  // float offsetRight = drawShape(FragCoord + vec2(cos(angle), sin(angle)) * 0.01, v_SymNum) * v_ResizeFactor;
+  // float offsetLeft = drawShape(FragCoord - vec2(cos(angle), sin(angle)) * 0.01, v_SymNum) * v_ResizeFactor;
   // float direction = sign(offsetLeft - offsetRight);
   // if (direction == 0.0) {
   //   direction = 1.0;
@@ -139,7 +139,7 @@ void main() {
   // for (int i = 0; i < 4; i += 1) {
   //   x = FragCoord.x + cos(angle) * offset * direction;
   //   y = FragCoord.y + sin(angle) * offset * direction;
-  //   offset += abs(drawShape(vec2(x, y), int(v_SymNum))) * v_ResizeFactor;
+  //   offset += abs(drawShape(vec2(x, y), v_SymNum)) * v_ResizeFactor;
   //   if (offset < 0.0) {
   //     break;
   //   }
@@ -154,8 +154,8 @@ void main() {
       }
       if (u_SnapMode == u_SnapModes.EDGE) {
         // vec2 direction = normalize(vec2(
-        //     (drawShape(FragCoord + vec2(1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, int(v_SymNum)) * v_ResizeFactor),
-        //     (drawShape(FragCoord + vec2(0, 1) * EPSILON, int(v_SymNum)) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, int(v_SymNum)) * v_ResizeFactor)
+        //     (drawShape(FragCoord + vec2(1, 0) * EPSILON, v_SymNum) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, v_SymNum) * v_ResizeFactor),
+        //     (drawShape(FragCoord + vec2(0, 1) * EPSILON, v_SymNum) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, v_SymNum) * v_ResizeFactor)
         // ));
         // direction = rotateCW(direction, radians(v_Rotation));
         // if (v_Mirror_X == 1.0) {

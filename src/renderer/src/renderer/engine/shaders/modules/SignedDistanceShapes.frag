@@ -656,7 +656,7 @@ float outerBorderMask(float dist, float width) {
 
 #pragma glslify: pullSymbolParameter = require(./PullSymbolParameter.frag,u_SymbolsTexture=u_SymbolsTexture,u_SymbolsTextureDimensions=u_SymbolsTextureDimensions)
 
-float drawShape(vec2 FragCoord, int SymNum) {
+float drawShape(vec2 FragCoord, float SymNum) {
 
   float t_Symbol = pullSymbolParameter(u_Parameters.symbol, SymNum);
   float t_Width = pullSymbolParameter(u_Parameters.width, SymNum);
