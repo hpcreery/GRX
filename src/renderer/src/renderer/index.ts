@@ -70,10 +70,10 @@ export class Renderer {
     },
     {
       set: (target, name, value): boolean => {
+        target[name] = value
         if (name === "hidpi") {
           this.resize()
         }
-        target[name] = value
         return true
       },
     },
@@ -105,7 +105,7 @@ export class Renderer {
     this.engine.init(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
       attributes,
       container: this.CONTAINER.getBoundingClientRect(),
-      // dpr: this.canvasSettings.dpr,
+      dpr: this.canvasSettings.dpr,
     }).then(() => {
       this.resize()
     })
@@ -155,13 +155,18 @@ export class Renderer {
 
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement("canvas")
-    canvas.width = this.CONTAINER.clientWidth
-    canvas.height = this.CONTAINER.clientHeight
+    const dpr = this.canvasSettings.dpr
+    const width = this.CONTAINER.clientWidth
+    const height = this.CONTAINER.clientHeight
+    
+    // Set physical pixel dimensions for HiDPI (before transferControlToOffscreen)
+    canvas.width = width * dpr
+    canvas.height = height * dpr
 
-    canvas.style.width = String(this.CONTAINER.clientWidth) + "px"
-    canvas.style.height = String(this.CONTAINER.clientHeight) + "px"
+    // Set CSS display size
+    canvas.style.width = String(width) + "px"
+    canvas.style.height = String(height) + "px"
     canvas.style.position = "absolute"
-    // canvas.style.border = "1px solid white"
     canvas.style.top = "0px"
     canvas.style.left = "0px"
     canvas.style.pointerEvents = "none"
@@ -172,16 +177,20 @@ export class Renderer {
 
   private resize(): void {
     const { width, height } = this.CONTAINER.getBoundingClientRect()
-    this.canvasGL.style.width = String(width) + "px"
-    this.canvasGL.style.height = String(height) + "px"
-    this.engine.interface.update_engine_bounding_box(this.CONTAINER.getBoundingClientRect())
+    const dpr = this.canvasSettings.dpr
+
+    console.log("Resizing canvas to", width, height, "with DPR", dpr)
+    
+    // Only update engine bounding box and DPR - engine will resize offscreen canvas
+    this.engine.interface.update_engine_bounding_box(this.CONTAINER.getBoundingClientRect(), dpr)
+    
     this.managedViews.forEach((node) => {
       this.engine.interface.update_view_box_from_dom_rect(node.id, node.getBoundingClientRect())
     })
   }
 
   public async pollViews(): Promise<void> {
-    this.resize()
+    // this.resize()
     requestAnimationFrame(() => this.pollViews())
   }
 
