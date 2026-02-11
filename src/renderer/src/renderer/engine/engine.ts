@@ -143,25 +143,34 @@ export abstract class EngineInterface extends DataInterface {
   /**
    * Update engine bounding box
    * @param box Bounding Box (DOMRect)
+   * @param dpr Device Pixel Ratio
    */
-  public static update_engine_bounding_box(box: DOMRect): void {
-    // Engine.boundingBox.width = box.width * dpr
-    // Engine.boundingBox.height = box.height * dpr
+  public static update_engine_bounding_box(box: DOMRect, dpr: number): void {
+    const width = box.width * dpr
+    const height = box.height * dpr
+    
+    Engine.dpr = dpr
+    
     let boxChanged = false
-    for (const key in Engine.boundingBox) {
-      if (box[key] !== Engine.boundingBox[key]) {
-        boxChanged = true
-        break
-      }
+    if (Engine.boundingBox.width !== width || Engine.boundingBox.height !== height) {
+      boxChanged = true
     }
-    Engine.boundingBox = box
-    Engine.offscreenCanvasGL.width = Engine.boundingBox.width
-    Engine.offscreenCanvasGL.height = Engine.boundingBox.height
+    
+    Engine.boundingBox = {
+      ...box,
+      width,
+      height,
+    }
+    
+    // Resize offscreen canvas to match DPI-scaled dimensions
+    Engine.offscreenCanvasGL.width = width
+    Engine.offscreenCanvasGL.height = height
     Engine.regl.poll()
+    
     if (boxChanged) {
+      console.log("Updated engine bounding box to", Engine.boundingBox)
       Engine.render()
     }
-    // Engine.updateTransform()
   }
 
   /**
@@ -170,8 +179,13 @@ export abstract class EngineInterface extends DataInterface {
    * @param viewBox view box (DomRect)
    */
   public static update_view_box_from_dom_rect(viewId: string, viewBox: DOMRect): void {
-    viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
-    viewBox.x = viewBox.x - Engine.boundingBox.x
+    const dpr = Engine.dpr
+    // Convert DOM coordinates to canvas coordinates with DPI scaling
+    viewBox.y = Engine.boundingBox.height - viewBox.bottom * dpr + Engine.boundingBox.y
+    viewBox.x = (viewBox.x - Engine.boundingBox.x / dpr) * dpr
+    viewBox.width = viewBox.width * dpr
+    viewBox.height = viewBox.height * dpr
+    
     const view = this._get_view(viewId)
     view.updateViewBox(viewBox)
   }
@@ -463,6 +477,7 @@ export abstract class EngineInterface extends DataInterface {
 export interface EngineInitParams {
   attributes?: WebGLContextAttributes | undefined
   container: DOMRect
+  dpr: number
 }
 
 export abstract class Engine {
@@ -472,6 +487,7 @@ export abstract class Engine {
   private static universe: REGL.DrawCommand<REGL.DefaultContext>
   public static views: Map<string, ViewRenderer> = new Map()
   public static boundingBox: DOMRect
+  public static dpr: number = 1
   public static pointer: Pointer = {
     x: 0,
     y: 0,
@@ -483,12 +499,11 @@ export abstract class Engine {
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement
 
-  public static init(offscreenCanvasGL: OffscreenCanvas, { attributes, container }: EngineInitParams): void {
+  public static init(offscreenCanvasGL: OffscreenCanvas, { attributes, container, dpr }: EngineInitParams): void {
     Engine.offscreenCanvasGL = offscreenCanvasGL
+    Engine.dpr = dpr
     Engine.boundingBox = {
       ...container,
-      // width: container.width * dpr,
-      // height: container.height * dpr,
     }
 
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
