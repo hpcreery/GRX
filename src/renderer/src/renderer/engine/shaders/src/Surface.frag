@@ -150,8 +150,11 @@ void main() {
 
   // v_ContourPolarity = Island (1) or Hole (0)
   // v_SurfacePolarity = Positive (1) or Negative (0)
-  float polarity = bool(v_ContourPolarity) ^^ bool(v_SurfacePolarity) ? 0.0 : 1.0;
-  polarity = bool(polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
+  float polarity = 1.0 - abs(v_ContourPolarity - v_SurfacePolarity);
+  polarity = 1.0 - abs(polarity - u_Polarity);
+  // this is equivalent to:
+  // float polarity = bool(v_ContourPolarity) ^^ bool(v_SurfacePolarity) ? 0.0 : 1.0;
+  // polarity = bool(polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
   // float polarity = bool(1) ^^ bool(1) ? 0.0 : 1.0;
   // first | second | result
   // -----------------------

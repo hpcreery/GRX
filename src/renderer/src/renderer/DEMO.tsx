@@ -1248,13 +1248,14 @@ function DemoApp(): JSX.Element {
       project,
     })
 
-    DataInterface._import_file(gdsiiFile, "GDSII", {
-      step: step2,
-      project,
-    })
+    // DataInterface._import_file(gdsiiFile, "GDSII", {
+    //   step: step2,
+    //   project,
+    // })
 
     // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, MAMA_STEP_AND_REPEAT)
-    // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, SURFACE_RECORDS_ARRAY)
+    DataInterface.create_layer(project, "surfaces")
+    DataInterface.create_step_layer_artwork(project, step1, 'surfaces', SURFACE_RECORDS_ARRAY)
     // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, POLYLINE_RECORDS_ARRAY)
 
     render.addManagedView(box2Ref.current, {
