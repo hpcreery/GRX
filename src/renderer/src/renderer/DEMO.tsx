@@ -10,7 +10,7 @@ import { POINTER_MODES, POINTER_MODES_MAP } from "./engine/types"
 // import * as BufferCollection from './engine/buffer-collection'
 
 // import gdsiiFile from '@lib/gdsii/testdata/various.gds?arraybuffer'
-import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
+// import gdsiiFile from "@lib/gdsii/testdata/inv.gds2?arraybuffer"
 
 import cmp from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.cmp?arraybuffer"
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
