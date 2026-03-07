@@ -1,0 +1,63 @@
+appId: com.grx.app
+productName: GRX
+# override the productName in the app's package.json to avoid issues with electron-builder
+extraMetadata:
+  name: GRX
+directories:
+  app: .
+  buildResources: resources/icons
+  output: dist-desktop
+files:
+  - "!**/.vscode/*"
+  - "!src/*"
+  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - "!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}"
+  - "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
+  - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+asarUnpack:
+  - resources/**
+afterSign: electron/notarize.js
+win:
+  executableName: grx
+  target:
+    target: nsis
+    arch:
+      - arm64
+      - x64
+nsis:
+  artifactName: ${name}-${arch}.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+mac:
+  entitlementsInherit: electron/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  target:
+    - target: default
+      arch:
+        - arm64
+        - x64
+dmg:
+  artifactName: ${name}-${arch}.${ext}
+linux:
+  target:
+    - AppImage
+    - deb
+    # - snap
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: ${name}-${arch}.${ext}
+deb:
+  artifactName: ${name}-${arch}.${ext}
+# snap:
+#   artifactName: ${name}.${ext}
+#   publish: []
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://grx.creery.com/auto-updates

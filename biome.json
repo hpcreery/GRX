@@ -1,0 +1,92 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "**",
+      "!!**/out",
+      "!!**/dist",
+      "!!**/dist-desktop",
+      "!!**/.vite",
+      "!!**/.turbo",
+      "!!**/pnpm-lock.yaml",
+      "!!**/LICENSE.md",
+      "!!**/tsconfig.json",
+      "!!**/tsconfig.*.json",
+      "!!**/*.frag",
+      "!!**/*.vert"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 150,
+    "bracketSpacing": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "security": { "noDangerouslySetInnerHtmlWithChildren": "error" },
+      "correctness": {
+        "useExhaustiveDependencies": "off",
+        "useUniqueElementIds": "off",
+        "noVoidTypeReturn": "off"
+      },
+      "complexity": {
+        "noImportantStyles": "off",
+        "noBannedTypes": "off",
+        "useOptionalChain": "off",
+        "noStaticOnlyClass": "off",
+        "noUselessTypeConstraint": "error",
+        "useLiteralKeys": "off"
+      },
+      "suspicious": {
+        "noDoubleEquals": "off",
+        "noArrayIndexKey": "off",
+        "noControlCharactersInRegex": "off",
+        "noExplicitAny": "error",
+        "useIterableCallbackReturn": "off",
+        "noAssignInExpressions": "off",
+        "noImplicitAnyLet": "off",
+        "noRedeclare": "off"
+      },
+      "a11y": {
+        "noNoninteractiveTabindex": "off",
+        "noStaticElementInteractions": "off"
+      },
+      "performance": { "noAccumulatingSpread": "off" },
+      "style": { "noNonNullAssertion": "off" }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "jsxQuoteStyle": "double",
+      "quoteProperties": "asNeeded",
+      "trailingCommas": "all",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always",
+      "bracketSameLine": false,
+      "attributePosition": "auto",
+      "bracketSpacing": true
+    }
+  },
+  "html": { "formatter": { "selfCloseVoidElements": "always" } },
+
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "composite": true,
+  },
+  "extends": "@grx/typescript-config/vite.json",
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.web.json"
+    }
+  ],
+}
+
+
+// {
+//   // "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+//   "extends": "@grx/typescript-config/vite.json",
+//   "compilerOptions": {
+//     // "lib": ["ESNext", "DOM", "DOM.Iterable"],
+//     "outDir": "dist/types",
+//     "composite": true,
+//     "jsx": "react-jsx",
+//     "baseUrl": ".",
+//     "paths": {
+//       "@src/*": ["src/*"],
+//     },
+//     "types": ["vite/client"]
+//   },
+//   "include": ["src/env.d.ts", "**/*", "**/*.tsx"],
+// }

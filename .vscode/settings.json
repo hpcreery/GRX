@@ -1,16 +1,15 @@
 {
+  "biome.enabled": true,
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "cSpell.words": ["Comlink", "Pixi", "uncull"],
-  "vue.codeActions.enabled": false,
   "files.eol": "\n",
-  "python.analysis.typeCheckingMode": "basic"
+  "git.followTagsWhenSync": true
 }

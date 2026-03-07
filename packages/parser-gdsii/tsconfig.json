@@ -1,0 +1,11 @@
+{
+  "extends": "@grx/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "target": "ESNext",
+    "allowJs": true,
+  },
+  "include": ["./src"],
+  "exclude": ["node_modules", "dist"]
+}
