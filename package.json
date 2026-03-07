@@ -1,6 +1,9 @@
 {
   "name": "grx-turborepo",
-  "version": "0.0.1-rc.14",
+  "version": "4.1.7",
+  "description": "GPU-Accelerated Web Based EDA Manufacturing Artwork Viewer",
+  "author": "Hunter Creery",
+  "homepage": "https://github.com/hpcreery/GRX/blob/master/README.md",
   "private": true,
   "scripts": {
     "prepare": "husky",
