@@ -26,8 +26,8 @@ export default function InfoModal(): JSX.Element | null {
         variant="default"
         onClick={open}
         style={{
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           position: "absolute",
           bottom: 10,
           right: 10,

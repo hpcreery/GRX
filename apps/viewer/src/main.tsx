@@ -1,4 +1,4 @@
-import { createTheme, MantineProvider } from "@mantine/core"
+import { createTheme, MantineProvider, rem } from "@mantine/core"
 import { useLocalStorage } from "@mantine/hooks"
 import { Notifications } from "@mantine/notifications"
 import { Spotlight } from "@mantine/spotlight"
@@ -16,6 +16,13 @@ import "@mantine/notifications/styles.css"
 import "@mantine/spotlight/styles.css"
 import "@mantine/code-highlight/styles.css"
 import type { JSX } from "react"
+
+import cozetteFont from "./assets/cozette.ttf?url"
+
+const f = new FontFace("cozette", `url(${cozetteFont})`)
+f.load().then((font) => {
+  document.fonts.add(font)
+})
 
 function Main(): JSX.Element | null {
   // BufferCollection.test()
@@ -37,6 +44,54 @@ function Main(): JSX.Element | null {
       dark: ["#C2C2C2", "#A7A7A7", "#919191", "#5E5E5E", "#393939", "#2D2D2D", "#101010", "#0f0f0f", "#090909", "#000000"],
     },
     other: {},
+    // fontFamily: "JetBrains Mono, monospace",
+    // fontFamilyMonospace: "JetBrains Mono, monospace",
+    // headings: { 
+    //   fontFamily: "JetBrains Mono, monospace",
+    // },
+    // fontSizes: {
+    //   xs: rem(10),
+    //   sm: rem(12),
+    //   md: rem(14),
+    //   lg: rem(16),
+    //   xl: rem(18),
+    // },
+
+    fontFamily: "cozette",
+    fontFamilyMonospace: "cozette",
+    headings: { 
+      fontFamily: "cozette",
+      sizes: {
+        h1: { fontSize: '13px', fontWeight: 'normal', lineHeight: '1.3' },
+        h2: { fontSize: '13px', fontWeight: 'normal', lineHeight: '1.35' },
+        h3: { fontSize: '13px', fontWeight: 'normal', lineHeight: '1.4' },
+        h4: { fontSize: '13px', fontWeight: 'normal', lineHeight: '1.45' },
+        h5: { fontSize: '13px', fontWeight: 'normal', lineHeight: '1.5' },
+      },
+      fontWeight: 'normal',
+    },
+    fontSizes: {
+      xs: '13px',
+      sm: '13px',
+      md: '13px',
+      lg: '13px',
+      xl: '13px',
+    },
+    lineHeights: {
+      xs: '1.3',
+      sm: '1.35',
+      md: '1.4',
+      lg: '1.45',
+      xl: '1.5',
+    },
+    fontSmoothing: false,
+    spacing: {
+      xs: '6px',
+      sm: '8px',
+      md: '10px',
+      lg: '12px',
+      xl: '14px',
+    },
   })
 
   return (

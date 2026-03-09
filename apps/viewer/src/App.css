@@ -7,6 +7,14 @@ body {
 html,
 body {
   overscroll-behavior-x: none;
+  -webkit-font-smoothing: none !important;
+  font-weight: normal !important;
+}
+
+* {
+  -webkit-font-smoothing: none !important;
+  font-weight: normal !important;
+  font-size: 13px !important;
 }
 
 #root {
@@ -46,3 +54,7 @@ body {
   mask: var(--mask);
   backdrop-filter: blur(30px) !important;
 }
+
+/* svg {
+  shape-rendering: crispEdges;
+} */

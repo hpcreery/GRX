@@ -67,7 +67,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     menuItems.push({
       key: "clear measurements",
       title: "Clear Measurements",
-      icon: <IconTrashX stroke={1.5} size={18} color={theme.colors.red[7]} />,
+      icon: <IconTrashX  size={18} color={theme.colors.red[7]} />,
       onClick: async (): Promise<void> => {
         renderer.engine.interface.clear_view_measurements("main")
       },
@@ -237,7 +237,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     {
       title: "Clear Measurements",
       key: "1",
-      icon: <IconTrashX stroke={1.5} size={18} style={{ color: theme.colors.red[7] }} />,
+      icon: <IconTrashX  size={18} style={{ color: theme.colors.red[7] }} />,
       onClick: async (): Promise<void> => {
         const engine = await renderer.engine
         engine.interface.clear_view_measurements("main")
@@ -276,7 +276,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                   setPointerMode(PointerMode.MOVE)
                 }}
               >
-                <IconArrowsMove size={18} />
+                <IconArrowsMove size={18}   />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={1000} withArrow label="Select">
@@ -289,7 +289,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                   setPointerMode(PointerMode.SELECT)
                 }}
               >
-                <IconClick size={18} />
+                <IconClick size={18}   />
               </ActionIcon>
             </Tooltip>
             <Tooltip openDelay={1000} withArrow label="Measure">
@@ -303,7 +303,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 }}
                 onContextMenu={showContextMenu(contextItems)}
               >
-                <IconRulerMeasure size={18} />
+                <IconRulerMeasure size={18}  />
               </ActionIcon>
             </Tooltip>
           </ActionIcon.Group>
@@ -319,7 +319,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                   engine.interface.update_view_zoom_fit_artwork("main")
                 }}
               >
-                <IconZoomReset size={18} />
+                <IconZoomReset size={18}   />
               </ActionIcon>
             </Tooltip>
             {/* SNAP */}
@@ -327,7 +327,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
               <Popover.Target>
                 <Tooltip openDelay={1000} withArrow label="Snap Settings">
                   <ActionIcon size="lg" radius="sm" variant="default">
-                    <IconPointerPin size={18} />
+                    <IconPointerPin size={18}   />
                   </ActionIcon>
                 </Tooltip>
               </Popover.Target>
@@ -344,7 +344,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
               <Popover.Target>
                 <Tooltip openDelay={1000} withArrow label="3D Settings">
                   <ActionIcon size="lg" radius="sm" variant="default">
-                    <IconBadge3d size={18} />
+                    <IconBadge3d size={18}   />
                   </ActionIcon>
                 </Tooltip>
               </Popover.Target>
@@ -367,7 +367,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                   setOutlineMode(!outlineMode)
                 }}
               >
-                {outlineMode ? <IconCube3dSphere size={18} /> : <IconCube size={18} />}
+                {outlineMode ? <IconCube3dSphere size={18}   /> : <IconCube size={18}   />}
               </ActionIcon>
             </Tooltip>
             {/* SKELETON MODE */}
@@ -381,26 +381,26 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                   setSkeletonMode(!skeletonMode)
                 }}
               >
-                {skeletonMode ? <IconBone size={18} /> : <IconBoneOff size={18} />}
+                {skeletonMode ? <IconBone size={18}   /> : <IconBoneOff size={18}   />}
               </ActionIcon>
             </Tooltip>
             {/* GRID SETTINGS */}
             <Tooltip openDelay={1000} withArrow label="Grid Settings">
               <ActionIcon size="lg" radius="sm" variant="default" onClick={gridSettingsModalHandlers.open}>
-                <IconGrid4x4 size={18} />
+                <IconGrid4x4 size={18}   />
               </ActionIcon>
             </Tooltip>
             {/* ENGINE SETTINGS */}
             <Tooltip openDelay={1000} withArrow label="Engine Settings">
               <ActionIcon size="lg" radius="sm" variant="default" onClick={engineSettingsModalHandlers.open}>
-                <IconEngine size={18} />
+                <IconEngine size={18}   />
               </ActionIcon>
             </Tooltip>
           </ActionIcon.Group>
           {/* SETTINGS */}
           <Tooltip openDelay={1000} withArrow label="Settings">
             <ActionIcon size="lg" radius="sm" variant="default" onClick={open}>
-              <IconAdjustments size={18} />
+              <IconAdjustments size={18}   />
             </ActionIcon>
           </Tooltip>
         </Group>

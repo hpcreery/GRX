@@ -33,12 +33,12 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
         style={{
           position: "absolute",
           bottom: 10,
-          right: 60,
+          right: 50,
           pointerEvents: "all",
-          width: 275,
-          height: 40,
+          width: 'auto',
+          height: 'auto',
         }}
-        padding={6.5}
+        padding={10}
       >
         <Group grow ml="xs" mr="xs" wrap="nowrap">
           <Group wrap="nowrap">
