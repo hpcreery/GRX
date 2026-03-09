@@ -353,6 +353,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         }}
         style={{
           pointerEvents: "all",
+          padding: 10,
+          paddingRight: 0,
         }}
       >
         <Card
@@ -360,9 +362,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           radius="md"
           withBorder
           style={{
-            width: "-webkit-fill-available",
-            height: "-webkit-fill-available",
-            margin: 10,
+            width: "100%",
+            height: "100%",
             marginRight: 0,
             pointerEvents: "all",
             overflowY: "auto",
