@@ -15,6 +15,7 @@ body {
   -webkit-font-smoothing: none !important;
   font-weight: normal !important;
   font-size: 13px !important;
+  letter-spacing: 1px !important;
 }
 
 #root {
