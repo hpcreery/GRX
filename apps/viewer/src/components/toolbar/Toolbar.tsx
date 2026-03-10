@@ -262,7 +262,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
           right: 10,
           pointerEvents: "all",
         }}
-        padding={4}
+        padding='xs'
       >
         <Group gap="5">
           <ActionIcon.Group>

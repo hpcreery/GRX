@@ -22,16 +22,18 @@ export default function InfoModal(): JSX.Element | null {
   return (
     <>
       <ActionIcon
-        size="lg"
+      size="lg"
+      radius='sm'
         variant="default"
         onClick={open}
         style={{
-          width: 40,
-          height: 40,
-          position: "absolute",
-          bottom: 10,
-          right: 10,
+          // width: '3rem',
+          // height: '3rem',
+          // position: "absolute",
+          // bottom: 10,
+          // right: 10,
           pointerEvents: "all",
+          // padding: '1rem'
         }}
         mod={["transparent"]}
       >
