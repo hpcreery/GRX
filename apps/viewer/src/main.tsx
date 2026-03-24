@@ -64,11 +64,11 @@ function Main(): JSX.Element | null {
       xl: '1.4' ,
     },
     spacing: {
-      xs: rem(4),
-      sm: rem(6),
-      md: rem(8),
-      lg: rem(10),
-      xl: rem(12),
+      xs: rem(6),
+      sm: rem(8),
+      md: rem(10),
+      lg: rem(12),
+      xl: rem(14),
     },
     fontSmoothing: false,
   })
