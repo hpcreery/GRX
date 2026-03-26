@@ -173,8 +173,6 @@ export abstract class EngineInterface extends DataInterface {
     // viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
     viewBox.y = Engine.boundingBox.height - (viewBox.y + viewBox.height) + Engine.boundingBox.y
     viewBox.x = viewBox.x - Engine.boundingBox.x
-    viewBox.width = viewBox.width
-    viewBox.height = viewBox.height
 
     const view = EngineInterface._get_view(viewId)
     view.updateViewBox(viewBox)

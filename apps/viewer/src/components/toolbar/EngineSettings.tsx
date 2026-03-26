@@ -44,7 +44,6 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
       SHOW_DATUMS: showDatums,
-
     })
   }, [colorBlend, zoomToCursor, showDatums])
 

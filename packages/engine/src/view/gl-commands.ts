@@ -304,7 +304,7 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray,
 
     uniforms: {
       u_Texture: texture,
-      u_TextureDimensions: vec2.scale(vec2.create(),cozetteFontInfo.textureSize, dpr),
+      u_TextureDimensions: vec2.scale(vec2.create(), cozetteFontInfo.textureSize, dpr),
       u_CharDimensions: vec2.scale(vec2.create(), cozetteFontInfo.fontSize, dpr),
       u_CharSpacing: vec2.scale(vec2.create(), cozetteFontInfo.fontSpacing, dpr),
       u_DPR: dpr,

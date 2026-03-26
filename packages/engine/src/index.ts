@@ -5,7 +5,7 @@ import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import type { Engine, QuerySelection } from "./engine"
 import EngineWorker from "./engine?worker"
 import { PointerMode } from "./types"
-import { UID, scaleDOMRect } from "./utils"
+import { scaleDOMRect, UID } from "./utils"
 
 export * as constants from "./constants"
 export * as data from "./data"
@@ -98,7 +98,6 @@ export class Renderer {
   private engineWorker: Worker
   public engine: Comlink.Remote<typeof Engine>
   public interface: Comlink.Remote<typeof DataInterface>
-  
 
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
@@ -252,7 +251,7 @@ export class Renderer {
     element.onwheel = async (e): Promise<void> => {
       const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
       const settings = await engine.interface.read_engine_settings()
-      
+
       const moveScale = this.canvasSettings.dpr
       const mouseX = e.x * moveScale
       const mouseY = e.y * moveScale
@@ -321,13 +320,12 @@ export class Renderer {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
-      
+
       const moveScale = this.canvasSettings.dpr
       const mouseX = e.clientX * moveScale
       const mouseY = e.clientY * moveScale
       const mouseMovementX = e.movementX * moveScale
       const mouseMovementY = e.movementY * moveScale
-      
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"

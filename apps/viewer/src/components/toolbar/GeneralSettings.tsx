@@ -1,5 +1,4 @@
 import { ColorPicker, Divider, Flex, Group, Radio, Switch, Text, useMantineColorScheme, useMantineTheme } from "@mantine/core"
-import { useLocalStorage } from "@mantine/hooks"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { ThemeConfigProvider } from "@src/contexts/ThemeContext"
 import chroma from "chroma-js"
