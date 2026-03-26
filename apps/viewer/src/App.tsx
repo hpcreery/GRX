@@ -98,22 +98,22 @@ export default function App(): JSX.Element | null {
           >
             <LayerSidebar />
             <Toolbar />
-              <Card
-                mod={["transparent"]}
-                withBorder
-                style={{
-                  width: "unset",
-                  height: "unset",
-                  position: "absolute",
-                  bottom: 10,
-                  right: 10,
-                  pointerEvents: "all",
-                }}
-                padding='xs'
-              >
-                <Group gap="5">
-              <MousePosition />
-              <InfoModal />
+            <Card
+              mod={["transparent"]}
+              withBorder
+              style={{
+                width: "unset",
+                height: "unset",
+                position: "absolute",
+                bottom: 10,
+                right: 10,
+                pointerEvents: "all",
+              }}
+              padding="xs"
+            >
+              <Group gap="5">
+                <MousePosition />
+                <InfoModal />
               </Group>
             </Card>
             <FeatureSidebar />

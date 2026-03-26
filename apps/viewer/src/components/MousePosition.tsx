@@ -1,5 +1,5 @@
 import { type PointerEvent, PointerEvents, utils } from "@grx/engine"
-import { Card, Group, Text, Tooltip } from "@mantine/core"
+import { Group, Text, Tooltip } from "@mantine/core"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import React, { type JSX } from "react"
 
@@ -42,19 +42,19 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
         // padding='lg'
         radius='sm'
       > */}
-      
-        <Group grow ml="xl" mr="xl" wrap="nowrap">
-          <Group wrap="nowrap">
-            <Text c="dimmed">X: </Text>
-            {(x / utils.baseUnitsConversionFactor(units)).toFixed(3)}
-            {units}
-          </Group>
-          <Group wrap="nowrap">
-            <Text c="dimmed">Y: </Text>
-            {(y / utils.baseUnitsConversionFactor(units)).toFixed(3)}
-            {units}
-          </Group>
+
+      <Group grow ml="xl" mr="xl" wrap="nowrap">
+        <Group wrap="nowrap">
+          <Text c="dimmed">X: </Text>
+          {(x / utils.baseUnitsConversionFactor(units)).toFixed(3)}
+          {units}
         </Group>
+        <Group wrap="nowrap">
+          <Text c="dimmed">Y: </Text>
+          {(y / utils.baseUnitsConversionFactor(units)).toFixed(3)}
+          {units}
+        </Group>
+      </Group>
       {/* </Card> */}
     </Tooltip>
   )

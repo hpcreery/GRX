@@ -22,8 +22,8 @@ export default function InfoModal(): JSX.Element | null {
   return (
     <>
       <ActionIcon
-      size="lg"
-      radius='sm'
+        size="lg"
+        radius="sm"
         variant="default"
         onClick={open}
         style={{

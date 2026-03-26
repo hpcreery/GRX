@@ -39,7 +39,7 @@ function Main(): JSX.Element | null {
     other: {},
     fontFamily: "'IBM Plex Mono', monospace",
     fontFamilyMonospace: "'IBM Plex Mono', monospace",
-    headings: { 
+    headings: {
       fontFamily: "'IBM Plex Mono', monospace",
       // sizes: {
       //   h1: { fontSize: rem(10), lineHeight: '1.0'  },
@@ -57,11 +57,11 @@ function Main(): JSX.Element | null {
     //   xl: rem(16),
     // },
     lineHeights: {
-      xs: '1.1' ,
-      sm: '1.2' ,
-      md: '1.25',
-      lg: '1.3' ,
-      xl: '1.4' ,
+      xs: "1.1",
+      sm: "1.2",
+      md: "1.25",
+      lg: "1.3",
+      xl: "1.4",
     },
     spacing: {
       xs: rem(4),
@@ -73,13 +73,13 @@ function Main(): JSX.Element | null {
     // fontSmoothing: false,
     components: {
       Modal: {
-        styles: (theme) => ({
+        styles: (_theme) => ({
           header: {
             minHeight: rem(1),
           },
         }),
-      }
-    }
+      },
+    },
   })
 
   return (
