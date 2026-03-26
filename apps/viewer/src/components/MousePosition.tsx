@@ -27,20 +27,23 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
 
   return (
     <Tooltip label={`Units: ${units}`} position="left" withArrow>
-      <Card
+      {/* <Card
         mod={["transparent"]}
         withBorder
         style={{
-          position: "absolute",
-          bottom: 10,
-          right: 60,
+          // position: "absolute",
+          // bottom: 10,
+          // right: 60,
           pointerEvents: "all",
-          width: 275,
-          height: 40,
+          // width: 275,
+          // height: 40,
+          // height: '3rem'
         }}
-        padding={6.5}
-      >
-        <Group grow ml="xs" mr="xs" wrap="nowrap">
+        // padding='lg'
+        radius='sm'
+      > */}
+      
+        <Group grow ml="xl" mr="xl" wrap="nowrap">
           <Group wrap="nowrap">
             <Text c="dimmed">X: </Text>
             {(x / utils.baseUnitsConversionFactor(units)).toFixed(3)}
@@ -52,7 +55,7 @@ export default function MousePosition(_props: MousePositionProps): JSX.Element |
             {units}
           </Group>
         </Group>
-      </Card>
+      {/* </Card> */}
     </Tooltip>
   )
 }

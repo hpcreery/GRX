@@ -1,7 +1,7 @@
 import "./App.css"
 import type { types } from "@grx/engine"
 import { Renderer } from "@grx/engine"
-import { Box, Center, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from "@mantine/core"
+import { Box, Card, Center, Group, Loader, Skeleton, useMantineColorScheme, useMantineTheme } from "@mantine/core"
 import { useLocalStorage } from "@mantine/hooks"
 import { IconPhotoDown } from "@tabler/icons-react"
 import chroma from "chroma-js"
@@ -98,8 +98,24 @@ export default function App(): JSX.Element | null {
           >
             <LayerSidebar />
             <Toolbar />
-            <InfoModal />
-            <MousePosition />
+              <Card
+                mod={["transparent"]}
+                withBorder
+                style={{
+                  width: "unset",
+                  height: "unset",
+                  position: "absolute",
+                  bottom: 10,
+                  right: 10,
+                  pointerEvents: "all",
+                }}
+                padding='xs'
+              >
+                <Group gap="5">
+              <MousePosition />
+              <InfoModal />
+              </Group>
+            </Card>
             <FeatureSidebar />
           </Box>
         </EditorConfigProvider.Provider>

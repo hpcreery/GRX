@@ -1,4 +1,4 @@
-import { createTheme, MantineProvider } from "@mantine/core"
+import { createTheme, MantineProvider, rem } from "@mantine/core"
 import { useLocalStorage } from "@mantine/hooks"
 import { Notifications } from "@mantine/notifications"
 import { Spotlight } from "@mantine/spotlight"
@@ -37,6 +37,49 @@ function Main(): JSX.Element | null {
       dark: ["#C2C2C2", "#A7A7A7", "#919191", "#5E5E5E", "#393939", "#2D2D2D", "#101010", "#0f0f0f", "#090909", "#000000"],
     },
     other: {},
+    fontFamily: "'IBM Plex Mono', monospace",
+    fontFamilyMonospace: "'IBM Plex Mono', monospace",
+    headings: { 
+      fontFamily: "'IBM Plex Mono', monospace",
+      // sizes: {
+      //   h1: { fontSize: rem(10), lineHeight: '1.0'  },
+      //   h2: { fontSize: rem(11), lineHeight: '1.2'  },
+      //   h3: { fontSize: rem(12), lineHeight: '1.25' },
+      //   h4: { fontSize: rem(14), lineHeight: '1.3'  },
+      //   h5: { fontSize: rem(16), lineHeight: '1.5'  },
+      // },
+    },
+    // fontSizes: {
+    //   xs: rem(10),
+    //   sm: rem(11),
+    //   md: rem(12),
+    //   lg: rem(14),
+    //   xl: rem(16),
+    // },
+    lineHeights: {
+      xs: '1.1' ,
+      sm: '1.2' ,
+      md: '1.25',
+      lg: '1.3' ,
+      xl: '1.4' ,
+    },
+    spacing: {
+      xs: rem(4),
+      sm: rem(8),
+      md: rem(10),
+      lg: rem(12),
+      xl: rem(16),
+    },
+    // fontSmoothing: false,
+    components: {
+      Modal: {
+        styles: (theme) => ({
+          header: {
+            minHeight: rem(1),
+          },
+        }),
+      }
+    }
   })
 
   return (
