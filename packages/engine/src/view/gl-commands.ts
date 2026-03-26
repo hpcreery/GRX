@@ -1,5 +1,5 @@
 import * as Shapes from "@src/data/shape/shape"
-import { type vec2, vec4 } from "gl-matrix"
+import { vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { fontInfo as cozetteFontInfo } from "../data/shape/text/cozette/font"
 import { type GridSettings, type OriginRenderProps, settings } from "../settings"
@@ -46,6 +46,7 @@ interface DatumTextUniforms {
   u_TextureDimensions: vec2
   u_CharDimensions: vec2
   u_CharSpacing: vec2
+  u_DPR: number
 }
 
 type DatumUniforms = {}
@@ -251,11 +252,11 @@ export const ReglRenderers: TReglRenderers = {
   renderOrigin: undefined,
 }
 
-export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray): void {
+export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray, dpr: number): void {
   const texture = regl.texture({
     data,
-    width: cozetteFontInfo.textureSize[0],
-    height: cozetteFontInfo.textureSize[1],
+    width: cozetteFontInfo.textureSize[0] * dpr,
+    height: cozetteFontInfo.textureSize[1] * dpr,
     format: "rgba",
     type: "uint8",
     mag: "nearest",
@@ -303,9 +304,10 @@ export function initializeFontRenderer(regl: REGL.Regl, data: Uint8ClampedArray)
 
     uniforms: {
       u_Texture: texture,
-      u_TextureDimensions: cozetteFontInfo.textureSize,
-      u_CharDimensions: cozetteFontInfo.fontSize,
-      u_CharSpacing: cozetteFontInfo.fontSpacing,
+      u_TextureDimensions: vec2.scale(vec2.create(),cozetteFontInfo.textureSize, dpr),
+      u_CharDimensions: vec2.scale(vec2.create(), cozetteFontInfo.fontSize, dpr),
+      u_CharSpacing: vec2.scale(vec2.create(), cozetteFontInfo.fontSpacing, dpr),
+      u_DPR: dpr,
     },
 
     instances: regl.prop<SurfaceAttachments, "length">("length"),

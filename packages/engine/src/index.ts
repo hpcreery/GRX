@@ -82,6 +82,7 @@ export class Renderer {
         if (name === "hidpi") {
           this.resize()
         }
+        this.sendFontData()
         return true
       },
     },
@@ -402,26 +403,28 @@ export class Renderer {
   private sendFontData(): void {
     const f = new FontFace("cozette", `url(${cozetteFont})`)
     f.load().then((font) => {
+      const scale = this.canvasSettings.dpr
       document.fonts.add(font)
       const canvas = document.createElement("canvas")
       const context = canvas.getContext("2d")
       if (!context) throw new Error("Could not get 2d context")
-      canvas.width = cozetteFontInfo.textureSize[0]
-      canvas.height = cozetteFontInfo.textureSize[1]
-      context.font = `${cozetteFontInfo.fontSize[1]}px cozette`
+      canvas.width = cozetteFontInfo.textureSize[0] * scale
+      canvas.height = cozetteFontInfo.textureSize[1] * scale
+      context.font = `${cozetteFontInfo.fontSize[1] * scale}px cozette`
       context.fillStyle = "white"
       context.textBaseline = "top"
-      context.lineWidth = 3
+      context.lineWidth = 3 * scale
       context.strokeStyle = "black"
       const characters = Object.keys(cozetteFontInfo.characterLocation)
       for (let i = 0; i < characters.length; i++) {
         const char = characters[i]
-        context.strokeText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
-        context.fillText(char, cozetteFontInfo.characterLocation[char].x, cozetteFontInfo.characterLocation[char].y)
+        context.strokeText(char, cozetteFontInfo.characterLocation[char].x * scale, cozetteFontInfo.characterLocation[char].y * scale)
+        context.fillText(char, cozetteFontInfo.characterLocation[char].x * scale, cozetteFontInfo.characterLocation[char].y * scale)
       }
 
-      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0], cozetteFontInfo.textureSize[1])
-      this.engine.initializeFontRenderer(imageData.data)
+      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0] * scale, cozetteFontInfo.textureSize[1] * scale)
+      console.log("Font data sent to engine", imageData)
+      this.engine.initializeFontRenderer(imageData.data, this.canvasSettings.dpr)
 
       // download font image sample
       // const canvasUrl = canvas.toDataURL("image/png", 1);

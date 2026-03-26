@@ -15,6 +15,7 @@ uniform float u_PixelSize;
 uniform vec2 u_CharDimensions;
 uniform vec2 u_CharSpacing;
 uniform bool u_Perspective3D;
+uniform float u_DPR;
 
 varying vec2 v_Texcoord;
 
@@ -35,5 +36,5 @@ void main() {
   gl_Position = vec4(Transformed_Position3D.xy + (a_VertexPosition/u_Resolution) * u_CharDimensions * (4.0/u_PixelSize) + character_move, 0, Transformed_Position3D.w);
 
   // Pass the texcoord to the fragment shader.
-  v_Texcoord = (a_Texcoord / u_TextureDimensions) + (a_VertexPosition * vec2(1.0,-1.0) * (u_CharDimensions / u_TextureDimensions)) + vec2(0, u_CharDimensions.y/u_TextureDimensions.y);
+  v_Texcoord = ((a_Texcoord * u_DPR) / u_TextureDimensions) + (a_VertexPosition * vec2(1.0,-1.0) * (u_CharDimensions / u_TextureDimensions)) + vec2(0, u_CharDimensions.y/u_TextureDimensions.y);
 }

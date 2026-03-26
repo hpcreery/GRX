@@ -574,8 +574,8 @@ export abstract class Engine {
     }
   }
 
-  public static initializeFontRenderer(fontData: Uint8ClampedArray): void {
-    initializeFontRenderer(Engine.regl, fontData)
+  public static initializeFontRenderer(fontData: Uint8ClampedArray, dpr: number): void {
+    initializeFontRenderer(Engine.regl, fontData, dpr)
   }
 
   public static renderDispatch = (): void => Engine.render()
