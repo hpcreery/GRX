@@ -22,6 +22,10 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
     key: "engine:SHOW_DATUMS",
     defaultValue: true,
   })
+  const [useHiDPI, setUseHiDPI] = useLocalStorage<boolean>({
+    key: "engine:USE_HIDPI",
+    defaultValue: renderer.canvasSettings.hidpi,
+  })
 
   async function getEngineSettings(): Promise<void> {
     const settings = await renderer.engine.interface.read_engine_settings()
@@ -32,6 +36,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
 
   useEffect(() => {
     getEngineSettings()
+    renderer.canvasSettings.hidpi = useHiDPI
   }, [])
 
   useEffect(() => {
@@ -39,8 +44,13 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
       SHOW_DATUMS: showDatums,
+
     })
   }, [colorBlend, zoomToCursor, showDatums])
+
+  useEffect(() => {
+    renderer.canvasSettings.hidpi = useHiDPI
+  }, [useHiDPI])
 
   useEffect(() => {
     actions.push({
@@ -96,6 +106,16 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Show Datums</Text>
         <Switch checked={showDatums} onChange={(event): void => setShowDatums(event.currentTarget.checked)} />
+      </Flex>
+      <Divider my="sm" />
+      <Flex align="center" style={{ width: "100%" }} justify="space-between">
+        <Text>HiDPI</Text>
+        <Switch
+          defaultChecked={useHiDPI}
+          onChange={(event): void => {
+            setUseHiDPI(event.currentTarget.checked)
+          }}
+        />
       </Flex>
     </>
   )

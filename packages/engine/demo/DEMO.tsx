@@ -1212,6 +1212,7 @@ function DemoApp(): JSX.Element {
     })
 
     const settings = render.engine.interface.read_engine_settings()
+    render.canvasSettings.hidpi = true
     settings.then((setting) => {
       setOutlineMode(setting.OUTLINE_MODE)
       setSkeletonMode(setting.SKELETON_MODE)

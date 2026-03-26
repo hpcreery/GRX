@@ -5,7 +5,7 @@ import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import type { Engine, QuerySelection } from "./engine"
 import EngineWorker from "./engine?worker"
 import { PointerMode } from "./types"
-import { UID } from "./utils"
+import { UID, scaleDOMRect } from "./utils"
 
 export * as constants from "./constants"
 export * as data from "./data"
@@ -97,6 +97,7 @@ export class Renderer {
   private engineWorker: Worker
   public engine: Comlink.Remote<typeof Engine>
   public interface: Comlink.Remote<typeof DataInterface>
+  
 
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
@@ -114,7 +115,6 @@ export class Renderer {
       .init(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
         attributes,
         container: this.CONTAINER.getBoundingClientRect(),
-        dpr: this.canvasSettings.dpr,
       })
       .then(() => {
         this.resize()
@@ -187,15 +187,14 @@ export class Renderer {
 
   private resize(): void {
     const { width, height } = this.CONTAINER.getBoundingClientRect()
-    const dpr = this.canvasSettings.dpr
 
     this.canvasGL.style.width = `${String(width)}px`
     this.canvasGL.style.height = `${String(height)}px`
     // Only update engine bounding box and DPR - engine will resize offscreen canvas
-    this.engine.interface.update_engine_bounding_box(this.CONTAINER.getBoundingClientRect(), dpr)
+    this.engine.interface.update_engine_bounding_box(scaleDOMRect(this.CONTAINER.getBoundingClientRect(), this.canvasSettings.dpr))
 
     this.managedViews.forEach((node) => {
-      this.engine.interface.update_view_box_from_dom_rect(node.id, node.getBoundingClientRect())
+      this.engine.interface.update_view_box_from_dom_rect(node.id, scaleDOMRect(node.getBoundingClientRect(), this.canvasSettings.dpr))
     })
   }
 
@@ -223,10 +222,10 @@ export class Renderer {
      * @param e MouseEvent
      * @returns [x, y] coordinates relative to the canvas. Y axis is flipped. [0,0] is bottom-left corner. Similar to WebGL coordinates.
      */
-    function getMouseCanvasCoordinates(e: MouseEvent): [number, number] {
+    const getMouseCanvasCoordinates = (e: MouseEvent): [number, number] => {
       // Get the mouse position relative to the canvas
-      const { x, y, height } = element.getBoundingClientRect()
-      return [e.clientX - x, height - (e.clientY - y)]
+      const { x, y, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
+      return [e.clientX * this.canvasSettings.dpr - x, height - (e.clientY * this.canvasSettings.dpr - y)]
     }
 
     /**
@@ -245,21 +244,23 @@ export class Renderer {
       this.pointerCache.splice(index, 1)
     }
 
-    await engine.interface.update_view_box_from_dom_rect(element.id, element.getBoundingClientRect())
+    await engine.interface.update_view_box_from_dom_rect(element.id, scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr))
 
     element.style.cursor = "grab"
 
     element.onwheel = async (e): Promise<void> => {
-      const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+      const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
       const settings = await engine.interface.read_engine_settings()
+      
       const moveScale = this.canvasSettings.dpr
+      const mouseX = e.x * moveScale
+      const mouseY = e.y * moveScale
+      const mouseScrollY = e.deltaY * moveScale
 
       if (settings.ZOOM_TO_CURSOR) {
-        // const [x, y] = await getMouseWorldCoordinates(element, e)
-        // engine.interface.zoom_at_point(element.id, x, y, e.deltaY * moveScale)
-        engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, e.deltaY * moveScale)
+        engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, mouseScrollY)
       } else {
-        engine.interface.zoom_at_point(element.id, width / 2, height / 2, e.deltaY * moveScale)
+        engine.interface.zoom_at_point(element.id, width / 2, height / 2, mouseScrollY)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -273,7 +274,6 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
         const features = await engine.interface.read_view_select(element.id, [xcanvas, ycanvas])
-        // console.log("features", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,
@@ -320,7 +320,13 @@ export class Renderer {
       sendPointerEvent(e, PointerEvents.POINTER_MOVE)
       const index = this.pointerCache.findIndex((cachedEv) => cachedEv.pointerId === e.pointerId)
       this.pointerCache[index] = e
+      
       const moveScale = this.canvasSettings.dpr
+      const mouseX = e.clientX * moveScale
+      const mouseY = e.clientY * moveScale
+      const mouseMovementX = e.movementX * moveScale
+      const mouseMovementY = e.movementY * moveScale
+      
 
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
@@ -345,18 +351,18 @@ export class Renderer {
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
           const settings = await engine.interface.read_engine_settings()
-          const { x: offsetX, y: offsetY, width, height } = element.getBoundingClientRect()
+          const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
           if (settings.ZOOM_TO_CURSOR) {
-            engine.interface.zoom_at_point(element.id, (e.x - offsetX) * moveScale, (e.y - offsetY) * moveScale, zoomFactor * moveScale)
+            engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, zoomFactor)
           } else {
             engine.interface.zoom_at_point(element.id, width / 2, height / 2, zoomFactor)
           }
-          engine.interface.view_move(element.id, e.movementX / this.pointerCache.length, e.movementY / this.pointerCache.length)
+          engine.interface.view_move(element.id, mouseMovementX / this.pointerCache.length, mouseMovementY / this.pointerCache.length)
         } else {
           if (e.buttons == 4) {
-            await engine.interface.view_rotate(element.id, e.movementY * moveScale, e.movementX * moveScale)
+            await engine.interface.view_rotate(element.id, mouseMovementY, mouseMovementX)
           } else {
-            await engine.interface.view_move(element.id, e.movementX * moveScale, e.movementY * moveScale)
+            await engine.interface.view_move(element.id, mouseMovementX, mouseMovementY)
           }
         }
       }
