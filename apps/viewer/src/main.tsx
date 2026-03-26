@@ -37,10 +37,10 @@ function Main(): JSX.Element | null {
       dark: ["#C2C2C2", "#A7A7A7", "#919191", "#5E5E5E", "#393939", "#2D2D2D", "#101010", "#0f0f0f", "#090909", "#000000"],
     },
     other: {},
-    fontFamily: "Red Hat Mono, monospace",
-    fontFamilyMonospace: "Red Hat Mono, monospace",
+    fontFamily: "'IBM Plex Mono', monospace",
+    fontFamilyMonospace: "'IBM Plex Mono', monospace",
     headings: { 
-      fontFamily: "Red Hat Mono, monospace",
+      fontFamily: "'IBM Plex Mono', monospace",
       // sizes: {
       //   h1: { fontSize: rem(10), lineHeight: '1.0'  },
       //   h2: { fontSize: rem(11), lineHeight: '1.2'  },
@@ -64,13 +64,22 @@ function Main(): JSX.Element | null {
       xl: '1.4' ,
     },
     spacing: {
-      xs: rem(6),
+      xs: rem(4),
       sm: rem(8),
       md: rem(10),
       lg: rem(12),
-      xl: rem(14),
+      xl: rem(16),
     },
-    fontSmoothing: false,
+    // fontSmoothing: false,
+    components: {
+      Modal: {
+        styles: (theme) => ({
+          header: {
+            minHeight: rem(1),
+          },
+        }),
+      }
+    }
   })
 
   return (
