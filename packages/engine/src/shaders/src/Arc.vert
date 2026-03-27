@@ -97,6 +97,10 @@ void main() {
   float dX = a_Start_Location.x - a_End_Location.x;
   float dY = a_Start_Location.y - a_End_Location.y;
   float Rotation = atan(dY, dX);
+  if (a_Start_Location == a_End_Location) {
+    Rotation = 0.0;
+  }
+
 
   float angle_dot = acos(dot(normalize(a_Start_Location - a_Center_Location), normalize(a_End_Location - a_Center_Location)));
   if (a_Start_Location == a_End_Location) {

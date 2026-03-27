@@ -27,6 +27,7 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
 import cmp from "../src/data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
+import gto from "../src/data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1239,11 +1240,11 @@ function DemoApp(): JSX.Element {
       project,
     })
 
-    // DataInterface._import_file(sol, "RS-274X", {
-    //   layer: "sol",
-    //   step: step1,
-    //   project,
-    // })
+    DataInterface._import_file(gto, "RS-274X", {
+      layer: "gto",
+      step: step1,
+      project,
+    })
 
     // DataInterface._import_file(nested_aperture_macro, "RS-274X", {
     //   layer: "nested-aperture-macro",
