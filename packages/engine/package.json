@@ -12,23 +12,20 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./step/layer/shape/text/cozette/CozetteVector.ttf": "./src/step/layer/shape/text/cozette/CozetteVector.ttf"
+    }
   },
+  "files": ["dist"],
   "dependencies": {
     "@grx/parser-gdsii": "workspace:*",
     "@hpcreery/tracespace-parser": "^5.0.4",
     "@hpcreery/tracespace-plotter": "^5.0.3",
     "@hpcreery/tracespace-renderer": "^5.0.3",
-    "@mantine/core": "^7.17.8",
-    "@mantine/hooks": "^7.17.8",
     "@tracespace/parser": "^5.0.0-next.0",
     "@tracespace/plotter": "^5.0.0-alpha.0",
     "@types/unist": "^3.0.3",
     "chevrotain": "^11.0.3",
-    "chokidar": "^5.0.0",
     "comlink": "^4.4.2",
     "dxf-parser": "^1.1.2",
     "earcut": "^3.0.2",
@@ -38,7 +35,6 @@
     "react-dom": "^19.2.4",
     "regl": "^2.1.1",
     "typescript-event-target": "^1.1.1",
-    "vitest": "^4.0.18",
     "webgl-utils": "^1.0.1",
     "zod": "^4.1.12"
   },
@@ -46,6 +42,10 @@
     "typescript": "^5"
   },
   "devDependencies": {
+    "chokidar": "^5.0.0",
+    "vitest": "^4.0.18",
+    "@mantine/core": "^7.17.8",
+    "@mantine/hooks": "^7.17.8",
     "@grx/typescript-config": "workspace:*",
     "@rollup/plugin-typescript": "^12.3.0",
     "@types/earcut": "^3.0.0",

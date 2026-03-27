@@ -49,6 +49,10 @@ export default defineConfig({
   ],
   worker: {
     format: "es",
+    rollupOptions: {
+      // Workers must bundle all deps — they run as blob URLs where bare imports can't resolve
+      external: [],
+    },
     plugins: () => [
       // comlink(),
       // typescript(),

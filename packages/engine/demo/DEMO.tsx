@@ -26,6 +26,8 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
 
+import cmp from "../src/data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
+
 const N_PADS = 0
 const N_LINES = 0
 const N_ARCS = 0
@@ -1231,11 +1233,11 @@ function DemoApp(): JSX.Element {
     // DataInterface.create_layer(project, layer_cmp)
     // DataInterface.create_layer(project, layer_sol)
 
-    // DataInterface._import_file(cmp, "RS-274X", {
-    //   layer: "cmp",
-    //   step: step1,
-    //   project,
-    // })
+    DataInterface._import_file(cmp, "RS-274X", {
+      layer: "cmp",
+      step: step1,
+      project,
+    })
 
     // DataInterface._import_file(sol, "RS-274X", {
     //   layer: "sol",
