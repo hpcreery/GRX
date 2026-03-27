@@ -229,12 +229,6 @@ importers:
       '@hpcreery/tracespace-renderer':
         specifier: ^5.0.3
         version: 5.0.3
-      '@mantine/core':
-        specifier: ^7.17.8
-        version: 7.17.8(@mantine/hooks@7.17.8(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      '@mantine/hooks':
-        specifier: ^7.17.8
-        version: 7.17.8(react@19.2.4)
       '@tracespace/parser':
         specifier: ^5.0.0-next.0
         version: 5.0.0-next.0
@@ -247,9 +241,6 @@ importers:
       chevrotain:
         specifier: ^11.0.3
         version: 11.2.0
-      chokidar:
-        specifier: ^5.0.0
-        version: 5.0.0
       comlink:
         specifier: ^4.4.2
         version: 4.4.2
@@ -280,9 +271,6 @@ importers:
       typescript-event-target:
         specifier: ^1.1.1
         version: 1.1.2
-      vitest:
-        specifier: ^4.0.18
-        version: 4.0.18(@types/node@25.3.3)(jiti@2.6.1)(tsx@4.21.0)
       webgl-utils:
         specifier: ^1.0.1
         version: 1.0.1
@@ -293,6 +281,12 @@ importers:
       '@grx/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@mantine/core':
+        specifier: ^7.17.8
+        version: 7.17.8(@mantine/hooks@7.17.8(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@mantine/hooks':
+        specifier: ^7.17.8
+        version: 7.17.8(react@19.2.4)
       '@rollup/plugin-typescript':
         specifier: ^12.3.0
         version: 12.3.0(rollup@4.59.0)(tslib@2.8.1)(typescript@5.9.3)
@@ -308,6 +302,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^5.1.4
         version: 5.1.4(vite@7.3.1(@types/node@25.3.3)(jiti@2.6.1)(tsx@4.21.0))
+      chokidar:
+        specifier: ^5.0.0
+        version: 5.0.0
       glob:
         specifier: ^11.0.3
         version: 11.1.0
@@ -335,6 +332,9 @@ importers:
       vite-plugin-glsl:
         specifier: ^1.5.4
         version: 1.5.5(@rollup/pluginutils@5.3.0(rollup@4.59.0))(esbuild@0.26.0)(vite@7.3.1(@types/node@25.3.3)(jiti@2.6.1)(tsx@4.21.0))
+      vitest:
+        specifier: ^4.0.18
+        version: 4.0.18(@types/node@25.3.3)(jiti@2.6.1)(tsx@4.21.0)
 
   packages/parser-gdsii:
     dependencies:
