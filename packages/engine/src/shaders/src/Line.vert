@@ -89,7 +89,7 @@ void main() {
 
   float dX = a_Start_Location.x - a_End_Location.x;
   float dY = a_Start_Location.y - a_End_Location.y;
-  float Rotation = atan(dY/dX);
+  float Rotation = atan(dY, dX);
 
   vec2 SizedPosition = a_Vertex_Position * (Size / 2.0);
   vec2 RotatedPostion = SizedPosition * rotateCW(Rotation);
