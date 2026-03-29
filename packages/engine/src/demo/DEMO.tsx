@@ -1,10 +1,10 @@
 import React, { type JSX, useMemo } from "react"
 import "./demo.css"
 import { Box, Button, SegmentedControl, Switch } from "@mantine/core"
-import { type PointerEvent, PointerEvents, Renderer } from "../src"
-import * as Shapes from "../src/data/shape/shape"
-import * as Symbols from "../src/data/shape/symbol/symbol"
-import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP } from "../src/types"
+import { type PointerEvent, PointerEvents, Renderer } from ".."
+import * as Shapes from "../data/shape/shape"
+import * as Symbols from "../data/shape/symbol/symbol"
+import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP } from "../types"
 
 // import * as BufferCollection from './engine/buffer-collection'
 
@@ -15,7 +15,7 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import drd from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.drd?arraybuffer"
 // import gko from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.gko?arraybuffer"
 // import plc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.plc?arraybuffer"
-// import pls from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.pls?arraybuffer"
+// import pls from "@lib/gerber/testdata/boa rds/bus-pirate/BusPirate-v3.6a-SSOP.pls?arraybuffer"
 // import sol from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sol?arraybuffer"
 // import stc from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.stc?arraybuffer"
 // import sts from "@lib/gerber/testdata/boards/bus-pirate/BusPirate-v3.6a-SSOP.sts?arraybuffer"
@@ -24,10 +24,11 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import multi_polarity_over_existing from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-existing.gbr?raw'
 // import multi_polarity_over_self from '@lib/gerber/testdata/gerbers/step-repeats/multi-polarity-over-self.gbr?raw'
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
-// import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"
+// import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"a
 
-import cmp from "../src/data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
-import gto from "../src/data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
+import cmp from "../data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
+import gto from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
+import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1240,8 +1241,8 @@ function DemoApp(): JSX.Element {
       project,
     })
 
-    DataInterface._import_file(gto, "RS-274X", {
-      layer: "gto",
+    DataInterface._import_file(gtl, "RS-274X", {
+      layer: "gtl",
       step: step1,
       project,
     })
