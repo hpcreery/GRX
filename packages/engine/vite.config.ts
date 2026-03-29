@@ -39,7 +39,9 @@ export default defineConfig({
   },
   plugins: [
     // comlink(),
-    typescript(),
+    typescript({
+      tsconfig: resolve("tsconfig.json"),
+    }),
     arraybuffer(),
     glslify({
       compress: false,

@@ -3,7 +3,7 @@ import type { DataInterface } from "./data/interface"
 import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import type { Engine, QuerySelection } from "./engine"
-import EngineWorker from "./engine?worker"
+import EngineWorker from "./engine?worker&inline"
 import { PointerMode } from "./types"
 import { scaleDOMRect, UID } from "./utils"
 

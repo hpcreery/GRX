@@ -9,7 +9,7 @@ import arraybuffer from "vite-plugin-arraybuffer"
 
 export default defineConfig({
   base: "./",
-  root: resolve("demo/"),
+  root: resolve("src/demo/"),
   cacheDir: ".vite",
   resolve: {
     alias: {

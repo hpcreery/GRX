@@ -7,6 +7,7 @@
     "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
+    "noEmit": false,
     "types": [
       "vite-plugin-glsl/ext",
       "vite-plugin-arraybuffer/types"
