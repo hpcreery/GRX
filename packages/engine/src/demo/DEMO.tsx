@@ -1683,7 +1683,7 @@ function DemoApp(): JSX.Element {
         style={{
           // background: "white",
           // pointerEvents: "none",
-          // zIndex: 100,
+          zIndex: 0,
           width: "100%",
           height: "100%",
           position: "absolute",
@@ -1763,14 +1763,24 @@ function DemoApp(): JSX.Element {
         />
       </div>
       {renderer ? (
+        <>
+                  <REGLStatsWidget renderer={renderer} />
+          <MouseCoordinates engine={renderer} key="coordinates" />
         <Box
           style={{
-            width: "100px",
+            width: "200px",
+            height: "100%",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 100,
+            pointerEvents: "all",
           }}
         >
           {/* <StatsWidget /> */}
-          <REGLStatsWidget renderer={renderer} />
-          <MouseCoordinates engine={renderer} key="coordinates" />
+
+            
+          
           <Button
             onClick={async (): Promise<void> => {
               const layers = await renderer.interface.read_layers_list(project)
@@ -1862,6 +1872,7 @@ function DemoApp(): JSX.Element {
             )
           })}
         </Box>
+        </>
       ) : null}
     </>
   )

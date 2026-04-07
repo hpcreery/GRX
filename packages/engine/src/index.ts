@@ -180,7 +180,7 @@ export class Renderer {
     canvas.style.top = "0px"
     canvas.style.left = "0px"
     canvas.style.pointerEvents = "none"
-    canvas.style.zIndex = "100"
+    canvas.style.zIndex = "0"
     this.CONTAINER.appendChild(canvas)
     return canvas
   }
