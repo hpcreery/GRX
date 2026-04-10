@@ -27,7 +27,7 @@ jobs:
 
   executables:
     needs: changelog
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
