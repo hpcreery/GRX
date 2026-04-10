@@ -1764,114 +1764,114 @@ function DemoApp(): JSX.Element {
       </div>
       {renderer ? (
         <>
-                  <REGLStatsWidget renderer={renderer} />
+          <REGLStatsWidget renderer={renderer} />
           <MouseCoordinates engine={renderer} key="coordinates" />
-        <Box
-          style={{
-            width: "200px",
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 100,
-            pointerEvents: "all",
-          }}
-        >
-          {/* <StatsWidget /> */}
+          <Box
+            style={{
+              width: "200px",
+              height: "100%",
+              position: "absolute",
+              top: 0,
+              left: 0,
+              zIndex: 100,
+              pointerEvents: "all",
+            }}
+          >
+            {/* <StatsWidget /> */}
 
-            
-          
-          <Button
-            onClick={async (): Promise<void> => {
-              const layers = await renderer.interface.read_layers_list(project)
-              setLayers(layers)
-              layers.map((l) => renderer.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random()]))
-            }}
-          >
-            Randomize Colors
-          </Button>
-          <Button
-            onClick={async (): Promise<void> => {
-              renderer.engine.interface.update_view_zoom_fit_artwork("box1")
-            }}
-          >
-            Zoom Fit
-          </Button>
-          <Button onClick={async (): Promise<void> => renderer.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
-            (0,0)
-          </Button>
-          <br />
-          Outline Mode
-          <Switch
-            checked={outlineMode}
-            onChange={async (e): Promise<void> => {
-              renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: e.target.checked })
-              setOutlineMode(e.target.checked)
-              const layers = await renderer.interface.read_layers_list(project)
-              setLayers(layers)
-            }}
-          />
-          Skeleton Mode
-          <Switch
-            checked={skeletonMode}
-            onChange={async (e): Promise<void> => {
-              renderer.engine.interface.set_engine_settings({ SKELETON_MODE: e.target.checked })
-              setSkeletonMode(e.target.checked)
-              const layers = await renderer.interface.read_layers_list(project)
-              setLayers(layers)
-            }}
-          />
-          Zoom To Cursor
-          <Switch
-            checked={zoomToCursor}
-            onChange={(e): void => {
-              renderer.engine.interface.set_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
-              setZoomToCursor(e.target.checked)
-            }}
-          />
-          3D View
-          <Switch
-            checked={enable3d}
-            onChange={(e): void => {
-              renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
-              setEnable3d(e.target.checked)
-            }}
-          />
-          3D Perspective
-          <Switch
-            checked={perspective3D}
-            onChange={(e): void => {
-              renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: e.target.checked })
-              setPerspective3D(e.target.checked)
-            }}
-          />
-          Mouse Mode
-          <SegmentedControl data={[...POINTER_MODES]} onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)} />
-          Snap Mode
-          <SegmentedControl
-            data={[...SNAP_MODES]}
-            onChange={(mode) => {
-              renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
-            }}
-          />
-          {layers.map((layer, i) => {
-            return (
-              <div key={i}>
-                {layer}
-                <Switch
-                  // defaultChecked={layer.visible}
-                  onChange={async (e): Promise<void> => {
-                    renderer.interface.read_steps_list(project).then((allSteps) => {
-                      allSteps.map((step) => {
-                        renderer.engine.interface.update_view_layer_visibility(step, layer, e.target.checked)
+
+
+            <Button
+              onClick={async (): Promise<void> => {
+                const layers = await renderer.interface.read_layers_list(project)
+                setLayers(layers)
+                layers.map((l) => renderer.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random()]))
+              }}
+            >
+              Randomize Colors
+            </Button>
+            <Button
+              onClick={async (): Promise<void> => {
+                renderer.engine.interface.update_view_zoom_fit_artwork("box1")
+              }}
+            >
+              Zoom Fit
+            </Button>
+            <Button onClick={async (): Promise<void> => renderer.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
+              (0,0)
+            </Button>
+            <br />
+            Outline Mode
+            <Switch
+              checked={outlineMode}
+              onChange={async (e): Promise<void> => {
+                renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: e.target.checked })
+                setOutlineMode(e.target.checked)
+                const layers = await renderer.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            Skeleton Mode
+            <Switch
+              checked={skeletonMode}
+              onChange={async (e): Promise<void> => {
+                renderer.engine.interface.set_engine_settings({ SKELETON_MODE: e.target.checked })
+                setSkeletonMode(e.target.checked)
+                const layers = await renderer.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            Zoom To Cursor
+            <Switch
+              checked={zoomToCursor}
+              onChange={(e): void => {
+                renderer.engine.interface.set_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
+                setZoomToCursor(e.target.checked)
+              }}
+            />
+            3D View
+            <Switch
+              checked={enable3d}
+              onChange={(e): void => {
+                renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
+                setEnable3d(e.target.checked)
+              }}
+            />
+            3D Perspective
+            <Switch
+              checked={perspective3D}
+              onChange={(e): void => {
+                renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: e.target.checked })
+                setPerspective3D(e.target.checked)
+              }}
+            />
+            Mouse Mode
+            <SegmentedControl data={[...POINTER_MODES]} onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)} />
+            Snap Mode
+            <SegmentedControl
+              data={[...SNAP_MODES]}
+              onChange={(mode) => {
+                renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
+              }}
+            />
+            {layers.map((layer, i) => {
+              return (
+                <div key={i}>
+                  {layer}
+                  <Switch
+                    // defaultChecked={layer.visible}
+                    onChange={async (e): Promise<void> => {
+                      renderer.interface.read_steps_list(project).then((allSteps) => {
+                        allSteps.map((step) => {
+                          renderer.engine.interface.update_view_layer_visibility(step, layer, e.target.checked)
+                        })
                       })
-                    })
-                  }}
-                />
-              </div>
-            )
-          })}
-        </Box>
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </Box>
         </>
       ) : null}
     </>

@@ -122,6 +122,11 @@ export abstract class EngineInterface extends DataInterface {
     Engine.render()
   }
 
+  /**
+   * Get a view by ID
+   * @param viewId View ID
+   * @returns ViewRenderer instance
+   */
   private static _get_view(viewId: string): ViewRenderer {
     if (!Engine.views.has(viewId)) throw new Error(`View ${viewId} not found`)
     return Engine.views.get(viewId)!

@@ -1,4 +1,4 @@
-# grx-plugin-gdsii
+# @grx/parser-gdsii
 
 To install dependencies:
 

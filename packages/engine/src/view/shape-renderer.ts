@@ -204,19 +204,19 @@ export class ShapeRenderer extends UpdateEventTarget {
     })
   }
 
-  /**
-   * Converts the pointer applying the current transform
-   * Does not mutate the original pointer, returns a new pointer
-   * @param pointer vec2 - the pointer to transform
-   * @returns vec2 - the transformed pointer
-   */
-  protected transformPointer(pointer: vec2): vec2 {
-    const pointerTransform = new ShapeTransform()
-    Object.assign(pointerTransform, this.transform)
-    pointerTransform.update(mat3.create())
-    const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
-    return newPointer
-  }
+  // /**
+  //  * Converts the pointer applying the current transform
+  //  * Does not mutate the original pointer, returns a new pointer
+  //  * @param pointer vec2 - the pointer to transform
+  //  * @returns vec2 - the transformed pointer
+  //  */
+  // protected transformPointer(pointer: vec2): vec2 {
+  //   const pointerTransform = new ShapeTransform()
+  //   Object.assign(pointerTransform, this.transform)
+  //   pointerTransform.update(mat3.create())
+  //   const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
+  //   return newPointer
+  // }
 
   // /**
   //  * Converts the point applying the current transform
@@ -302,27 +302,17 @@ export class ShapeRenderer extends UpdateEventTarget {
 
     const distData = this.distanceQueryRaw
     const distances: ShapeDistance[] = []
-    // let closestIndex: number | undefined = undefined
     for (let i = 0; i < distData.length; i += 4) {
+      
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      // console.log("distance query", {
-      //   i: i / 4,
-      //   bit: distData[i + 3],
-      //   distance: distData[i],
-      //   // shape: this.artwork.read(i / 4),
-      // })
       const distance = distData[i]
-      // distance *= this.transform.scale
 
-      // const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
       const direction = vec2.fromValues(
         this.distanceRightQueryRaw[i] - this.distanceLeftQueryRaw[i],
         this.distanceUpQueryRaw[i] - this.distanceDownQueryRaw[i],
       )
       vec2.normalize(direction, direction)
-      // the reason for the division by scale is that the distance is in the transformed space, so we need to scale it back to the original space
-      // vec2.scale(direction, direction, 1 / this.transform.scale)
 
       // sanity check for if the distances of the four directions are the same
       let validDistance = true
@@ -335,18 +325,11 @@ export class ShapeRenderer extends UpdateEventTarget {
       }
 
       distances.push({
-        // shape: this.image[i / 4],
         shape: this.artwork.read(i / 4),
         direction: validDistance ? direction : undefined,
         distance: validDistance ? distance : undefined,
         children: [],
       })
-      // if (closestIndex == undefined) {
-      //   closestIndex = i
-      // }
-      // if (distance < distData[closestIndex]) {
-      //   closestIndex = i
-      // }
     }
 
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
