@@ -1,13 +1,16 @@
+/** biome-ignore-all assist/source/organizeImports: grouped imports */
 import type * as Shapes from "@src/data/shape/shape"
+import { type RoundSymbol, STANDARD_SYMBOLS_MAP, type StandardSymbol } from "@src/data/shape/symbol"
 import { FeatureTypeIdentifier } from "@src/types"
 import { describe, expect, it } from "vitest"
 import { NCLexer, NCToShapesVisitor, parser } from "./parser"
 
 // ── Fixture imports (loaded as raw text strings by Vite) ─────────────────────
-import arcRouteDrl from "../../gerber/testdata/gerbers/drill/arc-route.drl?raw"
-import hitDrl from "../../gerber/testdata/gerbers/drill/hit.drl?raw"
-import linearRouteDrl from "../../gerber/testdata/gerbers/drill/linear-route.drl?raw"
-import slotDrl from "../../gerber/testdata/gerbers/drill/slot.drl?raw"
+
+import arcRouteDrl from "../testdata/generic/arc-route.drl?raw"
+import hitDrl from "../testdata/generic/hit.drl?raw"
+import linearRouteDrl from "../testdata/generic/linear-route.drl?raw"
+import slotDrl from "../testdata/generic/slot.drl?raw"
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +54,10 @@ describe("fixture: hit.drl — single drill hit", () => {
   it("PAD symbol outer diameter is 0.5 inches", () => {
     const { visitor } = parseAndVisit(hitDrl)
     const pad = visitor.result.find((s) => s.type === FeatureTypeIdentifier.PAD) as Shapes.Pad
-    expect(pad.symbol.outer_dia).toBeCloseTo(0.5)
+    expect(pad.symbol).toBeDefined()
+    const symbol = pad.symbol as StandardSymbol
+    expect(symbol.symbol).toBe(STANDARD_SYMBOLS_MAP.Round)
+    expect((pad.symbol as RoundSymbol).outer_dia).toBeCloseTo(0.5)
   })
 
   it("final state is INCH units with TZ zero suppression", () => {
@@ -70,9 +76,7 @@ describe("fixture: slot.drl — G85 canned slot", () => {
 
   it("produces exactly one canned-slot LINE", () => {
     const { visitor } = parseAndVisit(slotDrl)
-    const lines = visitor.result.filter(
-      (s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "canned slot",
-    )
+    const lines = visitor.result.filter((s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "canned slot")
     expect(lines).toHaveLength(1)
   })
 
@@ -541,9 +545,7 @@ describe("spec: G32/G33 routed circle canned cycles", () => {
 describe("spec: canned cycle G85 slot", () => {
   it("G85 produces a LINE with attributes.type === 'canned slot'", () => {
     const { visitor } = parseAndVisit("INCH,TZ\nT01C0.1\nX0Y0\nG85X5000Y0\n")
-    const slots = visitor.result.filter(
-      (s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "canned slot",
-    )
+    const slots = visitor.result.filter((s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "canned slot")
     expect(slots).toHaveLength(1)
   })
 
@@ -574,9 +576,7 @@ describe("spec: canned cycle G84 canned circle", () => {
   it("G84 produces a PAD with attributes.type === 'canned circle'", () => {
     // Format: X#Y#G84X# where last X is the diameter
     const { visitor } = parseAndVisit("INCH,TZ\nT01C0.1\nX5000Y5000G84X5000\n")
-    const pads = visitor.result.filter(
-      (s) => s.type === FeatureTypeIdentifier.PAD && (s as Shapes.Pad).attributes.type === "canned circle",
-    )
+    const pads = visitor.result.filter((s) => s.type === FeatureTypeIdentifier.PAD && (s as Shapes.Pad).attributes.type === "canned circle")
     expect(pads).toHaveLength(1)
   })
 })
@@ -592,9 +592,7 @@ describe("spec: canned cycle G87 routed step slot", () => {
 
   it("G87 produces a LINE with attributes.type === 'routed step slot'", () => {
     const { visitor } = parseAndVisit("INCH,TZ\nT01C0.1\nX5000Y6000G87X5000Y7000Z-1U1\n")
-    const slots = visitor.result.filter(
-      (s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "routed step slot",
-    )
+    const slots = visitor.result.filter((s) => s.type === FeatureTypeIdentifier.LINE && (s as Shapes.Line).attributes.type === "routed step slot")
     expect(slots).toHaveLength(1)
   })
 

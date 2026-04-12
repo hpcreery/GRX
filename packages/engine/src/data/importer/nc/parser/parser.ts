@@ -1844,8 +1844,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     }
     ;[integerPlaces, decimalPlaces] = this.state.coordinateFormat
     const digits = integerPlaces + decimalPlaces
-    const paddedCoordinate =
-      zeros === Constants.LEADING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
+    const paddedCoordinate = zeros === Constants.LEADING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
 
     const leading = paddedCoordinate.slice(0, paddedCoordinate.length - decimalPlaces)
     const trailing = paddedCoordinate.slice(paddedCoordinate.length - decimalPlaces)

@@ -16,8 +16,6 @@ describe("NC importer", () => {
       update_step_layer_artwork: vi.fn(async () => {}),
     }
 
-    await expect(plugin(encoder.encode("@@@").buffer, { step: "s", layer: "l", project: "p" }, api as never)).rejects.toThrow(
-      /NC lexing failed/,
-    )
+    await expect(plugin(encoder.encode("@@@").buffer, { step: "s", layer: "l", project: "p" }, api as never)).rejects.toThrow(/NC lexing failed/)
   })
 })

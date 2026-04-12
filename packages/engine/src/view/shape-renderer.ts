@@ -303,7 +303,6 @@ export class ShapeRenderer extends UpdateEventTarget {
     const distData = this.distanceQueryRaw
     const distances: ShapeDistance[] = []
     for (let i = 0; i < distData.length; i += 4) {
-      
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
       const distance = distData[i]

@@ -21,10 +21,12 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const lexingResult = NCLexer.tokenize(file)
   // console.timeEnd("tokenize")
   if (lexingResult.errors.length > 0) {
-    for (const err of lexingResult.errors) {      
-      console.error(`NC lexing error at line ${err.line}, column ${err.column}: ${err.message}`)
+    for (const err of lexingResult.errors) {
+      console.error(`NC lexing error at line ${err.line}, column ${err.column}, length ${err.length}, offset ${err.offset}: ${err.message}`)
     }
-    throw new Error(`NC lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`)
+    throw new Error(
+      `NC lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`,
+    )
   }
   // console.time("parse")
   parser.input = lexingResult.tokens

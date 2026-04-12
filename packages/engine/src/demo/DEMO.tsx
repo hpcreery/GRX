@@ -26,9 +26,9 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"a
 
-import cmp from "../data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
-import gto from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
 import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
+import gto from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
+import cmp from "../data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1778,9 +1778,6 @@ function DemoApp(): JSX.Element {
             }}
           >
             {/* <StatsWidget /> */}
-
-
-
             <Button
               onClick={async (): Promise<void> => {
                 const layers = await renderer.interface.read_layers_list(project)
@@ -1846,7 +1843,10 @@ function DemoApp(): JSX.Element {
               }}
             />
             Mouse Mode
-            <SegmentedControl data={[...POINTER_MODES]} onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)} />
+            <SegmentedControl
+              data={[...POINTER_MODES]}
+              onChange={(mode) => (renderer.pointerSettings.mode = mode as keyof typeof POINTER_MODES_MAP)}
+            />
             Snap Mode
             <SegmentedControl
               data={[...SNAP_MODES]}
