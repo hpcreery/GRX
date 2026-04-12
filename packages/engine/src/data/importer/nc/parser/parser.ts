@@ -38,6 +38,7 @@ const DefaultTokens = {
   B: createToken({ name: "B", pattern: /B/ }),
   H: createToken({ name: "H", pattern: /H/ }),
   Z: createToken({ name: "Z", pattern: /Z/ }),
+  U: createToken({ name: "U", pattern: /U/ }),
   // Coordinate System
   X: createToken({ name: "X", pattern: /X/ }),
   Y: createToken({ name: "Y", pattern: /Y/ }),
@@ -51,7 +52,7 @@ const DefaultTokens = {
   M01: createToken({ name: "M01", pattern: /M01/ }),
   M02: createToken({ name: "M02", pattern: /M02/ }),
   M06: createToken({ name: "M06", pattern: /M06/ }),
-  M08: createToken({ name: "M06", pattern: /M08/ }),
+  M08: createToken({ name: "M08", pattern: /M08/ }),
   M09: createToken({ name: "M09", pattern: /M09/ }),
   M14: createToken({ name: "M14", pattern: /M14/ }),
   M15: createToken({ name: "M15", pattern: /M15/ }),
@@ -62,6 +63,7 @@ const DefaultTokens = {
   M45: createToken({ name: "M45", pattern: /M45/, push_mode: "TextMode" }),
   M47: createToken({ name: "M47", pattern: /M47/, push_mode: "TextMode" }),
   M48: createToken({ name: "M48", pattern: /M48/ }),
+  M95: createToken({ name: "M95", pattern: /M95/ }),
   M70: createToken({ name: "M70", pattern: /M70/ }),
   M71: createToken({ name: "M71", pattern: /M71/ }),
   M72: createToken({ name: "M72", pattern: /M72/ }),
@@ -85,11 +87,16 @@ const DefaultTokens = {
   G40: createToken({ name: "G40", pattern: /G40/ }),
   G41: createToken({ name: "G41", pattern: /G41/ }),
   G42: createToken({ name: "G42", pattern: /G42/ }),
+  G45: createToken({ name: "G45", pattern: /G45/ }),
+  G46: createToken({ name: "G46", pattern: /G46/ }),
+  G47: createToken({ name: "G47", pattern: /G47/ }),
+  G48: createToken({ name: "G48", pattern: /G48/ }),
   // Canned Cycle Commands
-  // G82: createToken({ name: "G82", pattern: /G82/ }),
-  // G83: createToken({ name: "G83", pattern: /G83/ }),
+  G82: createToken({ name: "G82", pattern: /G82/ }),
+  G83: createToken({ name: "G83", pattern: /G83/ }),
   G84: createToken({ name: "G84", pattern: /G84/ }),
   G85: createToken({ name: "G85", pattern: /G85/ }),
+  G87: createToken({ name: "G87", pattern: /G87/ }),
   G90: createToken({ name: "G90", pattern: /G90/ }),
   G91: createToken({ name: "G91", pattern: /G91/ }),
   G93: createToken({ name: "G93", pattern: /G93/ }),
@@ -188,8 +195,15 @@ class NCParser extends CstParser {
   cancelVisionOffset!: ParserMethod<unknown[], CstNode>
   visionCorrectedSingleHole!: ParserMethod<unknown[], CstNode>
   visionAutoCalibration!: ParserMethod<unknown[], CstNode>
+  singlePointVisionOffsetRelative!: ParserMethod<unknown[], CstNode>
+  multiPointVisionOffsetRelative!: ParserMethod<unknown[], CstNode>
+  cancelVisionOffsetRelative!: ParserMethod<unknown[], CstNode>
+  visionCorrectedSingleHoleRelative!: ParserMethod<unknown[], CstNode>
+  cannedDualInLinePackage!: ParserMethod<unknown[], CstNode>
+  cannedEightPinLPack!: ParserMethod<unknown[], CstNode>
   cannedSlot!: ParserMethod<unknown[], CstNode>
   cannedCircle!: ParserMethod<unknown[], CstNode>
+  routedStepSlot!: ParserMethod<unknown[], CstNode>
   repeatHole!: ParserMethod<unknown[], CstNode>
 
   constructor() {
@@ -251,8 +265,15 @@ class NCParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.cancelVisionOffset) },
         { ALT: (): CstNode => this.SUBRULE(this.visionCorrectedSingleHole) },
         { ALT: (): CstNode => this.SUBRULE(this.visionAutoCalibration) },
+        { ALT: (): CstNode => this.SUBRULE(this.singlePointVisionOffsetRelative) },
+        { ALT: (): CstNode => this.SUBRULE(this.multiPointVisionOffsetRelative) },
+        { ALT: (): CstNode => this.SUBRULE(this.cancelVisionOffsetRelative) },
+        { ALT: (): CstNode => this.SUBRULE(this.visionCorrectedSingleHoleRelative) },
+        { ALT: (): CstNode => this.SUBRULE(this.cannedDualInLinePackage) },
+        { ALT: (): CstNode => this.SUBRULE(this.cannedEightPinLPack) },
         { ALT: (): CstNode => this.SUBRULE(this.cannedSlot) },
         { ALT: (): CstNode => this.SUBRULE(this.cannedCircle) },
+        { ALT: (): CstNode => this.SUBRULE(this.routedStepSlot) },
         { ALT: (): CstNode => this.SUBRULE(this.repeatHole) },
       ])
     })
@@ -276,7 +297,7 @@ class NCParser extends CstParser {
     })
 
     this.RULE("headerEnd", () => {
-      this.CONSUME(DefaultTokens.Percent)
+      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.Percent) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.M95) }])
     })
 
     this.RULE("comment", () => {
@@ -613,6 +634,33 @@ class NCParser extends CstParser {
       })
     })
 
+    this.RULE("singlePointVisionOffsetRelative", () => {
+      this.CONSUME(DefaultTokens.G45)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("multiPointVisionOffsetRelative", () => {
+      this.CONSUME(DefaultTokens.G46)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("cancelVisionOffsetRelative", () => {
+      this.CONSUME(DefaultTokens.G47)
+    })
+
+    this.RULE("visionCorrectedSingleHoleRelative", () => {
+      this.CONSUME(DefaultTokens.G48)
+      this.SUBRULE(this.coordinate)
+    })
+
+    this.RULE("cannedDualInLinePackage", () => {
+      this.CONSUME(DefaultTokens.G82)
+    })
+
+    this.RULE("cannedEightPinLPack", () => {
+      this.CONSUME(DefaultTokens.G83)
+    })
+
     // Canned Cycle Commands
     this.RULE("cannedSlot", () => {
       this.CONSUME(DefaultTokens.G85)
@@ -622,6 +670,14 @@ class NCParser extends CstParser {
     this.RULE("cannedCircle", () => {
       this.CONSUME(DefaultTokens.G84)
       this.SUBRULE(this.x)
+    })
+
+    this.RULE("routedStepSlot", () => {
+      this.CONSUME(DefaultTokens.G87)
+      this.SUBRULE(this.coordinate)
+      this.SUBRULE(this.depthOffset)
+      this.CONSUME(DefaultTokens.U)
+      this.CONSUME(DefaultTokens.Number)
     })
 
     this.RULE("repeatHole", () => {
@@ -670,7 +726,7 @@ export interface NCParams {
   units: Units
   coordinateMode: CoordinateMode
   coordinateFormat: Format
-  zeroSuppression: ZeroSuppression
+  zeros: ZeroSuppression
 }
 
 const defaultTool: Symbols.StandardSymbol = new Symbols.NullSymbol({
@@ -700,7 +756,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     arcRadius: 0,
     coordinateMode: Constants.ABSOLUTE,
     coordinateFormat: [2, 4],
-    zeroSuppression: "trailing",
+    zeros: "trailing",
   }
   public toolStore: Partial<Record<string, Symbols.StandardSymbol>> = {}
   public compensationStore: Partial<Record<string, number>> = {}
@@ -726,10 +782,10 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       this.state.units = Constants.IN
     }
     if (ctx.TrailingZeros) {
-      this.state.zeroSuppression = Constants.LEADING
+      this.state.zeros = Constants.TRAILING
     }
     if (ctx.LeadingZeros) {
-      this.state.zeroSuppression = Constants.TRAILING
+      this.state.zeros = Constants.LEADING
     }
     if (ctx.Number) {
       const [int, decimal] = ctx.Number[0].image.split(".")
@@ -1224,6 +1280,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   repeatPatternOffset(ctx: Cst.RepeatPatternOffsetCstChildren): void {
     if (ctx.coordinate) {
+      if (!this.stepRepeats.length) return
       const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
       this.state.patternOffsetX += x ?? 0
       this.state.patternOffsetY += y ?? 0
@@ -1365,22 +1422,16 @@ export class NCToShapesVisitor extends BaseCstVisitor {
 
   linearMove(ctx: Cst.LinearMoveCstChildren): void {
     this.state.interpolationMode = Constants.LINE
-    // this is questionable
-    this.state.plunged = true
     this.visit(ctx.move)
   }
 
   circularClockwiseMove(ctx: Cst.CircularClockwiseMoveCstChildren): void {
     this.state.interpolationMode = Constants.CW_ARC
-    // this is questionable
-    this.state.plunged = true
     this.visit(ctx.move)
   }
 
   circularCounterclockwiseMove(ctx: Cst.CircularCounterclockwiseMoveCstChildren): void {
     this.state.interpolationMode = Constants.CCW_ARC
-    // this is questionable
-    this.state.plunged = true
     this.visit(ctx.move)
   }
 
@@ -1577,6 +1628,96 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     // console.log("visionAutoCalibration", ctx)
   }
 
+  singlePointVisionOffsetRelative(ctx: { coordinate: Cst.CoordinateCstNode[] }): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+    this.result.push(
+      new Shapes.DatumText({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+        text: "Alignment Point",
+      }),
+      new Shapes.DatumPoint({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
+  }
+
+  multiPointVisionOffsetRelative(ctx: { coordinate: Cst.CoordinateCstNode[] }): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+    this.result.push(
+      new Shapes.DatumText({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+        text: "Alignment Point",
+      }),
+      new Shapes.DatumPoint({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
+  }
+
+  cancelVisionOffsetRelative(_ctx: Record<string, never>): void {
+    // intentionally no-op
+  }
+
+  visionCorrectedSingleHoleRelative(ctx: { coordinate: Cst.CoordinateCstNode[] }): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+    this.result.push(
+      new Shapes.DatumText({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+        text: "Vision Correction",
+      }),
+      new Shapes.DatumPoint({
+        units: this.state.units,
+        x: this.state.x,
+        y: this.state.y,
+      }),
+    )
+  }
+
+  cannedDualInLinePackage(_ctx: Record<string, never>): void {
+    // parsed for compatibility; geometry generation is not yet implemented
+  }
+
+  cannedEightPinLPack(_ctx: Record<string, never>): void {
+    // parsed for compatibility; geometry generation is not yet implemented
+  }
+
   // Canned cycles
 
   cannedSlot(ctx: Cst.CannedSlotCstChildren): void {
@@ -1644,6 +1785,32 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     )
   }
 
+  routedStepSlot(ctx: { coordinate: Cst.CoordinateCstNode[] }): void {
+    this.state.previousX = this.state.x
+    this.state.previousY = this.state.y
+    const { x, y } = this.visit(ctx.coordinate) as PossiblePoints
+    if (this.state.coordinateMode === Constants.ABSOLUTE) {
+      if (x !== undefined) this.state.x = x
+      if (y !== undefined) this.state.y = y
+    } else {
+      if (x !== undefined) this.state.x += x
+      if (y !== undefined) this.state.y += y
+    }
+    this.result.push(
+      new Shapes.Line({
+        units: this.state.units,
+        xs: this.state.previousX,
+        ys: this.state.previousY,
+        xe: this.state.x,
+        ye: this.state.y,
+        symbol: this.state.currentTool,
+        attributes: {
+          type: "routed step slot",
+        },
+      }),
+    )
+  }
+
   repeatHole(ctx: Cst.RepeatHoleCstChildren): void {
     const repeats = Number(ctx.Number[0].image)
     let { x, y } = this.visit(ctx.coordinate) as PossiblePoints
@@ -1668,7 +1835,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
       return Number(coordinate)
     }
 
-    const { coordinateFormat, zeroSuppression } = this.state
+    const { coordinateFormat, zeros } = this.state
     let [integerPlaces, decimalPlaces] = coordinateFormat
     const [sign, signlessCoordinate] =
       coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
@@ -1679,7 +1846,7 @@ export class NCToShapesVisitor extends BaseCstVisitor {
     ;[integerPlaces, decimalPlaces] = this.state.coordinateFormat
     const digits = integerPlaces + decimalPlaces
     const paddedCoordinate =
-      zeroSuppression === Constants.TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
+      zeros === Constants.LEADING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
 
     const leading = paddedCoordinate.slice(0, paddedCoordinate.length - decimalPlaces)
     const trailing = paddedCoordinate.slice(paddedCoordinate.length - decimalPlaces)

@@ -17,10 +17,24 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
   // console.timeEnd("decode")
-  // console.time("parse")
+  // console.time("tokenize")
   const lexingResult = NCLexer.tokenize(file)
+  // console.timeEnd("tokenize")
+  if (lexingResult.errors.length > 0) {
+    for (const err of lexingResult.errors) {      
+      console.error(`NC lexing error at line ${err.line}, column ${err.column}: ${err.message}`)
+    }
+    throw new Error(`NC lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`)
+  }
+  // console.time("parse")
   parser.input = lexingResult.tokens
   const result = parser.program()
+  if (parser.errors.length > 0) {
+    for (const err of parser.errors) {
+      console.error(`NC parse error: ${err.message}`)
+    }
+    throw new Error(`NC parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message}`).join("\n")}`)
+  }
   // console.timeEnd("parse")
   // console.time("visit")
   const visitor = new NCToShapesVisitor()

@@ -347,7 +347,7 @@ export interface EndOfStepAndRepeatCstNode extends CstNode {
 }
 
 export type EndOfStepAndRepeatCstChildren = {
-  M06: IToken[]
+  M08: IToken[]
 }
 
 export interface StopForInspectCstNode extends CstNode {

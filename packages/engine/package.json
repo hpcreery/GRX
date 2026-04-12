@@ -8,7 +8,8 @@
     "build:shaders": "node src/shaders/build.js",
     "build:shaders:watch": "node src/shaders/watch.js",
     "build:chevrotain:types": "tsx lib/nc/chevrotain-parser/gen_dts_signature.js",
-    "typecheck": "tsc --noEmit --watch"
+    "typecheck": "tsc --noEmit --watch",
+    "test": "vitest run"
   },
   "exports": {
     ".": {
