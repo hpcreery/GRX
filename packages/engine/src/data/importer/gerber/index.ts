@@ -1,7 +1,8 @@
-import { parse } from "@hpcreery/tracespace-parser"
+import { parse as parseWithTracespace } from "@hpcreery/tracespace-parser"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
+import { parseGerberWithChevrotain } from "./parser/parser"
 import { plot } from "./plotter/src"
 
 // import * as Comlink from "comlink"
@@ -16,8 +17,14 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const params = Parameters.parse(parameters)
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
-  const tree = parse(file)
-  const image = plot(tree)
+  let image
+
+  try {
+    image = parseGerberWithChevrotain(file)
+  } catch (error) {
+    console.warn("Gerber Chevrotain parser failed, falling back to tracespace-parser", error)
+    image = plot(parseWithTracespace(file))
+  }
   // const units = image.units
 
   await api.create_layer(params.project, params.layer)
