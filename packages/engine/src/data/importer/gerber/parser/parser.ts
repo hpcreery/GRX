@@ -1,44 +1,15 @@
-import {
-  CCW_ARC,
-  CIRCLE,
-  CW_ARC,
-  DARK,
-  LEADING,
-  LINE,
-  MACRO_PRIMITIVE,
-  MACRO_SHAPE,
-  MACRO_VARIABLE,
-  MOVE,
-  OBROUND,
-  POLYGON,
-  RECTANGLE,
-  SEGMENT,
-  SHAPE,
-  TRAILING,
-} from "@hpcreery/tracespace-parser"
-import type {
-  Format,
-  GraphicType,
-  HoleShape,
-  MacroBlock,
-  MacroPrimitiveCode,
-  MacroValue,
-  Mirroring,
-  Polarity,
-  SimpleShape,
-  ZeroSuppression,
-} from "@hpcreery/tracespace-parser"
+import * as Constants from "./constants"
+import type * as Types from "./types"
 import * as Shapes from "@src/data/shape/shape"
 import * as Symbols from "@src/data/shape/symbol/symbol"
-import { SymbolTypeIdentifier } from "@src/types"
+import { SymbolTypeIdentifier, type Units as ShapeUnits } from "@src/types"
 import { type CstNode, CstParser, createToken, generateCstDts, type IToken, Lexer, type ParserMethod, type Rule } from "chevrotain"
 import { vec2 } from "gl-matrix"
-import { createMacro } from "../plotter/src/graphic-plotter/plot-macro"
-import { getAmbiguousArcCenter } from "../plotter/src/graphic-plotter"
-import { IMAGE, type ImageTree } from "../plotter/src/tree"
-import type { MacroTool } from "../plotter/src/tool-store"
-import type { GerberCoordinates, GerberMacroOperator } from "./types"
+// import { createMacro } from "./macroPlotter"
+import { getAmbiguousArcCenter, type ArcDirection } from "./arcMath"
+import type { GerberCoordinates, GerberMacroOperator, MacroPrimitiveCode, MacroTool, MacroValue } from "./types"
 import type * as cst from "./gerbercst"
+// import { Mirroring } from '@hpcreery/tracespace-parser'
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /[ \t]+/, group: Lexer.SKIPPED }),
@@ -54,24 +25,24 @@ const DefaultTokens = {
   // UnsignedInteger: createToken({ name: "UnsignedInteger", pattern: /[0-9]+/ }),
 
   // Names consist of upper- or lower-case letters, underscores (‘_’), dots (‘.’), a dollar sign (‘$’) and digits. The first character cannot be a digit. Name = [a-zA-Z_.$]{[a-zA-Z_.0-9]+}
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
   // Strings are made up of all valid characters except the reserved characters CR, LF, ‘%’ and ‘*’. [a-zA-Z0-9_+-/!?<>”’(){}.\|&@# ,;$:=]+
   // String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/ }),
 
   // FS Format specification. Sets the coordinate format, e.g. the number of decimals.
   FS: createToken({ name: "FS", pattern: /FS/i }),
   // MO Mode. Sets the unit to inch or mm.
-  MO: createToken({ name: "MO", pattern: /MO/i }),
+  MO: createToken({ name: "MO", pattern: /MO(IN|MM)/i }),
   // AD Aperture define. Defines a template based aperture and assigns a D code to it.
-  AD: createToken({ name: "AD", pattern: /AD/i }),
+  AD: createToken({ name: "AD", pattern: /ADD\d{2,}/i, push_mode: "NameMode" }),
   // AM Aperture macro. Defines a macro aperture template.
   AM: createToken({ name: "AM", pattern: /AM/i, push_mode: "MacroMode" }),
   // AB Aperture block. Defines a block aperture and assigns a D-code to it.
   AB: createToken({ name: "AB", pattern: /AB/i }),
   // LP Load polarity. Loads the polarity object transformation parameter.
-  LP: createToken({ name: "LP", pattern: /LP/i }),
+  LP: createToken({ name: "LP", pattern: /LP/i, push_mode: "NameMode" }),
   // LM Load mirror. Loads the mirror object transformation parameter.
-  LM: createToken({ name: "LM", pattern: /LM/i }),
+  LM: createToken({ name: "LM", pattern: /LM/i, push_mode: "NameMode" }),
   // LR Load rotation. Loads the rotation object transformation parameter.
   LR: createToken({ name: "LR", pattern: /LR/i }),
   // LS Load scale. Loads the scale object transformation parameter.
@@ -100,6 +71,45 @@ const DefaultTokens = {
   // M02 End of file.
   M02: createToken({ name: "M02", pattern: /M0*2/i }),
 
+  // The codes D01, D02, D03 have a special function and are called operation codes. They are used together with coordinate data to form commands called operations.
+  // D01 Interpolate operation. Outside a region statement D01 creates a draw or arc object using the current aperture. Inside it creates a linear or circular contoursegment. After the D01 command the current point is moved to draw/arc end point.
+  D01: createToken({ name: "D01", pattern: /D0*1(?!\d)/i }),
+  // D02 Move operation. D02 does not create a graphics object but moves the current point to the coordinate in the D02 command.
+  D02: createToken({ name: "D02", pattern: /D0*2(?!\d)/i }),
+  // D03 Flash operation. Creates a flash object with the current aperture. After the D03 command the current point is moved to the flash point.
+  D03: createToken({ name: "D03", pattern: /D0*3(?!\d)/i }),
+  // Dnn (nn≥10) Sets the current aperture to D code nn.
+  Dnn: createToken({ name: "Dnn", pattern: /D(?:[1-9][0-9]+)/i }),
+
+  L: createToken({ name: "L", pattern: /L(?=[AI])/i }),
+  // Trailing zero omission is deprecated since revision 2015.06.
+  T: createToken({ name: "T", pattern: /T(?=[AI])/i }),
+  // A Absolute
+  // A: createToken({ name: "A", pattern: /A/i }),
+  // I Incremental Notation is deprecated since revision I1 from December 2012.
+  // I: createToken({ name: "I", pattern: /I/i }),
+  // MM: createToken({ name: "MM", pattern: /MM/i }),
+  // IN: createToken({ name: "IN", pattern: /IN/i }),
+
+  // Axis tokens for coordinates. A coordinate is a number prefixed with an axis identifier, e.g. X12.34 or Y-56.78
+  X: createToken({ name: "X", pattern: /X/i }),
+  Y: createToken({ name: "Y", pattern: /Y/i }),
+  I: createToken({ name: "I", pattern: /I/i }),
+  J: createToken({ name: "J", pattern: /J/i }),
+  A: createToken({ name: "A", pattern: /A/i }),
+  B: createToken({ name: "B", pattern: /B/i }),
+
+  // TF Attribute file. Set a file attribute.
+  TF: createToken({ name: "TF", pattern: /TF/i }),
+  // TA Attribute aperture. Add an aperture attribute to the dictionary or modify it.
+  TA: createToken({ name: "TA", pattern: /TA/i }),
+  // TO Attribute object. Add an object attribute to the dictionary or modify it.
+  TO: createToken({ name: "TO", pattern: /TO/i }),
+  // TD Attribute delete. Delete one or all attributes in the dictionary
+  TD: createToken({ name: "TD", pattern: /TD/i }),
+
+  // UnknownWordCommand: createToken({ name: "UnknownWordCommand", pattern: /[GMD][^*\r\n]*/i }),
+
   /** DEPRECATED COMMANDS */
   // G90 Set the ‘Coordinate format’ to ‘Absolute notation’ These historic codes perform a function handled by the FS command. See 4.1. Very rarely used nowadays
   G90: createToken({ name: "G90", pattern: /G0*90/i }),
@@ -119,6 +129,8 @@ const DefaultTokens = {
   M01: createToken({ name: "M01", pattern: /M0*1/i }),
   // IP Sets the ‘Image polarity’ graphics state parameter IP can only be used once, at the beginning of the file. Sometimes used, and then usually as %IPPOS*% to confirm the default – a positive image; it then has no effect. As it is not clear how %IPNEG*% must be handled it is probably a waste of time to try to fully implement it, and sufficient to give a warning if an image is negative.
   IP: createToken({ name: "IP", pattern: /IP/i }),
+  POS: createToken({ name: "POS", pattern: /POS/i }),
+  NEG: createToken({ name: "NEG", pattern: /NEG/i }),
   // These commands can only be used once, at the beginning of the file. The order of execution is always MI, SF, OF, IR and AS, independent of their order of appearance in the file
   // Rarely used nowadays. If used it is almost always to confirm the default value; they have no effect. It
   // is probably a waste of time to fully implement these commands; simply ignoring them will
@@ -130,50 +142,12 @@ const DefaultTokens = {
   IR: createToken({ name: "IR", pattern: /IR/i }),
   AS: createToken({ name: "AS", pattern: /AS/i }),
   // IN Sets the name of the file image. Has no effect. It is comment. These commands can only be used once, at the beginning of the file. Use G04 for comments. See 4.14. Sometimes used.
-  // IN: createToken({ name: "IN", pattern: /IN/i }), // conflics with other IN token.
+  IN: createToken({ name: "IN", pattern: /IN/i, push_mode: "NameMode" }), // conflics with other IN token.
   // IN Sets the name of the file image. Has no effect. It is comment. These commands can only be used once, at the beginning of the file. Use G04 for comments. See 4.14. Sometimes used.
-  LN: createToken({ name: "LN", pattern: /LN/i }),
+  LN: createToken({ name: "LN", pattern: /LN/i, push_mode: "NameMode" }),
   // SR Step and repeat. Open or closes a step and repeat statement. These constructions are deprecated since revision 2016.01.
   SR: createToken({ name: "SR", pattern: /SR/i }),
   /** END OF DEPRECATED COMMANDS */
-
-  // The codes D01, D02, D03 have a special function and are called operation codes. They are used together with coordinate data to form commands called operations.
-  // D01 Interpolate operation. Outside a region statement D01 creates a draw or arc object using the current aperture. Inside it creates a linear or circular contoursegment. After the D01 command the current point is moved to draw/arc end point.
-  D01: createToken({ name: "D01", pattern: /D0*1(?!\d)/i }),
-  // D02 Move operation. D02 does not create a graphics object but moves the current point to the coordinate in the D02 command.
-  D02: createToken({ name: "D02", pattern: /D0*2(?!\d)/i }),
-  // D03 Flash operation. Creates a flash object with the current aperture. After the D03 command the current point is moved to the flash point.
-  D03: createToken({ name: "D03", pattern: /D0*3(?!\d)/i }),
-  // Dnn (nn≥10) Sets the current aperture to D code nn.
-  Dnn: createToken({ name: "Dnn", pattern: /D(?:[1-9][0-9]+)/i }),
-
-  L: createToken({ name: "L", pattern: /L(?=[AI])/i }),
-  // Trailing zero omission is deprecated since revision 2015.06.
-  T: createToken({ name: "T", pattern: /T(?=[AI])/i }),
-  // A Absolute
-  // A: createToken({ name: "A", pattern: /A/i }),
-  // I Incremental Notation is deprecated since revision I1 from December 2012.
-  // I: createToken({ name: "I", pattern: /I/i }),
-  MM: createToken({ name: "MM", pattern: /MM/i }),
-  IN: createToken({ name: "IN", pattern: /IN/i }),
-
-  // Axis tokens for coordinates. A coordinate is a number prefixed with an axis identifier, e.g. X12.34 or Y-56.78
-  X: createToken({ name: "X", pattern: /X(?=[+-]?(?:\d+\.?\d*|\.\d+))/ }),
-  Y: createToken({ name: "Y", pattern: /Y(?=[+-]?(?:\d+\.?\d*|\.\d+))/ }),
-  I: createToken({ name: "I", pattern: /I(?=[+-]?(?:\d+\.?\d*|\.\d+))/ }),
-  J: createToken({ name: "J", pattern: /J(?=[+-]?(?:\d+\.?\d*|\.\d+))/ }),
-  A: createToken({ name: "A", pattern: /A(?=X|[+-]?(?:\d+\.?\d*|\.\d+))/ }),
-
-  // TF Attribute file. Set a file attribute.
-  TF: createToken({ name: "TF", pattern: /TF/i }),
-  // TA Attribute aperture. Add an aperture attribute to the dictionary or modify it.
-  TA: createToken({ name: "TA", pattern: /TA/i }),
-  // TO Attribute object. Add an object attribute to the dictionary or modify it.
-  TO: createToken({ name: "TO", pattern: /TO/i }),
-  // TD Attribute delete. Delete one or all attributes in the dictionary
-  TD: createToken({ name: "TD", pattern: /TD/i }),
-
-  // UnknownWordCommand: createToken({ name: "UnknownWordCommand", pattern: /[GMD][^*\r\n]*/i }),
 } as const
 
 const MacroTokens = {
@@ -181,8 +155,8 @@ const MacroTokens = {
   NewLine: createToken({ name: "MacroNewLine", pattern: /\r?\n/, line_breaks: true, group: Lexer.SKIPPED }),
   // MacroEndPercent: createToken({ name: "MacroEndPercent", pattern: /%/, pop_mode: true }),
   MacroVariable: createToken({ name: "MacroVariable", pattern: /\$[0-9]*[1-9][0-9]*/ }),
-  UnsignedNumber: createToken({ name: "UnsignedNumber", pattern: /(?:\d+\.?\d*|\.\d+)/ }),
-  // Number: createToken({ name: "Number", pattern: /[+-]?(?:\d+\.?\d*|\.\d+)/ }),
+  // UnsignedNumber: createToken({ name: "UnsignedNumber", pattern: /(?:\d+\.?\d*|\.\d+)/ }),
+  Number: createToken({ name: "Number", pattern: /[+-]?(?:\d+\.?\d*|\.\d+)/ }),
   // UnsignedInteger: createToken({ name: "UnsignedInteger", pattern: /[0-9]+/ }),
   Percent: createToken({ name: "Percent", pattern: /%/, pop_mode: true }),
   Star: createToken({ name: "Star", pattern: /\*/ }),
@@ -198,6 +172,10 @@ const MacroTokens = {
 const CommentTokens = {
   // Comment: createToken({ name: "Comment", pattern: /[^*\r\n]*/i, pop_mode: true }),
   String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/, pop_mode: true }),
+}
+
+const NameTokens = {
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
 }
 
 // The order of Token definitions passed to the Lexer is important. The first PATTERN to match will be chosen, not the longest.
@@ -249,7 +227,7 @@ const DefaultModeTokens = [
   DefaultTokens.TA,
   DefaultTokens.TO,
   DefaultTokens.TD,
-  DefaultTokens.MM,
+  // DefaultTokens.MM,
   DefaultTokens.IN,
   DefaultTokens.L,
   DefaultTokens.T,
@@ -258,11 +236,14 @@ const DefaultModeTokens = [
   DefaultTokens.I,
   DefaultTokens.J,
   DefaultTokens.A,
-  // DefaultTokens.UnknownWordCommand,
+  DefaultTokens.B,
+  DefaultTokens.POS,
+  DefaultTokens.NEG,
   DefaultTokens.Number,
   // DefaultTokens.UnsignedInteger,
-  DefaultTokens.Name,
+  // DefaultTokens.Name,
   // DefaultTokens.String,
+  // DefaultTokens.UnknownWordCommand,
 ]
 
 // The order of Token definitions passed to the Lexer is important. The first PATTERN to match will be chosen, not the longest.
@@ -270,7 +251,8 @@ const MacroModeTokens = [
   MacroTokens.WhiteSpace,
   MacroTokens.NewLine,
   MacroTokens.MacroVariable,
-  MacroTokens.UnsignedNumber,
+  // MacroTokens.UnsignedNumber,
+  MacroTokens.Number,
   MacroTokens.Percent,
   MacroTokens.Star,
   MacroTokens.Comma,
@@ -284,11 +266,14 @@ const MacroModeTokens = [
 
 const CommentModeTokens = [CommentTokens.String]
 
+const NameModeTokens = [NameTokens.Name]
+
 const multiModeLexerDefinition = {
   modes: {
     DefaultMode: DefaultModeTokens,
     MacroMode: MacroModeTokens,
     CommentMode: CommentModeTokens,
+    NameMode: NameModeTokens,
   },
   defaultMode: "DefaultMode",
 }
@@ -303,6 +288,8 @@ class GerberParser extends CstParser {
   functionCodeCommand!: ParserMethod<unknown[], CstNode>
 
   formatSpecificationCommand!: ParserMethod<unknown[], CstNode>
+  // absoluteNotationCommand!: ParserMethod<unknown[], CstNode>
+  // incrementalNotationCommand!: ParserMethod<unknown[], CstNode>
   unitsCommand!: ParserMethod<unknown[], CstNode>
   apertureDefinitionCommand!: ParserMethod<unknown[], CstNode>
   modifiersSet!: ParserMethod<unknown[], CstNode>
@@ -324,10 +311,10 @@ class GerberParser extends CstParser {
   quadrantMultiCommand!: ParserMethod<unknown[], CstNode>
   regionStartCommand!: ParserMethod<unknown[], CstNode>
   regionEndCommand!: ParserMethod<unknown[], CstNode>
-  g54ToolChangeCommand!: ParserMethod<unknown[], CstNode>
   dCodeCommand!: ParserMethod<unknown[], CstNode>
   operationCommand!: ParserMethod<unknown[], CstNode>
-  unknownWordCommand!: ParserMethod<unknown[], CstNode>
+
+  // unknownWordCommand!: ParserMethod<unknown[], CstNode>
 
   coordinateData!: ParserMethod<unknown[], CstNode>
   coordinateField!: ParserMethod<unknown[], CstNode>
@@ -348,11 +335,33 @@ class GerberParser extends CstParser {
   term!: ParserMethod<unknown[], CstNode>
   factor!: ParserMethod<unknown[], CstNode>
 
+  star!: ParserMethod<unknown[], CstNode>
+  percent!: ParserMethod<unknown[], CstNode>
+
+  // DEPRECATED COMMANDS
+  prepareApertureCommand!: ParserMethod<unknown[], CstNode>
+  prepareFlashCommand!: ParserMethod<unknown[], CstNode>
+  inchModeCommand!: ParserMethod<unknown[], CstNode>
+  metricModeCommand!: ParserMethod<unknown[], CstNode>
+  optionalStopCommand!: ParserMethod<unknown[], CstNode>
+  absoluteNotationCommand!: ParserMethod<unknown[], CstNode>
+  incrementalNotationCommand!: ParserMethod<unknown[], CstNode>
+  imagePolarityCommand!: ParserMethod<unknown[], CstNode>
+  axisSelectionCommand!: ParserMethod<unknown[], CstNode>
+  imageRotationCommand!: ParserMethod<unknown[], CstNode>
+  mirrorImageCommand!: ParserMethod<unknown[], CstNode>
+  imageOffsetCommand!: ParserMethod<unknown[], CstNode>
+  scaleFactorCommand!: ParserMethod<unknown[], CstNode>
+  imageNameCommand!: ParserMethod<unknown[], CstNode>
+  loadNameCommand!: ParserMethod<unknown[], CstNode>
+
   constructor() {
     super(multiModeLexerDefinition, {
       recoveryEnabled: true,
-      // maxLookahead: 2,
+      maxLookahead: 10,
     })
+
+    // console.log("can delete star?" , this.canTokenTypeBeDeletedInRecovery(DefaultTokens.Star))
 
     this.RULE("program", () => {
       this.MANY(() => {
@@ -379,7 +388,28 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.functionCodeCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.extendedCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.apertureMacroCommand) }, // Aperture Macros aput here to allow the closing % to return to the default mode for the rest of the file.
+        { ALT: (): CstNode => this.SUBRULE(this.star) },
       ])
+    })
+
+    /** `<Extended command> = %<Data block>{<Data block>}%`
+     *
+     * Example:
+     * ```
+     * %FSLAX24Y24*%
+     * %AMDONUTFIX*1,1,0.100,0,0*1,0,0.080,0,0*%
+     * ```
+     */
+    this.RULE("extendedCommand", () => {
+      // this.CONSUME(DefaultTokens.Percent)
+      this.SUBRULE(this.percent)
+      // There can be only one extended command between each pair of ‘%’ delimiters. It is allowed to put line separators between data blocks of a single command. - Gerber File Format Specification 2021-02, section 3.5.3
+      // But from experience, some files have more than 1 data block(s) in a single extended command, so we will allow that as well since it doesn't cause any issues.
+      this.AT_LEAST_ONE(() => {
+        this.SUBRULE(this.extendedCommandDataBlock)
+      })
+      // this.CONSUME2(DefaultTokens.Percent)
+      this.SUBRULE2(this.percent)
     })
 
     /** `<Data block> = {<Character>}*`
@@ -406,26 +436,18 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.stepRepeatCloseCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.blockApertureOpenCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.blockApertureCloseCommand) },
+        // DEPRECATED COMMANDS
+        { ALT: (): CstNode => this.SUBRULE(this.imagePolarityCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.axisSelectionCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.imageRotationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.mirrorImageCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.imageOffsetCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.scaleFactorCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.imageNameCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.loadNameCommand) },
       ])
-      this.CONSUME(DefaultTokens.Star)
-    })
-
-    /** `<Extended command> = %<Data block>{<Data block>}%`
-     *
-     * Example:
-     * ```
-     * %FSLAX24Y24*%
-     * %AMDONUTFIX*1,1,0.100,0,0*1,0,0.080,0,0*%
-     * ```
-     */
-    this.RULE("extendedCommand", () => {
-      this.CONSUME(DefaultTokens.Percent)
-      // There can be only one extended command between each pair of ‘%’ delimiters. It is allowed to put line separators between data blocks of a single command. - Gerber File Format Specification 2021-02, section 3.5.3
-      // But from experience, some files have more than 1 data block(s) in a single extended command, so we will allow that as well since it doesn't cause any issues.
-      this.AT_LEAST_ONE(() => {
-        this.SUBRULE(this.extendedCommandDataBlock)
-      })
-      this.CONSUME2(DefaultTokens.Percent)
+      this.SUBRULE(this.star)
+      // this.CONSUME(DefaultTokens.Star)
     })
 
     this.RULE("functionCodeCommand", () => {
@@ -437,11 +459,42 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.quadrantMultiCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.regionStartCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.regionEndCommand) },
-        { ALT: (): CstNode => this.SUBRULE(this.g54ToolChangeCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.dCodeCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.operationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.absoluteNotationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.incrementalNotationCommand) },
+        // DEPRECATED COMMANDS
+        { ALT: (): CstNode => this.SUBRULE(this.prepareApertureCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.prepareFlashCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.inchModeCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.metricModeCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.optionalStopCommand) },
       ])
-      this.CONSUME(DefaultTokens.Star)
+      // this.CONSUME(DefaultTokens.Star)
+      this.SUBRULE(this.star)
+    })
+
+    this.RULE(
+      "star",
+      () => {
+        this.CONSUME(DefaultTokens.Star)
+      },
+      {
+        resyncEnabled: true, // Allow the parser to resync on the star token if it gets lost, since it's used as a command terminator in many places and is very common in Gerber files.
+        recoveryValueFunc: (): CstNode => {
+          // If the star token is missing, we can just insert one and continue parsing. This allows us to handle files that are missing command terminators without throwing errors for every command after the first missing terminator.
+          return {
+            name: "Star",
+            children: {
+              // Star: [{ image: "*", startOffset: -1, endOffset: -1, startLine: -1, endLine: -1, startColumn: -1, endColumn: -1 }],
+            },
+          }
+        },
+      },
+    )
+
+    this.RULE("percent", () => {
+      this.CONSUME(DefaultTokens.Percent)
     })
 
     // <FS command> = FSLAX<Format>Y<Format>*
@@ -465,14 +518,13 @@ class GerberParser extends CstParser {
     // <MO command> = MO(IN|MM)*
     this.RULE("unitsCommand", () => {
       this.CONSUME(DefaultTokens.MO)
-      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.MM) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.IN) }])
+      // this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.MM) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.IN) }])
     })
 
     // <AD command> = ADD<D-code number><Template>[,<Modifiers set>]*
     this.RULE("apertureDefinitionCommand", () => {
       this.CONSUME(DefaultTokens.AD)
-      this.CONSUME(DefaultTokens.Dnn)
-      this.CONSUME(DefaultTokens.Name)
+      this.CONSUME(NameTokens.Name)
       this.OPTION(() => {
         this.CONSUME(DefaultTokens.Comma)
         this.SUBRULE(this.modifiersSet)
@@ -531,13 +583,13 @@ class GerberParser extends CstParser {
     })
 
     this.RULE("macroCommentPrimitive", () => {
-      this.CONSUME(MacroTokens.UnsignedNumber)
+      this.CONSUME(MacroTokens.Number)
       this.CONSUME(CommentTokens.String)
       this.CONSUME3(MacroTokens.Star)
     })
 
     this.RULE("macroParameterizedPrimitive", () => {
-      this.CONSUME(MacroTokens.UnsignedNumber)
+      this.CONSUME(MacroTokens.Number)
       this.AT_LEAST_ONE(() => {
         this.SUBRULE(this.macroParameter)
       })
@@ -577,7 +629,7 @@ class GerberParser extends CstParser {
           },
         },
         { ALT: (): IToken => this.CONSUME(MacroTokens.MacroVariable) },
-        { ALT: (): IToken => this.CONSUME(MacroTokens.UnsignedNumber) },
+        { ALT: (): IToken => this.CONSUME(MacroTokens.Number) },
       ])
     })
 
@@ -586,13 +638,13 @@ class GerberParser extends CstParser {
     // <LP command> = LP(C|D)*
     this.RULE("polarityCommand", () => {
       this.CONSUME(DefaultTokens.LP)
-      this.CONSUME(DefaultTokens.Name)
+      this.CONSUME(NameTokens.Name)
     })
 
     // <LM command> = LM(N|X|Y|XY)*
     this.RULE("mirroringCommand", () => {
       this.CONSUME(DefaultTokens.LM)
-      this.CONSUME(DefaultTokens.Name)
+      this.CONSUME(NameTokens.Name)
     })
 
     // <LR command> = LR<Rotation>*
@@ -644,12 +696,7 @@ class GerberParser extends CstParser {
 
     // <M02 command> = M02*
     this.RULE("endCommand", () => {
-      // this.CONSUME(DefaultTokens.M02)
-      this.OR([
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.M02) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.M00) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.M01) },
-      ])
+      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.M02) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.M00) }])
     })
 
     this.RULE("inlineInterpolateOperationCommand", () => {
@@ -694,11 +741,6 @@ class GerberParser extends CstParser {
       this.CONSUME(DefaultTokens.G37)
     })
 
-    this.RULE("g54ToolChangeCommand", () => {
-      this.CONSUME(DefaultTokens.G54)
-      this.CONSUME(DefaultTokens.Dnn)
-    })
-
     // <Dnn command> = D<D-code number>*
     this.RULE("dCodeCommand", () => {
       this.CONSUME(DefaultTokens.Dnn)
@@ -737,7 +779,7 @@ class GerberParser extends CstParser {
     // })
 
     this.RULE("coordinateData", () => {
-      this.MANY1(() => {
+      this.AT_LEAST_ONE(() => {
         this.SUBRULE(this.coordinateField)
       })
     })
@@ -778,6 +820,136 @@ class GerberParser extends CstParser {
       this.CONSUME(DefaultTokens.Number)
     })
 
+    /** DEPRECATED COMMANDS */
+
+    // G54 Select aperture This historic code optionally precedes an aperture selection D-code. It has no effect. Sometimes used.
+    this.RULE("prepareApertureCommand", () => {
+      this.CONSUME(DefaultTokens.G54)
+      // this.CONSUME(DefaultTokens.Dnn)
+      this.SUBRULE(this.dCodeCommand)
+    })
+
+    // This historic code optionally precedes D03 code. It has no effect. Very rarely used nowadays.
+    this.RULE("prepareFlashCommand", () => {
+      this.CONSUME(DefaultTokens.G55)
+      this.CONSUME(DefaultTokens.D03)
+    })
+
+    // These historic codes perform a function handled by the MO command. See 4.2. Sometimes used.
+    this.RULE("inchModeCommand", () => {
+      this.CONSUME(DefaultTokens.G70)
+    })
+
+    this.RULE("metricModeCommand", () => {
+      this.CONSUME(DefaultTokens.G71)
+    })
+
+    // This historic code has no effect. Very rarely used nowadays.
+    this.RULE("optionalStopCommand", () => {
+      this.CONSUME(DefaultTokens.M01)
+    })
+
+    // These historic codes perform a function handled by the FS command. See 4.1. Very rarely used nowadays.
+    this.RULE("absoluteNotationCommand", () => {
+      this.CONSUME(DefaultTokens.G90)
+    })
+
+    this.RULE("incrementalNotationCommand", () => {
+      this.CONSUME(DefaultTokens.G91)
+    })
+
+    // IP can only be used once, at the beginning of the file. Sometimes used, and then usually as %IPPOS*% to confirm the default – a positive image; it then has no effect. As it is not clear how %IPNEG*% must be handled it is probably a waste of time to try to fully implement it, and sufficient to give a warning if an image is negative.
+    // <IP command> = IP(POS|NEG)*
+    this.RULE("imagePolarityCommand", () => {
+      this.CONSUME(DefaultTokens.IP)
+      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.POS) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.NEG) }])
+    })
+
+    // These commands can only be used once, at the beginning of the file. The order of execution is always MI, SF, OF, IR and AS, independent of their order of appearance in the file.
+    // <AS command> = AS(AXBY|AYBX)*
+    this.RULE("axisSelectionCommand", () => {
+      this.CONSUME(DefaultTokens.AS)
+      this.OR([
+        {
+          ALT: () => {
+            this.CONSUME(DefaultTokens.A)
+            this.CONSUME(DefaultTokens.X)
+            this.CONSUME(DefaultTokens.B)
+            this.CONSUME(DefaultTokens.Y)
+          },
+        },
+        {
+          ALT: () => {
+            this.CONSUME2(DefaultTokens.A)
+            this.CONSUME2(DefaultTokens.Y)
+            this.CONSUME2(DefaultTokens.B)
+            this.CONSUME2(DefaultTokens.X)
+          },
+        },
+      ])
+    })
+
+    // <IR command> = IR(0|90|180|270)*
+    this.RULE("imageRotationCommand", () => {
+      this.CONSUME(DefaultTokens.IR)
+      this.CONSUME(DefaultTokens.Number)
+    })
+
+    // <MI command> = MI[A(0|1)][B(0|1)]*
+    this.RULE("mirrorImageCommand", () => {
+      this.CONSUME(DefaultTokens.MI)
+      this.OPTION(() => {
+        this.CONSUME(DefaultTokens.A)
+        this.CONSUME(DefaultTokens.Number)
+      })
+      this.OPTION2(() => {
+        this.CONSUME(DefaultTokens.B)
+        this.CONSUME2(DefaultTokens.Number)
+      })
+    })
+
+    // <OF command> = OF[A<Offset>][B<Offset>]*
+    this.RULE("imageOffsetCommand", () => {
+      this.CONSUME(DefaultTokens.OF)
+      this.OPTION(() => {
+        this.CONSUME(DefaultTokens.A)
+        this.CONSUME(DefaultTokens.Number)
+      })
+      this.OPTION2(() => {
+        this.CONSUME(DefaultTokens.B)
+        this.CONSUME2(DefaultTokens.Number)
+      })
+    })
+
+    // <SF command> = SF[A<Factor>][B<Factor>]*
+    this.RULE("scaleFactorCommand", () => {
+      this.CONSUME(DefaultTokens.SF)
+      this.OPTION(() => {
+        this.CONSUME(DefaultTokens.A)
+        this.CONSUME(DefaultTokens.Number)
+      })
+      this.OPTION2(() => {
+        this.CONSUME(DefaultTokens.B)
+        this.CONSUME2(DefaultTokens.Number)
+      })
+    })
+
+    // <IN command> = IN<Name>*
+    // Sets the name of the file image. Has no effect. It is comment.
+    this.RULE("imageNameCommand", () => {
+      this.CONSUME(DefaultTokens.IN)
+      this.CONSUME(NameTokens.Name)
+    })
+
+    // <LN command> = LN<Name>*
+    // Loads a name. Has no effect. It is a comment.
+    this.RULE("loadNameCommand", () => {
+      this.CONSUME(DefaultTokens.LN)
+      this.CONSUME(NameTokens.Name)
+    })
+
+    /** END DEPRECATED COMMANDS */
+
     this.performSelfAnalysis()
   }
 }
@@ -794,27 +966,7 @@ if (GENERATEDTS) {
 const BaseCstVisitor = parser.getBaseCstVisitorConstructor()
 
 type Tool = Symbols.StandardSymbol | Symbols.MacroSymbol
-type Units = "mm" | "inch"
-type ArcDirection = "cw" | "ccw"
-
-interface Point {
-  x: number
-  y: number
-}
-
-interface Location {
-  startPoint: Point
-  endPoint: Point
-  arcOffsets: { i: number; j: number; a: number }
-  stepRepeat: StepRepeatDefinition
-}
-
-interface StepRepeatDefinition {
-  x: number
-  y: number
-  i: number
-  j: number
-}
+// type Units = Types.UnitsType
 
 interface BlockContext {
   code: string
@@ -822,38 +974,47 @@ interface BlockContext {
 }
 
 interface VisitorState {
-  units: Units
-  coordinateFormat: Format
-  zeroSuppression: ZeroSuppression
+  units: Types.UnitsType
+  coordinateFormat: Types.Format
+  coordinateMode: Types.Mode
+  zeroSuppression: Types.ZeroSuppression
   done: boolean
-  currentPoint: Point
+  currentPoint: Types.Point
   currentToolCode: string | undefined
 }
 
 const defaultTool: Tool = new Symbols.NullSymbol({ id: "274x_NULL" })
 
+export interface ImageTree {
+  units: Types.UnitsType
+  children: Shapes.Shape[]
+}
+
+type VariableValues = Record<string, number>
+type Position = [x: number, y: number]
+
 export class GerberToTreeVisitor extends BaseCstVisitor {
   public readonly image: ImageTree = {
-    type: IMAGE,
-    units: "inch",
+    units: Constants.IN,
     children: [],
   }
 
-  public readonly macroDefinitions: Partial<Record<string, MacroBlock[]>> = {}
+  public readonly macroDefinitions: Partial<Record<string, Types.MacroBlock[]>> = {}
   public readonly toolDefinitions: Partial<Record<string, Tool>> = {}
 
   public state: VisitorState = {
-    units: "inch",
+    units: Constants.IN,
     coordinateFormat: [2, 4],
-    zeroSuppression: LEADING,
+    zeroSuppression: Constants.LEADING,
+    coordinateMode: Constants.ABSOLUTE,
     done: false,
     currentPoint: { x: 0, y: 0 },
     currentToolCode: undefined,
   }
 
-  private currentTransform: { polarity: Polarity; mirror: Mirroring; rotation: number; scale: number } = {
-    polarity: DARK,
-    mirror: "noMirror",
+  private currentTransform: { polarity: Types.Polarity; mirror: Types.Mirroring; rotation: Types.Rotation; scale: Types.Scaling } = {
+    polarity: Constants.DARK,
+    mirror: Constants.NO_MIRROR,
     rotation: 0,
     scale: 1,
   }
@@ -862,7 +1023,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   private arcDirection: ArcDirection | undefined
   private ambiguousArcCenter = false
   private regionMode = false
-  private defaultGraphic: GraphicType | undefined
+  private defaultGraphic: Types.GraphicType | undefined
   private readonly blockStack: BlockContext[] = []
   private readonly stepRepeatStack: Shapes.StepAndRepeat[] = []
 
@@ -882,46 +1043,133 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   command(ctx: cst.CommandCstChildren): void {
-    this.visitChildren(ctx)
+    Object.values(ctx).forEach(this.visit, this)
   }
 
   extendedCommandDataBlock(ctx: cst.ExtendedCommandDataBlockCstChildren): void {
-    this.visitChildren(ctx)
+    Object.values(ctx).forEach(this.visit, this)
   }
 
   extendedCommand(ctx: cst.ExtendedCommandCstChildren): void {
-    this.visitChildren(ctx)
+    Object.values(ctx).forEach(this.visit, this)
   }
 
   functionCodeCommand(ctx: cst.FunctionCodeCommandCstChildren): void {
-    this.visitChildren(ctx)
+    // this.visitChildren(ctx)
+    Object.values(ctx).forEach(this.visit, this)
+  }
+
+  star(_ctx: cst.StarCstChildren): void {
+    // Star is just a separator and doesn't have any meaning on its own, so we don't need to do anything here.
+  }
+
+  percent(_ctx: cst.PercentCstChildren): void {
+    // Percent is just a separator and doesn't have any meaning on its own, so we don't need to do anything here.
   }
 
   formatSpecificationCommand(ctx: cst.FormatSpecificationCommandCstChildren): void {
-    const xDigits = ctx.Number?.[0]?.image ?? ""
-    const parsedFormat = this.parseCoordinateDigits(xDigits)
+    const xDigits = ctx.Number[0].image
 
-    if (!parsedFormat) return
+    if (!/^\d{2}$/.test(xDigits)) return undefined
+    const integer = Number(xDigits[0])
+    const decimal = Number(xDigits[1])
 
-    this.state.coordinateFormat = parsedFormat
-    this.state.zeroSuppression = ctx.T ? TRAILING : LEADING
+    if (!Number.isFinite(integer) || !Number.isFinite(decimal)) return undefined
+
+    this.state.coordinateFormat[0] = integer
+    this.state.coordinateFormat[1] = decimal
+    this.state.zeroSuppression = ctx.T ? Constants.TRAILING : Constants.LEADING
   }
 
   unitsCommand(ctx: cst.UnitsCommandCstChildren): void {
-    this.state.units = ctx.MM ? "mm" : "inch"
-    this.image.units = this.state.units
+    const unitsString = ctx.MO[0].image.slice(2).toUpperCase()
+    if (unitsString === "MM") {
+      this.state.units = Constants.MM
+      this.image.units = Constants.MM
+    } else if (unitsString === "IN") {
+      this.state.units = Constants.IN
+      this.image.units = Constants.IN
+    }
   }
 
   apertureDefinitionCommand(ctx: cst.ApertureDefinitionCommandCstChildren): void {
-    const codeToken = ctx.Dnn[0].image
+    // const codeToken = ctx.Dnn[0].image
+    // const codeToken = ctx.AD[0].image.slice(2) // Dnn token is just a Name token with a D prefix, so we can just slice it off to get the code.
     const templateToken = ctx.Name[0].image
-    // if (!codeToken || !templateToken) return
 
-    const code = codeToken.slice(1)
+    const code = ctx.AD[0].image.slice(3)
     const params = ctx.modifiersSet ? (this.visit(ctx.modifiersSet[0]) as string[]) : []
-    const parsed = this.parseApertureDefinition(templateToken, params)
-    this.toolDefinitions[code] = this.createTool(code, parsed.shape, parsed.hole)
+
     this.state.currentToolCode = code
+
+    const tag = templateToken.toUpperCase()
+    const values = params.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+
+    // Circle
+    // C,<Diameter>[X<Hole diameter>]
+    if (tag === "C") {
+      this.toolDefinitions[code] = new Symbols.RoundSymbol({
+        id: `274x_D${code}`,
+        outer_dia: values[0] ?? 0,
+        // TODO: support rectangular holes
+        inner_dia: values[1] ?? 0,
+        units: this.state.units,
+      })
+      return
+    }
+
+    // Rectangle
+    // R,<X size>X<Y size>[X<Hole diameter>]
+    if (tag === "R") {
+      this.toolDefinitions[code] = new Symbols.RectangleSymbol({
+        id: `274x_D${code}`,
+        width: values[0] ?? 0,
+        height: values[1] ?? 0,
+        // TODO: support rectangular holes
+        inner_dia: values[2] ?? 0,
+        units: this.state.units,
+      })
+      return
+    }
+
+    // Obround
+    // O,<X size>X<Y size>[X<Hole diameter>]
+    if (tag === "O") {
+      this.toolDefinitions[code] = new Symbols.OvalSymbol({
+        id: `274x_D${code}`,
+        width: values[0] ?? 0,
+        height: values[1] ?? 0,
+        // TODO: support rectangular holes
+        inner_dia: values[2] ?? 0,
+        units: this.state.units,
+      })
+      return
+    }
+
+    // Polygon
+    // P,<Outer diameter>X<Number of vertices>[X<Rotation>[X<Hole diameter>]]
+    if (tag === "P") {
+      this.toolDefinitions[code] = new Symbols.PolygonSymbol({
+        id: `274x_D${code}`,
+        outer_dia: values[0] ?? 0,
+        corners: values[1] ?? 0,
+        angle: (values[2] ?? 0) * -1,
+        // TODO: support rectangular holes
+        inner_dia: values[3] ?? 0,
+        line_width: 0,
+        units: this.state.units,
+      })
+      return
+    }
+
+    this.toolDefinitions[code] = this.createMacro({
+      type: "macroTool",
+      name: templateToken,
+      dcode: code,
+      macro: this.macroDefinitions[templateToken] ?? [],
+      variableValues: values,
+      
+    } as MacroTool)
   }
 
   modifiersSet(ctx: cst.ModifiersSetCstChildren): string[] {
@@ -929,37 +1177,37 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   apertureMacroCommand(ctx: cst.ApertureMacroCommandCstChildren): void {
-    const name = ctx.Name?.[0]?.image
+    const name = ctx.Name[0].image
     if (!name) return
 
     const blockNodes = (ctx.macroBlock as unknown as CstNode[] | undefined) ?? []
     this.macroDefinitions[name] = blockNodes
-      .map((node) => this.visit(node) as MacroBlock | undefined)
-      .filter((block): block is MacroBlock => typeof block !== "undefined")
+      .map((node) => this.visit(node) as Types.MacroBlock | undefined)
+      .filter((block): block is Types.MacroBlock => typeof block !== "undefined")
   }
 
   polarityCommand(ctx: cst.PolarityCommandCstChildren): void {
     if (this.currentSurface) {
       this.flushCurrentSurface()
     }
-    const value = ctx.Name?.[0]?.image?.toUpperCase() ?? ""
-    this.currentTransform.polarity = value === "C" ? "clear" : DARK
+    const value = ctx.Name[0].image.toUpperCase()
+    this.currentTransform.polarity = value === "C" ? Constants.CLEAR : Constants.DARK
   }
 
   mirroringCommand(ctx: cst.MirroringCommandCstChildren): void {
-    const value = ctx.Name?.[0]?.image?.toUpperCase() ?? "N"
-    this.currentTransform.mirror = value === "X" ? "x" : value === "Y" ? "y" : value === "XY" ? "xy" : "noMirror"
+    const value = ctx.Name[0].image.toUpperCase()
+    this.currentTransform.mirror = value === "X" ? Constants.X : value === "Y" ? Constants.Y : value === "XY" ? Constants.XY : Constants.NO_MIRROR
   }
 
   rotationCommand(ctx: cst.RotationCommandCstChildren): void {
-    const rotation = Number(ctx.Number?.[0]?.image)
+    const rotation = Number(ctx.Number[0].image)
     if (Number.isFinite(rotation)) {
       this.currentTransform.rotation = rotation
     }
   }
 
   scalingCommand(ctx: cst.ScalingCommandCstChildren): void {
-    const scaling = Number(ctx.Number?.[0]?.image)
+    const scaling = Number(ctx.Number[0].image)
     if (Number.isFinite(scaling)) {
       this.currentTransform.scale = scaling
     }
@@ -967,7 +1215,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
 
   stepRepeatOpenCommand(ctx: cst.StepRepeatOpenCommandCstChildren): void {
     this.flushCurrentSurface()
-    const values = ctx.Number?.map((token) => Number(token.image)) ?? []
+    const values = ctx.Number.map((token) => Number(token.image)) ?? []
     const [x = 1, y = 1, i = 0, j = 0] = values
     if (x <= 1 && y <= 1 && i === 0 && j === 0) return
 
@@ -985,7 +1233,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     )
   }
 
-  stepRepeatCloseCommand(_ctx: cst.StepRepeatCloseCommandCstChildren): void {
+  stepRepeatCloseCommand(): void {
     this.flushCurrentSurface()
     const stepRepeat = this.stepRepeatStack.pop()
     if (stepRepeat) {
@@ -994,7 +1242,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   blockApertureOpenCommand(ctx: cst.BlockApertureOpenCommandCstChildren): void {
-    const codeToken = ctx.Dnn?.[0]?.image
+    const codeToken = ctx.Dnn[0].image
     const code = codeToken?.slice(1)
     if (!code) return
     this.blockStack.push({ code, shapes: [] })
@@ -1017,16 +1265,16 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   endCommand(_ctx: cst.EndCommandCstChildren): void {
     this.flushCurrentSurface()
     while (this.stepRepeatStack.length > 0) {
-      this.stepRepeatCloseCommand({})
+      this.stepRepeatCloseCommand()
     }
     this.state.done = true
   }
 
   inlineInterpolateOperationCommand(ctx: cst.InlineInterpolateOperationCommandCstChildren): void {
-    this.setInterpolationMode(ctx.G01 ? LINE : ctx.G02 ? CW_ARC : CCW_ARC)
+    this.setInterpolationMode(ctx.G01 ? Constants.LINE : ctx.G02 ? Constants.CW_ARC : Constants.CCW_ARC)
     const coordinates = this.readCoordinates(ctx)
-    const dCode = this.readDCode(ctx)
-    this.executeGraphic(coordinates, dCode)
+    const operationCode = this.interpretOperationCode(ctx)
+    this.executeGraphic(coordinates, operationCode)
   }
 
   operationCode(ctx: cst.OperationCodeCstChildren): number {
@@ -1053,13 +1301,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.regionMode = false
   }
 
-  g54ToolChangeCommand(ctx: cst.G54ToolChangeCommandCstChildren): void {
-    const code = ctx.Dnn?.[0]?.image?.slice(1)
-    if (code) this.state.currentToolCode = code
-  }
-
   dCodeCommand(ctx: cst.DCodeCommandCstChildren): void {
-    const image = ctx.Dnn?.[0]?.image
+    const image = ctx.Dnn[0].image
     if (!image) return
 
     const code = Number(image.slice(1))
@@ -1069,22 +1312,21 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       return
     }
 
-    this.executeGraphic(this.createEmptyCoordinates(), code)
+    // this.executeGraphic(this.createEmptyCoordinates(), code)
   }
 
-  operationCommand(ctx: cst.OperationCodeCstChildren): void {
+  operationCommand(ctx: cst.OperationCommandCstChildren): void {
     const coordinates = this.readCoordinates(ctx)
-    const dCode = this.readDCode(ctx)
-    this.executeGraphic(coordinates, dCode)
+    const operationCode = this.interpretOperationCode(ctx)
+    this.executeGraphic(coordinates, operationCode)
   }
 
   // unknownWordCommand(_ctx: cst.UnknownWordCommandCstChildren): void {}
 
   coordinateData(ctx: cst.CoordinateDataCstChildren): GerberCoordinates {
     let coordinates = this.createEmptyCoordinates()
-    const fields = (ctx.coordinateField as unknown as CstNode[] | undefined) ?? []
-    for (const field of fields) {
-      coordinates = this.mergeCoordinates(coordinates, this.visit(field) as GerberCoordinates)
+    for (const field of ctx.coordinateField) {
+      coordinates = this.mergeCoordinates(coordinates, this.visit(field))
     }
     return coordinates
   }
@@ -1093,79 +1335,79 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     for (const value of Object.values(ctx)) {
       if (!value) continue
       const nodes = value as unknown as CstNode[]
-      if (nodes.length > 0) return this.visit(nodes[0]) as GerberCoordinates
+      if (nodes.length > 0) return this.visit(nodes[0])
     }
     return this.createEmptyCoordinates()
   }
 
   xCoordinate(ctx: cst.XCoordinateCstChildren): GerberCoordinates {
-    return { x: ctx.Number?.[0]?.image }
+    return { x: ctx.Number[0].image }
   }
 
   yCoordinate(ctx: cst.YCoordinateCstChildren): GerberCoordinates {
-    return { y: ctx.Number?.[0]?.image }
+    return { y: ctx.Number[0].image }
   }
 
   iCoordinate(ctx: cst.ICoordinateCstChildren): GerberCoordinates {
-    return { i: ctx.Number?.[0]?.image }
+    return { i: ctx.Number[0].image }
   }
 
   jCoordinate(ctx: cst.JCoordinateCstChildren): GerberCoordinates {
-    return { j: ctx.Number?.[0]?.image }
+    return { j: ctx.Number[0].image }
   }
 
   aCoordinate(ctx: cst.ACoordinateCstChildren): GerberCoordinates {
-    return { a: ctx.Number?.[0]?.image }
+    return { a: ctx.Number[0].image }
   }
 
-  macroBlock(ctx: cst.MacroBlockCstChildren): MacroBlock | undefined {
+  macroBlock(ctx: cst.MacroBlockCstChildren): Types.MacroBlock | undefined {
     for (const value of Object.values(ctx)) {
       if (!value) continue
-      const nodes = value as unknown as CstNode[]
-      if (nodes.length > 0) return this.visit(nodes[0]) as MacroBlock | undefined
+      const nodes = value
+      if (nodes.length > 0) return this.visit(nodes[0]) as Types.MacroBlock | undefined
     }
     return undefined
   }
 
-  macroVariableDefinition(ctx: cst.MacroVariableDefinitionCstChildren): MacroBlock {
-    const name = ctx.MacroVariable?.[0]?.image ?? "$1"
-    const expressionNodes = (ctx.expression as unknown as CstNode[] | undefined) ?? []
+  macroVariableDefinition(ctx: cst.MacroVariableDefinitionCstChildren): Types.MacroBlock {
+    const name = ctx.MacroVariable[0].image ?? "$1"
+    const expressionNodes = ctx.expression
     const value = expressionNodes.length > 0 ? (this.visit(expressionNodes[0]) as MacroValue) : 0
-    return { type: MACRO_VARIABLE, name, value } as MacroBlock
+    return { type: Constants.MACRO_VARIABLE, name, value } as Types.MacroBlock
   }
 
-  macroPrimitive(ctx: cst.MacroPrimitiveCstChildren): MacroBlock | undefined {
+  macroPrimitive(ctx: cst.MacroPrimitiveCstChildren): Types.MacroBlock | undefined {
     for (const value of Object.values(ctx)) {
       if (!value) continue
-      const nodes = value as unknown as CstNode[]
-      if (nodes.length > 0) return this.visit(nodes[0]) as MacroBlock | undefined
+      const nodes = value
+      if (nodes.length > 0) return this.visit(nodes[0]) as Types.MacroBlock | undefined
     }
     return undefined
   }
 
-  macroCommentPrimitive(_ctx: cst.MacroCommentPrimitiveCstChildren): MacroBlock | undefined {
+  macroCommentPrimitive(_ctx: cst.MacroCommentPrimitiveCstChildren): Types.MacroBlock | undefined {
     return undefined
   }
 
-  macroParameterizedPrimitive(ctx: cst.MacroParameterizedPrimitiveCstChildren): MacroBlock {
-    const code = ctx.UnsignedNumber[0].image ?? "0"
-    const parameterNodes = (ctx.macroParameter as unknown as CstNode[] | undefined) ?? []
+  macroParameterizedPrimitive(ctx: cst.MacroParameterizedPrimitiveCstChildren): Types.MacroBlock {
+    const code = ctx.Number[0].image ?? "0"
+    const parameterNodes = ctx.macroParameter
     return {
-      type: MACRO_PRIMITIVE,
+      type: Constants.MACRO_PRIMITIVE,
       code: code as MacroPrimitiveCode,
       parameters: parameterNodes.map((node) => this.visit(node) as MacroValue),
-    } as MacroBlock
+    } as Types.MacroBlock
   }
 
   macroCommentPart(_ctx: cst.MacroCommentPartCstChildren): void {}
 
   macroParameter(ctx: cst.MacroParameterCstChildren): MacroValue {
-    const expressionNodes = (ctx.expression as unknown as CstNode[] | undefined) ?? []
+    const expressionNodes = ctx.expression
     return expressionNodes.length > 0 ? (this.visit(expressionNodes[0]) as MacroValue) : 0
   }
 
   expression(ctx: cst.ExpressionCstChildren): MacroValue {
-    const termNodes = (ctx.term as unknown as CstNode[] | undefined) ?? []
+    const termNodes = ctx.term
     if (termNodes.length === 0) return 0
 
     let left = this.visit(termNodes[0]) as MacroValue
@@ -1181,7 +1423,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   term(ctx: cst.TermCstChildren): MacroValue {
-    const factorNodes = (ctx.factor as unknown as CstNode[] | undefined) ?? []
+    const factorNodes = ctx.factor
     if (factorNodes.length === 0) return 0
 
     let left = this.visit(factorNodes[0]) as MacroValue
@@ -1197,14 +1439,85 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   factor(ctx: cst.FactorCstChildren): MacroValue {
-    const expressionNodes = (ctx.expression as unknown as CstNode[] | undefined) ?? []
+    const expressionNodes = ctx.expression ?? []
     if (expressionNodes.length > 0) return this.visit(expressionNodes[0]) as MacroValue
     if (ctx.MacroVariable?.[0]) return ctx.MacroVariable[0].image
-    const numericToken = ctx.UnsignedNumber?.[0]
+    const numericToken = ctx.Number?.[0]
     return numericToken ? Number(numericToken.image) : 0
   }
 
-  private readCoordinates(ctx: ParameterCtx): GerberCoordinates {
+  // DEPRECATED COMMANDS
+  prepareApertureCommand(ctx: cst.PrepareApertureCommandCstChildren): void {
+    this.visit(ctx.dCodeCommand)
+  }
+
+  prepareFlashCommand(ctx: cst.PrepareFlashCommandCstChildren): void {
+    // This command is deprecated, but if we encounter it, we should still set the current tool to the specified D-code, since that's the only effect it has.
+    // this.visit(ctx.dCodeCommand)
+    // TODO: implement
+  }
+
+  inchModeCommand(): void {
+    this.state.units = Constants.IN
+    this.image.units = Constants.IN
+  }
+
+  metricModeCommand(): void {
+    this.state.units = Constants.MM
+    this.image.units = Constants.MM
+  }
+
+  optionalStopCommand(): void {
+    // This command is deprecated and has no effect, so we can safely ignore it.
+  }
+
+  absoluteNotationCommand(_ctx: cst.AbsoluteNotationCommandCstChildren): void {
+    // Absolute notation is the default and is specified by the "A" in the FS command. It is also specified by the "A" in the G90 command, but this is deprecated since revision I1 from December 2012.
+    this.state.coordinateMode = Constants.ABSOLUTE
+  }
+
+  incrementalNotationCommand(_ctx: cst.IncrementalNotationCommandCstChildren): void {
+    // Incremental Notation is deprecated since revision I1 from December 2012.
+    this.state.coordinateMode = Constants.INCREMENTAL
+  }
+
+  imagePolarityCommand(ctx: cst.ImagePolarityCommandCstChildren): void {
+    const value = ctx.POS ? "POS" : ctx.NEG ? "NEG" : "POS"
+    if (value === "NEG") {
+      console.warn("Negative images are not fully supported, and may not render correctly.")
+    }
+  }
+
+  axisSelectionCommand(ctx: cst.AxisSelectionCommandCstChildren): void {
+    // TODO: Warn if the axes are swapped, since that can cause confusion for users and may indicate an error in the file.
+  }
+
+  imageRotationCommand(ctx: cst.ImageRotationCommandCstChildren): void {
+    const rotation = Number(ctx.Number[0].image)
+    // TODO: warn for non 0 rotation
+  }
+
+  mirrorImageCommand(ctx: cst.MirrorImageCommandCstChildren): void {
+    // TODO: implement or warn
+  }
+
+  imageOffsetCommand(ctx: cst.ImageOffsetCommandCstChildren): void {
+    // TODO: implement or warn
+  }
+
+  scaleFactorCommand(ctx: cst.ScaleFactorCommandCstChildren): void {
+    // TODO: implement or warn
+  }
+
+  imageNameCommand(ctx: cst.ImageNameCommandCstChildren): void {
+    // This command is deprecated and has no effect, so we can safely ignore it.
+  }
+
+  loadNameCommand(ctx: cst.LoadNameCommandCstChildren): void {
+    // This command is deprecated and has no effect, so we can safely ignore it.
+  }
+
+  private readCoordinates(ctx: { coordinateData?: cst.CoordinateDataCstNode[] }): GerberCoordinates {
     const coordinateNodes = (ctx.coordinateData as unknown as CstNode[] | undefined) ?? []
     return coordinateNodes.reduce(
       (coordinates, node) => this.mergeCoordinates(coordinates, this.visit(node) as GerberCoordinates),
@@ -1212,33 +1525,34 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     )
   }
 
-  private visitChildren(ctx: GerberStatementCtx): void {
-    for (const value of Object.values(ctx)) {
-      if (!value) continue
-      for (const node of value) {
-        if (typeof node === "object" && node !== null && "name" in node) {
-          this.visit(node as CstNode)
-        }
-      }
-    }
-  }
+  // private visitChildren(ctx: GerberStatementCtx): void {
+  //   for (const value of Object.values(ctx)) {
+  //     if (!value) continue
+  //     for (const node of value) {
+  //       if (typeof node === "object" && node !== null && "name" in node) {
+  //         this.visit(node as CstNode)
+  //       }
+  //     }
+  //   }
+  // }
 
-  private readDCode(ctx: ParameterCtx): number | undefined {
-    const operationCodeNodes = (ctx.operationCode as unknown as CstNode[] | undefined) ?? []
+  private interpretOperationCode(ctx: { operationCode?: cst.OperationCodeCstNode[] }): number | undefined {
+    const operationCodeNodes = ctx.operationCode
+    if (!operationCodeNodes) return undefined
     if (operationCodeNodes.length === 0) return undefined
     return this.visit(operationCodeNodes[operationCodeNodes.length - 1]) as number
   }
 
-  private executeGraphic(coordinates: GerberCoordinates, dCode: number | undefined): void {
+  private executeGraphic(coordinates: GerberCoordinates, operationCode: number | undefined): void {
     const location = this.advanceLocation(coordinates)
-    const graphic = this.graphicFromDCode(dCode) ?? this.defaultGraphic
+    const operation = this.graphicFromOperationCode(operationCode) ?? this.defaultGraphic
 
-    if (graphic === MOVE) {
+    if (operation === Constants.MOVE) {
       this.flushCurrentSurface()
       return
     }
 
-    if (graphic === SHAPE) {
+    if (operation === Constants.SHAPE) {
       this.flushCurrentSurface()
       this.emitShape(
         new Shapes.Pad({
@@ -1249,20 +1563,20 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
           mirror_x: this.currentTransform.mirror === "x" || this.currentTransform.mirror === "xy" ? 1 : 0,
           mirror_y: this.currentTransform.mirror === "y" || this.currentTransform.mirror === "xy" ? 1 : 0,
           resize_factor: this.currentTransform.scale,
-          polarity: this.currentTransform.polarity === DARK ? 1 : 0,
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
         }),
       )
       return
     }
 
-    if (graphic !== SEGMENT) {
+    if (operation !== Constants.SEGMENT) {
       return
     }
 
     if (this.regionMode) {
       if (!this.currentSurface) {
         this.currentSurface = new Shapes.Surface({
-          polarity: this.currentTransform.polarity === DARK ? 1 : 0,
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
         }).addContour(
           new Shapes.Contour({
             xs: location.startPoint.x,
@@ -1296,6 +1610,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
 
     const tool = this.currentTool()
     if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
+      // TODO: warn about using macro tools in interpolation commands, since it's not clear how to apply transformations to the primitives inside the macro
       return
     }
 
@@ -1303,7 +1618,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       this.emitShape(
         new Shapes.Line({
           symbol: tool,
-          polarity: this.currentTransform.polarity === DARK ? 1 : 0,
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
           xs: location.startPoint.x,
           ys: location.startPoint.y,
           xe: location.endPoint.x,
@@ -1317,7 +1632,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.emitShape(
       new Shapes.Arc({
         symbol: tool,
-        polarity: this.currentTransform.polarity === DARK ? 1 : 0,
+        polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
         xs: location.startPoint.x,
         ys: location.startPoint.y,
         xe: location.endPoint.x,
@@ -1329,22 +1644,22 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     )
   }
 
-  private setInterpolationMode(mode: typeof LINE | typeof CW_ARC | typeof CCW_ARC): void {
-    if (mode === LINE) {
+  private setInterpolationMode(mode: typeof Constants.LINE | typeof Constants.CW_ARC | typeof Constants.CCW_ARC): void {
+    if (mode === Constants.LINE) {
       this.arcDirection = undefined
-    } else if (mode === CW_ARC) {
+    } else if (mode === Constants.CW_ARC) {
       this.arcDirection = "cw"
     } else {
       this.arcDirection = "ccw"
     }
-    this.defaultGraphic = SEGMENT
+    this.defaultGraphic = Constants.SEGMENT
   }
 
   private currentTool(): Tool {
     return typeof this.state.currentToolCode === "string" ? (this.toolDefinitions[this.state.currentToolCode] ?? defaultTool) : defaultTool
   }
 
-  private advanceLocation(coordinates: GerberCoordinates): Location {
+  private advanceLocation(coordinates: GerberCoordinates): Types.Location {
     const startPoint = { ...this.state.currentPoint }
     const x0 = this.parseCoordinate(coordinates.x0, startPoint.x)
     const y0 = this.parseCoordinate(coordinates.y0, startPoint.y)
@@ -1373,7 +1688,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     const digits = integerPlaces + decimalPlaces
     const [sign, signlessCoordinate] =
       coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
-    const padded = this.state.zeroSuppression === TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
+    const padded =
+      this.state.zeroSuppression === Constants.TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
     const leading = padded.slice(0, padded.length - decimalPlaces)
     const trailing = padded.slice(padded.length - decimalPlaces)
     return Number(`${sign}${leading}.${trailing}`)
@@ -1398,8 +1714,9 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.image.children.push(shape)
   }
 
-  private convertShapeUnits(shape: Shapes.Shape, units: Units): void {
-    shape.units = units
+  private convertShapeUnits(shape: Shapes.Shape, units: Types.UnitsType): void {
+    const normalizedUnits: ShapeUnits = units === Constants.IN ? "inch" : "mm"
+    shape.units = normalizedUnits
     if (shape.type === Shapes.StepAndRepeat.prototype.type) {
       shape.shapes.map((child) => this.convertShapeUnits(child, units))
       return
@@ -1412,11 +1729,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       (shape.type === Shapes.Pad.prototype.type || shape.type === Shapes.Line.prototype.type || shape.type === Shapes.Arc.prototype.type) &&
       shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION
     ) {
-      shape.symbol.units = units
+      shape.symbol.units = normalizedUnits
     }
   }
 
-  private getArcCenter(location: Location): Point {
+  private getArcCenter(location: Types.Location): Types.Point {
     if (this.ambiguousArcCenter && this.arcDirection) {
       return getAmbiguousArcCenter(location, this.arcDirection)
     }
@@ -1424,110 +1741,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       x: location.startPoint.x + location.arcOffsets.i,
       y: location.startPoint.y + location.arcOffsets.j,
     }
-  }
-
-  private parseCoordinateDigits(digits: string): Format | undefined {
-    if (!/^\d{2}$/.test(digits)) return undefined
-    const integer = Number(digits[0])
-    const decimal = Number(digits[1])
-    return Number.isFinite(integer) && Number.isFinite(decimal) ? [integer, decimal] : undefined
-  }
-
-  private parseApertureDefinition(
-    template: string,
-    params: string[],
-  ): { shape: SimpleShape | { type: typeof MACRO_SHAPE; name: string; variableValues: number[] }; hole: HoleShape | undefined } {
-    const tag = template.toUpperCase()
-    const values = params.map((value) => Number(value)).filter((value) => Number.isFinite(value))
-
-    if (tag === "C") {
-      return {
-        shape: { type: CIRCLE, diameter: values[0] ?? 0 },
-        hole: this.holeFromNumbers(values.slice(1)),
-      }
-    }
-
-    if (tag === "R" || tag === "O") {
-      return {
-        shape: { type: tag === "R" ? RECTANGLE : OBROUND, xSize: values[0] ?? 0, ySize: values[1] ?? 0 },
-        hole: this.holeFromNumbers(values.slice(2)),
-      }
-    }
-
-    if (tag === "P") {
-      return {
-        shape: { type: POLYGON, diameter: values[0] ?? 0, vertices: values[1] ?? 0, rotation: values[2] ?? 0 },
-        hole: this.holeFromNumbers(values.slice(3)),
-      }
-    }
-
-    return {
-      shape: {
-        type: MACRO_SHAPE,
-        name: template,
-        variableValues: values,
-      },
-      hole: undefined,
-    }
-  }
-
-  private holeFromNumbers(values: number[]): HoleShape | undefined {
-    if (values.length === 0) return undefined
-    if (values.length === 1) {
-      return { type: CIRCLE, diameter: values[0] }
-    }
-    return { type: RECTANGLE, xSize: values[0], ySize: values[1] }
-  }
-
-  private createTool(
-    code: string,
-    shape: SimpleShape | { type: typeof MACRO_SHAPE; name: string; variableValues: number[] },
-    hole: HoleShape | undefined,
-  ): Tool {
-    if (shape.type === MACRO_SHAPE) {
-      return createMacro({
-        type: "macroTool",
-        name: shape.name,
-        dcode: code,
-        macro: this.macroDefinitions[shape.name] ?? [],
-        variableValues: shape.variableValues,
-      } as MacroTool)
-    }
-
-    if (shape.type === CIRCLE) {
-      return new Symbols.RoundSymbol({
-        id: `274x_D${code}`,
-        outer_dia: shape.diameter,
-        inner_dia: hole?.type === CIRCLE ? hole.diameter : 0,
-      })
-    }
-
-    if (shape.type === RECTANGLE) {
-      return new Symbols.RectangleSymbol({
-        id: `274x_D${code}`,
-        width: shape.xSize,
-        height: shape.ySize,
-        inner_dia: hole?.type === CIRCLE ? hole.diameter : 0,
-      })
-    }
-
-    if (shape.type === OBROUND) {
-      return new Symbols.OvalSymbol({
-        id: `274x_D${code}`,
-        width: shape.xSize,
-        height: shape.ySize,
-        inner_dia: hole?.type === CIRCLE ? hole.diameter : 0,
-      })
-    }
-
-    return new Symbols.PolygonSymbol({
-      id: `274x_D${code}`,
-      outer_dia: shape.diameter,
-      corners: shape.vertices,
-      inner_dia: hole?.type === CIRCLE ? hole.diameter : 0,
-      line_width: 0,
-      angle: (shape.rotation ?? 0) * -1,
-    })
   }
 
   private mergeCoordinates(base: GerberCoordinates, next: GerberCoordinates): GerberCoordinates {
@@ -1546,28 +1759,321 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     return { x0: undefined, y0: undefined, x: undefined, y: undefined, i: undefined, j: undefined, a: undefined }
   }
 
-  private graphicFromDCode(code: number | undefined): GraphicType | undefined {
-    if (code === 1) return SEGMENT
-    if (code === 2) return MOVE
-    if (code === 3) return SHAPE
+  private graphicFromOperationCode(code: number | undefined): Types.GraphicType | undefined {
+    if (code === 1) return Constants.SEGMENT
+    if (code === 2) return Constants.MOVE
+    if (code === 3) return Constants.SHAPE
     return undefined
   }
+
+  // MACRO STUFF
+
+  // Helper function: Rotate and shift point
+  private rotateAndShift(point: Position, shift: Position, degrees = 0): Position {
+    const rotation = (degrees * Math.PI) / 180
+    const [sin, cos] = [Math.sin(rotation), Math.cos(rotation)]
+    const [x, y] = point
+    const nextX = x * cos - y * sin + shift[0]
+    const nextY = x * sin + y * cos + shift[1]
+    return [nextX, nextY]
+  }
+  
+  private rotate = (p: Position, angle: number): Position => this.rotateAndShift(p, [0, 0], angle)
+  
+  private solveExpression(expression: MacroValue, variables: VariableValues): number {
+    if (typeof expression === "number") return expression
+    if (typeof expression === "string") return variables[expression]
+  
+    const left = this.solveExpression(expression.left, variables)
+    const right = this.solveExpression(expression.right, variables)
+  
+    switch (expression.operator) {
+      case "+": {
+        return left + right
+      }
+  
+      case "-": {
+        return left - right
+      }
+  
+      case "x": {
+        return left * right
+      }
+  
+      case "/": {
+        return left / right
+      }
+    }
+  }
+  
+  private createMacroPrimitive(code: MacroPrimitiveCode, parameters: number[]): Shapes.Shape {
+    switch (code) {
+      case Constants.MACRO_CIRCLE: {
+        return this.plotCircle(parameters)
+      }
+  
+      case Constants.MACRO_VECTOR_LINE:
+      case Constants.MACRO_VECTOR_LINE_DEPRECATED: {
+        return this.plotVectorLine(parameters)
+      }
+  
+      case Constants.MACRO_CENTER_LINE: {
+        return this.plotCenterLine(parameters)
+      }
+  
+      case Constants.MACRO_LOWER_LEFT_LINE_DEPRECATED: {
+        return this.plotLowerLeftLine(parameters)
+      }
+  
+      case Constants.MACRO_OUTLINE: {
+        return this.plotOutline(parameters)
+      }
+  
+      case Constants.MACRO_POLYGON: {
+        return this.plotPolygon(parameters)
+      }
+  
+      case Constants.MACRO_MOIRE_DEPRECATED: {
+        return this.plotMoire(parameters)
+      }
+  
+      case Constants.MACRO_THERMAL: {
+        return this.plotThermal(parameters)
+      }
+    }
+  }
+  
+  private plotCircle(parameters: number[]): Shapes.Primitive {
+    const [exposure, diameter, cx0, cy0, degrees] = parameters
+    const [cx, cy] = this.rotate([cx0, cy0], degrees)
+  
+    return new Shapes.Pad({
+      polarity: exposure === 1 ? 1 : 0,
+      x: cx,
+      y: cy,
+      symbol: new Symbols.RoundSymbol({
+        outer_dia: diameter,
+        inner_dia: 0,
+        units: this.state.units,
+      }),
+      units: this.state.units,
+    })
+  }
+  
+  private plotVectorLine(parameters: number[]): Shapes.Primitive {
+    const [exposure, width, sx, sy, ex, ey, degrees] = parameters
+    const [xs, ys] = this.rotate([sx, sy], degrees)
+    const [xe, ye] = this.rotate([ex, ey], degrees)
+  
+    return new Shapes.Line({
+      polarity: exposure === 1 ? 1 : 0,
+      xs: xs,
+      ys: ys,
+      xe: xe,
+      ye: ye,
+      symbol: new Symbols.SquareSymbol({
+        width: width,
+        height: 0,
+        inner_dia: 0,
+        units: this.state.units,
+      }),
+      units: this.state.units,
+    })
+  }
+  
+  private plotCenterLine(parameters: number[]): Shapes.Primitive {
+    const [exposure, width, height, cx, cy, degrees] = parameters
+    const [x, y] = this.rotate([cx, cy], degrees)
+  
+    return new Shapes.Pad({
+      polarity: exposure === 1 ? 1 : 0,
+      rotation: degrees,
+      x: x,
+      y: y,
+      symbol: new Symbols.RectangleSymbol({
+        width: width,
+        height: height,
+        inner_dia: 0,
+        units: this.state.units,
+      }),
+      units: this.state.units,
+    })
+  }
+  
+  private plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
+    const [exposure, width, height, x, y, degrees] = parameters
+    const [xs, ys] = this.rotate([x, y], degrees)
+  
+    return new Shapes.Pad({
+      polarity: exposure === 1 ? 1 : 0,
+      rotation: degrees,
+      x: xs + width / 2,
+      y: ys + height / 2,
+      symbol: new Symbols.RectangleSymbol({
+        width: width,
+        height: height,
+        inner_dia: 0,
+        units: this.state.units,
+      }),
+      units: this.state.units,
+    })
+  }
+  
+  private plotOutline(parameters: number[]): Shapes.Surface {
+    const [exposure, , ...coords] = parameters.slice(0, -1)
+    const degrees = parameters[parameters.length - 1]
+    const [xs, ys] = this.rotate([coords[0], coords[1]], degrees)
+  
+    const segments = coords
+      .map((p, i) => {
+        if (i % 2 === 0 && i >= 2) {
+          const [x, y] = this.rotate([p, coords[i + 1]], degrees)
+          return new Shapes.Contour_Line_Segment({
+            x: x,
+            y: y,
+          })
+        }
+        return undefined
+      })
+      .filter((s): s is Shapes.Contour_Line_Segment => s !== undefined)
+    return new Shapes.Surface({
+      polarity: exposure === 1 ? 1 : 0,
+      units: this.state.units,
+    }).addContour(
+      new Shapes.Contour({
+        poly_type: 1,
+        xs: xs,
+        ys: ys,
+        segments: segments,
+      }),
+    )
+  }
+  
+  private plotPolygon(parameters: number[]): Shapes.Primitive {
+    const [exposure, vertices, cx, cy, diameter, degrees] = parameters
+  
+    const [x, y] = this.rotate([cx, cy], degrees)
+  
+    return new Shapes.Pad({
+      polarity: exposure === 1 ? 1 : 0,
+      x: x,
+      y: y,
+      rotation: degrees,
+      units: this.state.units,
+      symbol: new Symbols.PolygonSymbol({
+        outer_dia: diameter,
+        corners: vertices,
+        inner_dia: 0,
+        line_width: 0,
+        angle: 0,
+        units: this.state.units,
+      }),
+    })
+  }
+  
+  private plotMoire(parameters: number[]): Shapes.Primitive {
+    const [cx0, cy0, d, ringThx, ringGap, ringN, lineThx, lineLength, degrees] = parameters
+    const [cx, cy] = this.rotate([cx0, cy0], degrees)
+  
+    return new Shapes.Pad({
+      polarity: 1,
+      x: cx,
+      y: cy,
+      rotation: degrees,
+      units: this.state.units,
+      symbol: new Symbols.MoireGerberSymbol({
+        outer_dia: d,
+        ring_gap: ringGap,
+        ring_width: ringThx,
+        num_rings: ringN,
+        line_width: lineThx,
+        line_length: lineLength,
+        angle: 0,
+        units: this.state.units,
+      }),
+    })
+  }
+  
+  private plotThermal(parameters: number[]): Shapes.Primitive {
+    const [cx0, cy0, od, id, gap, degrees] = parameters
+    const [x, y] = this.rotate([cx0, cy0], degrees)
+  
+    return new Shapes.Pad({
+      polarity: 1,
+      x: x,
+      y: y,
+      rotation: degrees,
+      units: this.state.units,
+      symbol: new Symbols.SquaredRoundThermalSymbol({
+        outer_dia: od,
+        inner_dia: id,
+        gap: gap,
+        num_spokes: 4,
+        angle: 0,
+        units: this.state.units,
+      }),
+    })
+  }
+  
+  private createMacro(tool: MacroTool): Symbols.MacroSymbol {
+    const shapes: Shapes.Shape[] = []
+    const variableValues: VariableValues = Object.fromEntries(tool.variableValues.map((value, index) => [`$${index + 1}`, value]))
+  
+    for (const block of tool.macro) {
+      if (block.type === Constants.MACRO_VARIABLE) {
+        variableValues[block.name] = this.solveExpression(block.value, variableValues)
+      }
+  
+      if (block.type === Constants.MACRO_PRIMITIVE) {
+        const parameters = block.parameters.map((p) => {
+          return this.solveExpression(p, variableValues)
+        })
+  
+        shapes.push(this.createMacroPrimitive(block.code, parameters))
+      }
+    }
+  
+    // micro optimization
+    let flatten = true
+    if (shapes.every((s) => "polarity" in s && s.polarity == 1)) {
+      flatten = false
+    }
+  
+    return new Symbols.MacroSymbol({
+      id: `${tool.name}-D${tool.dcode}`,
+      shapes,
+      flatten,
+    })
+  }
+  
 }
 
 export function parseGerberWithChevrotain(file: string): ImageTree {
   const lexingResult = GerberLexer.tokenize(file)
   if (lexingResult.errors.length > 0) {
-    throw new Error(
-      `Gerber lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors
-        .map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`)
-        .join("\n")}`,
+    // throw new Error(
+    //   `Gerber lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors
+    //     .map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`)
+    //     .join("\n")}`,
+    // )
+    console.warn(
+      `Gerber lexing produced ${lexingResult.errors.length} error(s). This may indicate that the file is not fully compliant with the Gerber specification, and may lead to incorrect parsing results.`,
+    )
+    console.warn(
+      `Gerber lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`,
     )
   }
 
   parser.input = lexingResult.tokens
   const cst = parser.program()
   if (parser.errors.length > 0) {
-    throw new Error(
+    // throw new Error(
+    //   `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
+    // )
+    console.warn(
+      `Gerber parsing produced ${parser.errors.length} error(s). This may indicate that the file is not fully compliant with the Gerber specification, and may lead to incorrect parsing results.`,
+    )
+    console.warn(
       `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
     )
   }

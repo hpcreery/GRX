@@ -105,6 +105,7 @@ export class StandardSymbol implements TStandardSymbol, ISymbolRecord {
   public line_width = 0
   /** Length of line for Moire patterns */
   public line_length = 0
+  // TODO: documente angle direction convention (clockwise vs counterclockwise, 0 reference point)
   /** Angle in Degrees */
   public angle = 0
   /** Gap between spokes for thermals */

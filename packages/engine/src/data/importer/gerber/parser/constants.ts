@@ -6,7 +6,7 @@ export const DRILL = 'drill'
 
 // Units constants
 export const MM = 'mm'
-export const IN = 'in'
+export const IN = 'inch'
 
 // Format constants
 export const LEADING = 'leading'
@@ -50,3 +50,13 @@ export const MULTI = 'multi'
 // Load polarity
 export const DARK = 'dark'
 export const CLEAR = 'clear'
+
+// Load mirroring
+export const NO_MIRROR = 'noMirror'
+export const X = 'x'
+export const Y = 'y'
+export const XY = 'xy'
+
+export const MACRO_COMMENT = "macroComment";
+export const MACRO_VARIABLE = "macroVariable";
+export const MACRO_PRIMITIVE = "macroPrimitive";

@@ -41,6 +41,7 @@ export interface GerberParserState {
 // Common types
 
 import type * as Constants from './constants'
+import type { MacroBlock as TraceMacroBlock } from "@hpcreery/tracespace-parser"
 
 /**
  * Gerber file or NC drill file
@@ -203,7 +204,7 @@ export type GraphicType =
   | typeof Constants.SHAPE
   | typeof Constants.MOVE
   | typeof Constants.SEGMENT
-  | typeof Constants.SLOT
+  // | typeof Constants.SLOT
 
 /**
  * Valid interpolations modes
@@ -224,3 +225,59 @@ export type QuadrantModeType = typeof Constants.SINGLE | typeof Constants.MULTI
  * Valid image polarities
  */
 export type Polarity = typeof Constants.DARK | typeof Constants.CLEAR
+/**
+ * Valid image mirroring modes
+ */
+export type Mirroring = typeof Constants.NO_MIRROR | typeof Constants.X | typeof Constants.Y | typeof Constants.XY;
+/**
+ * Valid image scaling modes
+ */
+export type Scaling = number;
+/**
+ * Valid image rotation modes
+ */
+export type Rotation = number;
+
+/**
+ * A 2D point with x and y coordinates
+ */
+export interface Point {
+  x: number
+  y: number
+}
+
+/**
+ * Location information for arc operations
+ */
+export interface Location {
+  startPoint: Point
+  endPoint: Point
+  arcOffsets: { i: number; j: number; a: number }
+  stepRepeat: StepRepeatDefinition
+}
+
+/**
+ * Step and repeat definition parameters
+ */
+export interface StepRepeatDefinition {
+  x: number
+  y: number
+  i: number
+  j: number
+}
+
+/**
+ * A macro tool definition
+ */
+export interface MacroTool {
+  type: "macroTool"
+  name: string
+  dcode: string
+  macro: MacroBlock[]
+  variableValues: number[]
+}
+
+/**
+ * A macro block from the @hpcreery/tracespace-parser
+ */
+export type MacroBlock = TraceMacroBlock
