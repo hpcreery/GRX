@@ -175,7 +175,10 @@ const CommentTokens = {
 }
 
 const NameTokens = {
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
+  // SPEC CORRECT REGEX
+  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
+  // COMMONLY USED REGEX THAT ALLOWS FOR MORE INVALID NAMES, BUT IT'S FINE BECAUSE WE'LL JUST WARN ABOUT THEM LATER IN THE PROCESSING PIPELINE
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-._a-zA-Z0-9]*/, pop_mode: true }),
 }
 
 // The order of Token definitions passed to the Lexer is important. The first PATTERN to match will be chosen, not the longest.
@@ -358,7 +361,7 @@ class GerberParser extends CstParser {
   constructor() {
     super(multiModeLexerDefinition, {
       recoveryEnabled: true,
-      maxLookahead: 10,
+      maxLookahead: 20,
     })
 
     // console.log("can delete star?" , this.canTokenTypeBeDeletedInRecovery(DefaultTokens.Star))
@@ -2077,7 +2080,7 @@ export function parseGerberWithChevrotain(file: string): ImageTree {
       `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
     )
   }
-
+  
   const visitor = new GerberToTreeVisitor()
   return visitor.visit(cst) as ImageTree
 }

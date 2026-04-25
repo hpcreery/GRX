@@ -18,13 +18,15 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
   let image
-
+  console.time("Gerber parsing")
+  
   try {
     image = parseGerberWithChevrotain(file)
   } catch (error) {
     console.warn("Gerber Chevrotain parser failed, falling back to tracespace-parser", error)
     image = plot(parseWithTracespace(file))
   }
+  console.timeEnd("Gerber parsing")
   // const units = image.units
 
   await api.create_layer(params.project, params.layer)
