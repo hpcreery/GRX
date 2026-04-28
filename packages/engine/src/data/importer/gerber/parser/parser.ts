@@ -100,13 +100,13 @@ const DefaultTokens = {
   B: createToken({ name: "B", pattern: /B/i }),
 
   // TF Attribute file. Set a file attribute.
-  TF: createToken({ name: "TF", pattern: /TF/i }),
+  TF: createToken({ name: "TF", pattern: /TF/i, push_mode: "AttributeMode" }),
   // TA Attribute aperture. Add an aperture attribute to the dictionary or modify it.
-  TA: createToken({ name: "TA", pattern: /TA/i }),
+  TA: createToken({ name: "TA", pattern: /TA/i, push_mode: "AttributeMode" }),
   // TO Attribute object. Add an object attribute to the dictionary or modify it.
-  TO: createToken({ name: "TO", pattern: /TO/i }),
+  TO: createToken({ name: "TO", pattern: /TO/i, push_mode: "AttributeMode" }),
   // TD Attribute delete. Delete one or all attributes in the dictionary
-  TD: createToken({ name: "TD", pattern: /TD/i }),
+  TD: createToken({ name: "TD", pattern: /TD/i, push_mode: "NameMode" }),
 
   // UnknownWordCommand: createToken({ name: "UnknownWordCommand", pattern: /[GMD][^*\r\n]*/i }),
 
@@ -167,6 +167,8 @@ const MacroTokens = {
   AddSubOperator: createToken({ name: "AddSubOperator", pattern: /[+-]/ }),
   MulDivOperator: createToken({ name: "MulDivOperator", pattern: /[xX\\/]/ }),
   Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  CommentPrimative: createToken({ name: "CommentPrimative", pattern: /0 /, push_mode: "CommentMode" }),
+  // String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/ }),
 } as const
 
 const CommentTokens = {
@@ -179,6 +181,12 @@ const NameTokens = {
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
   // COMMONLY USED REGEX THAT ALLOWS FOR MORE INVALID NAMES, BUT IT'S FINE BECAUSE WE'LL JUST WARN ABOUT THEM LATER IN THE PROCESSING PIPELINE
   Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-._a-zA-Z0-9]*/, pop_mode: true }),
+}
+
+const AttributeTokens = {
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  // Remove Commans from Attribute Fields, will be seperated by the parser and we don't want to allow them in attribute names or values since that can cause confusion.
+  Field: createToken({ name: "Field", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/, pop_mode: true }),
 }
 
 // The order of Token definitions passed to the Lexer is important. The first PATTERN to match will be chosen, not the longest.
@@ -254,6 +262,7 @@ const MacroModeTokens = [
   MacroTokens.WhiteSpace,
   MacroTokens.NewLine,
   MacroTokens.MacroVariable,
+  MacroTokens.CommentPrimative,
   // MacroTokens.UnsignedNumber,
   MacroTokens.Number,
   MacroTokens.Percent,
@@ -265,11 +274,14 @@ const MacroModeTokens = [
   MacroTokens.AddSubOperator,
   MacroTokens.MulDivOperator,
   MacroTokens.Name,
+  // MacroTokens.String,
 ]
 
 const CommentModeTokens = [CommentTokens.String]
 
 const NameModeTokens = [NameTokens.Name]
+
+const AttributeModeTokens = [AttributeTokens.Name, AttributeTokens.Field]
 
 const multiModeLexerDefinition = {
   modes: {
@@ -277,6 +289,7 @@ const multiModeLexerDefinition = {
     MacroMode: MacroModeTokens,
     CommentMode: CommentModeTokens,
     NameMode: NameModeTokens,
+    AttributeMode: AttributeModeTokens,
   },
   defaultMode: "DefaultMode",
 }
@@ -305,6 +318,9 @@ class GerberParser extends CstParser {
   stepRepeatCloseCommand!: ParserMethod<unknown[], CstNode>
   blockApertureOpenCommand!: ParserMethod<unknown[], CstNode>
   blockApertureCloseCommand!: ParserMethod<unknown[], CstNode>
+  linearInterpolationCommand!: ParserMethod<unknown[], CstNode>
+  circularInterpolationClockwiseCommand!: ParserMethod<unknown[], CstNode>
+  circularInterpolationCounterClockwiseCommand!: ParserMethod<unknown[], CstNode>
 
   commentCommand!: ParserMethod<unknown[], CstNode>
   endCommand!: ParserMethod<unknown[], CstNode>
@@ -358,10 +374,16 @@ class GerberParser extends CstParser {
   imageNameCommand!: ParserMethod<unknown[], CstNode>
   loadNameCommand!: ParserMethod<unknown[], CstNode>
 
+  // ATTRIBUTES
+  fileAttributesCommand!: ParserMethod<unknown[], CstNode>
+  apertureAttributesCommand!: ParserMethod<unknown[], CstNode>
+  objectAttributesCommand!: ParserMethod<unknown[], CstNode>
+  deleteAttributesCommand!: ParserMethod<unknown[], CstNode>
+
   constructor() {
     super(multiModeLexerDefinition, {
-      recoveryEnabled: true,
-      maxLookahead: 20,
+      recoveryEnabled: false,
+      // maxLookahead: 20,
     })
 
     // console.log("can delete star?" , this.canTokenTypeBeDeletedInRecovery(DefaultTokens.Star))
@@ -448,6 +470,11 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.scaleFactorCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.imageNameCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.loadNameCommand) },
+        // ATTRIBUTE COMMANDS
+        { ALT: (): CstNode => this.SUBRULE(this.fileAttributesCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.apertureAttributesCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.objectAttributesCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.deleteAttributesCommand) },
       ])
       this.SUBRULE(this.star)
       // this.CONSUME(DefaultTokens.Star)
@@ -458,6 +485,9 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.commentCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.endCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.inlineInterpolateOperationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.linearInterpolationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.circularInterpolationClockwiseCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.circularInterpolationCounterClockwiseCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.quadrantSingleCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.quadrantMultiCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.regionStartCommand) },
@@ -578,7 +608,9 @@ class GerberParser extends CstParser {
     this.RULE("macroPrimitive", () => {
       this.OR([
         {
-          GATE: (): boolean => this.LA(1).image === "0" && this.LA(2).image === " ",
+          GATE: (): boolean => this.LA(1).image === "0 ",
+          // GATE: (): boolean => this.LA(1).tokenType === MacroTokens.Number && this.LA(1).image === "0",
+          // GATE: (): boolean => this.LA(1).tokenType === MacroTokens.CommentPrimative,
           ALT: (): CstNode => this.SUBRULE(this.macroCommentPrimitive),
         },
         { ALT: (): CstNode => this.SUBRULE(this.macroParameterizedPrimitive) },
@@ -586,9 +618,12 @@ class GerberParser extends CstParser {
     })
 
     this.RULE("macroCommentPrimitive", () => {
-      this.CONSUME(MacroTokens.Number)
+      this.CONSUME(MacroTokens.CommentPrimative)
       this.CONSUME(CommentTokens.String)
-      this.CONSUME3(MacroTokens.Star)
+      // this.CONSUME(MacroTokens.Number) // The "0" at the beginning of the comment primitive, which is technically part of the comment according to the spec, but we will just consume it here and not include it in the comment text since it doesn't add any useful information and can be confusing to include in the comment text.
+      // this.CONSUME(MacroTokens.WhiteSpace)
+      // this.CONSUME(MacroTokens.String)
+      this.CONSUME(MacroTokens.Star)
     })
 
     this.RULE("macroParameterizedPrimitive", () => {
@@ -702,18 +737,40 @@ class GerberParser extends CstParser {
       this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.M02) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.M00) }])
     })
 
+    // <G01 command> = G01*
+    this.RULE("linearInterpolationCommand", () => {
+      this.CONSUME(DefaultTokens.G01)
+    })
+
+    // <G02 command> = G02*
+    this.RULE("circularInterpolationClockwiseCommand", () => {
+      this.CONSUME(DefaultTokens.G02)
+    })
+
+    // <G03 command> = G03*
+    this.RULE("circularInterpolationCounterClockwiseCommand", () => {
+      this.CONSUME(DefaultTokens.G03)
+    })
+
     this.RULE("inlineInterpolateOperationCommand", () => {
+      // this.OR([
+      //   { ALT: (): IToken => this.CONSUME(DefaultTokens.G01) },
+      //   { ALT: (): IToken => this.CONSUME(DefaultTokens.G02) },
+      //   { ALT: (): IToken => this.CONSUME(DefaultTokens.G03) },
+      // ])
+      // this.OPTION(() => {
+      // this.SUBRULE(this.coordinateData)
+      // })
+      // this.OPTION2(() => {
+      // this.SUBRULE(this.operationCode)
+      // })
+
       this.OR([
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.G01) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.G02) },
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.G03) },
+        { ALT: (): CstNode => this.SUBRULE(this.linearInterpolationCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.circularInterpolationClockwiseCommand) },
+        { ALT: (): CstNode => this.SUBRULE(this.circularInterpolationCounterClockwiseCommand) },
       ])
-      this.OPTION(() => {
-        this.SUBRULE(this.coordinateData)
-      })
-      this.OPTION2(() => {
-        this.SUBRULE(this.operationCode)
-      })
+      this.SUBRULE(this.operationCommand)
     })
 
     this.RULE("operationCode", () => {
@@ -752,16 +809,16 @@ class GerberParser extends CstParser {
     this.RULE("operationCommand", () => {
       this.OR([
         {
-          GATE: (): boolean => {
-            const tokenType = this.LA(1).tokenType
-            return (
-              tokenType === DefaultTokens.X ||
-              tokenType === DefaultTokens.Y ||
-              tokenType === DefaultTokens.I ||
-              tokenType === DefaultTokens.J ||
-              tokenType === DefaultTokens.A
-            )
-          },
+          // GATE: (): boolean => {
+          //   const tokenType = this.LA(1).tokenType
+          //   return (
+          //     tokenType === DefaultTokens.X ||
+          //     tokenType === DefaultTokens.Y ||
+          //     tokenType === DefaultTokens.I ||
+          //     tokenType === DefaultTokens.J ||
+          //     tokenType === DefaultTokens.A
+          //   )
+          // },
           ALT: (): void => {
             this.SUBRULE(this.coordinateData)
             this.OPTION(() => {
@@ -822,6 +879,42 @@ class GerberParser extends CstParser {
       this.CONSUME(DefaultTokens.A)
       this.CONSUME(DefaultTokens.Number)
     })
+
+    /** ATTRIBUTES */
+
+    // <TF command> = %TF<AttributeName>[,<AttributeValue>]*%
+    // <AttributeValue> = <Field>{,<Field>}
+    this.RULE("fileAttributesCommand", () => {
+      this.CONSUME(DefaultTokens.TF)
+      this.CONSUME(AttributeTokens.Name)
+      this.CONSUME(AttributeTokens.Field)
+    })
+
+    // <TA command> = %TA<AttributeName>[,<AttributeValue>]*%
+    // <AttributeValue> = <Field>{,<Field>}
+    this.RULE("apertureAttributesCommand", () => {
+      this.CONSUME(DefaultTokens.TA)
+      this.CONSUME(AttributeTokens.Name)
+      this.CONSUME(AttributeTokens.Field)
+    })
+
+    // <TO command> = %TO<AttributeName>[,<AttributeValue>]*%
+    // <AttributeValue> = <Field>{,<Field>}
+    this.RULE("objectAttributesCommand", () => {
+      this.CONSUME(DefaultTokens.TO)
+      this.CONSUME(AttributeTokens.Name)
+      this.CONSUME(AttributeTokens.Field)
+    })
+
+    // <TD command> = %TD[<AttributeName>]*%
+    this.RULE("deleteAttributesCommand", () => {
+      this.CONSUME(DefaultTokens.TD)
+      this.OPTION(() => {
+        this.CONSUME(AttributeTokens.Name)
+      })
+    })
+
+    /** END ATTRIBUTES */
 
     /** DEPRECATED COMMANDS */
 
@@ -996,6 +1089,9 @@ export interface ImageTree {
 type VariableValues = Record<string, number>
 type Position = [x: number, y: number]
 
+interface AttributeDictionary {
+  [attributeName: string]: string[]
+}
 export class GerberToTreeVisitor extends BaseCstVisitor {
   public readonly image: ImageTree = {
     units: Constants.IN,
@@ -1014,6 +1110,10 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     currentPoint: { x: 0, y: 0 },
     currentToolCode: undefined,
   }
+
+  public fileAttributes: AttributeDictionary = {}
+  public apertureAttributes: AttributeDictionary = {}
+  public objectAttributes: AttributeDictionary = {}
 
   private currentTransform: { polarity: Types.Polarity; mirror: Types.Mirroring; rotation: Types.Rotation; scale: Types.Scaling } = {
     polarity: Constants.DARK,
@@ -1171,7 +1271,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       dcode: code,
       macro: this.macroDefinitions[templateToken] ?? [],
       variableValues: values,
-      
     } as MacroTool)
   }
 
@@ -1273,11 +1372,31 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.state.done = true
   }
 
+  linearInterpolationCommand(_ctx: cst.LinearInterpolationCommandCstChildren): void {
+    this.setInterpolationMode(Constants.LINE)
+  }
+
+  circularInterpolationClockwiseCommand(_ctx: cst.CircularInterpolationClockwiseCommandCstChildren): void {
+    this.setInterpolationMode(Constants.CW_ARC)
+  }
+
+  circularInterpolationCounterClockwiseCommand(_ctx: cst.CircularInterpolationCounterClockwiseCommandCstChildren): void {
+    this.setInterpolationMode(Constants.CCW_ARC)
+  }
+
   inlineInterpolateOperationCommand(ctx: cst.InlineInterpolateOperationCommandCstChildren): void {
-    this.setInterpolationMode(ctx.G01 ? Constants.LINE : ctx.G02 ? Constants.CW_ARC : Constants.CCW_ARC)
-    const coordinates = this.readCoordinates(ctx)
-    const operationCode = this.interpretOperationCode(ctx)
-    this.executeGraphic(coordinates, operationCode)
+    // this.setInterpolationMode(ctx.G01 ? Constants.LINE : ctx.G02 ? Constants.CW_ARC : Constants.CCW_ARC)
+    // const coordinates = this.readCoordinates(ctx)
+    // const operationCode = this.interpretOperationCode(ctx)
+    // this.executeGraphic(coordinates, operationCode)
+    if (ctx.linearInterpolationCommand) {
+      this.linearInterpolationCommand(ctx.linearInterpolationCommand[0].children)
+    } else if (ctx.circularInterpolationClockwiseCommand) {
+      this.circularInterpolationClockwiseCommand(ctx.circularInterpolationClockwiseCommand[0].children)
+    } else if (ctx.circularInterpolationCounterClockwiseCommand) {
+      this.circularInterpolationCounterClockwiseCommand(ctx.circularInterpolationCounterClockwiseCommand[0].children)
+    }
+    this.visit(ctx.operationCommand)
   }
 
   operationCode(ctx: cst.OperationCodeCstChildren): number {
@@ -1520,6 +1639,39 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     // This command is deprecated and has no effect, so we can safely ignore it.
   }
 
+  // ATTRIBUTES
+
+  fileAttributesCommand(ctx: cst.FileAttributesCommandCstChildren): void {
+    const name = ctx.Name[0].image
+    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    this.fileAttributes[name] = value
+  }
+
+  apertureAttributesCommand(ctx: cst.ApertureAttributesCommandCstChildren): void {
+    const name = ctx.Name[0].image
+    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    this.apertureAttributes[name] = value
+  }
+
+  objectAttributesCommand(ctx: cst.ObjectAttributesCommandCstChildren): void {
+    const name = ctx.Name[0].image
+    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    this.objectAttributes[name] = value
+  }
+
+  deleteAttributesCommand(ctx: cst.DeleteAttributesCommandCstChildren): void {
+    if (ctx.Name && ctx.Name[0]) {
+      const name = ctx.Name[0].image
+      delete this.fileAttributes[name]
+      delete this.apertureAttributes[name]
+      delete this.objectAttributes[name]
+    } else {
+      this.fileAttributes = {}
+      this.apertureAttributes = {}
+      this.objectAttributes = {}
+    }
+  }
+
   private readCoordinates(ctx: { coordinateData?: cst.CoordinateDataCstNode[] }): GerberCoordinates {
     const coordinateNodes = (ctx.coordinateData as unknown as CstNode[] | undefined) ?? []
     return coordinateNodes.reduce(
@@ -1603,8 +1755,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         new Shapes.Contour_Arc_Segment({
           x: location.endPoint.x,
           y: location.endPoint.y,
-          xc: center.x,
-          yc: center.y,
+          xc: center.x || location.endPoint.x,
+          yc: center.y || location.endPoint.y,
           clockwise: this.arcDirection === "cw" ? 1 : 0,
         }),
       )
@@ -1640,8 +1792,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         ys: location.startPoint.y,
         xe: location.endPoint.x,
         ye: location.endPoint.y,
-        xc: center.x,
-        yc: center.y,
+        xc: center.x || location.endPoint.x,
+        yc: center.y || location.endPoint.y,
         clockwise: this.arcDirection === "cw" ? 1 : 0,
       }),
     )
@@ -1780,76 +1932,76 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     const nextY = x * sin + y * cos + shift[1]
     return [nextX, nextY]
   }
-  
+
   private rotate = (p: Position, angle: number): Position => this.rotateAndShift(p, [0, 0], angle)
-  
+
   private solveExpression(expression: MacroValue, variables: VariableValues): number {
     if (typeof expression === "number") return expression
     if (typeof expression === "string") return variables[expression]
-  
+
     const left = this.solveExpression(expression.left, variables)
     const right = this.solveExpression(expression.right, variables)
-  
+
     switch (expression.operator) {
       case "+": {
         return left + right
       }
-  
+
       case "-": {
         return left - right
       }
-  
+
       case "x": {
         return left * right
       }
-  
+
       case "/": {
         return left / right
       }
     }
   }
-  
+
   private createMacroPrimitive(code: MacroPrimitiveCode, parameters: number[]): Shapes.Shape {
     switch (code) {
       case Constants.MACRO_CIRCLE: {
         return this.plotCircle(parameters)
       }
-  
+
       case Constants.MACRO_VECTOR_LINE:
       case Constants.MACRO_VECTOR_LINE_DEPRECATED: {
         return this.plotVectorLine(parameters)
       }
-  
+
       case Constants.MACRO_CENTER_LINE: {
         return this.plotCenterLine(parameters)
       }
-  
+
       case Constants.MACRO_LOWER_LEFT_LINE_DEPRECATED: {
         return this.plotLowerLeftLine(parameters)
       }
-  
+
       case Constants.MACRO_OUTLINE: {
         return this.plotOutline(parameters)
       }
-  
+
       case Constants.MACRO_POLYGON: {
         return this.plotPolygon(parameters)
       }
-  
+
       case Constants.MACRO_MOIRE_DEPRECATED: {
         return this.plotMoire(parameters)
       }
-  
+
       case Constants.MACRO_THERMAL: {
         return this.plotThermal(parameters)
       }
     }
   }
-  
+
   private plotCircle(parameters: number[]): Shapes.Primitive {
     const [exposure, diameter, cx0, cy0, degrees] = parameters
     const [cx, cy] = this.rotate([cx0, cy0], degrees)
-  
+
     return new Shapes.Pad({
       polarity: exposure === 1 ? 1 : 0,
       x: cx,
@@ -1862,12 +2014,12 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       units: this.state.units,
     })
   }
-  
+
   private plotVectorLine(parameters: number[]): Shapes.Primitive {
     const [exposure, width, sx, sy, ex, ey, degrees] = parameters
     const [xs, ys] = this.rotate([sx, sy], degrees)
     const [xe, ye] = this.rotate([ex, ey], degrees)
-  
+
     return new Shapes.Line({
       polarity: exposure === 1 ? 1 : 0,
       xs: xs,
@@ -1883,11 +2035,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       units: this.state.units,
     })
   }
-  
+
   private plotCenterLine(parameters: number[]): Shapes.Primitive {
     const [exposure, width, height, cx, cy, degrees] = parameters
     const [x, y] = this.rotate([cx, cy], degrees)
-  
+
     return new Shapes.Pad({
       polarity: exposure === 1 ? 1 : 0,
       rotation: degrees,
@@ -1902,11 +2054,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       units: this.state.units,
     })
   }
-  
+
   private plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
     const [exposure, width, height, x, y, degrees] = parameters
     const [xs, ys] = this.rotate([x, y], degrees)
-  
+
     return new Shapes.Pad({
       polarity: exposure === 1 ? 1 : 0,
       rotation: degrees,
@@ -1921,12 +2073,12 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       units: this.state.units,
     })
   }
-  
+
   private plotOutline(parameters: number[]): Shapes.Surface {
     const [exposure, , ...coords] = parameters.slice(0, -1)
     const degrees = parameters[parameters.length - 1]
     const [xs, ys] = this.rotate([coords[0], coords[1]], degrees)
-  
+
     const segments = coords
       .map((p, i) => {
         if (i % 2 === 0 && i >= 2) {
@@ -1951,12 +2103,12 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       }),
     )
   }
-  
+
   private plotPolygon(parameters: number[]): Shapes.Primitive {
     const [exposure, vertices, cx, cy, diameter, degrees] = parameters
-  
+
     const [x, y] = this.rotate([cx, cy], degrees)
-  
+
     return new Shapes.Pad({
       polarity: exposure === 1 ? 1 : 0,
       x: x,
@@ -1973,11 +2125,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       }),
     })
   }
-  
+
   private plotMoire(parameters: number[]): Shapes.Primitive {
     const [cx0, cy0, d, ringThx, ringGap, ringN, lineThx, lineLength, degrees] = parameters
     const [cx, cy] = this.rotate([cx0, cy0], degrees)
-  
+
     return new Shapes.Pad({
       polarity: 1,
       x: cx,
@@ -1996,11 +2148,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       }),
     })
   }
-  
+
   private plotThermal(parameters: number[]): Shapes.Primitive {
     const [cx0, cy0, od, id, gap, degrees] = parameters
     const [x, y] = this.rotate([cx0, cy0], degrees)
-  
+
     return new Shapes.Pad({
       polarity: 1,
       x: x,
@@ -2017,38 +2169,37 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       }),
     })
   }
-  
+
   private createMacro(tool: MacroTool): Symbols.MacroSymbol {
     const shapes: Shapes.Shape[] = []
     const variableValues: VariableValues = Object.fromEntries(tool.variableValues.map((value, index) => [`$${index + 1}`, value]))
-  
+
     for (const block of tool.macro) {
       if (block.type === Constants.MACRO_VARIABLE) {
         variableValues[block.name] = this.solveExpression(block.value, variableValues)
       }
-  
+
       if (block.type === Constants.MACRO_PRIMITIVE) {
         const parameters = block.parameters.map((p) => {
           return this.solveExpression(p, variableValues)
         })
-  
+
         shapes.push(this.createMacroPrimitive(block.code, parameters))
       }
     }
-  
+
     // micro optimization
     let flatten = true
     if (shapes.every((s) => "polarity" in s && s.polarity == 1)) {
       flatten = false
     }
-  
+
     return new Symbols.MacroSymbol({
       id: `${tool.name}-D${tool.dcode}`,
       shapes,
       flatten,
     })
   }
-  
 }
 
 export function parseGerberWithChevrotain(file: string): ImageTree {
@@ -2080,7 +2231,7 @@ export function parseGerberWithChevrotain(file: string): ImageTree {
       `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
     )
   }
-  
+
   const visitor = new GerberToTreeVisitor()
   return visitor.visit(cst) as ImageTree
 }

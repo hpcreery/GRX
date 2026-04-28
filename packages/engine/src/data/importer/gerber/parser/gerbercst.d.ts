@@ -21,6 +21,16 @@ export type CommandCstChildren = {
   star?: StarCstNode[];
 };
 
+export interface ExtendedCommandCstNode extends CstNode {
+  name: "extendedCommand";
+  children: ExtendedCommandCstChildren;
+}
+
+export type ExtendedCommandCstChildren = {
+  percent: (PercentCstNode)[];
+  extendedCommandDataBlock: ExtendedCommandDataBlockCstNode[];
+};
+
 export interface ExtendedCommandDataBlockCstNode extends CstNode {
   name: "extendedCommandDataBlock";
   children: ExtendedCommandDataBlockCstChildren;
@@ -38,35 +48,19 @@ export type ExtendedCommandDataBlockCstChildren = {
   stepRepeatCloseCommand?: StepRepeatCloseCommandCstNode[];
   blockApertureOpenCommand?: BlockApertureOpenCommandCstNode[];
   blockApertureCloseCommand?: BlockApertureCloseCommandCstNode[];
+  imagePolarityCommand?: ImagePolarityCommandCstNode[];
+  axisSelectionCommand?: AxisSelectionCommandCstNode[];
+  imageRotationCommand?: ImageRotationCommandCstNode[];
+  mirrorImageCommand?: MirrorImageCommandCstNode[];
+  imageOffsetCommand?: ImageOffsetCommandCstNode[];
+  scaleFactorCommand?: ScaleFactorCommandCstNode[];
+  imageNameCommand?: ImageNameCommandCstNode[];
+  loadNameCommand?: LoadNameCommandCstNode[];
+  fileAttributesCommand?: FileAttributesCommandCstNode[];
+  apertureAttributesCommand?: ApertureAttributesCommandCstNode[];
+  objectAttributesCommand?: ObjectAttributesCommandCstNode[];
+  deleteAttributesCommand?: DeleteAttributesCommandCstNode[];
   star: StarCstNode[];
-};
-
-export interface StarCstNode extends CstNode {
-  name: "star";
-  children: StarCstChildren;
-}
-
-export type StarCstChildren = {
-  Star: IToken[];
-};
-
-export interface PercentCstNode extends CstNode {
-  name: "percent";
-  children: PercentCstChildren;
-}
-
-export type PercentCstChildren = {
-  Percent: IToken[];
-};
-
-export interface ExtendedCommandCstNode extends CstNode {
-  name: "extendedCommand";
-  children: ExtendedCommandCstChildren;
-}
-
-export type ExtendedCommandCstChildren = {
-  percent: (PercentCstNode)[];
-  extendedCommandDataBlock: ExtendedCommandDataBlockCstNode[];
 };
 
 export interface FunctionCodeCommandCstNode extends CstNode {
@@ -91,15 +85,25 @@ export type FunctionCodeCommandCstChildren = {
   inchModeCommand?: InchModeCommandCstNode[];
   metricModeCommand?: MetricModeCommandCstNode[];
   optionalStopCommand?: OptionalStopCommandCstNode[];
-  imagePolarityCommand?: ImagePolarityCommandCstNode[];
-  axisSelectionCommand?: AxisSelectionCommandCstNode[];
-  imageRotationCommand?: ImageRotationCommandCstNode[];
-  mirrorImageCommand?: MirrorImageCommandCstNode[];
-  imageOffsetCommand?: ImageOffsetCommandCstNode[];
-  scaleFactorCommand?: ScaleFactorCommandCstNode[];
-  imageNameCommand?: ImageNameCommandCstNode[];
-  loadNameCommand?: LoadNameCommandCstNode[];
   star: StarCstNode[];
+};
+
+export interface StarCstNode extends CstNode {
+  name: "star";
+  children: StarCstChildren;
+}
+
+export type StarCstChildren = {
+  Star: IToken[];
+};
+
+export interface PercentCstNode extends CstNode {
+  name: "percent";
+  children: PercentCstChildren;
+}
+
+export type PercentCstChildren = {
+  Percent: IToken[];
 };
 
 export interface FormatSpecificationCommandCstNode extends CstNode {
@@ -370,17 +374,43 @@ export type EndCommandCstChildren = {
   M00?: IToken[];
 };
 
+export interface LinearInterpolationCommandCstNode extends CstNode {
+  name: "linearInterpolationCommand";
+  children: LinearInterpolationCommandCstChildren;
+}
+
+export type LinearInterpolationCommandCstChildren = {
+  G01: IToken[];
+};
+
+export interface CircularInterpolationClockwiseCommandCstNode extends CstNode {
+  name: "circularInterpolationClockwiseCommand";
+  children: CircularInterpolationClockwiseCommandCstChildren;
+}
+
+export type CircularInterpolationClockwiseCommandCstChildren = {
+  G02: IToken[];
+};
+
+export interface CircularInterpolationCounterClockwiseCommandCstNode extends CstNode {
+  name: "circularInterpolationCounterClockwiseCommand";
+  children: CircularInterpolationCounterClockwiseCommandCstChildren;
+}
+
+export type CircularInterpolationCounterClockwiseCommandCstChildren = {
+  G03: IToken[];
+};
+
 export interface InlineInterpolateOperationCommandCstNode extends CstNode {
   name: "inlineInterpolateOperationCommand";
   children: InlineInterpolateOperationCommandCstChildren;
 }
 
 export type InlineInterpolateOperationCommandCstChildren = {
-  G01?: IToken[];
-  G02?: IToken[];
-  G03?: IToken[];
-  coordinateData?: CoordinateDataCstNode[];
-  operationCode?: OperationCodeCstNode[];
+  linearInterpolationCommand?: LinearInterpolationCommandCstNode[];
+  circularInterpolationClockwiseCommand?: CircularInterpolationClockwiseCommandCstNode[];
+  circularInterpolationCounterClockwiseCommand?: CircularInterpolationCounterClockwiseCommandCstNode[];
+  operationCommand: OperationCommandCstNode[];
 };
 
 export interface OperationCodeCstNode extends CstNode {
@@ -519,6 +549,49 @@ export interface ACoordinateCstNode extends CstNode {
 export type ACoordinateCstChildren = {
   A: IToken[];
   Number: IToken[];
+};
+
+export interface FileAttributesCommandCstNode extends CstNode {
+  name: "fileAttributesCommand";
+  children: FileAttributesCommandCstChildren;
+}
+
+export type FileAttributesCommandCstChildren = {
+  TF: IToken[];
+  Name: IToken[];
+  Field: IToken[];
+};
+
+export interface ApertureAttributesCommandCstNode extends CstNode {
+  name: "apertureAttributesCommand";
+  children: ApertureAttributesCommandCstChildren;
+}
+
+export type ApertureAttributesCommandCstChildren = {
+  TA: IToken[];
+  Name: IToken[];
+  Field: IToken[];
+};
+
+export interface ObjectAttributesCommandCstNode extends CstNode {
+  name: "objectAttributesCommand";
+  children: ObjectAttributesCommandCstChildren;
+}
+
+export type ObjectAttributesCommandCstChildren = {
+  TO: IToken[];
+  Name: IToken[];
+  Field: IToken[];
+};
+
+export interface DeleteAttributesCommandCstNode extends CstNode {
+  name: "deleteAttributesCommand";
+  children: DeleteAttributesCommandCstChildren;
+}
+
+export type DeleteAttributesCommandCstChildren = {
+  TD: IToken[];
+  Name?: IToken[];
 };
 
 export interface PrepareApertureCommandCstNode extends CstNode {
@@ -679,11 +752,11 @@ export type LoadNameCommandCstChildren = {
 export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT;
   command(children: CommandCstChildren, param?: IN): OUT;
+  extendedCommand(children: ExtendedCommandCstChildren, param?: IN): OUT;
   extendedCommandDataBlock(children: ExtendedCommandDataBlockCstChildren, param?: IN): OUT;
+  functionCodeCommand(children: FunctionCodeCommandCstChildren, param?: IN): OUT;
   star(children: StarCstChildren, param?: IN): OUT;
   percent(children: PercentCstChildren, param?: IN): OUT;
-  extendedCommand(children: ExtendedCommandCstChildren, param?: IN): OUT;
-  functionCodeCommand(children: FunctionCodeCommandCstChildren, param?: IN): OUT;
   formatSpecificationCommand(children: FormatSpecificationCommandCstChildren, param?: IN): OUT;
   unitsCommand(children: UnitsCommandCstChildren, param?: IN): OUT;
   apertureDefinitionCommand(children: ApertureDefinitionCommandCstChildren, param?: IN): OUT;
@@ -709,6 +782,9 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   blockApertureCloseCommand(children: BlockApertureCloseCommandCstChildren, param?: IN): OUT;
   commentCommand(children: CommentCommandCstChildren, param?: IN): OUT;
   endCommand(children: EndCommandCstChildren, param?: IN): OUT;
+  linearInterpolationCommand(children: LinearInterpolationCommandCstChildren, param?: IN): OUT;
+  circularInterpolationClockwiseCommand(children: CircularInterpolationClockwiseCommandCstChildren, param?: IN): OUT;
+  circularInterpolationCounterClockwiseCommand(children: CircularInterpolationCounterClockwiseCommandCstChildren, param?: IN): OUT;
   inlineInterpolateOperationCommand(children: InlineInterpolateOperationCommandCstChildren, param?: IN): OUT;
   operationCode(children: OperationCodeCstChildren, param?: IN): OUT;
   quadrantSingleCommand(children: QuadrantSingleCommandCstChildren, param?: IN): OUT;
@@ -724,6 +800,10 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   iCoordinate(children: ICoordinateCstChildren, param?: IN): OUT;
   jCoordinate(children: JCoordinateCstChildren, param?: IN): OUT;
   aCoordinate(children: ACoordinateCstChildren, param?: IN): OUT;
+  fileAttributesCommand(children: FileAttributesCommandCstChildren, param?: IN): OUT;
+  apertureAttributesCommand(children: ApertureAttributesCommandCstChildren, param?: IN): OUT;
+  objectAttributesCommand(children: ObjectAttributesCommandCstChildren, param?: IN): OUT;
+  deleteAttributesCommand(children: DeleteAttributesCommandCstChildren, param?: IN): OUT;
   prepareApertureCommand(children: PrepareApertureCommandCstChildren, param?: IN): OUT;
   prepareFlashCommand(children: PrepareFlashCommandCstChildren, param?: IN): OUT;
   inchModeCommand(children: InchModeCommandCstChildren, param?: IN): OUT;
