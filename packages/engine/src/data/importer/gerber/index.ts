@@ -22,6 +22,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   
   try {
     image = parseGerberWithChevrotain(file)
+    // console.log(JSON.stringify(image, null, 2))
   } catch (error) {
     console.warn("Gerber Chevrotain parser failed, falling back to tracespace-parser", error)
     image = plot(parseWithTracespace(file))

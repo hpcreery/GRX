@@ -2,12 +2,11 @@ import * as Constants from "./constants"
 import type * as Types from "./types"
 import * as Shapes from "@src/data/shape/shape"
 import * as Symbols from "@src/data/shape/symbol/symbol"
-import { SymbolTypeIdentifier, type Units as ShapeUnits } from "@src/types"
-import { type CstNode, CstParser, createToken, generateCstDts, type IToken, Lexer, type ParserMethod, type Rule } from "chevrotain"
+import { SymbolTypeIdentifier} from "@src/types"
+import { type CstNode, CstParser, createToken, generateCstDts, type IToken, Lexer, type ParserMethod, type Rule, type CstNodeLocation } from "chevrotain"
 import { vec2 } from "gl-matrix"
-// import { createMacro } from "./macroPlotter"
 import { getAmbiguousArcCenter, type ArcDirection } from "./arcMath"
-import type { GerberCoordinates, GerberMacroOperator, MacroPrimitiveCode, MacroTool, MacroValue } from "./types"
+import type { GerberCoordinates, GerberMacroOperator, MacroPrimitiveCode, MacroValue } from "./types"
 import type * as cst from "./gerbercst"
 // import { Mirroring } from '@hpcreery/tracespace-parser'
 
@@ -382,7 +381,7 @@ class GerberParser extends CstParser {
 
   constructor() {
     super(multiModeLexerDefinition, {
-      recoveryEnabled: false,
+      recoveryEnabled: true,
       // maxLookahead: 20,
     })
 
@@ -773,6 +772,34 @@ class GerberParser extends CstParser {
       this.SUBRULE(this.operationCommand)
     })
 
+    this.RULE("operationCommand", () => {
+      this.OR([
+        {
+          // GATE: (): boolean => {
+          //   const tokenType = this.LA(1).tokenType
+          //   return (
+          //     tokenType === DefaultTokens.X ||
+          //     tokenType === DefaultTokens.Y ||
+          //     tokenType === DefaultTokens.I ||
+          //     tokenType === DefaultTokens.J ||
+          //     tokenType === DefaultTokens.A
+          //   )
+          // },
+          ALT: (): void => {
+            this.SUBRULE(this.coordinateData)
+            this.OPTION(() => {
+              this.SUBRULE(this.operationCode)
+            })
+          },
+        },
+        {
+          ALT: (): void => {
+            this.SUBRULE2(this.operationCode)
+          },
+        },
+      ])
+    })
+
     this.RULE("operationCode", () => {
       this.OR([
         { ALT: (): IToken => this.CONSUME(DefaultTokens.D01) },
@@ -804,34 +831,6 @@ class GerberParser extends CstParser {
     // <Dnn command> = D<D-code number>*
     this.RULE("dCodeCommand", () => {
       this.CONSUME(DefaultTokens.Dnn)
-    })
-
-    this.RULE("operationCommand", () => {
-      this.OR([
-        {
-          // GATE: (): boolean => {
-          //   const tokenType = this.LA(1).tokenType
-          //   return (
-          //     tokenType === DefaultTokens.X ||
-          //     tokenType === DefaultTokens.Y ||
-          //     tokenType === DefaultTokens.I ||
-          //     tokenType === DefaultTokens.J ||
-          //     tokenType === DefaultTokens.A
-          //   )
-          // },
-          ALT: (): void => {
-            this.SUBRULE(this.coordinateData)
-            this.OPTION(() => {
-              this.SUBRULE(this.operationCode)
-            })
-          },
-        },
-        {
-          ALT: (): void => {
-            this.SUBRULE2(this.operationCode)
-          },
-        },
-      ])
     })
 
     // this.RULE("unknownWordCommand", () => {
@@ -1077,6 +1076,8 @@ interface VisitorState {
   done: boolean
   currentPoint: Types.Point
   currentToolCode: string | undefined
+  // operation: 1 | 2 | 3 | undefined
+  operation: Types.GraphicType | undefined
 }
 
 const defaultTool: Tool = new Symbols.NullSymbol({ id: "274x_NULL" })
@@ -1090,7 +1091,7 @@ type VariableValues = Record<string, number>
 type Position = [x: number, y: number]
 
 interface AttributeDictionary {
-  [attributeName: string]: string[]
+  [attributeName: string]: string | undefined
 }
 export class GerberToTreeVisitor extends BaseCstVisitor {
   public readonly image: ImageTree = {
@@ -1101,7 +1102,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   public readonly macroDefinitions: Partial<Record<string, Types.MacroBlock[]>> = {}
   public readonly toolDefinitions: Partial<Record<string, Tool>> = {}
 
-  public state: VisitorState = {
+  private state: VisitorState = {
     units: Constants.IN,
     coordinateFormat: [2, 4],
     zeroSuppression: Constants.LEADING,
@@ -1109,6 +1110,17 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     done: false,
     currentPoint: { x: 0, y: 0 },
     currentToolCode: undefined,
+    operation: undefined,
+  }
+
+  private coordinates: GerberCoordinates = {
+    x0: undefined,
+    y0: undefined,
+    x: undefined,
+    y: undefined,
+    i: undefined,
+    j: undefined,
+    a: undefined,
   }
 
   public fileAttributes: AttributeDictionary = {}
@@ -1126,9 +1138,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   private arcDirection: ArcDirection | undefined
   private ambiguousArcCenter = false
   private regionMode = false
-  private defaultGraphic: Types.GraphicType | undefined
+  // private defaultGraphic: Types.GraphicType = Constants.SEGMENT
   private readonly blockStack: BlockContext[] = []
   private readonly stepRepeatStack: Shapes.StepAndRepeat[] = []
+
+  public errors: { message: string; location: CstNodeLocation | undefined }[] = []
 
   constructor() {
     super()
@@ -1158,7 +1172,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   functionCodeCommand(ctx: cst.FunctionCodeCommandCstChildren): void {
-    // this.visitChildren(ctx)
     Object.values(ctx).forEach(this.visit, this)
   }
 
@@ -1198,32 +1211,39 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   apertureDefinitionCommand(ctx: cst.ApertureDefinitionCommandCstChildren): void {
     // const codeToken = ctx.Dnn[0].image
     // const codeToken = ctx.AD[0].image.slice(2) // Dnn token is just a Name token with a D prefix, so we can just slice it off to get the code.
-    const templateToken = ctx.Name[0].image
+    const name = ctx.Name[0].image
 
     const code = ctx.AD[0].image.slice(3)
     const params = ctx.modifiersSet ? (this.visit(ctx.modifiersSet[0]) as string[]) : []
 
     this.state.currentToolCode = code
 
-    const tag = templateToken.toUpperCase()
+    const nameUpperCase = name.toUpperCase()
     const values = params.map((value) => Number(value)).filter((value) => Number.isFinite(value))
 
     // Circle
     // C,<Diameter>[X<Hole diameter>]
-    if (tag === "C") {
+    if (nameUpperCase === "C") {
       this.toolDefinitions[code] = new Symbols.RoundSymbol({
         id: `274x_D${code}`,
         outer_dia: values[0] ?? 0,
         // TODO: support rectangular holes
         inner_dia: values[1] ?? 0,
         units: this.state.units,
+        attributes: { ...this.apertureAttributes }
       })
+      if (values.length >= 2) {
+        this.errors.push({
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          location: ctx.modifiersSet?.[0].location,
+        })
+      }
       return
     }
 
     // Rectangle
     // R,<X size>X<Y size>[X<Hole diameter>]
-    if (tag === "R") {
+    if (nameUpperCase === "R") {
       this.toolDefinitions[code] = new Symbols.RectangleSymbol({
         id: `274x_D${code}`,
         width: values[0] ?? 0,
@@ -1231,13 +1251,20 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         // TODO: support rectangular holes
         inner_dia: values[2] ?? 0,
         units: this.state.units,
+        attributes: { ...this.apertureAttributes }
       })
+      if (values.length >= 2) {
+        this.errors.push({
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          location: ctx.modifiersSet?.[0].location,
+        })
+      }
       return
     }
 
     // Obround
     // O,<X size>X<Y size>[X<Hole diameter>]
-    if (tag === "O") {
+    if (nameUpperCase === "O") {
       this.toolDefinitions[code] = new Symbols.OvalSymbol({
         id: `274x_D${code}`,
         width: values[0] ?? 0,
@@ -1245,13 +1272,20 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         // TODO: support rectangular holes
         inner_dia: values[2] ?? 0,
         units: this.state.units,
+        attributes: { ...this.apertureAttributes }
       })
+      if (values.length >= 2) {
+        this.errors.push({
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          location: ctx.modifiersSet?.[0].location,
+        })
+      }
       return
     }
 
     // Polygon
     // P,<Outer diameter>X<Number of vertices>[X<Rotation>[X<Hole diameter>]]
-    if (tag === "P") {
+    if (nameUpperCase === "P") {
       this.toolDefinitions[code] = new Symbols.PolygonSymbol({
         id: `274x_D${code}`,
         outer_dia: values[0] ?? 0,
@@ -1261,17 +1295,48 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         inner_dia: values[3] ?? 0,
         line_width: 0,
         units: this.state.units,
+        attributes: { ...this.apertureAttributes }
       })
+      if (values.length >= 2) {
+        this.errors.push({
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          location: ctx.modifiersSet?.[0].location,
+        })
+      }
       return
     }
 
-    this.toolDefinitions[code] = this.createMacro({
-      type: "macroTool",
-      name: templateToken,
-      dcode: code,
-      macro: this.macroDefinitions[templateToken] ?? [],
-      variableValues: values,
-    } as MacroTool)
+    // Macro
+    const shapes: Shapes.Shape[] = []
+    const macro = this.macroDefinitions[name] ?? []
+    const variableValues: VariableValues = Object.fromEntries(values.map((value, index) => [`$${index + 1}`, value]))
+
+    for (const block of macro) {
+      if (block.type === Constants.MACRO_VARIABLE) {
+        variableValues[block.name] = this.solveExpression(block.value, variableValues)
+      }
+
+      if (block.type === Constants.MACRO_PRIMITIVE) {
+        const parameters = block.parameters.map((p) => {
+          return this.solveExpression(p, variableValues)
+        })
+
+        shapes.push(this.createMacroPrimitive(block.code, parameters))
+      }
+    }
+
+    // micro optimization
+    let flatten = true
+    if (shapes.every((s) => "polarity" in s && s.polarity == 1)) {
+      flatten = false
+    }
+
+    this.toolDefinitions[code] = new Symbols.MacroSymbol({
+      id: `${name}-D${code}`,
+      shapes,
+      flatten,
+      attributes: { ...this.apertureAttributes }
+    })
   }
 
   modifiersSet(ctx: cst.ModifiersSetCstChildren): string[] {
@@ -1331,15 +1396,18 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
           mirror_y: 0,
           scale: 1,
         })),
+        units: this.state.units,
       }),
     )
   }
 
-  stepRepeatCloseCommand(): void {
+  stepRepeatCloseCommand(ctx: cst.StepRepeatCloseCommandCstChildren): void {
     this.flushCurrentSurface()
     const stepRepeat = this.stepRepeatStack.pop()
     if (stepRepeat) {
       this.emitShape(stepRepeat)
+    } else {
+      this.errors.push({ message: "Mismatched step and repeat close command", location: ctx.SR[0] })
     }
   }
 
@@ -1359,6 +1427,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       id: `274x_D${block.code}`,
       shapes: block.shapes,
       flatten: false,
+      attributes: { ...this.apertureAttributes }
     })
   }
 
@@ -1367,43 +1436,201 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   endCommand(_ctx: cst.EndCommandCstChildren): void {
     this.flushCurrentSurface()
     while (this.stepRepeatStack.length > 0) {
-      this.stepRepeatCloseCommand()
+      this.stepRepeatCloseCommand({ SR: [] })
     }
     this.state.done = true
   }
 
   linearInterpolationCommand(_ctx: cst.LinearInterpolationCommandCstChildren): void {
-    this.setInterpolationMode(Constants.LINE)
+    // this.setInterpolationMode(Constants.LINE)
+    this.arcDirection = undefined
+    // this.defaultGraphic = Constants.SEGMENT
   }
 
   circularInterpolationClockwiseCommand(_ctx: cst.CircularInterpolationClockwiseCommandCstChildren): void {
-    this.setInterpolationMode(Constants.CW_ARC)
+    // this.setInterpolationMode(Constants.CW_ARC)
+    this.arcDirection = "cw"
+    // this.defaultGraphic = Constants.SEGMENT
   }
 
   circularInterpolationCounterClockwiseCommand(_ctx: cst.CircularInterpolationCounterClockwiseCommandCstChildren): void {
-    this.setInterpolationMode(Constants.CCW_ARC)
+    // this.setInterpolationMode(Constants.CCW_ARC)
+    this.arcDirection = "ccw"
+    // this.defaultGraphic = Constants.SEGMENT
   }
 
   inlineInterpolateOperationCommand(ctx: cst.InlineInterpolateOperationCommandCstChildren): void {
-    // this.setInterpolationMode(ctx.G01 ? Constants.LINE : ctx.G02 ? Constants.CW_ARC : Constants.CCW_ARC)
-    // const coordinates = this.readCoordinates(ctx)
-    // const operationCode = this.interpretOperationCode(ctx)
-    // this.executeGraphic(coordinates, operationCode)
-    if (ctx.linearInterpolationCommand) {
-      this.linearInterpolationCommand(ctx.linearInterpolationCommand[0].children)
-    } else if (ctx.circularInterpolationClockwiseCommand) {
-      this.circularInterpolationClockwiseCommand(ctx.circularInterpolationClockwiseCommand[0].children)
-    } else if (ctx.circularInterpolationCounterClockwiseCommand) {
-      this.circularInterpolationCounterClockwiseCommand(ctx.circularInterpolationCounterClockwiseCommand[0].children)
-    }
+    ctx.linearInterpolationCommand && this.visit(ctx.linearInterpolationCommand)
+    ctx.circularInterpolationClockwiseCommand && this.visit(ctx.circularInterpolationClockwiseCommand)
+    ctx.circularInterpolationCounterClockwiseCommand && this.visit(ctx.circularInterpolationCounterClockwiseCommand)
     this.visit(ctx.operationCommand)
   }
 
-  operationCode(ctx: cst.OperationCodeCstChildren): number {
-    if (ctx.D01) return 1
-    if (ctx.D02) return 2
-    if (ctx.D03) return 3
-    return 0
+  operationCommand(ctx: cst.OperationCommandCstChildren): void {
+    ctx.coordinateData && this.visit(ctx.coordinateData)
+    ctx.operationCode && this.visit(ctx.operationCode)
+
+    const parseCoordinate = (coordinate: string | undefined, defaultValue: number): number => {
+      if (typeof coordinate !== "string") return defaultValue
+      if (coordinate.includes(".") || coordinate === "0") return Number(coordinate)
+
+      const [integerPlaces, decimalPlaces] = this.state.coordinateFormat
+      const digits = integerPlaces + decimalPlaces
+      const [sign, signlessCoordinate] =
+        coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
+      const padded =
+        this.state.zeroSuppression === Constants.TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
+      const leading = padded.slice(0, padded.length - decimalPlaces)
+      const trailing = padded.slice(padded.length - decimalPlaces)
+      return Number(`${sign}${leading}.${trailing}`)
+    }
+
+    const startPoint = { ...this.state.currentPoint }
+    const x0 = parseCoordinate(this.coordinates.x0, startPoint.x)
+    const y0 = parseCoordinate(this.coordinates.y0, startPoint.y)
+    const endPoint = {
+      x: parseCoordinate(this.coordinates.x, x0),
+      y: parseCoordinate(this.coordinates.y, y0),
+    }
+    this.state.currentPoint = endPoint
+    const location = {
+      startPoint,
+      endPoint,
+      arcOffsets: {
+        i: parseCoordinate(this.coordinates.i, 0),
+        j: parseCoordinate(this.coordinates.j, 0),
+        a: parseCoordinate(this.coordinates.a, 0),
+      },
+      stepRepeat: { x: 0, y: 0, i: 1, j: 1 },
+    }
+
+    // const operation = this.graphicFromOperationCode(this.state.operation) ?? this.defaultGraphic
+    const operation = this.state.operation // ?? this.defaultGraphic
+
+    if (operation === undefined) {
+      this.errors.push({
+        message: "Missing operation code, cannot determine graphic type for interpolation command",
+        location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
+      })
+      return
+    }
+
+    if (operation === Constants.MOVE) {
+      this.flushCurrentSurface()
+      return
+    }
+
+    if (operation === Constants.SHAPE) {
+      this.flushCurrentSurface()
+      this.emitShape(
+        new Shapes.Pad({
+          symbol: this.getCurrentTool(),
+          x: location.endPoint.x,
+          y: location.endPoint.y,
+          rotation: this.currentTransform.rotation,
+          mirror_x: this.currentTransform.mirror === "x" || this.currentTransform.mirror === "xy" ? 1 : 0,
+          mirror_y: this.currentTransform.mirror === "y" || this.currentTransform.mirror === "xy" ? 1 : 0,
+          resize_factor: this.currentTransform.scale,
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
+          units: this.state.units,
+          attributes: {...this.objectAttributes}
+        }),
+      )
+      return
+    }
+
+    if (operation !== Constants.SEGMENT) {
+      return
+    }
+
+    if (this.regionMode) {
+      if (!this.currentSurface) {
+        this.currentSurface = new Shapes.Surface({
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
+          units: this.state.units,
+          attributes: { ...this.objectAttributes, ...this.apertureAttributes}
+        }).addContour(
+          new Shapes.Contour({
+            xs: location.startPoint.x,
+            ys: location.startPoint.y,
+          }),
+        )
+      }
+
+      if (!this.arcDirection) {
+        this.currentSurface.contours[0].addSegment(
+          new Shapes.Contour_Line_Segment({
+            x: location.endPoint.x,
+            y: location.endPoint.y,
+          }),
+        )
+        return
+      }
+
+      const center = this.getArcCenter(location)
+      this.currentSurface.contours[0].addSegment(
+        new Shapes.Contour_Arc_Segment({
+          x: location.endPoint.x,
+          y: location.endPoint.y,
+          xc: center.x ?? location.endPoint.x,
+          yc: center.y ?? location.endPoint.y,
+          clockwise: this.arcDirection === "cw" ? 1 : 0,
+        }),
+      )
+      return
+    }
+
+    const tool = this.getCurrentTool()
+    if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
+      // TODO: warn about using macro tools in interpolation commands, since it's not clear how to apply transformations to the primitives inside the macro
+      return
+    }
+
+    if (!this.arcDirection) {
+      this.emitShape(
+        new Shapes.Line({
+          symbol: tool,
+          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
+          xs: location.startPoint.x,
+          ys: location.startPoint.y,
+          xe: location.endPoint.x,
+          ye: location.endPoint.y,
+          units: this.state.units,
+          attributes: { ...this.objectAttributes }
+        }),
+      )
+      return
+    }
+
+    const center = this.getArcCenter(location)
+    this.emitShape(
+      new Shapes.Arc({
+        symbol: tool,
+        polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
+        xs: location.startPoint.x,
+        ys: location.startPoint.y,
+        xe: location.endPoint.x,
+        ye: location.endPoint.y,
+        xc: center.x ?? location.endPoint.x,
+        yc: center.y ?? location.endPoint.y,
+        clockwise: this.arcDirection === "cw" ? 1 : 0,
+        units: this.state.units,
+        attributes: { ...this.objectAttributes }
+      }),
+    )
+  }
+
+  operationCode(ctx: cst.OperationCodeCstChildren): void {
+    if (ctx.D01) {
+      this.state.operation = Constants.SEGMENT
+    } else if (ctx.D02) {
+      this.state.operation = Constants.MOVE
+    } else if (ctx.D03) {
+      this.state.operation = Constants.SHAPE
+    } else {
+      this.state.operation = undefined
+      this.errors.push({ message: "Missing/Unknown Operation Code Command", location: undefined })
+    }
   }
 
   quadrantSingleCommand(_ctx: cst.QuadrantSingleCommandCstChildren): void {
@@ -1433,53 +1660,38 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       this.state.currentToolCode = String(code)
       return
     }
-
-    // this.executeGraphic(this.createEmptyCoordinates(), code)
   }
 
-  operationCommand(ctx: cst.OperationCommandCstChildren): void {
-    const coordinates = this.readCoordinates(ctx)
-    const operationCode = this.interpretOperationCode(ctx)
-    this.executeGraphic(coordinates, operationCode)
+  coordinateData(ctx: cst.CoordinateDataCstChildren): void {
+    ctx.coordinateField?.map(this.visit, this)
   }
 
-  // unknownWordCommand(_ctx: cst.UnknownWordCommandCstChildren): void {}
-
-  coordinateData(ctx: cst.CoordinateDataCstChildren): GerberCoordinates {
-    let coordinates = this.createEmptyCoordinates()
-    for (const field of ctx.coordinateField) {
-      coordinates = this.mergeCoordinates(coordinates, this.visit(field))
-    }
-    return coordinates
+  coordinateField(ctx: cst.CoordinateFieldCstChildren): void {
+    ctx.aCoordinate && this.visit(ctx.aCoordinate)
+    ctx.jCoordinate && this.visit(ctx.jCoordinate)
+    ctx.iCoordinate && this.visit(ctx.iCoordinate)
+    ctx.yCoordinate && this.visit(ctx.yCoordinate)
+    ctx.xCoordinate && this.visit(ctx.xCoordinate)
   }
 
-  coordinateField(ctx: cst.CoordinateFieldCstChildren): GerberCoordinates {
-    for (const value of Object.values(ctx)) {
-      if (!value) continue
-      const nodes = value as unknown as CstNode[]
-      if (nodes.length > 0) return this.visit(nodes[0])
-    }
-    return this.createEmptyCoordinates()
+  xCoordinate(ctx: cst.XCoordinateCstChildren): void {
+    this.coordinates.x = ctx.Number[0].image
   }
 
-  xCoordinate(ctx: cst.XCoordinateCstChildren): GerberCoordinates {
-    return { x: ctx.Number[0].image }
+  yCoordinate(ctx: cst.YCoordinateCstChildren): void {
+    this.coordinates.y = ctx.Number[0].image
   }
 
-  yCoordinate(ctx: cst.YCoordinateCstChildren): GerberCoordinates {
-    return { y: ctx.Number[0].image }
+  iCoordinate(ctx: cst.ICoordinateCstChildren): void {
+    this.coordinates.i = ctx.Number[0].image
   }
 
-  iCoordinate(ctx: cst.ICoordinateCstChildren): GerberCoordinates {
-    return { i: ctx.Number[0].image }
+  jCoordinate(ctx: cst.JCoordinateCstChildren): void {
+    this.coordinates.j = ctx.Number[0].image
   }
 
-  jCoordinate(ctx: cst.JCoordinateCstChildren): GerberCoordinates {
-    return { j: ctx.Number[0].image }
-  }
-
-  aCoordinate(ctx: cst.ACoordinateCstChildren): GerberCoordinates {
-    return { a: ctx.Number[0].image }
+  aCoordinate(ctx: cst.ACoordinateCstChildren): void {
+    this.coordinates.a = ctx.Number[0].image
   }
 
   macroBlock(ctx: cst.MacroBlockCstChildren): Types.MacroBlock | undefined {
@@ -1573,10 +1785,9 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.visit(ctx.dCodeCommand)
   }
 
-  prepareFlashCommand(ctx: cst.PrepareFlashCommandCstChildren): void {
+  prepareFlashCommand(_ctx: cst.PrepareFlashCommandCstChildren): void {
     // This command is deprecated, but if we encounter it, we should still set the current tool to the specified D-code, since that's the only effect it has.
-    // this.visit(ctx.dCodeCommand)
-    // TODO: implement
+    this.state.operation = Constants.SHAPE
   }
 
   inchModeCommand(): void {
@@ -1606,36 +1817,40 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   imagePolarityCommand(ctx: cst.ImagePolarityCommandCstChildren): void {
     const value = ctx.POS ? "POS" : ctx.NEG ? "NEG" : "POS"
     if (value === "NEG") {
-      console.warn("Negative images are not fully supported, and may not render correctly.")
+      this.errors.push({
+        message: "Negative images are not fully supported, and may not render correctly.",
+        location: ctx.NEG?.[0] ?? ctx.POS?.[0] ?? undefined,
+      })
+
     }
   }
 
-  axisSelectionCommand(ctx: cst.AxisSelectionCommandCstChildren): void {
+  axisSelectionCommand(_ctx: cst.AxisSelectionCommandCstChildren): void {
     // TODO: Warn if the axes are swapped, since that can cause confusion for users and may indicate an error in the file.
   }
 
-  imageRotationCommand(ctx: cst.ImageRotationCommandCstChildren): void {
-    const rotation = Number(ctx.Number[0].image)
+  imageRotationCommand(_ctx: cst.ImageRotationCommandCstChildren): void {
+    // const rotation = Number(ctx.Number[0].image)
     // TODO: warn for non 0 rotation
   }
 
-  mirrorImageCommand(ctx: cst.MirrorImageCommandCstChildren): void {
+  mirrorImageCommand(_ctx: cst.MirrorImageCommandCstChildren): void {
     // TODO: implement or warn
   }
 
-  imageOffsetCommand(ctx: cst.ImageOffsetCommandCstChildren): void {
+  imageOffsetCommand(_ctx: cst.ImageOffsetCommandCstChildren): void {
     // TODO: implement or warn
   }
 
-  scaleFactorCommand(ctx: cst.ScaleFactorCommandCstChildren): void {
+  scaleFactorCommand(_ctx: cst.ScaleFactorCommandCstChildren): void {
     // TODO: implement or warn
   }
 
-  imageNameCommand(ctx: cst.ImageNameCommandCstChildren): void {
+  imageNameCommand(_ctx: cst.ImageNameCommandCstChildren): void {
     // This command is deprecated and has no effect, so we can safely ignore it.
   }
 
-  loadNameCommand(ctx: cst.LoadNameCommandCstChildren): void {
+  loadNameCommand(_ctx: cst.LoadNameCommandCstChildren): void {
     // This command is deprecated and has no effect, so we can safely ignore it.
   }
 
@@ -1643,19 +1858,19 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
 
   fileAttributesCommand(ctx: cst.FileAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    const value = ctx.Field[0].image
     this.fileAttributes[name] = value
   }
 
   apertureAttributesCommand(ctx: cst.ApertureAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    const value = ctx.Field[0].image
     this.apertureAttributes[name] = value
   }
 
   objectAttributesCommand(ctx: cst.ObjectAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field[0] ? ctx.Field[0].image.split(",") : []
+    const value = ctx.Field[0].image
     this.objectAttributes[name] = value
   }
 
@@ -1672,182 +1887,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     }
   }
 
-  private readCoordinates(ctx: { coordinateData?: cst.CoordinateDataCstNode[] }): GerberCoordinates {
-    const coordinateNodes = (ctx.coordinateData as unknown as CstNode[] | undefined) ?? []
-    return coordinateNodes.reduce(
-      (coordinates, node) => this.mergeCoordinates(coordinates, this.visit(node) as GerberCoordinates),
-      this.createEmptyCoordinates(),
-    )
-  }
-
-  // private visitChildren(ctx: GerberStatementCtx): void {
-  //   for (const value of Object.values(ctx)) {
-  //     if (!value) continue
-  //     for (const node of value) {
-  //       if (typeof node === "object" && node !== null && "name" in node) {
-  //         this.visit(node as CstNode)
-  //       }
-  //     }
-  //   }
-  // }
-
-  private interpretOperationCode(ctx: { operationCode?: cst.OperationCodeCstNode[] }): number | undefined {
-    const operationCodeNodes = ctx.operationCode
-    if (!operationCodeNodes) return undefined
-    if (operationCodeNodes.length === 0) return undefined
-    return this.visit(operationCodeNodes[operationCodeNodes.length - 1]) as number
-  }
-
-  private executeGraphic(coordinates: GerberCoordinates, operationCode: number | undefined): void {
-    const location = this.advanceLocation(coordinates)
-    const operation = this.graphicFromOperationCode(operationCode) ?? this.defaultGraphic
-
-    if (operation === Constants.MOVE) {
-      this.flushCurrentSurface()
-      return
-    }
-
-    if (operation === Constants.SHAPE) {
-      this.flushCurrentSurface()
-      this.emitShape(
-        new Shapes.Pad({
-          symbol: this.currentTool(),
-          x: location.endPoint.x,
-          y: location.endPoint.y,
-          rotation: this.currentTransform.rotation,
-          mirror_x: this.currentTransform.mirror === "x" || this.currentTransform.mirror === "xy" ? 1 : 0,
-          mirror_y: this.currentTransform.mirror === "y" || this.currentTransform.mirror === "xy" ? 1 : 0,
-          resize_factor: this.currentTransform.scale,
-          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
-        }),
-      )
-      return
-    }
-
-    if (operation !== Constants.SEGMENT) {
-      return
-    }
-
-    if (this.regionMode) {
-      if (!this.currentSurface) {
-        this.currentSurface = new Shapes.Surface({
-          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
-        }).addContour(
-          new Shapes.Contour({
-            xs: location.startPoint.x,
-            ys: location.startPoint.y,
-          }),
-        )
-      }
-
-      if (!this.arcDirection) {
-        this.currentSurface.contours[0].addSegment(
-          new Shapes.Contour_Line_Segment({
-            x: location.endPoint.x,
-            y: location.endPoint.y,
-          }),
-        )
-        return
-      }
-
-      const center = this.getArcCenter(location)
-      this.currentSurface.contours[0].addSegment(
-        new Shapes.Contour_Arc_Segment({
-          x: location.endPoint.x,
-          y: location.endPoint.y,
-          xc: center.x || location.endPoint.x,
-          yc: center.y || location.endPoint.y,
-          clockwise: this.arcDirection === "cw" ? 1 : 0,
-        }),
-      )
-      return
-    }
-
-    const tool = this.currentTool()
-    if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
-      // TODO: warn about using macro tools in interpolation commands, since it's not clear how to apply transformations to the primitives inside the macro
-      return
-    }
-
-    if (!this.arcDirection) {
-      this.emitShape(
-        new Shapes.Line({
-          symbol: tool,
-          polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
-          xs: location.startPoint.x,
-          ys: location.startPoint.y,
-          xe: location.endPoint.x,
-          ye: location.endPoint.y,
-        }),
-      )
-      return
-    }
-
-    const center = this.getArcCenter(location)
-    this.emitShape(
-      new Shapes.Arc({
-        symbol: tool,
-        polarity: this.currentTransform.polarity === Constants.DARK ? 1 : 0,
-        xs: location.startPoint.x,
-        ys: location.startPoint.y,
-        xe: location.endPoint.x,
-        ye: location.endPoint.y,
-        xc: center.x || location.endPoint.x,
-        yc: center.y || location.endPoint.y,
-        clockwise: this.arcDirection === "cw" ? 1 : 0,
-      }),
-    )
-  }
-
-  private setInterpolationMode(mode: typeof Constants.LINE | typeof Constants.CW_ARC | typeof Constants.CCW_ARC): void {
-    if (mode === Constants.LINE) {
-      this.arcDirection = undefined
-    } else if (mode === Constants.CW_ARC) {
-      this.arcDirection = "cw"
-    } else {
-      this.arcDirection = "ccw"
-    }
-    this.defaultGraphic = Constants.SEGMENT
-  }
-
-  private currentTool(): Tool {
+  private getCurrentTool(): Tool {
     return typeof this.state.currentToolCode === "string" ? (this.toolDefinitions[this.state.currentToolCode] ?? defaultTool) : defaultTool
-  }
-
-  private advanceLocation(coordinates: GerberCoordinates): Types.Location {
-    const startPoint = { ...this.state.currentPoint }
-    const x0 = this.parseCoordinate(coordinates.x0, startPoint.x)
-    const y0 = this.parseCoordinate(coordinates.y0, startPoint.y)
-    const endPoint = {
-      x: this.parseCoordinate(coordinates.x, x0),
-      y: this.parseCoordinate(coordinates.y, y0),
-    }
-    this.state.currentPoint = endPoint
-    return {
-      startPoint,
-      endPoint,
-      arcOffsets: {
-        i: this.parseCoordinate(coordinates.i, 0),
-        j: this.parseCoordinate(coordinates.j, 0),
-        a: this.parseCoordinate(coordinates.a, 0),
-      },
-      stepRepeat: { x: 0, y: 0, i: 1, j: 1 },
-    }
-  }
-
-  private parseCoordinate(coordinate: string | undefined, defaultValue: number): number {
-    if (typeof coordinate !== "string") return defaultValue
-    if (coordinate.includes(".") || coordinate === "0") return Number(coordinate)
-
-    const [integerPlaces, decimalPlaces] = this.state.coordinateFormat
-    const digits = integerPlaces + decimalPlaces
-    const [sign, signlessCoordinate] =
-      coordinate.startsWith("+") || coordinate.startsWith("-") ? [coordinate[0], coordinate.slice(1)] : ["+", coordinate]
-    const padded =
-      this.state.zeroSuppression === Constants.TRAILING ? signlessCoordinate.padEnd(digits, "0") : signlessCoordinate.padStart(digits, "0")
-    const leading = padded.slice(0, padded.length - decimalPlaces)
-    const trailing = padded.slice(padded.length - decimalPlaces)
-    return Number(`${sign}${leading}.${trailing}`)
   }
 
   private flushCurrentSurface(): void {
@@ -1857,7 +1898,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   private emitShape(shape: Shapes.Shape): void {
-    this.convertShapeUnits(shape, this.state.units)
     if (this.stepRepeatStack.length > 0) {
       this.stepRepeatStack[this.stepRepeatStack.length - 1].shapes.push(shape)
       return
@@ -1869,25 +1909,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.image.children.push(shape)
   }
 
-  private convertShapeUnits(shape: Shapes.Shape, units: Types.UnitsType): void {
-    const normalizedUnits: ShapeUnits = units === Constants.IN ? "inch" : "mm"
-    shape.units = normalizedUnits
-    if (shape.type === Shapes.StepAndRepeat.prototype.type) {
-      shape.shapes.map((child) => this.convertShapeUnits(child, units))
-      return
-    }
-    if (shape.type === Shapes.Pad.prototype.type && shape.symbol.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
-      shape.symbol.shapes.map((child) => this.convertShapeUnits(child, units))
-      return
-    }
-    if (
-      (shape.type === Shapes.Pad.prototype.type || shape.type === Shapes.Line.prototype.type || shape.type === Shapes.Arc.prototype.type) &&
-      shape.symbol.type === SymbolTypeIdentifier.SYMBOL_DEFINITION
-    ) {
-      shape.symbol.units = normalizedUnits
-    }
-  }
-
   private getArcCenter(location: Types.Location): Types.Point {
     if (this.ambiguousArcCenter && this.arcDirection) {
       return getAmbiguousArcCenter(location, this.arcDirection)
@@ -1896,29 +1917,6 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       x: location.startPoint.x + location.arcOffsets.i,
       y: location.startPoint.y + location.arcOffsets.j,
     }
-  }
-
-  private mergeCoordinates(base: GerberCoordinates, next: GerberCoordinates): GerberCoordinates {
-    return {
-      x0: next.x0 ?? base.x0,
-      y0: next.y0 ?? base.y0,
-      x: next.x ?? base.x,
-      y: next.y ?? base.y,
-      i: next.i ?? base.i,
-      j: next.j ?? base.j,
-      a: next.a ?? base.a,
-    }
-  }
-
-  private createEmptyCoordinates(): GerberCoordinates {
-    return { x0: undefined, y0: undefined, x: undefined, y: undefined, i: undefined, j: undefined, a: undefined }
-  }
-
-  private graphicFromOperationCode(code: number | undefined): Types.GraphicType | undefined {
-    if (code === 1) return Constants.SEGMENT
-    if (code === 2) return Constants.MOVE
-    if (code === 3) return Constants.SHAPE
-    return undefined
   }
 
   // MACRO STUFF
@@ -1964,241 +1962,193 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   private createMacroPrimitive(code: MacroPrimitiveCode, parameters: number[]): Shapes.Shape {
     switch (code) {
       case Constants.MACRO_CIRCLE: {
-        return this.plotCircle(parameters)
+        const [exposure, diameter, cx0, cy0, degrees] = parameters
+        const [cx, cy] = this.rotate([cx0, cy0], degrees)
+
+        return new Shapes.Pad({
+          polarity: exposure === 1 ? 1 : 0,
+          x: cx,
+          y: cy,
+          symbol: new Symbols.RoundSymbol({
+            outer_dia: diameter,
+            inner_dia: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          units: this.state.units,
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_VECTOR_LINE:
       case Constants.MACRO_VECTOR_LINE_DEPRECATED: {
-        return this.plotVectorLine(parameters)
+        const [exposure, width, sx, sy, ex, ey, degrees] = parameters
+        const [xs, ys] = this.rotate([sx, sy], degrees)
+        const [xe, ye] = this.rotate([ex, ey], degrees)
+
+        return new Shapes.Line({
+          polarity: exposure === 1 ? 1 : 0,
+          xs: xs,
+          ys: ys,
+          xe: xe,
+          ye: ye,
+          symbol: new Symbols.SquareSymbol({
+            width: width,
+            height: 0,
+            inner_dia: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          units: this.state.units,
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_CENTER_LINE: {
-        return this.plotCenterLine(parameters)
+        const [exposure, width, height, cx, cy, degrees] = parameters
+        const [x, y] = this.rotate([cx, cy], degrees)
+
+        return new Shapes.Pad({
+          polarity: exposure === 1 ? 1 : 0,
+          rotation: degrees,
+          x: x,
+          y: y,
+          symbol: new Symbols.RectangleSymbol({
+            width: width,
+            height: height,
+            inner_dia: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          units: this.state.units,
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_LOWER_LEFT_LINE_DEPRECATED: {
-        return this.plotLowerLeftLine(parameters)
+        const [exposure, width, height, x, y, degrees] = parameters
+        const [xs, ys] = this.rotate([x, y], degrees)
+
+        return new Shapes.Pad({
+          polarity: exposure === 1 ? 1 : 0,
+          rotation: degrees,
+          x: xs + width / 2,
+          y: ys + height / 2,
+          symbol: new Symbols.RectangleSymbol({
+            width: width,
+            height: height,
+            inner_dia: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          units: this.state.units,
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_OUTLINE: {
-        return this.plotOutline(parameters)
+        const [exposure, , ...coords] = parameters.slice(0, -1)
+        const degrees = parameters[parameters.length - 1]
+        const [xs, ys] = this.rotate([coords[0], coords[1]], degrees)
+
+        const segments = coords
+          .map((p, i) => {
+            if (i % 2 === 0 && i >= 2) {
+              const [x, y] = this.rotate([p, coords[i + 1]], degrees)
+              return new Shapes.Contour_Line_Segment({
+                x: x,
+                y: y,
+              })
+            }
+            return undefined
+          })
+          .filter((s): s is Shapes.Contour_Line_Segment => s !== undefined)
+        return new Shapes.Surface({
+          polarity: exposure === 1 ? 1 : 0,
+          units: this.state.units,
+          attributes: { ...this.objectAttributes, ...this.apertureAttributes }
+        }).addContour(
+          new Shapes.Contour({
+            poly_type: 1,
+            xs: xs,
+            ys: ys,
+            segments: segments,
+          }),
+        )
       }
 
       case Constants.MACRO_POLYGON: {
-        return this.plotPolygon(parameters)
+        const [exposure, vertices, cx, cy, diameter, degrees] = parameters
+
+        const [x, y] = this.rotate([cx, cy], degrees)
+
+        return new Shapes.Pad({
+          polarity: exposure === 1 ? 1 : 0,
+          x: x,
+          y: y,
+          rotation: degrees,
+          units: this.state.units,
+          symbol: new Symbols.PolygonSymbol({
+            outer_dia: diameter,
+            corners: vertices,
+            inner_dia: 0,
+            line_width: 0,
+            angle: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_MOIRE_DEPRECATED: {
-        return this.plotMoire(parameters)
+        const [cx0, cy0, d, ringThx, ringGap, ringN, lineThx, lineLength, degrees] = parameters
+        const [cx, cy] = this.rotate([cx0, cy0], degrees)
+
+        return new Shapes.Pad({
+          polarity: 1,
+          x: cx,
+          y: cy,
+          rotation: degrees,
+          units: this.state.units,
+          symbol: new Symbols.MoireGerberSymbol({
+            outer_dia: d,
+            ring_gap: ringGap,
+            ring_width: ringThx,
+            num_rings: ringN,
+            line_width: lineThx,
+            line_length: lineLength,
+            angle: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          attributes: { ...this.objectAttributes }
+        })
       }
 
       case Constants.MACRO_THERMAL: {
-        return this.plotThermal(parameters)
-      }
-    }
-  }
+        const [cx0, cy0, od, id, gap, degrees] = parameters
+        const [x, y] = this.rotate([cx0, cy0], degrees)
 
-  private plotCircle(parameters: number[]): Shapes.Primitive {
-    const [exposure, diameter, cx0, cy0, degrees] = parameters
-    const [cx, cy] = this.rotate([cx0, cy0], degrees)
-
-    return new Shapes.Pad({
-      polarity: exposure === 1 ? 1 : 0,
-      x: cx,
-      y: cy,
-      symbol: new Symbols.RoundSymbol({
-        outer_dia: diameter,
-        inner_dia: 0,
-        units: this.state.units,
-      }),
-      units: this.state.units,
-    })
-  }
-
-  private plotVectorLine(parameters: number[]): Shapes.Primitive {
-    const [exposure, width, sx, sy, ex, ey, degrees] = parameters
-    const [xs, ys] = this.rotate([sx, sy], degrees)
-    const [xe, ye] = this.rotate([ex, ey], degrees)
-
-    return new Shapes.Line({
-      polarity: exposure === 1 ? 1 : 0,
-      xs: xs,
-      ys: ys,
-      xe: xe,
-      ye: ye,
-      symbol: new Symbols.SquareSymbol({
-        width: width,
-        height: 0,
-        inner_dia: 0,
-        units: this.state.units,
-      }),
-      units: this.state.units,
-    })
-  }
-
-  private plotCenterLine(parameters: number[]): Shapes.Primitive {
-    const [exposure, width, height, cx, cy, degrees] = parameters
-    const [x, y] = this.rotate([cx, cy], degrees)
-
-    return new Shapes.Pad({
-      polarity: exposure === 1 ? 1 : 0,
-      rotation: degrees,
-      x: x,
-      y: y,
-      symbol: new Symbols.RectangleSymbol({
-        width: width,
-        height: height,
-        inner_dia: 0,
-        units: this.state.units,
-      }),
-      units: this.state.units,
-    })
-  }
-
-  private plotLowerLeftLine(parameters: number[]): Shapes.Primitive {
-    const [exposure, width, height, x, y, degrees] = parameters
-    const [xs, ys] = this.rotate([x, y], degrees)
-
-    return new Shapes.Pad({
-      polarity: exposure === 1 ? 1 : 0,
-      rotation: degrees,
-      x: xs + width / 2,
-      y: ys + height / 2,
-      symbol: new Symbols.RectangleSymbol({
-        width: width,
-        height: height,
-        inner_dia: 0,
-        units: this.state.units,
-      }),
-      units: this.state.units,
-    })
-  }
-
-  private plotOutline(parameters: number[]): Shapes.Surface {
-    const [exposure, , ...coords] = parameters.slice(0, -1)
-    const degrees = parameters[parameters.length - 1]
-    const [xs, ys] = this.rotate([coords[0], coords[1]], degrees)
-
-    const segments = coords
-      .map((p, i) => {
-        if (i % 2 === 0 && i >= 2) {
-          const [x, y] = this.rotate([p, coords[i + 1]], degrees)
-          return new Shapes.Contour_Line_Segment({
-            x: x,
-            y: y,
-          })
-        }
-        return undefined
-      })
-      .filter((s): s is Shapes.Contour_Line_Segment => s !== undefined)
-    return new Shapes.Surface({
-      polarity: exposure === 1 ? 1 : 0,
-      units: this.state.units,
-    }).addContour(
-      new Shapes.Contour({
-        poly_type: 1,
-        xs: xs,
-        ys: ys,
-        segments: segments,
-      }),
-    )
-  }
-
-  private plotPolygon(parameters: number[]): Shapes.Primitive {
-    const [exposure, vertices, cx, cy, diameter, degrees] = parameters
-
-    const [x, y] = this.rotate([cx, cy], degrees)
-
-    return new Shapes.Pad({
-      polarity: exposure === 1 ? 1 : 0,
-      x: x,
-      y: y,
-      rotation: degrees,
-      units: this.state.units,
-      symbol: new Symbols.PolygonSymbol({
-        outer_dia: diameter,
-        corners: vertices,
-        inner_dia: 0,
-        line_width: 0,
-        angle: 0,
-        units: this.state.units,
-      }),
-    })
-  }
-
-  private plotMoire(parameters: number[]): Shapes.Primitive {
-    const [cx0, cy0, d, ringThx, ringGap, ringN, lineThx, lineLength, degrees] = parameters
-    const [cx, cy] = this.rotate([cx0, cy0], degrees)
-
-    return new Shapes.Pad({
-      polarity: 1,
-      x: cx,
-      y: cy,
-      rotation: degrees,
-      units: this.state.units,
-      symbol: new Symbols.MoireGerberSymbol({
-        outer_dia: d,
-        ring_gap: ringGap,
-        ring_width: ringThx,
-        num_rings: ringN,
-        line_width: lineThx,
-        line_length: lineLength,
-        angle: 0,
-        units: this.state.units,
-      }),
-    })
-  }
-
-  private plotThermal(parameters: number[]): Shapes.Primitive {
-    const [cx0, cy0, od, id, gap, degrees] = parameters
-    const [x, y] = this.rotate([cx0, cy0], degrees)
-
-    return new Shapes.Pad({
-      polarity: 1,
-      x: x,
-      y: y,
-      rotation: degrees,
-      units: this.state.units,
-      symbol: new Symbols.SquaredRoundThermalSymbol({
-        outer_dia: od,
-        inner_dia: id,
-        gap: gap,
-        num_spokes: 4,
-        angle: 0,
-        units: this.state.units,
-      }),
-    })
-  }
-
-  private createMacro(tool: MacroTool): Symbols.MacroSymbol {
-    const shapes: Shapes.Shape[] = []
-    const variableValues: VariableValues = Object.fromEntries(tool.variableValues.map((value, index) => [`$${index + 1}`, value]))
-
-    for (const block of tool.macro) {
-      if (block.type === Constants.MACRO_VARIABLE) {
-        variableValues[block.name] = this.solveExpression(block.value, variableValues)
-      }
-
-      if (block.type === Constants.MACRO_PRIMITIVE) {
-        const parameters = block.parameters.map((p) => {
-          return this.solveExpression(p, variableValues)
+        return new Shapes.Pad({
+          polarity: 1,
+          x: x,
+          y: y,
+          rotation: degrees,
+          units: this.state.units,
+          symbol: new Symbols.SquaredRoundThermalSymbol({
+            outer_dia: od,
+            inner_dia: id,
+            gap: gap,
+            num_spokes: 4,
+            angle: 0,
+            units: this.state.units,
+            attributes: { ...this.apertureAttributes }
+          }),
+          attributes: { ...this.objectAttributes }
         })
-
-        shapes.push(this.createMacroPrimitive(block.code, parameters))
       }
     }
-
-    // micro optimization
-    let flatten = true
-    if (shapes.every((s) => "polarity" in s && s.polarity == 1)) {
-      flatten = false
-    }
-
-    return new Symbols.MacroSymbol({
-      id: `${tool.name}-D${tool.dcode}`,
-      shapes,
-      flatten,
-    })
   }
 }
 
@@ -2228,10 +2178,11 @@ export function parseGerberWithChevrotain(file: string): ImageTree {
       `Gerber parsing produced ${parser.errors.length} error(s). This may indicate that the file is not fully compliant with the Gerber specification, and may lead to incorrect parsing results.`,
     )
     console.warn(
-      `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
+      `Gerber parse produced ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
     )
   }
 
   const visitor = new GerberToTreeVisitor()
+  // visitor.warnings
   return visitor.visit(cst) as ImageTree
 }
