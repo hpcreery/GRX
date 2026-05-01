@@ -152,7 +152,8 @@ const MacroTokens = {
   WhiteSpace: createToken({ name: "MacroWhiteSpace", pattern: /[ \t]+/, group: Lexer.SKIPPED }),
   NewLine: createToken({ name: "MacroNewLine", pattern: /\r?\n/, line_breaks: true, group: Lexer.SKIPPED }),
   MacroVariable: createToken({ name: "MacroVariable", pattern: /\$[0-9]*[1-9][0-9]*/ }),
-  Number: createToken({ name: "Number", pattern: /[+-]?(?:\d+\.?\d*|\.\d+)/ }),
+  // Number: createToken({ name: "Number", pattern: /[+-]?(?:\d+\.?\d*|\.\d+)/ }),
+  UnsignedNumber: createToken({ name: "UnsignedNumber", pattern: /\d+\.?\d*|\.\d+/ }),
   Percent: createToken({ name: "Percent", pattern: /%/, pop_mode: true }),
   Star: createToken({ name: "Star", pattern: /\*/ }),
   Comma: createToken({ name: "Comma", pattern: /,/ }),
@@ -261,15 +262,16 @@ const MacroModeTokens = [
   MacroTokens.NewLine,
   MacroTokens.MacroVariable,
   MacroTokens.CommentPrimative,
-  MacroTokens.Number,
+  MacroTokens.AddSubOperator,
+  MacroTokens.MulDivOperator,
+  MacroTokens.UnsignedNumber,
+  // MacroTokens.Number,
   MacroTokens.Percent,
   MacroTokens.Star,
   MacroTokens.Comma,
   MacroTokens.Equals,
   MacroTokens.LParen,
   MacroTokens.RParen,
-  MacroTokens.AddSubOperator,
-  MacroTokens.MulDivOperator,
   MacroTokens.Name,
 ]
 
@@ -608,7 +610,7 @@ class GerberParser extends CstParser {
     })
 
     this.RULE("macroParameterizedPrimitive", () => {
-      this.CONSUME(MacroTokens.Number)
+      this.CONSUME(MacroTokens.UnsignedNumber)
       this.AT_LEAST_ONE(() => {
         this.SUBRULE(this.macroParameter)
       })
@@ -647,7 +649,7 @@ class GerberParser extends CstParser {
           },
         },
         { ALT: (): IToken => this.CONSUME(MacroTokens.MacroVariable) },
-        { ALT: (): IToken => this.CONSUME(MacroTokens.Number) },
+        { ALT: (): IToken => this.CONSUME(MacroTokens.UnsignedNumber) },
       ])
     })
 
@@ -1691,7 +1693,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   macroCommentPrimitive(_ctx: cst.MacroCommentPrimitiveCstChildren): void {}
 
   macroParameterizedPrimitive(ctx: cst.MacroParameterizedPrimitiveCstChildren): void {
-    const code = ctx.Number[0].image ?? "0"
+    const code = ctx.UnsignedNumber[0].image ?? "0"
+
     const parameterNodes = ctx.macroParameter
     this.currentMacroBlocks.push({
       type: Constants.MACRO_PRIMITIVE,
@@ -1743,7 +1746,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     const expressionNodes = ctx.expression ?? []
     if (expressionNodes.length > 0) return this.visit(expressionNodes[0]) as MacroValue
     if (ctx.MacroVariable?.[0]) return ctx.MacroVariable[0].image
-    const numericToken = ctx.Number?.[0]
+    const numericToken = ctx.UnsignedNumber?.[0]
     return numericToken ? Number(numericToken.image) : 0
   }
 

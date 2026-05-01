@@ -30,31 +30,31 @@ function parseAndVisit(input: string) {
 describe("Gerber parser (Chevrotain)", () => {
   it("parses a single-segment stroke and emits a line", () => {
     const image = parseAndPlot(singleSegmentGerber)
-    const lines = image.children.filter((shape) => shape.type === FeatureTypeIdentifier.LINE)
+    const lines = image.filter((shape) => shape.type === FeatureTypeIdentifier.LINE)
     expect(lines.length).toBeGreaterThan(0)
   })
 
   it("parses full-circle arc fixture and emits arcs", () => {
     const image = parseAndPlot(fullCircleGerber)
-    const arcs = image.children.filter((shape) => shape.type === FeatureTypeIdentifier.ARC)
+    const arcs = image.filter((shape) => shape.type === FeatureTypeIdentifier.ARC)
     expect(arcs.length).toBeGreaterThan(0)
   })
 
   it("parses region fixture and emits surfaces", () => {
     const image = parseAndPlot(regionWithLinesGerber)
-    const surfaces = image.children.filter((shape) => shape.type === FeatureTypeIdentifier.SURFACE)
+    const surfaces = image.filter((shape) => shape.type === FeatureTypeIdentifier.SURFACE)
     expect(surfaces.length).toBeGreaterThan(0)
   })
 
   it("parses step-repeat fixture and emits step-and-repeat", () => {
     const image = parseAndPlot(stepRepeatGerber)
-    const repeats = image.children.filter((shape) => shape.type === FeatureTypeIdentifier.STEP_AND_REPEAT)
+    const repeats = image.filter((shape) => shape.type === FeatureTypeIdentifier.STEP_AND_REPEAT)
     expect(repeats.length).toBeGreaterThan(0)
   })
 
   it("parses macro aperture fixtures and emits geometry", () => {
     const image = parseAndPlot(vectorPrimitiveGerber)
-    expect(image.children.length).toBeGreaterThan(0)
+    expect(image.length).toBeGreaterThan(0)
   })
 
   it("parses AM variable expressions into macro blocks", () => {
@@ -107,7 +107,7 @@ M02*`
 
     const outlineImage = parseAndPlot(outlinePrimitiveGerber)
     const thermalImage = parseAndPlot(thermalPrimitiveGerber)
-    expect(outlineImage.children.length).toBeGreaterThan(0)
-    expect(thermalImage.children.length).toBeGreaterThan(0)
+    expect(outlineImage.length).toBeGreaterThan(0)
+    expect(thermalImage.length).toBeGreaterThan(0)
   })
 })
