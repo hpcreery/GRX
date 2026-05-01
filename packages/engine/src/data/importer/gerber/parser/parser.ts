@@ -35,7 +35,9 @@ const DefaultTokens = {
   // String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/ }),
 
   // FS Format specification. Sets the coordinate format, e.g. the number of decimals.
-  FS: createToken({ name: "FS", pattern: /FS/i }),
+  // I Incremental Notation is deprecated since revision I1 from December 2012.
+  // Trailing zero omission is deprecated since revision 2015.06.
+  FS: createToken({ name: "FS", pattern: /FS(L|T)(A|I)/i }),
   // MO Mode. Sets the unit to inch or mm.
   MO: createToken({ name: "MO", pattern: /MO(IN|MM)/i }),
   // AD Aperture define. Defines a template based aperture and assigns a D code to it.
@@ -86,10 +88,6 @@ const DefaultTokens = {
   // Dnn (nn≥10) Sets the current aperture to D code nn.
   Dnn: createToken({ name: "Dnn", pattern: /D(?:[1-9][0-9]+)/i }),
 
-  // I Incremental Notation is deprecated since revision I1 from December 2012.
-  L: createToken({ name: "L", pattern: /L(?=[AI])/i }),
-  // Trailing zero omission is deprecated since revision 2015.06.
-  T: createToken({ name: "T", pattern: /T(?=[AI])/i }),
 
   // Axis tokens for coordinates. A coordinate is a number prefixed with an axis identifier, e.g. X12.34 or Y-56.78
   X: createToken({ name: "X", pattern: /X/i }),
@@ -168,7 +166,6 @@ const MacroTokens = {
 } as const
 
 const CommentTokens = {
-  // Comment: createToken({ name: "Comment", pattern: /[^*\r\n]*/i, pop_mode: true }),
   String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/, pop_mode: true }),
 }
 
@@ -186,7 +183,7 @@ const AttributeTokens = {
 }
 
 const AttributeValueTokens = {
-  // Remove Commans from Attribute Fields, will be seperated by the parser and we don't want to allow them in attribute names or values since that can cause confusion.
+  // Remove Commas from Attribute Fields, will be separated by the parser and we don't want to allow them in attribute names or values since that can cause confusion.
   Field: createToken({ name: "Field", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ;$:=]+/, pop_mode: true }),
 }
 
@@ -235,20 +232,17 @@ const DefaultModeTokens = [
   DefaultTokens.AS,
   DefaultTokens.LN,
   DefaultTokens.SR,
-  DefaultTokens.TF,
-  DefaultTokens.TA,
-  DefaultTokens.TO,
-  DefaultTokens.TD,
-  // DefaultTokens.MM,
   DefaultTokens.IN,
-  DefaultTokens.L,
-  DefaultTokens.T,
   DefaultTokens.X,
   DefaultTokens.Y,
   DefaultTokens.I,
   DefaultTokens.J,
   DefaultTokens.A,
   DefaultTokens.B,
+  DefaultTokens.TF,
+  DefaultTokens.TA,
+  DefaultTokens.TO,
+  DefaultTokens.TD,
   DefaultTokens.POS,
   DefaultTokens.NEG,
   DefaultTokens.Number,
@@ -523,13 +517,13 @@ class GerberParser extends CstParser {
     this.RULE("formatSpecificationCommand", () => {
       this.CONSUME(DefaultTokens.FS)
       // It is specified by the "I" in the FS command, after the "L" or "T" for leading or trailing. (The normal absolute notation is specified by ‘A’ in the FS command.)
-      this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.L) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.T) }])
-      this.OR2([
-        // Absolute notation is the default and is specified by the "A" in the FS command. It is also specified by the "A" in the G90 command, but this is deprecated since revision I1 from December 2012.
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.A) },
-        // Incremental Notation is deprecated since revision I1 from December 2012.
-        { ALT: (): IToken => this.CONSUME(DefaultTokens.I) },
-      ])
+      // this.OR([{ ALT: (): IToken => this.CONSUME(DefaultTokens.L) }, { ALT: (): IToken => this.CONSUME(DefaultTokens.T) }])
+      // this.OR2([
+      //   // Absolute notation is the default and is specified by the "A" in the FS command. It is also specified by the "A" in the G90 command, but this is deprecated since revision I1 from December 2012.
+      //   { ALT: (): IToken => this.CONSUME(DefaultTokens.A) },
+      //   // Incremental Notation is deprecated since revision I1 from December 2012.
+      //   { ALT: (): IToken => this.CONSUME(DefaultTokens.I) },
+      // ])
       this.CONSUME(DefaultTokens.X)
       this.CONSUME(DefaultTokens.Number)
       this.CONSUME(DefaultTokens.Y)
@@ -1143,7 +1137,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   extendedCommand(ctx: cst.ExtendedCommandCstChildren): void {
-    Object.values(ctx).forEach(this.visit, this)
+    ctx.extendedCommandDataBlock.map(this.visit, this)
   }
 
   functionCodeCommand(ctx: cst.FunctionCodeCommandCstChildren): void {
@@ -1169,12 +1163,12 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
 
     this.state.coordinateFormat[0] = integer
     this.state.coordinateFormat[1] = decimal
-    this.state.zeroSuppression = ctx.T ? Constants.TRAILING : Constants.LEADING
-    this.state.coordinateMode = ctx.A ? Constants.ABSOLUTE : Constants.INCREMENTAL
+    this.state.zeroSuppression = ctx.FS[0].image.includes("T") ? Constants.TRAILING : Constants.LEADING
+    this.state.coordinateMode = ctx.FS[0].image.includes("I") ? Constants.INCREMENTAL : Constants.ABSOLUTE
     if (this.state.coordinateMode === Constants.INCREMENTAL) {
       this.errors.push({
         message: `Incremental notation is deprecated and not fully supported by this parser. Use absolute notation (G90) instead for better compatibility.`,
-        location: ctx.A?.[0],
+        location: ctx.FS[0],
       })
     }
   }
@@ -1186,6 +1180,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     } else if (unitsString === "IN") {
       this.state.units = Constants.IN
     }
+    console.log("set units to", this.state.units)
   }
 
   apertureDefinitionCommand(ctx: cst.ApertureDefinitionCommandCstChildren): void {
@@ -1802,23 +1797,42 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
   axisSelectionCommand(_ctx: cst.AxisSelectionCommandCstChildren): void {
     // TODO: Warn if the axes are swapped, since that can cause confusion for users and may indicate an error in the file.
+    this.errors.push({
+      message: "Axis selection command is not supported, but if the axes are swapped, it may cause confusion for users and may indicate an error in the file.",
+      location: _ctx.AS[0],
+    })
   }
 
   imageRotationCommand(_ctx: cst.ImageRotationCommandCstChildren): void {
-    // const rotation = Number(ctx.Number[0].image)
-    // TODO: warn for non 0 rotation
+    // TODO: implement
+    this.errors.push({
+      message: "Image rotation command is not supported. The IR command is deprecated since revision I1 from December 2012",
+      location: _ctx.IR[0],
+    })
   }
 
   mirrorImageCommand(_ctx: cst.MirrorImageCommandCstChildren): void {
-    // TODO: implement or warn
+    // TODO: implement
+    this.errors.push({
+      message: "Mirror image command is not supported.The MI command is deprecated since revision I1 from December 2012.",
+      location: _ctx.MI[0],
+    })
   }
 
   imageOffsetCommand(_ctx: cst.ImageOffsetCommandCstChildren): void {
-    // TODO: implement or warn
+    // TODO: implement
+    this.errors.push({
+      message: "Image offset command is not supported.The OF command is deprecated since revision I1 from December 2012.",
+      location: _ctx.OF[0],
+    })
   }
 
   scaleFactorCommand(_ctx: cst.ScaleFactorCommandCstChildren): void {
-    // TODO: implement or warn
+    // TODO: implement
+    this.errors.push({
+      message: "Scale factor command is not supported. The SF command is deprecated since revision I1 from December 2012.",
+      location: _ctx.SF[0],
+    })
   }
 
   imageNameCommand(_ctx: cst.ImageNameCommandCstChildren): void {
@@ -2127,37 +2141,28 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
   }
 }
 
-export function parseGerberWithChevrotain(file: string): Shapes.Shape[] {
+export function parse(file: string): Shapes.Shape[] {
   const lexingResult = GerberLexer.tokenize(file)
   if (lexingResult.errors.length > 0) {
-    // throw new Error(
-    //   `Gerber lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors
-    //     .map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`)
-    //     .join("\n")}`,
-    // )
     console.warn(
-      `Gerber lexing produced ${lexingResult.errors.length} error(s). This may indicate that the file is not fully compliant with the Gerber specification, and may lead to incorrect parsing results.`,
-    )
-    console.warn(
-      `Gerber lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`,
+      `Gerber lexing completed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `--> LINE: ${err.line}\n COLUMN: ${err.column}\n MESSAGE: ${err.message}`).join("\n")}`,
     )
   }
 
   parser.input = lexingResult.tokens
   const cst = parser.program()
   if (parser.errors.length > 0) {
-    // throw new Error(
-    //   `Gerber parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
-    // )
     console.warn(
-      `Gerber parsing produced ${parser.errors.length} error(s). This may indicate that the file is not fully compliant with the Gerber specification, and may lead to incorrect parsing results.`,
-    )
-    console.warn(
-      `Gerber parse produced ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message} => Cause: ${err.cause}, Token: ${JSON.stringify(err.token)}, Context: ${JSON.stringify(err.context)}, Stack: ${err.stack}`).join("\n")}`,
+      `Gerber parse produced ${parser.errors.length} error(s):\n${parser.errors.map((err) => `--> MESSAGE: ${err.message}\n CAUSE: ${err.cause}\n TOKEN: ${JSON.stringify(err.token)}`).join("\n")}`,
     )
   }
 
   const visitor = new GerberToTreeVisitor()
-  // visitor.warnings
+  if (visitor.errors.length > 0) {
+    console.warn(
+      `Gerber processing produced ${visitor.errors.length} error(s):\n${visitor.errors.map((err) => `--> MESSAGE: ${err.message}\n LOCATION: ${err.location ? `Line ${err.location.startLine}, Column ${err.location.startColumn}` : "Unknown"}`).join("\n")}`,
+    )
+  }
+
   return visitor.visit(cst) as Shapes.Shape[]
 }

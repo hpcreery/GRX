@@ -2,7 +2,7 @@ import { parse as parseWithTracespace } from "@hpcreery/tracespace-parser"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
-import { parseGerberWithChevrotain } from "./parser/parser"
+import { parse } from "./parser/parser"
 import { plot } from "./plotter/src"
 
 // import * as Comlink from "comlink"
@@ -21,7 +21,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   console.time("Gerber parsing")
 
   try {
-    image = parseGerberWithChevrotain(file)
+    image = parse(file)
     // console.log(JSON.stringify(image, null, 2))
   } catch (error) {
     console.warn("Gerber Chevrotain parser failed, falling back to tracespace-parser", error)

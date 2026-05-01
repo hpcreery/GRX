@@ -116,10 +116,6 @@ export interface FormatSpecificationCommandCstNode extends CstNode {
 
 export type FormatSpecificationCommandCstChildren = {
   FS: IToken[];
-  L?: IToken[];
-  T?: IToken[];
-  A?: IToken[];
-  I?: IToken[];
   X: IToken[];
   Number: (IToken)[];
   Y: IToken[];
