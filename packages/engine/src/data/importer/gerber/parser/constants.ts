@@ -1,9 +1,5 @@
 // Common constants
 
-// filetype constants
-export const GERBER = 'gerber'
-export const DRILL = 'drill'
-
 // Units constants
 export const MM = 'mm'
 export const IN = 'inch'
@@ -13,13 +9,6 @@ export const LEADING = 'leading'
 export const TRAILING = 'trailing'
 export const ABSOLUTE = 'absolute'
 export const INCREMENTAL = 'incremental'
-
-// Tool constants
-export const CIRCLE = 'circle'
-export const RECTANGLE = 'rectangle'
-export const OBROUND = 'obround'
-export const POLYGON = 'polygon'
-export const MACRO_SHAPE = 'macroShape'
 
 // Macro primitive codes
 export const MACRO_CIRCLE = '1'
@@ -36,12 +25,9 @@ export const MACRO_THERMAL = '7'
 export const SHAPE = 'shape'
 export const MOVE = 'move'
 export const SEGMENT = 'segment'
-export const SLOT = 'slot'
 
-// Interpolation / routing constants
-export const LINE = 'line'
-export const CW_ARC = 'cwArc'
-export const CCW_ARC = 'ccwArc'
+export const CW = "cw"
+export const CCW = "ccw"
 
 // Quadrant mode
 export const SINGLE = 'single'

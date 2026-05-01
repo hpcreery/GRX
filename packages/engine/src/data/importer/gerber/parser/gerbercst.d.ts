@@ -72,6 +72,9 @@ export type FunctionCodeCommandCstChildren = {
   commentCommand?: CommentCommandCstNode[];
   endCommand?: EndCommandCstNode[];
   inlineInterpolateOperationCommand?: InlineInterpolateOperationCommandCstNode[];
+  linearInterpolationCommand?: LinearInterpolationCommandCstNode[];
+  circularInterpolationClockwiseCommand?: CircularInterpolationClockwiseCommandCstNode[];
+  circularInterpolationCounterClockwiseCommand?: CircularInterpolationCounterClockwiseCommandCstNode[];
   quadrantSingleCommand?: QuadrantSingleCommandCstNode[];
   quadrantMultiCommand?: QuadrantMultiCommandCstNode[];
   regionStartCommand?: RegionStartCommandCstNode[];
@@ -94,7 +97,7 @@ export interface StarCstNode extends CstNode {
 }
 
 export type StarCstChildren = {
-  Star: IToken[];
+  Star?: (IToken)[];
 };
 
 export interface PercentCstNode extends CstNode {
@@ -204,7 +207,7 @@ export interface MacroCommentPrimitiveCstNode extends CstNode {
 }
 
 export type MacroCommentPrimitiveCstChildren = {
-  Number: IToken[];
+  CommentPrimative: IToken[];
   String: IToken[];
   Star: IToken[];
 };
@@ -413,6 +416,16 @@ export type InlineInterpolateOperationCommandCstChildren = {
   operationCommand: OperationCommandCstNode[];
 };
 
+export interface OperationCommandCstNode extends CstNode {
+  name: "operationCommand";
+  children: OperationCommandCstChildren;
+}
+
+export type OperationCommandCstChildren = {
+  coordinateData?: CoordinateDataCstNode[];
+  operationCode?: (OperationCodeCstNode)[];
+};
+
 export interface OperationCodeCstNode extends CstNode {
   name: "operationCode";
   children: OperationCodeCstChildren;
@@ -467,16 +480,6 @@ export interface DCodeCommandCstNode extends CstNode {
 
 export type DCodeCommandCstChildren = {
   Dnn: IToken[];
-};
-
-export interface OperationCommandCstNode extends CstNode {
-  name: "operationCommand";
-  children: OperationCommandCstChildren;
-}
-
-export type OperationCommandCstChildren = {
-  coordinateData?: CoordinateDataCstNode[];
-  operationCode?: (OperationCodeCstNode)[];
 };
 
 export interface CoordinateDataCstNode extends CstNode {
@@ -559,7 +562,8 @@ export interface FileAttributesCommandCstNode extends CstNode {
 export type FileAttributesCommandCstChildren = {
   TF: IToken[];
   Name: IToken[];
-  Field: IToken[];
+  Comma?: IToken[];
+  Field?: IToken[];
 };
 
 export interface ApertureAttributesCommandCstNode extends CstNode {
@@ -570,7 +574,8 @@ export interface ApertureAttributesCommandCstNode extends CstNode {
 export type ApertureAttributesCommandCstChildren = {
   TA: IToken[];
   Name: IToken[];
-  Field: IToken[];
+  Comma?: IToken[];
+  Field?: IToken[];
 };
 
 export interface ObjectAttributesCommandCstNode extends CstNode {
@@ -581,7 +586,8 @@ export interface ObjectAttributesCommandCstNode extends CstNode {
 export type ObjectAttributesCommandCstChildren = {
   TO: IToken[];
   Name: IToken[];
-  Field: IToken[];
+  Comma?: IToken[];
+  Field?: IToken[];
 };
 
 export interface DeleteAttributesCommandCstNode extends CstNode {
@@ -786,13 +792,13 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   circularInterpolationClockwiseCommand(children: CircularInterpolationClockwiseCommandCstChildren, param?: IN): OUT;
   circularInterpolationCounterClockwiseCommand(children: CircularInterpolationCounterClockwiseCommandCstChildren, param?: IN): OUT;
   inlineInterpolateOperationCommand(children: InlineInterpolateOperationCommandCstChildren, param?: IN): OUT;
+  operationCommand(children: OperationCommandCstChildren, param?: IN): OUT;
   operationCode(children: OperationCodeCstChildren, param?: IN): OUT;
   quadrantSingleCommand(children: QuadrantSingleCommandCstChildren, param?: IN): OUT;
   quadrantMultiCommand(children: QuadrantMultiCommandCstChildren, param?: IN): OUT;
   regionStartCommand(children: RegionStartCommandCstChildren, param?: IN): OUT;
   regionEndCommand(children: RegionEndCommandCstChildren, param?: IN): OUT;
   dCodeCommand(children: DCodeCommandCstChildren, param?: IN): OUT;
-  operationCommand(children: OperationCommandCstChildren, param?: IN): OUT;
   coordinateData(children: CoordinateDataCstChildren, param?: IN): OUT;
   coordinateField(children: CoordinateFieldCstChildren, param?: IN): OUT;
   xCoordinate(children: XCoordinateCstChildren, param?: IN): OUT;

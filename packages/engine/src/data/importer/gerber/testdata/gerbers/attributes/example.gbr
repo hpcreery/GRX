@@ -1,0 +1,15 @@
+G01*
+%ADD13R,200X200*% G04 this aperture has no attribute*
+D13*
+%TAIAmATA*% G04 add attribute IAmATA in attributes dictionary*
+X0Y0D03* G04 this flash object has no attribute*
+%ADD11R,200X200*% G04 this aperture now has attached attribute IAmATA*
+%TDIAmATA*% G04 delete attribute IAmATA from current attributes dictionary*
+%ADD12C,5*% G04 this aperture does not have attribute IAmATA*
+D11*
+%TOObjectAttribute,SomeValue1,SomeValue2*%
+X100Y0D03* G04 this flash object has attribute IAmATA*
+X150Y50D02*
+D12*
+X100Y150D01* G04 this draw object has no attribute*
+G02*

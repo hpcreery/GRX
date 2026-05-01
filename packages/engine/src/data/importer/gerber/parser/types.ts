@@ -1,26 +1,3 @@
-// import type { CstNode, IToken } from "chevrotain"
-
-// export interface ProgramCtx {
-// 	command?: CstNode[]
-// }
-
-// export interface GerberStatementCtx {
-// 	[key: string]: CstNode[] | undefined
-// }
-
-// export interface ParameterCtx {
-// 	[key: string]: IToken[]
-// }
-
-export interface GerberCoordinates {
-	x0?: string
-	y0?: string
-	x?: string
-	y?: string
-	i?: string
-	j?: string
-	a?: string
-}
 
 export type GerberMacroOperator = "+" | "-" | "x" | "/"
 
@@ -41,12 +18,51 @@ export interface GerberParserState {
 // Common types
 
 import type * as Constants from './constants'
-import type { MacroBlock as TraceMacroBlock } from "@hpcreery/tracespace-parser"
 
 /**
- * Gerber file or NC drill file
+ * Child of a {@linkcode ToolMacro} node
+ *
+ * @category Macro
  */
-export type Filetype = typeof Constants.GERBER | typeof Constants.DRILL
+export type MacroBlock = MacroComment | MacroVariable | MacroPrimitive;
+/**
+ * A `MacroComment` represents a comment in a macro and can be safely ignored
+ *
+ * @category Macro
+ */
+export interface MacroComment {
+    /** Node type */
+    type: typeof Constants.MACRO_COMMENT;
+    /** Comment string */
+    comment: string;
+}
+/**
+ * A `MacroVariable` node assigns a value to the `name` variable in a macro,
+ * where that value may be a number or an arithmetic expression.
+ *
+ * @category Macro
+ */
+export interface MacroVariable {
+    /** Node type */
+    type: typeof Constants.MACRO_VARIABLE;
+    /** Variable name */
+    name: string;
+    /** Concrete value or expression to assign to variable */
+    value: MacroValue;
+}
+/**
+ * A `MacroPrimitive` node describes a shape to add to the overall macro shape.
+ *
+ * @category Macro
+ */
+export interface MacroPrimitive {
+    /** Node type */
+    type: typeof Constants.MACRO_PRIMITIVE;
+    /** Primitive shape type */
+    code: MacroPrimitiveCode;
+    /** Shape parameter values or expressions */
+    parameters: MacroValue[];
+}
 
 /**
  * Millimeters or inches
@@ -71,85 +87,6 @@ export type ZeroSuppression =
  * Absolute or incremental coordinates
  */
 export type Mode = typeof Constants.ABSOLUTE | typeof Constants.INCREMENTAL
-
-/**
- * Union type of valid tool shapes
- *
- * @category Shape
- */
-export type ToolShape = Circle | Rectangle | Obround | Polygon | MacroShape
-
-/**
- * Union type of non-macro tool shapes
- *
- * @category Shape
- */
-export type SimpleShape = Circle | Rectangle | Obround | Polygon
-
-/**
- * Union type of valid tool hole shapes
- *
- * @category Shape
- */
-export type HoleShape = Circle | Rectangle
-
-/**
- * A centered circle with a given diameter.
- *
- * @category Shape
- */
-export interface Circle {
-  type: typeof Constants.CIRCLE
-  diameter: number
-}
-
-/**
- * A centered rectangle with given side lengths in the x and y axes.
- *
- * @category Shape
- */
-export interface Rectangle {
-  type: typeof Constants.RECTANGLE
-  xSize: number
-  ySize: number
-}
-
-/**
- * A variant of a rectangle with rounded corners. The shape's border radius is
- * equal to half of the length of the shorter sides, making a pill shape.
- *
- * @category Shape
- */
-export interface Obround {
-  type: typeof Constants.OBROUND
-  xSize: number
-  ySize: number
-}
-
-/**
- * A regular polygon with a circumscribed circle diameter, number of vertices,
- * and optional counter-clockwise rotation in degrees. If `rotation` is
- * unspecified or `0`, a point will lie on the positive x axis.
- *
- * @category Shape
- */
-export interface Polygon {
-  type: typeof Constants.POLYGON
-  diameter: number
-  vertices: number
-  rotation: number | undefined
-}
-
-/**
- * A shape defined by the {@linkcode ToolMacro} with `name`.
- *
- * @category Shape
- */
-export interface MacroShape {
-  type: typeof Constants.MACRO_SHAPE
-  name: string
-  variableValues: number[]
-}
 
 /**
  * Union type of macro primitive shape identifiers
@@ -204,17 +141,6 @@ export type GraphicType =
   | typeof Constants.SHAPE
   | typeof Constants.MOVE
   | typeof Constants.SEGMENT
-  // | typeof Constants.SLOT
-
-/**
- * Valid interpolations modes
- */
-export type InterpolateModeType =
-  | typeof Constants.LINE
-  | typeof Constants.CW_ARC
-  | typeof Constants.CCW_ARC
-  | typeof Constants.MOVE
-  | typeof Constants.DRILL
 
 /**
  * Valid quadrant modes
@@ -253,7 +179,6 @@ export interface Location {
   startPoint: Point
   endPoint: Point
   arcOffsets: { i: number; j: number; a: number }
-  stepRepeat: StepRepeatDefinition
 }
 
 /**
@@ -266,18 +191,4 @@ export interface StepRepeatDefinition {
   j: number
 }
 
-/**
- * A macro tool definition
- */
-export interface MacroTool {
-  type: "macroTool"
-  name: string
-  dcode: string
-  macro: MacroBlock[]
-  variableValues: number[]
-}
-
-/**
- * A macro block from the @hpcreery/tracespace-parser
- */
-export type MacroBlock = TraceMacroBlock
+export type ArcDirection = typeof Constants.CW | typeof Constants.CCW

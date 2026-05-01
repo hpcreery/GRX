@@ -1,10 +1,6 @@
 // Arc mathematics for calculating arc centers in ambiguous arc mode
-import type { Location, Point } from "./types"
-
-export const CW = "cw"
-export const CCW = "ccw"
-
-export type ArcDirection = typeof CW | typeof CCW
+import type { Location, Point, ArcDirection } from "./types"
+import * as Constants from "./constants"
 
 type Position = [x: number, y: number]
 type ArcPosition = [x: number, y: number, theta: number]
@@ -39,7 +35,7 @@ export function getArcPositions(
   let endAngle = Math.atan2(endPoint.y - centerPoint.y, endPoint.x - centerPoint.x)
 
   // If counter-clockwise, end angle should be greater than start angle
-  if (arcDirection === CCW) {
+  if (arcDirection === Constants.CCW) {
     endAngle = endAngle > startAngle ? endAngle : endAngle + Math.PI * 2
   } else {
     startAngle = startAngle > endAngle ? startAngle : startAngle + Math.PI * 2

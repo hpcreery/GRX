@@ -25,13 +25,13 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     // console.log(JSON.stringify(image, null, 2))
   } catch (error) {
     console.warn("Gerber Chevrotain parser failed, falling back to tracespace-parser", error)
-    image = plot(parseWithTracespace(file))
+    image = plot(parseWithTracespace(file)).children
   }
   console.timeEnd("Gerber parsing")
   // const units = image.units
 
   await api.create_layer(params.project, params.layer)
-  await api.update_step_layer_artwork(params.project, params.step, params.layer, image.children)
+  await api.update_step_layer_artwork(params.project, params.step, params.layer, image)
 }
 
 // Comlink.expose(plugin)
