@@ -1,10 +1,9 @@
-import * as Constants from "./constants"
-import type * as Types from "./types"
 import * as Shapes from "@src/data/shape/shape"
 import * as Symbols from "@src/data/shape/symbol/symbol"
 import { SymbolTypeIdentifier } from "@src/types"
 import {
   type CstNode,
+  type CstNodeLocation,
   CstParser,
   createToken,
   generateCstDts,
@@ -12,12 +11,13 @@ import {
   Lexer,
   type ParserMethod,
   type Rule,
-  type CstNodeLocation,
 } from "chevrotain"
 import { vec2 } from "gl-matrix"
 import { getAmbiguousArcCenter } from "./arcMath"
-import type { GerberMacroOperator, MacroPrimitiveCode, MacroValue, ArcDirection } from "./types"
+import * as Constants from "./constants"
 import type * as cst from "./gerbercst"
+import type * as Types from "./types"
+import type { ArcDirection, GerberMacroOperator, MacroPrimitiveCode, MacroValue } from "./types"
 
 const DefaultTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /[ \t]+/, group: Lexer.SKIPPED }),
@@ -107,7 +107,6 @@ const DefaultTokens = {
   TO: createToken({ name: "TO", pattern: /TO/i, push_mode: "AttributeMode" }),
   // TD Attribute delete. Delete one or all attributes in the dictionary
   TD: createToken({ name: "TD", pattern: /TD/i, push_mode: "AttributeMode" }),
-
 
   /** DEPRECATED COMMANDS */
   // G90 Set the ‘Coordinate format’ to ‘Absolute notation’ These historic codes perform a function handled by the FS command. See 4.1. Very rarely used nowadays

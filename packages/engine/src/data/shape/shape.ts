@@ -321,7 +321,7 @@ export class Surface implements TSurface, IPlotRecord {
    */
   public contours: Contour[] = []
 
-  constructor(record: Partial<IntersectingTypes<Surface, TSurface> & { units: Units, attributes: AttributesType }>) {
+  constructor(record: Partial<IntersectingTypes<Surface, TSurface> & { units: Units; attributes: AttributesType }>) {
     Object.assign(this, record)
   }
 

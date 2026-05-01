@@ -19,7 +19,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const file = decoder.decode(buffer)
   let image
   console.time("Gerber parsing")
-  
+
   try {
     image = parseGerberWithChevrotain(file)
     // console.log(JSON.stringify(image, null, 2))

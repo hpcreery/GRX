@@ -1,8 +1,6 @@
+import { MACRO_PRIMITIVE, MACRO_VARIABLE } from "@hpcreery/tracespace-parser"
 import { FeatureTypeIdentifier } from "@src/types"
 import { describe, expect, it } from "vitest"
-import { MACRO_PRIMITIVE, MACRO_VARIABLE } from "@hpcreery/tracespace-parser"
-import { GerberLexer, GerberToTreeVisitor, parseGerberWithChevrotain, parser } from "./parser"
-
 import fullCircleGerber from "../testdata/gerbers/arc-strokes/full-circle.gbr?raw"
 import outlinePrimitiveGerber from "../testdata/gerbers/macro-primitives/outline-primitive.gbr?raw"
 import thermalPrimitiveGerber from "../testdata/gerbers/macro-primitives/thermal-primitive.gbr?raw"
@@ -10,6 +8,7 @@ import vectorPrimitiveGerber from "../testdata/gerbers/macro-primitives/vector-p
 import regionWithLinesGerber from "../testdata/gerbers/regions/region-with-lines.gbr?raw"
 import stepRepeatGerber from "../testdata/gerbers/step-repeats/one-polarity.gbr?raw"
 import singleSegmentGerber from "../testdata/gerbers/strokes/circle-tool-single-segment.gbr?raw"
+import { GerberLexer, GerberToTreeVisitor, parseGerberWithChevrotain, parser } from "./parser"
 
 function parseAndPlot(input: string) {
   return parseGerberWithChevrotain(input)

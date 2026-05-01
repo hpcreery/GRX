@@ -1,40 +1,39 @@
-
 export type GerberMacroOperator = "+" | "-" | "x" | "/"
 
 export interface GerberMacroExpression {
-	left: MacroValue
-	operator: GerberMacroOperator
-	right: MacroValue
+  left: MacroValue
+  operator: GerberMacroOperator
+  right: MacroValue
 }
 
 export interface GerberParserState {
-	nodes: object[]
-	units: "in" | "mm"
-	coordinateFormat: Format
-	zeroSuppression: ZeroSuppression
-	done: boolean
+  nodes: object[]
+  units: "in" | "mm"
+  coordinateFormat: Format
+  zeroSuppression: ZeroSuppression
+  done: boolean
 }
 
 // Common types
 
-import type * as Constants from './constants'
+import type * as Constants from "./constants"
 
 /**
  * Child of a {@linkcode ToolMacro} node
  *
  * @category Macro
  */
-export type MacroBlock = MacroComment | MacroVariable | MacroPrimitive;
+export type MacroBlock = MacroComment | MacroVariable | MacroPrimitive
 /**
  * A `MacroComment` represents a comment in a macro and can be safely ignored
  *
  * @category Macro
  */
 export interface MacroComment {
-    /** Node type */
-    type: typeof Constants.MACRO_COMMENT;
-    /** Comment string */
-    comment: string;
+  /** Node type */
+  type: typeof Constants.MACRO_COMMENT
+  /** Comment string */
+  comment: string
 }
 /**
  * A `MacroVariable` node assigns a value to the `name` variable in a macro,
@@ -43,12 +42,12 @@ export interface MacroComment {
  * @category Macro
  */
 export interface MacroVariable {
-    /** Node type */
-    type: typeof Constants.MACRO_VARIABLE;
-    /** Variable name */
-    name: string;
-    /** Concrete value or expression to assign to variable */
-    value: MacroValue;
+  /** Node type */
+  type: typeof Constants.MACRO_VARIABLE
+  /** Variable name */
+  name: string
+  /** Concrete value or expression to assign to variable */
+  value: MacroValue
 }
 /**
  * A `MacroPrimitive` node describes a shape to add to the overall macro shape.
@@ -56,12 +55,12 @@ export interface MacroVariable {
  * @category Macro
  */
 export interface MacroPrimitive {
-    /** Node type */
-    type: typeof Constants.MACRO_PRIMITIVE;
-    /** Primitive shape type */
-    code: MacroPrimitiveCode;
-    /** Shape parameter values or expressions */
-    parameters: MacroValue[];
+  /** Node type */
+  type: typeof Constants.MACRO_PRIMITIVE
+  /** Primitive shape type */
+  code: MacroPrimitiveCode
+  /** Shape parameter values or expressions */
+  parameters: MacroValue[]
 }
 
 /**
@@ -79,9 +78,7 @@ export type Format = [integerPlaces: number, decimalPlaces: number]
 /**
  * Leading or trailing zero-suppression for coordinate strings
  */
-export type ZeroSuppression =
-  | typeof Constants.LEADING
-  | typeof Constants.TRAILING
+export type ZeroSuppression = typeof Constants.LEADING | typeof Constants.TRAILING
 
 /**
  * Absolute or incremental coordinates
@@ -112,7 +109,7 @@ export type MacroPrimitiveCode =
 export interface MacroExpression {
   left: MacroValue
   right: MacroValue
-  operator: '+' | '-' | 'x' | '/'
+  operator: "+" | "-" | "x" | "/"
 }
 
 /**
@@ -137,10 +134,7 @@ export type StepRepeatParameters = Record<string, number>
 /**
  * Valid graphical operation types
  */
-export type GraphicType =
-  | typeof Constants.SHAPE
-  | typeof Constants.MOVE
-  | typeof Constants.SEGMENT
+export type GraphicType = typeof Constants.SHAPE | typeof Constants.MOVE | typeof Constants.SEGMENT
 
 /**
  * Valid quadrant modes
@@ -154,15 +148,15 @@ export type Polarity = typeof Constants.DARK | typeof Constants.CLEAR
 /**
  * Valid image mirroring modes
  */
-export type Mirroring = typeof Constants.NO_MIRROR | typeof Constants.X | typeof Constants.Y | typeof Constants.XY;
+export type Mirroring = typeof Constants.NO_MIRROR | typeof Constants.X | typeof Constants.Y | typeof Constants.XY
 /**
  * Valid image scaling modes
  */
-export type Scaling = number;
+export type Scaling = number
 /**
  * Valid image rotation modes
  */
-export type Rotation = number;
+export type Rotation = number
 
 /**
  * A 2D point with x and y coordinates

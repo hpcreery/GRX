@@ -1,6 +1,7 @@
 // Arc mathematics for calculating arc centers in ambiguous arc mode
-import type { Location, Point, ArcDirection } from "./types"
+
 import * as Constants from "./constants"
+import type { ArcDirection, Location, Point } from "./types"
 
 type Position = [x: number, y: number]
 type ArcPosition = [x: number, y: number, theta: number]
