@@ -1,4 +1,4 @@
-import type { ImportPluginSignature } from "@src/data/import-plugins"
+import type { ImportPluginSignature } from "@src/data/importer"
 import * as Comlink from "comlink"
 
 export function registerPlugin(plugin: ImportPluginSignature): void {
