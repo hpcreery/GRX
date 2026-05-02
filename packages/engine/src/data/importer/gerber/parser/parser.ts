@@ -641,7 +641,12 @@ class GerberParser extends CstParser {
           },
         },
         { ALT: (): IToken => this.CONSUME(MacroTokens.MacroVariable) },
-        { ALT: (): IToken => this.CONSUME(MacroTokens.UnsignedNumber) },
+        { ALT: () => {
+          this.OPTION(() => {
+            this.CONSUME(MacroTokens.AddSubOperator)
+          })
+          this.CONSUME(MacroTokens.UnsignedNumber)
+         } },
       ])
     })
 
@@ -1498,16 +1503,20 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
 
     const tool = this.getCurrentTool()
     if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
-      // warn about using macro tools in interpolation commands, since it's not clear how to apply transformations to the primitives inside the macro
       this.errors.push({
-        message:
-          "Using macro tools in interpolation commands may lead to unexpected results, since it's not clear how to apply transformations to the primitives inside the macro. Use with caution.",
+        message: "Detected Line or Arc Stroke operation performed with aperture macro. Cannot Plot macro tools in interpolation commands. 'Draws are straight-line segments stroked with a circle' & 'Arcs are circular segments stroked with a circle.' - Gerber specification.",
         location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
       })
       return
     }
 
     if (!this.arcDirection) {
+      if (tool.symbol !== Symbols.STANDARD_SYMBOLS_MAP.Round) {
+        this.errors.push({
+          message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Straight Line Segments. 'Draws are straight-line segments stroked with a circle.' - Continue with caution.`,
+          location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
+        })
+      }
       this.emitShape(
         new Shapes.Line({
           symbol: tool,
@@ -1521,6 +1530,13 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
         }),
       )
       return
+    }
+
+    if (tool.symbol !== Symbols.STANDARD_SYMBOLS_MAP.Round) {
+      this.errors.push({
+        message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Arcs. 'Arcs are circular segments stroked with a circle.' - Continue with caution.`,
+        location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
+      })
     }
 
     const center = this.getArcCenter(this.location)
@@ -1738,7 +1754,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     if (expressionNodes.length > 0) return this.visit(expressionNodes[0]) as MacroValue
     if (ctx.MacroVariable?.[0]) return ctx.MacroVariable[0].image
     const numericToken = ctx.UnsignedNumber?.[0]
-    return numericToken ? Number(numericToken.image) : 0
+    const numericTokenSign = ctx.AddSubOperator?.[0]?.image === "-" ? -1 : 1
+    return numericToken ? Number(numericToken.image) * numericTokenSign : 0
   }
 
   // DEPRECATED COMMANDS

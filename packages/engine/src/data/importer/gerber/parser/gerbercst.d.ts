@@ -264,6 +264,7 @@ export type FactorCstChildren = {
   expression?: ExpressionCstNode[];
   RParen?: IToken[];
   MacroVariable?: IToken[];
+  AddSubOperator?: IToken[];
   UnsignedNumber?: IToken[];
 };
 
