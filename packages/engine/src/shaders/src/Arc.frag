@@ -198,6 +198,10 @@ float arcDistMain(vec2 FragCoord) {
   if (start_angle == end_angle) {
     dist = abs(circleDist(FragCoord, radius)) - OD / 2.0;
   }
+  // if (v_Start_Location.x == v_End_Location.x && v_Start_Location.y == v_End_Location.y) {
+  //   // dist = circleDist(FragCoord, t_Outer_Dia / 2.0);
+  //   dist = abs(circleDist(FragCoord, radius)) - OD / 2.0;
+  // }
   return dist;
 }
 

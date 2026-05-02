@@ -1,15 +1,16 @@
-import dxfPluginWorker from "./importer/dxf?worker&inline"
-import gdsiiPluginWorker from "./importer/gdsii?worker&inline"
-import gerberPluginWorker from "./importer/gerber?worker&inline"
-import gerberLegacyPluginWorker from "./importer/gerber-legacy?worker&inline"
-import ncPluginWorker from "./importer/nc?worker&inline"
-import type { DataInterface } from "./interface"
+import dxfPluginWorker from "./dxf?worker&inline"
+import gdsiiPluginWorker from "./gdsii?worker&inline"
+import gerberPluginWorker from "./gerber?worker&inline"
+import gerberLegacyPluginWorker from "./gerber-legacy?worker&inline"
+import ncPluginWorker from "./nc?worker&inline"
+import type { DataInterface } from "../interface"
 
 export type ImportPluginSignature = (buffer: ArrayBuffer, parameters: object, api: typeof DataInterface) => Promise<void>
 
 export const importFormats = {
   "RS-274X": {
     plugin: gerberPluginWorker,
+    alt: "Gerber X3",
     matchFile: (ext: string) => ["gbr", "geb", "gerber", "gbx"].includes(ext),
   },
   "RS-274X (Legacy)": {
@@ -24,8 +25,9 @@ export const importFormats = {
     plugin: dxfPluginWorker,
     matchFile: (ext: string) => ["dxf"].includes(ext),
   },
-  NC: {
+  "NC": {
     plugin: ncPluginWorker,
+    alt: "XNC, IPC-NC-349, Excellon",
     matchFile: (ext: string) => ["nc", "drl", "dr", "rt", "xnc"].includes(ext),
   },
 } as const

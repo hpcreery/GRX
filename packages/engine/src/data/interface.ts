@@ -1,8 +1,8 @@
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
 import type { ArtworkBufferCollection } from "./artwork-collections"
-import type { ImportPluginSignature, importFormatName } from "./import-plugins"
-import importFormats from "./import-plugins"
+import type { ImportPluginSignature, importFormatName } from "./importer"
+import importFormats from "./importer"
 import { Layer, PROJECTS, Project, Step, StepLayer } from "./project"
 import type * as Shapes from "./shape/shape"
 
