@@ -24,9 +24,9 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     for (const err of lexingResult.errors) {
       console.error(`NC lexing error at line ${err.line}, column ${err.column}, length ${err.length}, offset ${err.offset}: ${err.message}`)
     }
-    throw new Error(
-      `NC lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`,
-    )
+    // throw new Error(
+    //   `NC lexing failed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `- Line ${err.line}, Column ${err.column}: ${err.message}`).join("\n")}`,
+    // )
   }
   // console.time("parse")
   parser.input = lexingResult.tokens
@@ -35,7 +35,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
     for (const err of parser.errors) {
       console.error(`NC parse error: ${err.message}`)
     }
-    throw new Error(`NC parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message}`).join("\n")}`)
+    // throw new Error(`NC parse failed with ${parser.errors.length} error(s):\n${parser.errors.map((err) => `- ${err.message}`).join("\n")}`)
   }
   // console.timeEnd("parse")
   // console.time("visit")

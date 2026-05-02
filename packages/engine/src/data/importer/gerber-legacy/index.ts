@@ -1,7 +1,8 @@
+import { parse as parseWithTracespace } from "@hpcreery/tracespace-parser"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
-import { parse } from "./parser/parser"
+import { plot } from "./plotter/src"
 
 // import * as Comlink from "comlink"
 
@@ -16,7 +17,7 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
   console.time("Gerber parsing")
-  const image = parse(file)
+  const image = plot(parseWithTracespace(file)).children
   console.timeEnd("Gerber parsing")
 
   await api.create_layer(params.project, params.layer)

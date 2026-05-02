@@ -7,7 +7,8 @@
     "build": "vite build",
     "build:shaders": "node src/shaders/build.js",
     "build:shaders:watch": "node src/shaders/watch.js",
-    "build:chevrotain:types": "tsx lib/nc/chevrotain-parser/gen_dts_signature.js",
+    "build:nc:types": "tsx src/data/importer/nc/parser/gen_dts_signature.js",
+    "build:gerber:types": "tsx src/data/importer/gerber/parser/gen_dts_signature.js",
     "typecheck": "tsc --noEmit --watch",
     "test": "vitest run"
   },

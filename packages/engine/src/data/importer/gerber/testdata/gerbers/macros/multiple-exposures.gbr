@@ -1,19 +1,19 @@
 %FSLAX34Y34*%
 %MOIN*%
 %AMTEST*
-0 dark 1"x0.5" center rect at 0,0*
+0 dark 1inx0.5in center rect at 0,0*
 21,1,1,0.5,0,0,0*
-0 clear 0.4" circle at 0,0*
+0 clear 0.4in circle at 0,0*
 1,0,0.4,0,0*
-0 dark 0.1"x0.75" center rect at 0,0*
+0 dark 0.1inx0.75in center rect at 0,0*
 21,1,0.1,0.75,0,0,0*
-0 dark 0.75"x0.1" center rect at 0,0.35*
+0 dark 0.75inx0.1in center rect at 0,0.35*
 21,1,0.75,0.1,0,0.35,0*
-0 clear 0.1" circle at 0,0.35"*
+0 clear 0.1in circle at 0,0.35in*
 1,0,0.1,0,0.35*
-0 clear 0.1" circle at -0.35,0"*
+0 clear 0.1in circle at -0.35,0in*
 1,0,0.1,-0.35,0*
-0 clear 0.1" circle at 0.35,0"*
+0 clear 0.1in circle at 0.35,0in*
 1,0,0.1,0.35,0*%
 %ADD10TEST*%
 D10*
