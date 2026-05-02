@@ -1,6 +1,7 @@
 import dxfPluginWorker from "./importer/dxf?worker&inline"
 import gdsiiPluginWorker from "./importer/gdsii?worker&inline"
 import gerberPluginWorker from "./importer/gerber?worker&inline"
+import gerberLegacyPluginWorker from "./importer/gerber-legacy?worker&inline"
 import ncPluginWorker from "./importer/nc?worker&inline"
 import type { DataInterface } from "./interface"
 
@@ -9,7 +10,11 @@ export type ImportPluginSignature = (buffer: ArrayBuffer, parameters: object, ap
 export const importFormats = {
   "RS-274X": {
     plugin: gerberPluginWorker,
-    matchFile: (ext: string) => ["gbr", "geb", "gerber"].includes(ext),
+    matchFile: (ext: string) => ["gbr", "geb", "gerber", "gbx"].includes(ext),
+  },
+  "RS-274X (Legacy)": {
+    plugin: gerberLegacyPluginWorker,
+    matchFile: () => false,
   },
   GDSII: {
     plugin: gdsiiPluginWorker,
