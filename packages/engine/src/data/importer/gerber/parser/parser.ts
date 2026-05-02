@@ -88,7 +88,6 @@ const DefaultTokens = {
   // Dnn (nn≥10) Sets the current aperture to D code nn.
   Dnn: createToken({ name: "Dnn", pattern: /D(?:[1-9][0-9]+)/i }),
 
-
   // Axis tokens for coordinates. A coordinate is a number prefixed with an axis identifier, e.g. X12.34 or Y-56.78
   X: createToken({ name: "X", pattern: /X/i }),
   Y: createToken({ name: "Y", pattern: /Y/i }),
@@ -641,12 +640,14 @@ class GerberParser extends CstParser {
           },
         },
         { ALT: (): IToken => this.CONSUME(MacroTokens.MacroVariable) },
-        { ALT: () => {
-          this.OPTION(() => {
-            this.CONSUME(MacroTokens.AddSubOperator)
-          })
-          this.CONSUME(MacroTokens.UnsignedNumber)
-         } },
+        {
+          ALT: () => {
+            this.OPTION(() => {
+              this.CONSUME(MacroTokens.AddSubOperator)
+            })
+            this.CONSUME(MacroTokens.UnsignedNumber)
+          },
+        },
       ])
     })
 
@@ -1168,7 +1169,11 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.state.coordinateMode = ctx.FS[0].image.includes("I") ? Constants.INCREMENTAL : Constants.ABSOLUTE
     if (this.state.coordinateMode === Constants.INCREMENTAL) {
       this.errors.push({
-        message: `Incremental notation is deprecated and not fully supported by this parser. Use absolute notation (G90) instead for better compatibility.`,
+        message: `Incremental notation detected. While supported by this parser, continuing with incremental notation may lead to significant loss of precision. "Incremental notation was sometimes used as a simplistic compression when saving a few bytes
+was a fantastic advantage, and before the invention of Lempel-Ziv-Welch (LZW) and other
+lossless compression methods. The problem is that the accumulation of rounding errors leads to
+significant loss or precision. This results in poor registration, invalid arcs, self-intersecting
+contours, often resulting in scrap. Avoid incremental notation like the plague." - Gerber File Format Specification, Revision 2019.06`,
         location: ctx.FS[0],
       })
     }
@@ -1208,7 +1213,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       })
       if (values.length >= 2) {
         this.errors.push({
-          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
         })
       }
@@ -1229,7 +1234,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       })
       if (values.length >= 2) {
         this.errors.push({
-          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
         })
       }
@@ -1273,7 +1278,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
       })
       if (values.length >= 2) {
         this.errors.push({
-          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
+          message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
         })
       }
@@ -1504,7 +1509,8 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     const tool = this.getCurrentTool()
     if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
       this.errors.push({
-        message: "Detected Line or Arc Stroke operation performed with aperture macro. Cannot Plot macro tools in interpolation commands. 'Draws are straight-line segments stroked with a circle' & 'Arcs are circular segments stroked with a circle.' - Gerber specification.",
+        message:
+          "Detected Line or Arc Stroke operation performed with aperture macro. Cannot Plot macro tools in interpolation commands. 'Draws are straight-line segments stroked with a circle' & 'Arcs are circular segments stroked with a circle.' - Gerber specification.",
         location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
       })
       return
@@ -1789,7 +1795,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     // Incremental Notation is deprecated since revision I1 from December 2012.
     this.state.coordinateMode = Constants.INCREMENTAL
     this.errors.push({
-      message: `Incremental notation is deprecated, but still supported in this parser. "Incremental notation was sometimes used as a simplistic compression when saving a few bytes
+      message: `Incremental notation detected. While supported by this parser, continuing with incremental notation may lead to significant loss of precision. "Incremental notation was sometimes used as a simplistic compression when saving a few bytes
 was a fantastic advantage, and before the invention of Lempel-Ziv-Welch (LZW) and other
 lossless compression methods. The problem is that the accumulation of rounding errors leads to
 significant loss or precision. This results in poor registration, invalid arcs, self-intersecting
@@ -1811,7 +1817,8 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
   axisSelectionCommand(_ctx: cst.AxisSelectionCommandCstChildren): void {
     // TODO: Warn if the axes are swapped, since that can cause confusion for users and may indicate an error in the file.
     this.errors.push({
-      message: "Axis selection command is not supported, but if the axes are swapped, it may cause confusion for users and may indicate an error in the file.",
+      message:
+        "Axis selection command is not supported, but if the axes are swapped, it may cause confusion for users and may indicate an error in the file.",
       location: _ctx.AS[0],
     })
   }
