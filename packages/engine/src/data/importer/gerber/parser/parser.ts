@@ -380,8 +380,6 @@ class GerberParser extends CstParser {
       // maxLookahead: 20,
     })
 
-    // console.log("can delete star?" , this.canTokenTypeBeDeletedInRecovery(DefaultTokens.Star))
-
     this.RULE("program", () => {
       this.MANY(() => {
         this.SUBRULE(this.command)
@@ -1118,14 +1116,12 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
     this.validateVisitor()
   }
 
-  program(ctx: cst.ProgramCstChildren): Shapes.Shape[] {
+  program(ctx: cst.ProgramCstChildren): void {
     ctx.command?.map(this.visit, this)
 
     if (!this.state.done) {
       this.endCommand({})
     }
-
-    return this.image
   }
 
   command(ctx: cst.CommandCstChildren): void {
@@ -2163,6 +2159,6 @@ export function parse(file: string): Shapes.Shape[] {
       `Gerber processing produced ${visitor.errors.length} error(s):\n${visitor.errors.map((err) => `--> MESSAGE: ${err.message}\n LOCATION: ${err.location ? `Line ${err.location.startLine}, Column ${err.location.startColumn}` : "Unknown"}`).join("\n")}`,
     )
   }
-
-  return visitor.visit(cst) as Shapes.Shape[]
+  visitor.visit(cst)
+  return visitor.image
 }

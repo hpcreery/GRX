@@ -26,9 +26,10 @@ function parseAndVisit(input: string) {
   expect(parser.errors.map((error) => error.message)).toEqual([])
 
   const visitor = new GerberToTreeVisitor()
-  const image = visitor.visit(cst) as ReturnType<typeof parse>
+  visitor.visit(cst)
+  const image = visitor.image
   return { visitor, image }
-}
+} 
 
 function parseLoose(input: string) {
   const lexing = GerberLexer.tokenize(input)
@@ -40,7 +41,8 @@ function parseLoose(input: string) {
   let visitorException: unknown
 
   try {
-    image = visitor.visit(cst) as ReturnType<typeof parse>
+    visitor.visit(cst)
+    image = visitor.image
   } catch (error) {
     visitorException = error
   }
@@ -159,6 +161,11 @@ M02*`
     expect(thermalImage.length).toBeGreaterThan(0)
   })
 
+  // Coordinate data without explicit operation code after a D01, on other words the modal use of
+  // D01, is deprecated since revision I1 from December 2012.
+  // A D01 code sets the deprecated operation mode to interpolate. It remains in interpolate mode
+  // till any other D code is encountered. In sequences of D01 operations this allows omitting an
+  // explicit D01 code after the first operation.
   it("supports modal D01 operation when operation code is omitted", () => {
     const gerber = `%FSLAX24Y24*%
 %MOIN*%
@@ -185,12 +192,20 @@ D03*
 M02*`
 
     const { image } = parseAndVisit(gerber)
-    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD) as Array<{ x: number; y: number }>
+    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD)
     expect(pads.length).toBe(1)
     expect(pads[0].x).toBeCloseTo(0.1234)
     expect(pads[0].y).toBeCloseTo(0.5678)
   })
 
+  // This construction is deprecated since revision 2015.06.
+  // The function codes G01, G02, G03 could be put together with operation codes in the same data
+  // block. The graphics state is then modified before the operation coded is executed, whatever the
+  // order of the codes.
+  // G01 sets the interpolation mode to linear and this used to process the coordinate data
+  // X100Y100 from the same data block as well as the coordinate data X200Y200 from the next
+  // data block. This construction is a useless variation and now it is deprecated. However, it
+  // happens quite frequently in legacy files, so readers may want to support it.
   it("supports inline interpolation command style", () => {
     const gerber = `%FSLAX24Y24*%
 %MOIN*%
@@ -205,19 +220,36 @@ M02*`
     expect(lines.length).toBe(1)
   })
 
+  // Trailing zero omission some or all trailing zero’s can be omitted but all leading zero’s are
+  // required. To interpret the coordinate string, it is first padded with zero’s at the back until its
+  // length fits the coordinate format. For example, with the “23” coordinate format, “15” is padded to
+  // “15000” and therefore represents 15.000.
+  // The coordinate data must contain at least one digit. Zero therefore should be encoded as “0”. 
   it("parses FS trailing-zero absolute form (FSTA)", () => {
     const gerber = `%FSTAX24Y24*%
 %MOIN*%
 %ADD10C,0.01*%
 D10*
-X1Y1D03*
+X01Y01D03*
 M02*`
 
     const { image } = parseAndVisit(gerber)
     const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD)
     expect(pads.length).toBe(1)
+    pads.forEach((pad) => {
+      expect(pad.x).toBe(1)
+      expect(pad.y).toBe(1)
+    })
   })
 
+  // The commands LP, LM, LR and LS load the following object transformation graphics state
+  // parameters:
+  // Aperture transformation commands
+  // Command Parameter
+  // LP Polarity
+  // LM Mirror
+  // LR Rotate
+  // LS Scale
   it("applies LP/LM/LR/LS transforms to flashed pads", () => {
     const gerber = `%FSLAX24Y24*%
 %MOIN*%
@@ -231,13 +263,7 @@ X1000Y2000D03*
 M02*`
 
     const { image } = parseAndVisit(gerber)
-    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD) as Array<{
-      polarity: number
-      mirror_x: number
-      mirror_y: number
-      rotation: number
-      resize_factor: number
-    }>
+    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD)
 
     expect(pads.length).toBe(1)
     expect(pads[0].polarity).toBe(0)
@@ -247,6 +273,10 @@ M02*`
     expect(pads[0].resize_factor).toBe(2)
   })
 
+  // Attachment type The item to which they attach meta-information
+  // File attributes: Attach meta-information to the file as a whole.
+  // Aperture attributes: Attach meta-information to an aperture or a region. Objects created by the aperture inherit the aperture meta-information
+  // Object attributes: Attach meta-information to on object directly
   it("applies and deletes file/aperture/object attributes", () => {
     const gerber = `%FSLAX24Y24*%
 %MOIN*%
@@ -261,10 +291,7 @@ X1000Y0D03*
 M02*`
 
     const { image, visitor } = parseAndVisit(gerber)
-    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD) as Array<{
-      attributes: Record<string, string | undefined>
-      symbol: { attributes: Record<string, string | undefined> }
-    }>
+    const pads = image.filter((shape) => shape.type === FeatureTypeIdentifier.PAD)
 
     expect(visitor.fileAttributes[".FileFunction"]).toBe("Copper,L1")
     expect(pads.length).toBe(2)
@@ -273,6 +300,10 @@ M02*`
     expect(pads[0].symbol.attributes[".AperFunction"]).toBe("ComponentPad")
   })
 
+  // The TD command deletes an attribute from the attributes dictionary. Note that the attribute
+  // remains attached to apertures and objects to which it was attached before it was deleted.
+  // The <AttributeName> is the name of the attribute to delete. If omitted, the whole dictionary is
+  // cleared.
   it("deletes all attribute dictionaries with TD and no name", () => {
     const gerber = `%FSLAX24Y24*%
 %MOIN*%
