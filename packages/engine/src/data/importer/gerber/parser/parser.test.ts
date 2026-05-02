@@ -1,9 +1,8 @@
 import { MACRO_PRIMITIVE, MACRO_VARIABLE } from "@hpcreery/tracespace-parser"
 import { FeatureTypeIdentifier } from "@src/types"
 import { describe, expect, it } from "vitest"
-import blockApertureNestedGerber from "../testdata/gerbers/block-apertures/nested.gbr?raw"
-import circleToolZeroLengthGerber from "../testdata/gerbers/strokes/circle-tool-zero-length.gbr?raw"
 import fullCircleGerber from "../testdata/gerbers/arc-strokes/full-circle.gbr?raw"
+import blockApertureNestedGerber from "../testdata/gerbers/block-apertures/nested.gbr?raw"
 import outlinePrimitiveGerber from "../testdata/gerbers/macro-primitives/outline-primitive.gbr?raw"
 import thermalPrimitiveGerber from "../testdata/gerbers/macro-primitives/thermal-primitive.gbr?raw"
 import vectorPrimitiveGerber from "../testdata/gerbers/macro-primitives/vector-primitive.gbr?raw"
@@ -11,6 +10,7 @@ import regionWithLinesGerber from "../testdata/gerbers/regions/region-with-lines
 import stepRepeatMultiPolarityGerber from "../testdata/gerbers/step-repeats/multi-polarity.gbr?raw"
 import stepRepeatGerber from "../testdata/gerbers/step-repeats/one-polarity.gbr?raw"
 import singleSegmentGerber from "../testdata/gerbers/strokes/circle-tool-single-segment.gbr?raw"
+import circleToolZeroLengthGerber from "../testdata/gerbers/strokes/circle-tool-zero-length.gbr?raw"
 import { GerberLexer, GerberToTreeVisitor, parse, parser } from "./parser"
 
 function parseAndPlot(input: string) {
@@ -29,7 +29,7 @@ function parseAndVisit(input: string) {
   visitor.visit(cst)
   const image = visitor.image
   return { visitor, image }
-} 
+}
 
 function parseLoose(input: string) {
   const lexing = GerberLexer.tokenize(input)
@@ -224,7 +224,7 @@ M02*`
   // required. To interpret the coordinate string, it is first padded with zero’s at the back until its
   // length fits the coordinate format. For example, with the “23” coordinate format, “15” is padded to
   // “15000” and therefore represents 15.000.
-  // The coordinate data must contain at least one digit. Zero therefore should be encoded as “0”. 
+  // The coordinate data must contain at least one digit. Zero therefore should be encoded as “0”.
   it("parses FS trailing-zero absolute form (FSTA)", () => {
     const gerber = `%FSTAX24Y24*%
 %MOIN*%
