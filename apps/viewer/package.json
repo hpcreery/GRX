@@ -1,6 +1,6 @@
 {
   "name": "@grx/viewer",
-  "version": "4.1.8",
+  "version": "4.3.0",
   "description": "GPU-Accelerated Web Based EDA Manufacturing Artwork Viewer",
   "main": "./out/electron/main/index.js",
   "author": "Hunter Creery",
