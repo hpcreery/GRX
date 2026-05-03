@@ -293,8 +293,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     }
 
     renderDistance(pointer, this.distanceQueryRaw)
-    const scale = Math.sqrt(context.transformMatrix[0] ** 2 + context.transformMatrix[1] ** 2) * context.viewportWidth
-    const epsilons = 1 / scale
+    const epsilons = 1
     renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
     renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
     renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
