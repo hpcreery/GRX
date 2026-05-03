@@ -159,7 +159,8 @@ const MacroTokens = {
   RParen: createToken({ name: "RParen", pattern: /\)/ }),
   AddSubOperator: createToken({ name: "AddSubOperator", pattern: /[+-]/ }),
   MulDivOperator: createToken({ name: "MulDivOperator", pattern: /[xX\\/]/ }),
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/ }),
   CommentPrimative: createToken({ name: "CommentPrimative", pattern: /0 /, push_mode: "CommentMode" }),
   // String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/ }),
 } as const
@@ -172,11 +173,13 @@ const NameTokens = {
   // SPEC CORRECT REGEX
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
   // COMMONLY USED REGEX THAT ALLOWS FOR MORE INVALID NAMES, BUT IT'S FINE BECAUSE WE'LL JUST WARN ABOUT THEM LATER IN THE PROCESSING PIPELINE
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-._a-zA-Z0-9]*/, pop_mode: true }),
+  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-._a-zA-Z0-9]*/, pop_mode: true }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/, pop_mode: true }),
 }
 
 const AttributeTokens = {
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/, pop_mode: true }),
   Comma: createToken({ name: "Comma", pattern: /,/, push_mode: "AttributeValueMode" }),
   Star: createToken({ name: "Star", pattern: /\*/, pop_mode: true }),
 }
