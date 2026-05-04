@@ -274,6 +274,7 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
         const features = await engine.interface.read_view_select(element.id, [xcanvas, ycanvas])
+        console.log("Selected features:", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
             detail: features,

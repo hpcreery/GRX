@@ -33,6 +33,7 @@ export abstract class SymbolBufferCollection {
   public static length: number = 1
   public static events: UpdateEventTarget = new UpdateEventTarget()
   private static map: Map<string, number> = new Map<string, number>()
+  private static attributeMap: AttributesType[] = []
 
   /**
    * Create a new symbol in the collection, returns the symbol number "sym_num" of the symbol
@@ -43,9 +44,9 @@ export abstract class SymbolBufferCollection {
   static create(symbol: Symbols.StandardSymbol): number {
     let view = new Float32Array(SymbolBufferCollection.buffer)
     const precision = 10 ** 8 // 8 decimal places
-    const symbolKey = Symbols.SYMBOL_PARAMETERS.map((key) => {
+    const symbolKey = `${Symbols.SYMBOL_PARAMETERS.map((key) => {
       return Math.round(symbol[key] * precision) / precision
-    }).join("_")
+    }).join("_")}_${JSON.stringify(symbol.attributes)}`
     if (SymbolBufferCollection.map.has(symbolKey)) {
       const existingIndex = SymbolBufferCollection.map.get(symbolKey)!
       symbol.sym_num.value = existingIndex
@@ -66,6 +67,7 @@ export abstract class SymbolBufferCollection {
       index * Symbols.SYMBOL_PARAMETERS.length,
     )
     symbol.sym_num.value = index
+    SymbolBufferCollection.attributeMap[index] = symbol.attributes
     SymbolBufferCollection.length += 1
     SymbolBufferCollection.events.dispatchTypedEvent("update", new Event("update"))
     return index
@@ -86,19 +88,14 @@ export abstract class SymbolBufferCollection {
       symbol[Symbols.SYMBOL_PARAMETERS[i]] = view[index * Symbols.SYMBOL_PARAMETERS.length + i]
     }
     symbol.id = `${Symbols.STANDARD_SYMBOLS[symbol.symbol]}_${index}` // Assign an ID to the symbol
+    symbol.attributes = SymbolBufferCollection.attributeMap[index]
     return symbol
   }
 
   static toJSON(): Symbols.TStandardSymbol[] {
-    const view = new Float32Array(SymbolBufferCollection.buffer)
     const symbols: Symbols.TStandardSymbol[] = []
     for (let i = 0; i < SymbolBufferCollection.length; i++) {
-      const symbol = new Symbols.StandardSymbol({})
-      for (let j = 0; j < Symbols.SYMBOL_PARAMETERS.length; j++) {
-        symbol[Symbols.SYMBOL_PARAMETERS[j]] = view[i * Symbols.SYMBOL_PARAMETERS.length + j]
-      }
-      symbol.id = `${Symbols.STANDARD_SYMBOLS[symbol.symbol]}_${i}` // Assign an ID to the symbol
-      symbols.push(symbol)
+      symbols.push(SymbolBufferCollection.read(i))
     }
     return symbols
   }
@@ -1515,30 +1512,35 @@ export abstract class MacroArtworkCollection {
   public static events: UpdateEventTarget = new UpdateEventTarget()
 
   static create(symbol: Symbols.MacroSymbol): MacroArtworkBufferCollection {
-    const { shapes, flatten } = symbol
+    const { shapes, flatten, attributes } = symbol
     symbol.sym_num.value = 0
-    const id = cyrb64(JSON.stringify([shapes, flatten])).toString() // generate a new unique ID
+    const id = cyrb64(JSON.stringify([shapes, flatten, attributes])).toString() // generate a new unique ID
     const existing = MacroArtworkCollection.macros.get(id)
     symbol.id = id
     if (existing) {
       return existing // If a macro with the same ID already exists, return it
     }
-    const macro = new MacroArtworkBufferCollection(shapes, flatten)
+    const macro = new MacroArtworkBufferCollection(shapes, flatten, attributes)
     MacroArtworkCollection.macros.set(symbol.id, macro)
     MacroArtworkCollection.events.dispatchTypedEvent("update", new Event("update"))
     return macro
   }
 
-  static read(id: string): MacroArtworkBufferCollection | undefined {
-    return MacroArtworkCollection.macros.get(id)
+  static read(id: string): MacroArtworkBufferCollection {
+    // return MacroArtworkCollection.macros.get(id)
+    const macro = MacroArtworkCollection.macros.get(id)
+    if (!macro) {
+      throw new Error(`No macro found with key: ${id} when reading macro`)
+    }
+    return macro
   }
 
   static update(symbol: Symbols.MacroSymbol): void {
-    const { id, shapes, flatten } = symbol
+    const { id, shapes, flatten, attributes } = symbol
     if (!MacroArtworkCollection.macros.has(id)) {
       throw new Error(`No macro found with key: ${id} when updating macro`)
     }
-    const macro = new MacroArtworkBufferCollection(shapes, flatten)
+    const macro = new MacroArtworkBufferCollection(shapes, flatten, attributes)
     MacroArtworkCollection.macros.set(id, macro)
     MacroArtworkCollection.events.dispatchTypedEvent("update", new Event("update"))
   }
@@ -1561,9 +1563,11 @@ export class MacroArtworkBufferCollection extends ArtworkBufferCollection {
   // For example, you could add methods to handle macro-specific shapes or attributes
   // Currently, it inherits all functionality from ArtworkBufferCollection
   public flatten: boolean = false
-  constructor(artwork: Shapes.Shape[] = [], flatten: boolean) {
+  public attributes: AttributesType = {}
+  constructor(artwork: Shapes.Shape[] = [], flatten: boolean, attributes: AttributesType = {}) {
     super(artwork)
     this.flatten = flatten
+    this.attributes = attributes
   }
 }
 

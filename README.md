@@ -39,13 +39,12 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 
 - [x] Gerber RS-274X
   - [x] X1
-  - [ ] X2 ( coming soon! )
-  - [ ] X3
+  - [x] X2
+  - [x] X3 ( finally here! )
 - [x] NC
   - [x] XNC ( attributes coming soon! )
-  - [ ] IPC-NC-349
+  - [ ] IPC-NC-349 ( partial support )
   - [x] Excellon
-  - [x] Sieb & Meyer ( excellon version )
 - [x] GDSII
 - [ ] ODB++
 - [ ] IPC-2581

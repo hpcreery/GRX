@@ -179,7 +179,7 @@ const NameTokens = {
 
 const AttributeTokens = {
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/, pop_mode: true }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/}),
   Comma: createToken({ name: "Comma", pattern: /,/, push_mode: "AttributeValueMode" }),
   Star: createToken({ name: "Star", pattern: /\*/, pop_mode: true }),
 }
@@ -1072,7 +1072,7 @@ type VariableValues = Record<string, number>
 type Position = [x: number, y: number]
 
 interface AttributeDictionary {
-  [attributeName: string]: string | undefined
+  [attributeName: string]: string
 }
 export class GerberToTreeVisitor extends BaseCstVisitor {
   public readonly image: Shapes.Shape[] = []
@@ -1399,7 +1399,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
       id: `274x_D${block.code}`,
       shapes: block.shapes,
       flatten: false,
-      attributes: { ...this.apertureAttributes },
+      // attributes: { ...this.apertureAttributes },
     })
   }
 
@@ -1870,19 +1870,20 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
   fileAttributesCommand(ctx: cst.FileAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : undefined
+    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : ""
     this.fileAttributes[name] = value
   }
 
   apertureAttributesCommand(ctx: cst.ApertureAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : undefined
+    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : ""
     this.apertureAttributes[name] = value
+    console.log("set aperture attribute", name, value, this.apertureAttributes)
   }
 
   objectAttributesCommand(ctx: cst.ObjectAttributesCommandCstChildren): void {
     const name = ctx.Name[0].image
-    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : undefined
+    const value = ctx.Field ? ctx.Field.map((token) => token.image).join(",") : ""
     this.objectAttributes[name] = value
   }
 

@@ -46,7 +46,7 @@ export interface ISymbolRecord {
   type: SymbolDefinitionTypeIdentifiers
 }
 
-export type AttributesType = { [key: string]: string | undefined }
+export type AttributesType = { [key: string]: string }
 
 export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number } {
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
