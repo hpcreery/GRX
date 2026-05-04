@@ -179,7 +179,7 @@ const NameTokens = {
 
 const AttributeTokens = {
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/}),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/ }),
   Comma: createToken({ name: "Comma", pattern: /,/, push_mode: "AttributeValueMode" }),
   Star: createToken({ name: "Star", pattern: /\*/, pop_mode: true }),
 }

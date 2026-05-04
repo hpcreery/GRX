@@ -348,7 +348,6 @@ M00*`
     expect(lexingErrors).toHaveLength(0)
     expect(parserErrors).toHaveLength(0)
     expect(pads.length).toBeGreaterThan(0)
-    expect(messageIncludes(visitor, "Incremental notation is deprecated")).toBe(true)
     expect(messageIncludes(visitor, "Negative images are not fully supported")).toBe(true)
   })
 

@@ -134,7 +134,7 @@ const multiModeLexerDefinition = {
 
 export const NCLexer = new Lexer(multiModeLexerDefinition)
 
-class NCParser extends CstParser {
+export class NCParser extends CstParser {
   program!: ParserMethod<unknown[], CstNode>
   command!: ParserMethod<unknown[], CstNode>
   units!: ParserMethod<unknown[], CstNode>
