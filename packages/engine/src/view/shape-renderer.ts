@@ -304,7 +304,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      const distance = distData[i]
+      const distance = distData[i] * this.transform.scale // convert distance from screen to world coordinates
 
       const direction = vec2.fromValues(
         this.distanceRightQueryRaw[i] - this.distanceLeftQueryRaw[i],
