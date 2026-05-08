@@ -17,7 +17,7 @@
     }
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@grx/typescript-config": "workspace:*"

@@ -10,9 +10,8 @@
     "outDir": "dist/types",
     "composite": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
-      "@src/*": ["src/*"],
+      "@src/*": ["./src/*"],
     },
     "types": [
       "vite/client"

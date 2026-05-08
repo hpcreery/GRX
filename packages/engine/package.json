@@ -46,7 +46,7 @@
     "zod": "^4.1.12"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
     "chokidar": "^5.0.0",
