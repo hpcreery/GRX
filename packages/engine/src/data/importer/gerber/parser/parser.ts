@@ -2165,28 +2165,36 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
   }
 }
 
-export function parse(file: string): Shapes.Shape[] {
+export function parse(file: string): { image: Shapes.Shape[]; errors: string[] } {
+  const errors: string[] = []
   const lexingResult = GerberLexer.tokenize(file)
   if (lexingResult.errors.length > 0) {
-    console.warn(
-      `Gerber lexing completed with ${lexingResult.errors.length} error(s):\n${lexingResult.errors.map((err) => `--> LINE: ${err.line}\n COLUMN: ${err.column}\n MESSAGE: ${err.message}`).join("\n")}`,
-    )
+    errors.push(...lexingResult.errors.map((err) => `--> GERBER LEXING MESSAGE: ${err.message}\n - LINE: ${err.line}\n - COLUMN: ${err.column}`))
   }
 
   parser.input = lexingResult.tokens
   const cst = parser.program()
   if (parser.errors.length > 0) {
-    console.warn(
-      `Gerber parse produced ${parser.errors.length} error(s):\n${parser.errors.map((err) => `--> MESSAGE: ${err.message}\n CAUSE: ${err.cause}\n TOKEN: ${JSON.stringify(err.token)}`).join("\n")}`,
+    errors.push(
+      ...parser.errors.map((err) => `--> GERBER PARSE MESSAGE: ${err.message}\n - CAUSE: ${err.cause}\n - TOKEN: ${JSON.stringify(err.token)}`),
     )
   }
 
   const visitor = new GerberToTreeVisitor()
   if (visitor.errors.length > 0) {
-    console.warn(
-      `Gerber processing produced ${visitor.errors.length} error(s):\n${visitor.errors.map((err) => `--> MESSAGE: ${err.message}\n LOCATION: ${err.location ? `Line ${err.location.startLine}, Column ${err.location.startColumn}` : "Unknown"}`).join("\n")}`,
+    errors.push(
+      ...visitor.errors.map(
+        (err) =>
+          `--> GERBER PROCESSING MESSAGE: ${err.message}\n - LOCATION: ${err.location ? `Line ${err.location.startLine}, Column ${err.location.startColumn}` : "Unknown"}`,
+      ),
     )
   }
+  if (errors.length > 0) {
+    console.warn(`Gerber processing completed with ${errors.length} error(s):\n${errors.join("\n")}`)
+  }
   visitor.visit(cst)
-  return visitor.image
+  return {
+    image: visitor.image,
+    errors,
+  }
 }

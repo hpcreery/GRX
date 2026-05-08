@@ -14,7 +14,7 @@ import circleToolZeroLengthGerber from "../testdata/gerbers/strokes/circle-tool-
 import { GerberLexer, GerberToTreeVisitor, parse, parser } from "./parser"
 
 function parseAndPlot(input: string) {
-  return parse(input)
+  return parse(input).image
 }
 
 function parseAndVisit(input: string) {
@@ -37,7 +37,7 @@ function parseLoose(input: string) {
   const cst = parser.program()
   const parserErrors = [...parser.errors]
   const visitor = new GerberToTreeVisitor()
-  let image: ReturnType<typeof parse> = []
+  let image: ReturnType<typeof parseAndPlot> = []
   let visitorException: unknown
 
   try {

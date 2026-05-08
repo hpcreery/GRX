@@ -5,7 +5,11 @@ import gerberPluginWorker from "./gerber?worker&inline"
 import gerberLegacyPluginWorker from "./gerber-legacy?worker&inline"
 import ncPluginWorker from "./nc?worker&inline"
 
-export type ImportPluginSignature = (buffer: ArrayBuffer, parameters: object, api: typeof DataInterface) => Promise<void>
+export interface ImportResultReport {
+  errors: string[]
+}
+
+export type ImportPluginSignature = (buffer: ArrayBuffer, parameters: object, api: typeof DataInterface) => Promise<ImportResultReport>
 
 export const importFormats = {
   "RS-274X": {

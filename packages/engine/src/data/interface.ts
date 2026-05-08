@@ -1,7 +1,7 @@
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
 import type { ArtworkBufferCollection } from "./artwork-collections"
-import type { ImportPluginSignature, importFormatName } from "./importer"
+import type { ImportPluginSignature, ImportResultReport, importFormatName } from "./importer"
 import importFormats from "./importer"
 import { Layer, PROJECTS, Project, Step, StepLayer } from "./project"
 import type * as Shapes from "./shape/shape"
@@ -507,7 +507,7 @@ export abstract class DataInterface {
  * @param params Additional parameters to pass to the plugin.
  * @returns void
  */
-async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer, format: Format, params: object): Promise<void> {
+async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer, format: Format, params: object): Promise<ImportResultReport> {
   // @ts-expect-error TS2345
   if (format == "") {
     throw new CommandError("Format must be specified.", ErrorCode.INVALID_INPUT)
@@ -516,12 +516,16 @@ async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer
     throw new CommandError(`No parser found for format: ${format}.`, ErrorCode.INVALID_INPUT)
   }
 
+  let result: ImportResultReport = {
+    errors: [],
+  }
+
   const pluginWorker = importFormats[format].plugin
   if (pluginWorker) {
     const instance = new pluginWorker()
     const parser = Comlink.wrap<ImportPluginSignature>(instance)
     try {
-      await parser(Comlink.transfer(buffer, [buffer]), params, Comlink.proxy(DataInterface))
+      result = await parser(Comlink.transfer(buffer, [buffer]), params, Comlink.proxy(DataInterface))
     } catch (error) {
       console.error(error)
       throw new CommandError((error as Error).message, ErrorCode.INVALID_INPUT)
@@ -532,4 +536,5 @@ async function _import_file<Format extends importFormatName>(buffer: ArrayBuffer
   } else {
     throw new CommandError(`No parser found for format: ${format}.`, ErrorCode.INVALID_INPUT)
   }
+  return result
 }

@@ -2,12 +2,28 @@ import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSe
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { data } from "@grx/engine"
-import { Button, Card, Divider, FileButton, Group, Input, Modal, ScrollArea, Select, Stack, Text, useMantineTheme } from "@mantine/core"
+import {
+  Box,
+  Button,
+  Card,
+  Divider,
+  FileButton,
+  Group,
+  Input,
+  List,
+  Modal,
+  ScrollArea,
+  Select,
+  Stack,
+  Text,
+  ThemeIcon,
+  useMantineTheme,
+} from "@mantine/core"
 import { Dropzone, type FileWithPath } from "@mantine/dropzone"
-import { useLocalStorage } from "@mantine/hooks"
+import { useDisclosure, useLocalStorage } from "@mantine/hooks"
 import { notifications } from "@mantine/notifications"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { IconClearAll, IconContrast, IconContrastOff, IconFileVector, IconFileX } from "@tabler/icons-react"
+import { IconAlertTriangle, IconClearAll, IconContrast, IconContrastOff, IconFileVector, IconFileX } from "@tabler/icons-react"
 import * as Comlink from "comlink"
 import { useContextMenu } from "mantine-contextmenu"
 import { Resizable } from "re-resizable"
@@ -161,6 +177,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         message: `${file.name} Error reading file.`,
         color: "red",
         autoClose: 5000,
+        withBorder: true,
       })
     }
     reader.onabort = (err): void => {
@@ -170,6 +187,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
         message: `${file.name} File read aborted.`,
         color: "red",
         autoClose: 5000,
+        withBorder: true,
       })
     }
     reader.onprogress = (e): void => {
@@ -184,30 +202,37 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           color: "yellow",
           autoClose: false,
           loading: true,
+          withBorder: true,
         })
         try {
           // console.time(`${file.name} file parse time`)
           // await DataInterface.create_layer(project.name, file.id)
-          await renderer.interface._import_file(Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]), file.format, {
-            project: project.name,
-            step: project.name,
-            layer: file.id,
-          })
+          const { errors } = await renderer.interface._import_file(
+            Comlink.transfer(reader.result as ArrayBuffer, [reader.result as ArrayBuffer]),
+            file.format,
+            {
+              project: project.name,
+              step: project.name,
+              layer: file.id,
+            },
+          )
           setLayers(await renderer.interface.read_layers_list(project.name))
-          // console.timeEnd(`${file.name} file parse time`)
+          const messageComponent = <FileImportErrorMessageComponent fileName={file.name} errors={errors} />
           notifications.update({
             id: loadingNotificationID,
             title: "File imported successfully",
-            message: `${file.name} file imported.`,
-            color: "green",
-            autoClose: 5000,
+            message: messageComponent,
+            color: errors.length > 0 ? "orange" : "green",
+            autoClose: errors.length > 0 ? false : 5000,
             loading: false,
+            withBorder: true,
           })
           // notifications.show({
           //   title: "File imported successfully",
           //   message: `${file.name} file imported.`,
           //   color: "green",
           //   autoClose: 5000,
+          // withBorder: true,
           // })
         } catch (fileImportError) {
           if (fileImportError instanceof Error) {
@@ -217,6 +242,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
             //   message: `${file.name} file import error. ${fileImportError.message}`,
             //   color: "red",
             //   autoClose: 5000,
+            // withBorder: true,
             // })
             notifications.update({
               id: loadingNotificationID,
@@ -225,6 +251,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
               color: "red",
               autoClose: 5000,
               loading: false,
+              withBorder: true,
             })
           }
         }
@@ -234,6 +261,7 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           message: `${file.name} file upload failed.`,
           color: "red",
           autoClose: 5000,
+          withBorder: true,
         })
       }
     }
@@ -412,6 +440,61 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
           </ScrollArea>
         </Card>
       </Resizable>
+    </div>
+  )
+}
+
+function FileImportErrorMessageComponent({ fileName, errors }: { fileName: string; errors: string[] }): JSX.Element {
+  const [opened, { open, close }] = useDisclosure(false)
+  const title = (
+    <Group>
+      <ThemeIcon color="red" variant="outline" size={24}>
+        <IconAlertTriangle size={16} />
+      </ThemeIcon>
+      <Text color="red" fw={700} ml={5}>
+        {`${fileName} Import Errors`}
+      </Text>
+    </Group>
+  )
+  return (
+    <div>
+      <Modal opened={opened} onClose={close} title={title} size="lg">
+        <Box my="xl" p="lg">
+          <List spacing="xl" center type="ordered" withPadding>
+            {errors.map((error, index) => (
+              <List.Item key={index}>
+                <Text
+                  key={index}
+                  color="red"
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {error}
+                </Text>
+              </List.Item>
+            ))}
+          </List>
+        </Box>
+      </Modal>
+      <Text>{`${fileName} file imported successfully.`}</Text>
+      {errors.length > 0 && (
+        <>
+          <Divider my="xs" />
+          <Text color="red" fw={700}></Text>
+          <Button
+            // mt="sm"
+            fullWidth
+            variant="subtle"
+            color="red"
+            onClick={open}
+          >
+            <IconAlertTriangle size={14} style={{ marginRight: 4 }} />
+            {errors.length} Errors. Click for details.
+          </Button>
+        </>
+      )}
     </div>
   )
 }

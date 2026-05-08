@@ -2,6 +2,7 @@ import { parse as parseWithTracespace } from "@hpcreery/tracespace-parser"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
+import type { ImportResultReport } from ".."
 import { plot } from "./plotter/src"
 
 // import * as Comlink from "comlink"
@@ -12,7 +13,7 @@ const Parameters = z.object({
   project: z.string(),
 })
 
-export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<ImportResultReport> {
   const params = Parameters.parse(parameters)
   const decoder = new TextDecoder("utf-8")
   const file = decoder.decode(buffer)
@@ -22,6 +23,9 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
 
   await api.create_layer(params.project, params.layer)
   await api.update_step_layer_artwork(params.project, params.step, params.layer, image)
+  return {
+    errors: [],
+  }
 }
 
 // Comlink.expose(plugin)

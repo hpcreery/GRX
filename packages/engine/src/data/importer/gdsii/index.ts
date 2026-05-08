@@ -12,6 +12,7 @@ import { registerPlugin } from "@src/data/importer/register"
 // import messages from "./messages"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
+import type { ImportResultReport } from ".."
 import { convert } from "./converter"
 
 const Parameters = z.object({
@@ -19,7 +20,7 @@ const Parameters = z.object({
   project: z.string(),
 })
 
-export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<void> {
+export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeof DataInterface): Promise<ImportResultReport> {
   const params = Parameters.parse(parameters)
   // messages.setSender(addMessage, "GDSII")
   // messages.clear()
@@ -30,6 +31,9 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   for (const [layer, shapes] of Object.entries(layerHierarchy)) {
     if (!(await api.read_layers_list(params.project)).includes(layer)) await api.create_layer(params.project, layer)
     await api.update_step_layer_artwork(params.project, params.step, layer, shapes.shapes)
+  }
+  return {
+    errors: [],
   }
 }
 
