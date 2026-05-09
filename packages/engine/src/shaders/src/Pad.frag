@@ -153,42 +153,25 @@ void main() {
         return;
       }
       if (u_SnapMode == u_SnapModes.EDGE) {
-        // vec2 direction = normalize(vec2(
-        //     (drawShape(FragCoord + vec2(1, 0) * EPSILON, v_SymNum) * v_ResizeFactor - drawShape(FragCoord + vec2(-1, 0) * EPSILON, v_SymNum) * v_ResizeFactor),
-        //     (drawShape(FragCoord + vec2(0, 1) * EPSILON, v_SymNum) * v_ResizeFactor - drawShape(FragCoord + vec2(0, -1) * EPSILON, v_SymNum) * v_ResizeFactor)
-        // ));
-        // direction = rotateCW(direction, radians(v_Rotation));
-        // if (v_Mirror_X == 1.0) {
-        //   direction.x = -direction.x;
-        // }
-        // if (v_Mirror_Y == 1.0) {
-        //   direction.y = -direction.y;
-        // }
+        // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
+        // value 1 added to position is 1 pixel
+        vec2 direction = normalize(vec2(
+            (drawShape(transformLocation(u_PointerPosition + vec2(1, 0)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(1, 0)), v_SymNum) * v_ResizeFactor),
+            (drawShape(transformLocation(u_PointerPosition + vec2(0, 1)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(0, 1)), v_SymNum) * v_ResizeFactor)
+        ));
         // the first value is the distance to the border of the shape
         // the second value is the direction of the border of the shape
         // the third value is the indicator of a measurement
-        // gl_FragColor = vec4(dist, direction, 1.0);
-        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         dist = length(FragCoord) * v_ResizeFactor;
-        // vec2 direction = normalize(vec2(
-        //     (length(FragCoord + vec2(1, 0) * EPSILON) * v_ResizeFactor - length(FragCoord + vec2(-1, 0) * EPSILON) * v_ResizeFactor),
-        //     (length(FragCoord + vec2(0, 1) * EPSILON) * v_ResizeFactor - length(FragCoord + vec2(0, -1) * EPSILON) * v_ResizeFactor)
-        // ));
-        // direction = rotateCW(direction, radians(v_Rotation));
-        // if (v_Mirror_X == 1.0) {
-        //   direction.x = -direction.x;
-        // }
-        // if (v_Mirror_Y == 1.0) {
-        //   direction.y = -direction.y;
-        // }
-        // the first value is the distance to the border of the shape
-        // the second value is the direction of the border of the shape
-        // the third value is the indicator of a measurement
-        // gl_FragColor = vec4(dist, direction, 1.0);
-        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        vec2 direction = normalize(vec2(
+            (length(transformLocation(u_PointerPosition + vec2(1, 0))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(1, 0))) * v_ResizeFactor),
+            (length(transformLocation(u_PointerPosition + vec2(0, 1))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(0, 1))) * v_ResizeFactor)
+        ));
+        gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.OFF) {

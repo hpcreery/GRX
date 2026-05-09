@@ -297,28 +297,26 @@ void main() {
         return;
       }
       if (u_SnapMode == u_SnapModes.EDGE) {
-        // vec2 direction = normalize(vec2(
-        //     (arcDist(FragCoord + vec2(1, 0) * EPSILON) - arcDist(FragCoord + vec2(-1, 0) * EPSILON)),
-        //     (arcDist(FragCoord + vec2(0, 1) * EPSILON) - arcDist(FragCoord + vec2(0, -1) * EPSILON))
-        // ));
-        // // the first value is the distance to the border of the shape
-        // // the second value is the direction of the border of the shape
-        // // the third value is the indicator of a measurement
-        // gl_FragColor = vec4(dist, direction, 1.0);
-        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        vec2 direction = normalize(vec2(
+            (arcDist(transformLocation(u_PointerPosition + vec2(1, 0))) - arcDist(transformLocation(u_PointerPosition - vec2(1, 0)))),
+            (arcDist(transformLocation(u_PointerPosition + vec2(0, 1))) - arcDist(transformLocation(u_PointerPosition - vec2(0, 1))))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         dist = length(FragCoord);
-        // vec2 direction = normalize(vec2(
-        //     (length(FragCoord + vec2(1, 0) * EPSILON) - length(FragCoord + vec2(-1, 0) * EPSILON)),
-        //     (length(FragCoord + vec2(0, 1) * EPSILON) - length(FragCoord + vec2(0, -1) * EPSILON))
-        // ));
-        // // the first value is the distance to the border of the shape
-        // // the second value is the direction of the border of the shape
-        // // the third value is the indicator of a measurement
-        // gl_FragColor = vec4(dist, direction, 1.0);
-        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        vec2 direction = normalize(vec2(
+            (length(transformLocation(u_PointerPosition + vec2(1, 0))) - length(transformLocation(u_PointerPosition - vec2(1, 0)))),
+            (length(transformLocation(u_PointerPosition + vec2(0, 1))) - length(transformLocation(u_PointerPosition - vec2(0, 1))))
+        ));
+        // the first value is the distance to the border of the shape
+        // the second value is the direction of the border of the shape
+        // the third value is the indicator of a measurement
+        gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.OFF) {

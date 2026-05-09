@@ -37,9 +37,6 @@ varying float v_SurfaceIndex;
 varying float v_SurfacePolarity;
 varying float v_SurfaceOffset;
 
-
-
-
 vec4 texelFetch(sampler2D tex, vec2 texSize, vec2 pixelCoord) {
   vec2 uv = (pixelCoord + 0.5) / texSize;
   return texture2D(tex, uv);
@@ -59,8 +56,6 @@ vec2 getVertexPosition(int index) {
   return getVertexPosition(float(index));
 }
 
-
-
 float sdfSegment(vec2 p, vec2 a, vec2 b) {
   float h = min(1.0, max(0.0, dot(p - a, b - a) / dot(b - a, b - a))); //dot(b - a, b - a) == b-a * b-a
   return length(p - (a + h * (b - a))); // return distance from point to line
@@ -76,7 +71,7 @@ float sdfSegment(vec2 p, vec2 a, vec2 b) {
 //////////////////////////////
 
 float draw(float dist, float pixel_size) {
-  if (dist * float(u_OutlineMode || u_SkeletonMode) > pixel_size) {
+  if(dist * float(u_OutlineMode || u_SkeletonMode) > pixel_size) {
     discard;
   }
   return dist;
@@ -91,7 +86,6 @@ float draw(float dist, float pixel_size) {
 #pragma glslify: transformLocation3D = require('../modules/Transform3D.frag',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 #pragma glslify: transformLocation3DVert = require('../modules/Transform3D.vert',u_Transform3D=u_Transform3D,u_ZOffset=u_ZOffset,u_Perspective3D=u_Perspective3D)
 
-
 vec2 transformLocation(vec2 pixel_coord) {
   vec2 normal_frag_coord = ((pixel_coord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0);
   vec3 transformed_position = transformLocation3D(normal_frag_coord).xyz;
@@ -101,7 +95,7 @@ vec2 transformLocation(vec2 pixel_coord) {
 
 float surfaceDistMain(vec2 FragCoord) {
   float dist = SDF_FAR_AWAY;
-  for (float i = -25.0; i <= 25.0; i += 1.0) {
+  for(float i = -25.0; i <= 25.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
     vec2 point1_p = getVertexPosition(indx * 2.0 + v_ContourOffset + v_SurfaceOffset);
@@ -121,24 +115,22 @@ float surfaceDistMain(vec2 FragCoord) {
   return dist;
 }
 
-float sign(vec2 p1, vec2 p2, vec2 p3)
-{
-    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+float sign(vec2 p1, vec2 p2, vec2 p3) {
+  return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 }
 
-bool pointInTriangle(vec2 pt, vec2 v1, vec2 v2, vec2 v3)
-{
-    float d1, d2, d3;
-    bool has_neg, has_pos;
+bool pointInTriangle(vec2 pt, vec2 v1, vec2 v2, vec2 v3) {
+  float d1, d2, d3;
+  bool has_neg, has_pos;
 
-    d1 = sign(pt, v1, v2);
-    d2 = sign(pt, v2, v3);
-    d3 = sign(pt, v3, v1);
+  d1 = sign(pt, v1, v2);
+  d2 = sign(pt, v2, v3);
+  d3 = sign(pt, v3, v1);
 
-    has_neg = (d1 < 0.0) || (d2 < 0.0) || (d3 < 0.0);
-    has_pos = (d1 > 0.0) || (d2 > 0.0) || (d3 > 0.0);
+  has_neg = (d1 < 0.0) || (d2 < 0.0) || (d3 < 0.0);
+  has_pos = (d1 > 0.0) || (d2 > 0.0) || (d3 > 0.0);
 
-    return !(has_neg && has_pos);
+  return !(has_neg && has_pos);
 }
 
 void main() {
@@ -146,7 +138,6 @@ void main() {
   // float pixel_size = u_PixelSize / scale;
   vec4 v = transformLocation3DVert(((gl_FragCoord.xy / u_Resolution.xy) * vec2(2.0, 2.0)) - vec2(1.0, 1.0));
   float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);
-
 
   // v_ContourPolarity = Island (1) or Hole (0)
   // v_SurfacePolarity = Positive (1) or Negative (0)
@@ -166,15 +157,14 @@ void main() {
   float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
-  if (u_QueryMode) {
+  if(u_QueryMode) {
     FragCoord = transformLocation(u_PointerPosition);
   }
 
   // float dist = surfaceDistMain(FragCoord);
   float dist = SDF_FAR_AWAY;
 
-
-  if (u_QueryMode) {
+  if(u_QueryMode) {
     // dist = surfaceDistMain(FragCoord);
     vec2 pointx = getVertexPosition(v_Indicies.x * 2.0 + v_ContourOffset + v_SurfaceOffset);
     vec2 pointy = getVertexPosition(v_Indicies.y * 2.0 + v_ContourOffset + v_SurfaceOffset);
@@ -211,49 +201,37 @@ void main() {
     // pointy = pointy + directiony * (pixel_size * SNAP_DISTANCE_PIXELS);
     // pointz = pointz + directionz * (pixel_size * SNAP_DISTANCE_PIXELS);
 
-
-    if (gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
-      if (u_SnapMode == u_SnapModes.EDGE) {
-        if (pointInTriangle(FragCoord, pointx, pointy, pointz)) {
-          // vec2 direction = normalize(vec2(
-          //     (surfaceDistMain(FragCoord + vec2(1, 0) * EPSILON) - surfaceDistMain(FragCoord + vec2(-1, 0) * EPSILON)),
-          //     (surfaceDistMain(FragCoord + vec2(0, 1) * EPSILON) - surfaceDistMain(FragCoord + vec2(0, -1) * EPSILON))
-          // ));
+    if(gl_FragCoord.xy == vec2(mod(v_SurfaceIndex, u_Resolution.x) + 0.5, floor(v_SurfaceIndex / u_Resolution.x) + 0.5)) {
+      if(pointInTriangle(FragCoord, pointx, pointy, pointz)) {
+        if(u_SnapMode == u_SnapModes.EDGE) {
+          dist = surfaceDistMain(FragCoord);
+          // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
+          // value 1 added to position is 1 pixel
+          vec2 direction = normalize(vec2((surfaceDistMain(transformLocation(u_PointerPosition + vec2(1, 0))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(1, 0)))), (surfaceDistMain(transformLocation(u_PointerPosition + vec2(0, 1))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(0, 1))))));
           // the first value is the distance to the border of the shape
           // the second value is the direction of the border of the shape
           // the third value is the indicator of a measurement
-          // gl_FragColor = vec4(-dist, -direction, 1.0);
-          dist = surfaceDistMain(FragCoord);
-          gl_FragColor = vec4(-dist, 0.0, 0.0, 1.0);
+          gl_FragColor = vec4(dist, direction, 1.0);
           return;
-        } else {
-          discard;
         }
-      }
-      if (u_SnapMode == u_SnapModes.CENTER) {
-        // If snap mode is center, also return 0, not yet able to compute the center of a contour
-        if (pointInTriangle(FragCoord, pointx, pointy, pointz)) {
+        if(u_SnapMode == u_SnapModes.CENTER) {
+          // If snap mode is center, also return 0, not yet able to compute the center of a contour
           gl_FragColor = vec4(SDF_FAR_AWAY, 0.0, 0.0, 1.0);
           return;
-        } else {
-          discard;
         }
-      }
-      if (u_SnapMode == u_SnapModes.OFF) {
-        // If snap mode is off, just return 0 distance
-        if (pointInTriangle(FragCoord, pointx, pointy, pointz)) {
+        if(u_SnapMode == u_SnapModes.OFF) {
+          // If snap mode is off, just return 0 distance
           gl_FragColor = vec4(SDF_FAR_AWAY, 0.0, 0.0, 1.0);
           return;
-        } else {
-          discard;
         }
+      } else {
+        discard;
       }
       discard;
     } else {
       discard;
     }
   }
-
 
   #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);

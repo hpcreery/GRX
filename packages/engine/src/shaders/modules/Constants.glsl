@@ -6,5 +6,5 @@
 #define SDF_FAR_AWAY 10000000.0
 // some close number
 #define EPSILON 0.001
-#define SNAP_DISTANCE_PIXELS 5.0
+#define SNAP_DISTANCE_PIXELS 100.0
 

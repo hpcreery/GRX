@@ -794,13 +794,13 @@ export class ViewRenderer extends UpdateEventTarget {
             closest = select
             continue
           }
-          if (select.distance > closest.distance) {
+          if (select.distance < closest.distance) {
             closest = select
           }
         }
       }
     })
-    closest = closest as ShapeDistance | undefined
+    // closest = closest as ShapeDistance | undefined
     // console.log(closest)
     if (closest == undefined) return pointerWorldCoord
     if (closest.distance == undefined) return pointerWorldCoord
@@ -914,6 +914,7 @@ export class ViewRenderer extends UpdateEventTarget {
    * @param point vec2 of gl screen/view coordinates
    */
   public updateMeasurement(point: vec2): void {
+    // const snapCoord = this.snap(point)
     const coord = this.getWorldCoordFromScreenCoord(point[0], point[1], 0)
     this.measurements.updateMeasurement(coord)
     this.announceUpdate()
