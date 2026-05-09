@@ -71,8 +71,8 @@ jobs:
           node-version: latest
       - uses: pnpm/action-setup@v4
         name: Install pnpm
-      - name: Globally Install phantomjs-prebuilt (for issue with puppeteer on Apple Silicon)
-        run: npm install -g phantomjs-prebuilt --unsafe-perm
+      - name: Install bzip2
+        run: brew install bzip2
       - name: Install Dependencies
         run: pnpm install
       - name: Build
