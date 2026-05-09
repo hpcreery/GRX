@@ -39,8 +39,7 @@
     "onlyBuiltDependencies": [
       "electron",
       "electron-winstaller",
-      "esbuild",
-      "phantomjs-prebuilt"
+      "esbuild"
     ]
   },
   "workspaces": [
