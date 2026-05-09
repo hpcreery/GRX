@@ -14,6 +14,9 @@ importers:
       husky:
         specifier: ^9.1.7
         version: 9.1.7
+      turbo:
+        specifier: 2.9.9
+        version: 2.9.9
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.4.5
@@ -30,9 +33,6 @@ importers:
       git-cliff:
         specifier: ^2.12.0
         version: 2.12.0
-      turbo:
-        specifier: 2.9.9
-        version: 2.9.9
       typescript:
         specifier: 6.0.3
         version: 6.0.3
