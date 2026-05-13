@@ -211,17 +211,17 @@ void main() {
           // the first value is the distance to the border of the shape
           // the second value is the direction of the border of the shape
           // the third value is the indicator of a measurement
-          gl_FragColor = vec4(dist, direction, 1.0);
+          gl_FragColor = vec4(-dist, -direction, 1.0);
           return;
         }
         if(u_SnapMode == u_SnapModes.CENTER) {
           // If snap mode is center, also return 0, not yet able to compute the center of a contour
-          gl_FragColor = vec4(SDF_FAR_AWAY, 0.0, 0.0, 1.0);
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
           return;
         }
         if(u_SnapMode == u_SnapModes.OFF) {
           // If snap mode is off, just return 0 distance
-          gl_FragColor = vec4(SDF_FAR_AWAY, 0.0, 0.0, 1.0);
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
           return;
         }
       } else {

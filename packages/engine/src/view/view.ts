@@ -725,6 +725,8 @@ export class ViewRenderer extends UpdateEventTarget {
     const selection: QuerySelection[] = []
     this.selections.forEach((layer) => layer.destroy())
     this.selections.length = 0
+    const origSnapMode = settings.SNAP_MODE
+    settings.SNAP_MODE = SnapMode.EDGE
     this.world((context) => {
       for (const layer of this.layers) {
         if (!layer.visible) continue
@@ -732,8 +734,9 @@ export class ViewRenderer extends UpdateEventTarget {
         context.zOffset = this.dataStep.matrix.getZOffsetForLayer(layer.dataLayer.layer)
 
         const distances = layer.queryDistance(pointer, context)
-        if (distances.length === 0) continue
-        for (const select of distances) {
+        const clicked = distances.filter((d) => d.distance != undefined && d.distance <= 0)
+        if (clicked.length === 0) continue
+        for (const select of clicked) {
           selection.push({
             sourceLayer: layer.dataLayer.layer.name,
             ...select,
@@ -752,7 +755,7 @@ export class ViewRenderer extends UpdateEventTarget {
           // this.measurements.finishMeasurement(snapPoint)
         }
         const selectionImage = new ArtworkBufferCollection()
-        selectionImage.fromJSON(this.copySelectionToImage(distances))
+        selectionImage.fromJSON(this.copySelectionToImage(clicked))
 
         const newSelectionLayer = new SelectionRenderer({
           regl: this.regl,
@@ -766,6 +769,7 @@ export class ViewRenderer extends UpdateEventTarget {
         this.selections.push(newSelectionLayer)
       }
     })
+    settings.SNAP_MODE = origSnapMode
     this.announceUpdate()
     return selection
   }
@@ -794,7 +798,7 @@ export class ViewRenderer extends UpdateEventTarget {
             closest = select
             continue
           }
-          if (select.distance < closest.distance) {
+          if (Math.abs(select.distance) < Math.abs(closest.distance)) {
             closest = select
           }
         }
