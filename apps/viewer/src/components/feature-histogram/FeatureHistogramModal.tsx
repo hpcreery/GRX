@@ -35,11 +35,11 @@ export default function HistogramModal(props: HistogramModal): JSX.Element | nul
       {/* make it pretty */}
       {Object.entries(histogram).map(([key, value]) => (
         <>
-        <Divider key={`${key}-divider`} my="sm" />
-        <Flex key={key} justify="space-between" align="center" mb="sm">
-          <Text>{key}: </Text>
-          <Text>{value}</Text>
-        </Flex>
+          <Divider key={`${key}-divider`} my="sm" />
+          <Flex key={key} justify="space-between" align="center" mb="sm">
+            <Text>{key}: </Text>
+            <Text>{value}</Text>
+          </Flex>
         </>
       ))}
       {/* Show the total */}

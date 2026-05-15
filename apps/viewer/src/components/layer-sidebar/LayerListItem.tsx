@@ -1,10 +1,11 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Button, ColorPicker, Input, Popover, Tooltip, useMantineColorScheme, useMantineTheme } from "@mantine/core"
+import { useDisclosure } from "@mantine/hooks"
 import { animated, type SpringValue, useSpring } from "@react-spring/web"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import {
-    IconChartHistogram,
+  IconChartHistogram,
   IconCheck,
   IconCircleDotted,
   IconCircleFilled,
@@ -25,9 +26,8 @@ import chroma from "chroma-js"
 import { vec3 } from "gl-matrix"
 import { type ContextMenuContent, type ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
 import { type JSX, useContext, useEffect, useState } from "react"
-import LayerTransform from "./transform/LayerTransform"
-import { useDisclosure } from '@mantine/hooks';
 import HistogramModal from "../feature-histogram/FeatureHistogramModal"
+import LayerTransform from "./transform/LayerTransform"
 
 interface LayerActions {
   download: () => void
@@ -53,7 +53,6 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
   const [colorPickerVisible, setColorPickerVisible] = useState<boolean>(false)
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
-  
 
   async function changeColor(color: vec3): Promise<void> {
     const engine = await renderer.engine
@@ -229,8 +228,8 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       onClick: toggleVisible,
     },
     {
-      title: 'Features Histogram',
-      key: '4',
+      title: "Features Histogram",
+      key: "4",
       icon: <IconChartHistogram stroke={1.5} size={18} />,
       onClick: featureHistogramModalHandlers.open,
       // disabled: true

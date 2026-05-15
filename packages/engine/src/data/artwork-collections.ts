@@ -1509,13 +1509,13 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
 
   /**
    * This function generates a histogram of the artwork, which is a summary of the number of each type of shape in the artwork. This can be used for optimization purposes, such as determining which buffers need to be updated when a shape is changed.
-    * The histogram is an object where the keys are the shape types and the values are the counts of each shape type in the artwork. For example, if the artwork contains 10 pads, 5 lines, and 2 arcs, the histogram would be:
-    * {
-    *   "pad": 10,
-    *   "line": 5,
-    *   "arc": 2,
-    *   ...
-    * }
+   * The histogram is an object where the keys are the shape types and the values are the counts of each shape type in the artwork. For example, if the artwork contains 10 pads, 5 lines, and 2 arcs, the histogram would be:
+   * {
+   *   "pad": 10,
+   *   "line": 5,
+   *   "arc": 2,
+   *   ...
+   * }
    */
   getHistogram(): { [key in FeatureTypeIdentifiers]?: number } {
     const histogram: { [key in FeatureTypeIdentifiers]?: number } = {}
