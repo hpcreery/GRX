@@ -106,6 +106,48 @@ vec2 transformLocation(vec2 pixel_coord) {
   return true_coord;
 }
 
+
+// #define FLOAT_MAX  1.70141184e38
+// #define FLOAT_MIN  1.17549435e-38
+
+// vec4 encode_float(highp float v) {
+//   highp float av = abs(v);
+
+//   //Handle special cases
+//   if(av < FLOAT_MIN) {
+//     return vec4(0.0, 0.0, 0.0, 0.0);
+//   } else if(v > FLOAT_MAX) {
+//     return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;
+//   } else if(v < -FLOAT_MAX) {
+//     return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
+//   }
+
+//   highp vec4 c = vec4(0,0,0,0);
+
+//   //Compute exponent and mantissa
+//   highp float e = floor(log2(av));
+//   highp float m = av * pow(2.0, -e) - 1.0;
+  
+//   //Unpack mantissa
+//   c[1] = floor(128.0 * m);
+//   m -= c[1] / 128.0;
+//   c[2] = floor(32768.0 * m);
+//   m -= c[2] / 32768.0;
+//   c[3] = floor(8388608.0 * m);
+  
+//   //Unpack exponent
+//   highp float ebias = e + 127.0;
+//   c[0] = floor(ebias / 2.0);
+//   ebias -= c[0] * 2.0;
+//   c[1] += floor(ebias) * 128.0; 
+
+//   //Unpack sign bit
+//   c[0] += 128.0 * step(0.0, -v);
+
+//   //Scale back to range
+//   return c / 255.0;
+// }
+
 void main() {
   float scale = sqrt(pow(u_Transform[0][0], 2.0) + pow(u_Transform[1][0], 2.0)) * u_Resolution.x;
   // float pixel_size = u_PixelSize / scale;
@@ -153,25 +195,29 @@ void main() {
         return;
       }
       if (u_SnapMode == u_SnapModes.EDGE) {
-        // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
-        // value 1 added to position is 1 pixel
-        vec2 direction = normalize(vec2(
-            (drawShape(transformLocation(u_PointerPosition + vec2(1, 0)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(1, 0)), v_SymNum) * v_ResizeFactor),
-            (drawShape(transformLocation(u_PointerPosition + vec2(0, 1)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(0, 1)), v_SymNum) * v_ResizeFactor)
-        ));
-        // the first value is the distance to the border of the shape
-        // the second value is the direction of the border of the shape
-        // the third value is the indicator of a measurement
-        gl_FragColor = vec4(dist, direction, 1.0);
+        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        // *** QUERYING THE DIRECTION FROM THE SHADER IS CURRENTLY DISABLED BECAUSE IT PUTS MORE LOAD ON THE GPU AND ESPECIALLY THE SHADER COMPILER DUE TO UNROLLING, BUT IT IS MORE ACCURATE THAN THE FINITE DIFFERENCE APPROXIMATION ***
+        // // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
+        // // value 1 added to position is 1 pixel
+        // vec2 direction = normalize(vec2(
+        //     (drawShape(transformLocation(u_PointerPosition + vec2(1, 0)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(1, 0)), v_SymNum) * v_ResizeFactor),
+        //     (drawShape(transformLocation(u_PointerPosition + vec2(0, 1)), v_SymNum) * v_ResizeFactor - drawShape(transformLocation(u_PointerPosition - vec2(0, 1)), v_SymNum) * v_ResizeFactor)
+        // ));
+        // // the first value is the distance to the border of the shape
+        // // the second value is the direction of the border of the shape
+        // // the third value is the indicator of a measurement
+        // gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.CENTER) {
         dist = length(FragCoord) * v_ResizeFactor;
-        vec2 direction = normalize(vec2(
-            (length(transformLocation(u_PointerPosition + vec2(1, 0))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(1, 0))) * v_ResizeFactor),
-            (length(transformLocation(u_PointerPosition + vec2(0, 1))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(0, 1))) * v_ResizeFactor)
-        ));
-        gl_FragColor = vec4(dist, direction, 1.0);
+        gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+        // *** QUERYING THE DIRECTION FROM THE SHADER IS CURRENTLY DISABLED BECAUSE IT PUTS MORE LOAD ON THE GPU AND ESPECIALLY THE SHADER COMPILER DUE TO UNROLLING, BUT IT IS MORE ACCURATE THAN THE FINITE DIFFERENCE APPROXIMATION ***
+        // vec2 direction = normalize(vec2(
+        //     (length(transformLocation(u_PointerPosition + vec2(1, 0))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(1, 0))) * v_ResizeFactor),
+        //     (length(transformLocation(u_PointerPosition + vec2(0, 1))) * v_ResizeFactor - length(transformLocation(u_PointerPosition - vec2(0, 1))) * v_ResizeFactor)
+        // ));
+        // gl_FragColor = vec4(dist, direction, 1.0);
         return;
       }
       if (u_SnapMode == u_SnapModes.OFF) {

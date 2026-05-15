@@ -205,13 +205,15 @@ void main() {
       if(pointInTriangle(FragCoord, pointx, pointy, pointz)) {
         if(u_SnapMode == u_SnapModes.EDGE) {
           dist = surfaceDistMain(FragCoord);
-          // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
-          // value 1 added to position is 1 pixel
-          vec2 direction = normalize(vec2((surfaceDistMain(transformLocation(u_PointerPosition + vec2(1, 0))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(1, 0)))), (surfaceDistMain(transformLocation(u_PointerPosition + vec2(0, 1))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(0, 1))))));
-          // the first value is the distance to the border of the shape
-          // the second value is the direction of the border of the shape
-          // the third value is the indicator of a measurement
-          gl_FragColor = vec4(-dist, -direction, 1.0);
+          gl_FragColor = vec4(dist, 0.0, 0.0, 1.0);
+          // *** QUERYING THE DIRECTION FROM THE SHADER IS CURRENTLY DISABLED BECAUSE IT PUTS MORE LOAD ON THE GPU AND ESPECIALLY THE SHADER COMPILER DUE TO UNROLLING, BUT IT IS MORE ACCURATE THAN THE FINITE DIFFERENCE APPROXIMATION ***
+          // // the direction is the negative gradient of the distance field, which can be approximated by the finite difference of the distance field in the four cardinal directions, or it can be encoded in the green and blue channels of the texture for more accuracy and performance
+          // // value 1 added to position is 1 pixel
+          // vec2 direction = normalize(vec2((surfaceDistMain(transformLocation(u_PointerPosition + vec2(1, 0))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(1, 0)))), (surfaceDistMain(transformLocation(u_PointerPosition + vec2(0, 1))) - surfaceDistMain(transformLocation(u_PointerPosition - vec2(0, 1))))));
+          // // the first value is the distance to the border of the shape
+          // // the second value is the direction of the border of the shape
+          // // the third value is the indicator of a measurement
+          // gl_FragColor = vec4(-dist, -direction, 1.0);
           return;
         }
         if(u_SnapMode == u_SnapModes.CENTER) {

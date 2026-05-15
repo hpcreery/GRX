@@ -87,6 +87,10 @@ export class ShapeRenderer extends UpdateEventTarget {
   public transform: ShapeTransform = new ShapeTransform()
 
   public distanceQueryRaw: Float32Array = new Float32Array(0)
+  public distanceRightQueryRaw: Float32Array = new Float32Array(0)
+  public distanceLeftQueryRaw: Float32Array = new Float32Array(0)
+  public distanceUpQueryRaw: Float32Array = new Float32Array(0)
+  public distanceDownQueryRaw: Float32Array = new Float32Array(0)
 
   constructor(props: ShapeRendererProps) {
     super()
@@ -192,7 +196,6 @@ export class ShapeRenderer extends UpdateEventTarget {
     this.queryFrameBuffer = this.regl.framebuffer({
       depth: true,
       colorType: "float",
-      // colorFormat: "rgba32f",
     })
     this.surfaceFrameBuffer = this.regl.framebuffer({
       depth: true,
@@ -254,6 +257,10 @@ export class ShapeRenderer extends UpdateEventTarget {
     const bufferLength = width * height * Float32Array.BYTES_PER_ELEMENT
     if (this.distanceQueryRaw.length != bufferLength) {
       this.distanceQueryRaw = new Float32Array(bufferLength)
+      this.distanceLeftQueryRaw = new Float32Array(bufferLength)
+      this.distanceRightQueryRaw = new Float32Array(bufferLength)
+      this.distanceUpQueryRaw = new Float32Array(bufferLength)
+      this.distanceDownQueryRaw = new Float32Array(bufferLength)
     }
 
     const renderDistance = (pointer: vec2, store: Float32Array): void => {
@@ -285,6 +292,11 @@ export class ShapeRenderer extends UpdateEventTarget {
     }
 
     renderDistance(pointer, this.distanceQueryRaw)
+    const epsilons = 0.1
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
 
     const distData = this.distanceQueryRaw
     const distances: ShapeDistance[] = []
@@ -292,11 +304,30 @@ export class ShapeRenderer extends UpdateEventTarget {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
       const distance = distData[i] * this.transform.scale // convert distance from screen to world coordinates
-      const direction = vec2.fromValues(distData[i + 1], distData[i + 2])
+
+      const direction = vec2.fromValues(
+        this.distanceRightQueryRaw[i] - this.distanceLeftQueryRaw[i],
+        this.distanceUpQueryRaw[i] - this.distanceDownQueryRaw[i],
+      )
+      // *** QUERYING THE DIRECTION FROM THE SHADER IS CURRENTLY DISABLED BECAUSE IT PUTS MORE LOAD ON THE GPU AND ESPECIALLY THE SHADER COMPILER DUE TO UNROLLING, BUT IT IS MORE ACCURATE THAN THE FINITE DIFFERENCE APPROXIMATION ***
+      // direction[0] = distData[i + 1] // use the direction encoded in the green and blue channels of the texture, as it is more accurate than the finite difference approximation
+      // direction[1] = distData[i + 2]
+      vec2.normalize(direction, direction)
+
+      // sanity check for if the distances of the four directions are the same
+      let validDistance = true
+      if (
+        [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
+          (d, _i, arr) => d === arr[0],
+        )
+      ) {
+        validDistance = false
+      }
+
       distances.push({
         shape: this.artwork.read(i / 4),
-        direction,
-        distance,
+        direction: validDistance ? direction : undefined,
+        distance: validDistance ? distance : undefined,
         children: [],
       })
     }

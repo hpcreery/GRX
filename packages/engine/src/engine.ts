@@ -496,9 +496,20 @@ export abstract class Engine {
       ...container,
     }
 
+    if (attributes) {
+      attributes.preserveDrawingBuffer = true
+    }
+
     const gl = offscreenCanvasGL.getContext("webgl", attributes)!
 
     console.log("WEBGL VERSION", gl.getParameter(gl.VERSION))
+
+    // Enable float textures
+    const floatTexExt = gl.getExtension("OES_texture_float")
+
+    if (!floatTexExt) {
+      console.error("Float rendering not supported on this device. The engine may not function correctly.")
+    }
 
     Engine.regl = REGL({
       gl,
@@ -510,6 +521,8 @@ export abstract class Engine {
         "EXT_frag_depth",
         "EXT_blend_minmax",
         // "WEBGL_color_buffer_float",
+        // "EXT_color_buffer_float",
+        // "EXT_color_buffer_half_float",
         // "EXT_disjoint_timer_query",
         "OES_standard_derivatives",
       ],
