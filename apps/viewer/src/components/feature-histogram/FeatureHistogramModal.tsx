@@ -1,9 +1,6 @@
-import { types } from "@grx/engine"
-import { Divider, Flex, Kbd, Modal, Select, Switch, Text } from "@mantine/core"
-import { type UseDisclosureReturnValue, useHotkeys, useLocalStorage } from "@mantine/hooks"
+import { Divider, Flex, Modal, Text } from "@mantine/core"
+import type { UseDisclosureReturnValue } from "@mantine/hooks"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { actions } from "@src/contexts/Spotlight"
-import { IconHexagonPlus, IconZoom, IconZoomScan } from "@tabler/icons-react"
 import { type JSX, useContext, useEffect, useState } from "react"
 
 type HistogramModal = {
