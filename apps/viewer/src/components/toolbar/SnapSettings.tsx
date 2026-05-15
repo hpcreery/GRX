@@ -81,7 +81,5 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
     ],
   ])
 
-  return (
-    <SegmentedControl radius="sm" value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as types.SnapMode)} />
-  )
+  return <SegmentedControl radius="sm" value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as types.SnapMode)} />
 }

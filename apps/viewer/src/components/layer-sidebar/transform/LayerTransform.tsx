@@ -112,17 +112,17 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
           label={`Datum X (${units})`}
           description="Layer X translation"
           placeholder="Input number"
-          value={roundToThree(datumX * utils.baseUnitsConversionFactor(units))}
+          value={roundToThree(datumX / utils.baseUnitsConversionFactor(units))}
           step={1}
-          onChange={(x) => setDatumX(roundToThree(Number(x) / utils.baseUnitsConversionFactor(units)))}
+          onChange={(x) => setDatumX(roundToThree(Number(x) * utils.baseUnitsConversionFactor(units)))}
         />
         <NumberInput
           label={`Datum Y (${units})`}
           description="Layer Y translation"
           placeholder="Input number"
-          value={roundToThree(datumY * utils.baseUnitsConversionFactor(units))}
+          value={roundToThree(datumY / utils.baseUnitsConversionFactor(units))}
           step={1}
-          onChange={(y) => setDatumY(roundToThree(Number(y) / utils.baseUnitsConversionFactor(units)))}
+          onChange={(y) => setDatumY(roundToThree(Number(y) * utils.baseUnitsConversionFactor(units)))}
         />
       </Group>
       <Space h="md" />
