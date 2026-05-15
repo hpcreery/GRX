@@ -1,12 +1,15 @@
-import { ColorPicker, Divider, Flex, Group, Radio, Switch, Text, useMantineColorScheme, useMantineTheme } from "@mantine/core"
+import { ColorPicker, Divider, Flex, Group, Modal, Radio, Switch, Text, useMantineColorScheme, useMantineTheme } from "@mantine/core"
+import type { UseDisclosureReturnValue } from "@mantine/hooks"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { ThemeConfigProvider } from "@src/contexts/ThemeContext"
 import chroma from "chroma-js"
 import React, { type JSX } from "react"
 
-type SettingsModalProps = {}
+type SettingsModalProps = {
+  modalDisclosure: UseDisclosureReturnValue
+}
 
-export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.Element | null {
+export default function GeneralSettingsModal(props: SettingsModalProps): JSX.Element | null {
   const { units, setUnits, renderer } = React.useContext(EditorConfigProvider)
   const { transparency, setTransparency, setPrimaryColor } = React.useContext(ThemeConfigProvider)
   const theme = useMantineTheme()
@@ -19,9 +22,10 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
   React.useEffect(() => {
     renderer.engine.interface.update_measurement_settings({ units })
   }, [units])
+  const [generalSettingsModal, generalSettingsModalHandlers] = props.modalDisclosure
 
   return (
-    <>
+    <Modal title="Settings" keepMounted opened={generalSettingsModal} onClose={generalSettingsModalHandlers.close}>
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Units</Text>
         <Group mt="xs">
@@ -80,6 +84,6 @@ export default function GeneralSettingsModal(_props: SettingsModalProps): JSX.El
           }}
         />
       </Flex> */}
-    </>
+    </Modal>
   )
 }

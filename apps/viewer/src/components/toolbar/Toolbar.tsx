@@ -2,25 +2,20 @@
 
 import type { PointerSettings } from "@grx/engine"
 import { types } from "@grx/engine"
-import { ActionIcon, Card, Group, Kbd, Modal, Popover, Tooltip, useMantineTheme } from "@mantine/core"
+import { ActionIcon, Card, Group, Kbd, Popover, Tooltip, useMantineTheme } from "@mantine/core"
 import { useDisclosure, useHotkeys } from "@mantine/hooks"
 import { EditorConfigProvider, menuItems } from "@src/contexts/EditorContext"
 import { actions } from "@src/contexts/Spotlight"
 import {
-  // IconZoomIn,
-  // IconZoomOut,
-  // IconHome,
   IconAdjustments,
   IconArrowsMove,
   IconBadge3d,
   IconBone,
   IconBoneOff,
   IconClick,
-  // IconCube3dSphereOff,
   IconCube,
   IconCube3dSphere,
   IconEngine,
-  // IconGridDots,
   IconGrid4x4,
   IconPointerPin,
   IconRulerMeasure,
@@ -41,14 +36,11 @@ type ToolbarProps = {}
 
 export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const { units, renderer } = React.useContext(EditorConfigProvider)
-  const [settingsModalOpen, { open, close }] = useDisclosure(false)
+  const [generalSettingsModal, generalSettingsModalHandlers] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
-  const [snapSettingsModal, snapSettingsModalHandlers] = useDisclosure(false)
-  const [threeDSettingsModal, threeDSettingsModalHandlers] = useDisclosure(false)
   const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
   const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
-  // const [gridMode, setGridMode] = React.useState<'dots' | 'lines'>(renderer.grid.type)
   const [pointerMode, setPointerMode] = React.useState<PointerSettings["mode"]>(renderer.pointerSettings.mode)
   const { showContextMenu } = useContextMenu()
   const theme = useMantineTheme()
@@ -120,7 +112,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       id: "open settings modal",
       label: "Open Settings",
       description: "Show general settings",
-      onClick: open,
+      onClick: generalSettingsModalHandlers.open,
       leftSection: <IconAdjustments />,
       // rightSection: <Kbd></Kbd>
     })
@@ -399,27 +391,15 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
           </ActionIcon.Group>
           {/* SETTINGS */}
           <Tooltip openDelay={1000} withArrow label="Settings">
-            <ActionIcon size="lg" radius="sm" variant="default" onClick={open}>
+            <ActionIcon size="lg" radius="sm" variant="default" onClick={generalSettingsModalHandlers.open}>
               <IconAdjustments size={18} />
             </ActionIcon>
           </Tooltip>
         </Group>
       </Card>
-      <Modal title="Settings" keepMounted opened={settingsModalOpen} onClose={close}>
-        <GeneralSettings />
-      </Modal>
-      <Modal title="Grid Settings" keepMounted opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
-        <GridSettings />
-      </Modal>
-      <Modal title="Engine Settings" keepMounted opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
-        <EngineSettings />
-      </Modal>
-      <Modal title="Snap Settings" keepMounted opened={snapSettingsModal} onClose={snapSettingsModalHandlers.close}>
-        <SnapSettings />
-      </Modal>
-      <Modal title="3D Settings" keepMounted opened={threeDSettingsModal} onClose={threeDSettingsModalHandlers.close}>
-        <ThreeDSettings />
-      </Modal>
+      <GeneralSettings modalDisclosure={[generalSettingsModal, generalSettingsModalHandlers]} />
+      <GridSettings modalDisclosure={[gridSettingsModal, gridSettingsModalHandlers]} />
+      <EngineSettings modalDisclosure={[engineSettingsModal, engineSettingsModalHandlers]} />
     </>
   )
 }

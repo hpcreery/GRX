@@ -1,75 +1,60 @@
 import { settings, utils } from "@grx/engine"
-import { Button, ColorPicker, Divider, Flex, Group, NumberInput, SegmentedControl, Space, Switch, Text } from "@mantine/core"
-import { useLocalStorage } from "@mantine/hooks"
+import { Button, ColorPicker, Divider, Flex, Group, Modal, NumberInput, SegmentedControl, Space, Switch, Text } from "@mantine/core"
+import { type UseDisclosureReturnValue, useLocalStorage } from "@mantine/hooks"
+import { actions } from "@src/contexts/Spotlight"
+import { IconGrid4x4 } from "@tabler/icons-react"
 import chroma from "chroma-js"
 import { vec4 } from "gl-matrix"
 import React, { type JSX, useEffect } from "react"
 import { EditorConfigProvider } from "../../contexts/EditorContext"
 
-type GridSettingsProps = {}
+type GridSettingsProps = {
+  modalDisclosure: UseDisclosureReturnValue
+}
 const defaultGridSettings = JSON.parse(JSON.stringify(settings.gridSettings))
 
-export default function GridSettings(_props: GridSettingsProps): JSX.Element | null {
+export default function GridSettings(props: GridSettingsProps): JSX.Element | null {
   const { units, renderer } = React.useContext(EditorConfigProvider)
   const [spacingX, setSpacingX] = useLocalStorage<number>({
     key: "engine:grid:spacing_x",
-    // defaultValue: renderer.grid.spacing_x,
     defaultValue: 0,
   })
   const [spacingY, setSpacingY] = useLocalStorage<number>({
     key: "engine:grid:spacing_y",
-    // defaultValue: renderer.grid.spacing_y,
     defaultValue: 0,
   })
   const [offsetX, setOffsetX] = useLocalStorage<number>({
     key: "engine:grid:offset_x",
-    // defaultValue: renderer.grid.offset_x,
     defaultValue: 0,
   })
   const [offsetY, setOffsetY] = useLocalStorage<number>({
     key: "engine:grid:offset_y",
-    // defaultValue: renderer.grid.offset_y,
     defaultValue: 0,
   })
   const [enabled, setEnabled] = useLocalStorage<boolean>({
     key: "engine:grid:enabled",
-    // defaultValue: renderer.grid.enabled,
     defaultValue: false,
   })
   const [type, setType] = useLocalStorage<"lines" | "dots">({
     key: "engine:grid:type",
-    // defaultValue: renderer.grid.type,
     defaultValue: "lines",
   })
   const [color, setColor] = useLocalStorage<vec4>({
     key: "engine:grid:color",
-    // defaultValue: renderer.grid.color,
     defaultValue: vec4.fromValues(0.5, 0.5, 0.5, 1),
   })
+  const [gridSettingsModal, gridSettingsModalHandlers] = props.modalDisclosure
 
-  async function getGridSettings(): Promise<void> {
-    const grid = await renderer.engine.interface.read_grid_settings()
-    setSpacingX(grid.spacing_x)
-    setSpacingY(grid.spacing_y)
-    setOffsetX(grid.offset_x)
-    setOffsetY(grid.offset_y)
-    setEnabled(grid.enabled)
-    setType(grid.type)
-    setColor(grid.color)
-  }
-
-  useEffect(() => {
-    getGridSettings()
-  }, [])
+  actions.push({
+    id: "open grid settings modal",
+    label: "Open Grid Settings",
+    description: "Show grid settings",
+    onClick: gridSettingsModalHandlers.open,
+    leftSection: <IconGrid4x4 />,
+    // rightSection: <Kbd>A</Kbd>
+  })
 
   useEffect(() => {
-    // renderer.grid.spacing_x = spacingX
-    // renderer.grid.spacing_y = spacingY
-    // renderer.grid.offset_x = offsetX
-    // renderer.grid.offset_y = offsetY
-    // renderer.grid.enabled = enabled
-    // renderer.grid.type = type
-    // renderer.grid.color = color
     renderer.engine.interface.update_grid_settings({
       spacing_x: spacingX,
       spacing_y: spacingY,
@@ -82,7 +67,7 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
   }, [spacingX, spacingY, offsetX, offsetY, enabled, type, color])
 
   return (
-    <>
+    <Modal title="Grid Settings" keepMounted opened={gridSettingsModal} onClose={gridSettingsModalHandlers.close}>
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Enabled</Text>
         <Switch checked={enabled} onChange={(event): void => setEnabled(event.currentTarget.checked)} />
@@ -180,6 +165,6 @@ export default function GridSettings(_props: GridSettingsProps): JSX.Element | n
           Reset
         </Button>
       </Flex>
-    </>
+    </Modal>
   )
 }

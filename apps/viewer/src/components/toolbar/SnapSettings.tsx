@@ -14,21 +14,10 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
   const { renderer } = useContext(EditorConfigProvider)
   const [snapMode, setSnapMode] = useLocalStorage<types.SnapMode>({
     key: "engine:SNAP_MODE",
-    // defaultValue: renderer.settings.SNAP_MODE,
     defaultValue: SnapMode.OFF,
   })
 
-  async function getSnapMode(): Promise<void> {
-    const mode = await renderer.engine.interface.read_engine_settings().then((settings) => settings.SNAP_MODE)
-    setSnapMode(mode)
-  }
-
   useEffect(() => {
-    getSnapMode()
-  }, [])
-
-  useEffect(() => {
-    // renderer.settings.SNAP_MODE = snapMode
     renderer.engine.interface.set_engine_settings({ SNAP_MODE: snapMode })
   }, [snapMode])
 
@@ -92,5 +81,7 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
     ],
   ])
 
-  return <SegmentedControl radius="sm" value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as types.SnapMode)} />
+  return (
+    <SegmentedControl radius="sm" value={snapMode} data={SNAP_MODES} onChange={(val) => val && setSnapMode(val as types.SnapMode)} />
+  )
 }

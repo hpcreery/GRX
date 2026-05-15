@@ -1,14 +1,16 @@
 import { types } from "@grx/engine"
-import { Divider, Flex, Kbd, Select, Switch, Text } from "@mantine/core"
-import { useHotkeys, useLocalStorage } from "@mantine/hooks"
+import { Divider, Flex, Kbd, Modal, Select, Switch, Text } from "@mantine/core"
+import { type UseDisclosureReturnValue, useHotkeys, useLocalStorage } from "@mantine/hooks"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { actions } from "@src/contexts/Spotlight"
 import { IconHexagonPlus, IconZoom, IconZoomScan } from "@tabler/icons-react"
 import { type JSX, useContext, useEffect } from "react"
 
-type EngineSettingsProps = {}
+type EngineSettingsProps = {
+  modalDisclosure: UseDisclosureReturnValue
+}
 
-export default function EngineSettings(_props: EngineSettingsProps): JSX.Element | null {
+export default function EngineSettings(props: EngineSettingsProps): JSX.Element | null {
   const { renderer } = useContext(EditorConfigProvider)
   const [colorBlend, setColorBlend] = useLocalStorage<types.ColorBlend>({
     key: "engine:COLOR_BLEND",
@@ -26,18 +28,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
     key: "engine:USE_HIDPI",
     defaultValue: renderer.canvasSettings.hidpi,
   })
-
-  async function getEngineSettings(): Promise<void> {
-    const settings = await renderer.engine.interface.read_engine_settings()
-    setColorBlend(settings.COLOR_BLEND)
-    setZoomToCursor(settings.ZOOM_TO_CURSOR)
-    setShowDatums(settings.SHOW_DATUMS)
-  }
-
-  useEffect(() => {
-    getEngineSettings()
-    renderer.canvasSettings.hidpi = useHiDPI
-  }, [])
+  const [engineSettingsModal, engineSettingsModalHandlers] = props.modalDisclosure
 
   useEffect(() => {
     renderer.engine.interface.set_engine_settings({
@@ -86,7 +77,7 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
   ])
 
   return (
-    <>
+    <Modal title="Engine Settings" keepMounted opened={engineSettingsModal} onClose={engineSettingsModalHandlers.close}>
       <Flex align="center" style={{ width: "100%" }} justify="space-between">
         <Text>Color Blend</Text>
         <Select
@@ -116,6 +107,6 @@ export default function EngineSettings(_props: EngineSettingsProps): JSX.Element
           }}
         />
       </Flex>
-    </>
+    </Modal>
   )
 }
