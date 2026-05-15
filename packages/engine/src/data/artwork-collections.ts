@@ -767,6 +767,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     }
     mapping.collection.delete(mapping.index)
     this.surfacesMap[index] = undefined
+    this.length -= 1
     this.updateEdges(index)
     this.dispatchTypedEvent("update", new Event("update"))
   }
@@ -1504,6 +1505,34 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     this.attributeMap = []
     this.dispatchTypedEvent("update", new Event("update"))
+  }
+
+  /**
+   * This function generates a histogram of the artwork, which is a summary of the number of each type of shape in the artwork. This can be used for optimization purposes, such as determining which buffers need to be updated when a shape is changed.
+    * The histogram is an object where the keys are the shape types and the values are the counts of each shape type in the artwork. For example, if the artwork contains 10 pads, 5 lines, and 2 arcs, the histogram would be:
+    * {
+    *   "pad": 10,
+    *   "line": 5,
+    *   "arc": 2,
+    *   ...
+    * }
+   */
+  getHistogram(): { [key in FeatureTypeIdentifiers]?: number } {
+    const histogram: { [key in FeatureTypeIdentifiers]?: number } = {}
+    // for (const feature of this.artworkMap) {
+    //   if (feature !== null) {
+    //     histogram[feature.shape] = (histogram[feature.shape] || 0) + 1
+    //   }
+    // }
+    for (const shape in this.shapes) {
+      if (shape) {
+        const collection = this.shapes[shape as FeatureTypeIdentifiers]
+        if (collection) {
+          histogram[shape as FeatureTypeIdentifiers] = collection.length
+        }
+      }
+    }
+    return histogram
   }
 }
 

@@ -4,6 +4,7 @@ import { Button, ColorPicker, Input, Popover, Tooltip, useMantineColorScheme, us
 import { animated, type SpringValue, useSpring } from "@react-spring/web"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import {
+    IconChartHistogram,
   IconCheck,
   IconCircleDotted,
   IconCircleFilled,
@@ -25,6 +26,8 @@ import { vec3 } from "gl-matrix"
 import { type ContextMenuContent, type ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
 import { type JSX, useContext, useEffect, useState } from "react"
 import LayerTransform from "./transform/LayerTransform"
+import { useDisclosure } from '@mantine/hooks';
+import HistogramModal from "../feature-histogram/FeatureHistogramModal"
 
 interface LayerActions {
   download: () => void
@@ -50,6 +53,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
   const [colorPickerVisible, setColorPickerVisible] = useState<boolean>(false)
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
+  
 
   async function changeColor(color: vec3): Promise<void> {
     const engine = await renderer.engine
@@ -170,9 +174,10 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
   const theme = useMantineTheme()
   const colors = useMantineColorScheme()
   const [visible, setVisible] = useState<boolean>(false)
-  const { renderer } = useContext(EditorConfigProvider)
+  const { renderer, project } = useContext(EditorConfigProvider)
   const [editing, setEditing] = useState<string | undefined>(undefined)
   const [renameError, setRenameError] = useState<boolean>(false)
+  const [featureHistogramModal, featureHistogramModalHandlers] = useDisclosure(false)
 
   function deleteLayer(): void {
     actions.remove(layer)
@@ -223,15 +228,13 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
       icon: visible ? <IconEyeOff stroke={1.5} size={18} /> : <IconEye stroke={1.5} size={18} />,
       onClick: toggleVisible,
     },
-    // {
-    //   title: 'Features Histogram',
-    //   key: '4',
-    //   icon: <IconChartHistogram stroke={1.5} size={18} />,
-    //   onClick: (): void => {
-    //     featureHistogramModalRef.current?.open()
-    //   },
-    //   disabled: true
-    // },
+    {
+      title: 'Features Histogram',
+      key: '4',
+      icon: <IconChartHistogram stroke={1.5} size={18} />,
+      onClick: featureHistogramModalHandlers.open,
+      // disabled: true
+    },
     {
       key: "divider",
     },
@@ -410,6 +413,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
           </animated.div>
         </>
       )}
+      <HistogramModal modalDisclosure={[featureHistogramModal, featureHistogramModalHandlers]} layerName={layer} stepName={project.stepName} />
     </div>
   )
 }

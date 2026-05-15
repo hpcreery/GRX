@@ -497,6 +497,11 @@ export abstract class DataInterface {
   }
 
   static _import_file = _import_file
+
+  static read_layer_histogram(project_name: string, step_name: string, layer_name: string): Record<string, number> {
+    const artwork = DataInterface._read_step_layer_artwork_collection_ref(project_name, step_name, layer_name)
+    return artwork.getHistogram()
+  }
 }
 
 /**
