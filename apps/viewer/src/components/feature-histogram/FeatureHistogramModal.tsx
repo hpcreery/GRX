@@ -28,11 +28,13 @@ export default function HistogramModal(props: HistogramModal): JSX.Element | nul
 
   return (
     <Modal title={`Histogram for ${props.layerName}`} keepMounted opened={histogramModal} onClose={histogramModalHandlers.close}>
-      {/* {JSON.stringify(histogram)} */}
-      {/* make it pretty */}
+          <Flex key={'Header'} justify="space-between" align="center" mb="xs">
+            <Text size="lg" >Feature Type</Text>
+            <Text size="lg">Count</Text>
+          </Flex>
       {Object.entries(histogram).map(([key, value]) => (
         <>
-          <Divider key={`${key}-divider`} my="sm" />
+          <Divider key={`${key}-divider`} my="xs" />
           <Flex key={key} justify="space-between" align="center" mb="sm">
             <Text>{key}: </Text>
             <Text>{value}</Text>
@@ -40,8 +42,8 @@ export default function HistogramModal(props: HistogramModal): JSX.Element | nul
         </>
       ))}
       {/* Show the total */}
-      <Divider my="sm" />
-      <Flex justify="space-between" align="center" mb="sm">
+      <Divider my="sm" key="total-divider" />
+      <Flex justify="space-between" align="center" mb="xs">
         <Text>Total: </Text>
         <Text>{Object.values(histogram).reduce((a, b) => a + b, 0)}</Text>
       </Flex>
