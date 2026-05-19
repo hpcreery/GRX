@@ -95,7 +95,7 @@ vec2 transformLocation(vec2 pixel_coord) {
 
 float surfaceDistMain(vec2 FragCoord) {
   float dist = SDF_FAR_AWAY;
-  for(float i = -25.0; i <= 25.0; i += 1.0) {
+  for(float i = -15.0; i <= 15.0; i += 1.0) {
     float indx = mod(v_Indicies.x + i, v_QtyVerts);
     float indx1 = mod(v_Indicies.x + i + 1.0, v_QtyVerts);
     vec2 point1_p = getVertexPosition(indx * 2.0 + v_ContourOffset + v_SurfaceOffset);
