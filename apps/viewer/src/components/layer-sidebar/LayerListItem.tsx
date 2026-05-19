@@ -229,7 +229,7 @@ function DraggableLayer(props: DraggableLayerProps): JSX.Element {
     },
     {
       title: "Features Histogram",
-      key: "4",
+      key: "8",
       icon: <IconChartHistogram stroke={1.5} size={18} />,
       onClick: featureHistogramModalHandlers.open,
       // disabled: true
