@@ -467,6 +467,43 @@ export abstract class EngineInterface extends DataInterface {
   }
 }
 
+class RenderTimer {
+  // milliseconds it took to render the last frame, updated after each render
+  public renderTimeMilliseconds: number = 0
+  private startTime: number = 0
+  private endTime: number = 0
+  
+  // actual frames per second achieved, updated every second
+  public actualFPS = 0
+  private elapsedTime = 0;
+  private frameCount = 0;
+  private lastTime = performance.now();
+
+  public track(): void {
+    const now = performance.now()
+    this.frameCount++
+    this.elapsedTime += (now - this.lastTime)
+    this.lastTime = now
+    if(this.elapsedTime >= 1000) {
+        const fps = this.frameCount;
+        this.frameCount = 0;
+        this.elapsedTime = 0;
+        this.actualFPS = fps
+        // console.log(`FPS: ${fps}`)
+    }
+  }
+
+  public start(): void {
+    this.startTime = performance.now()
+  }
+
+  public stop(): void {
+    this.endTime = performance.now()
+    this.renderTimeMilliseconds = this.endTime - this.startTime
+    // console.log(`Render Time: ${now - this.lastTime} milliseconds`)
+  }
+}
+
 export interface EngineInitParams {
   attributes?: WebGLContextAttributes | undefined
   container: DOMRect
@@ -484,7 +521,9 @@ export abstract class Engine {
     y: 0,
     down: false,
   }
-  public static renderTimeMilliseconds: number = 0
+
+  public static timer: RenderTimer = new RenderTimer()
+
   private static renderNowInterval: NodeJS.Timeout | null = null
 
   // public loadingFrame: LoadingAnimation
@@ -540,6 +579,7 @@ export abstract class Engine {
     Engine.universe = Engine.regl({})
 
     Engine.render()
+    // Engine.renderTimeTracker()
     console.log("Render Engine Initialized")
   }
 
@@ -551,17 +591,16 @@ export abstract class Engine {
     if (Engine.renderNowInterval) return
     Engine.renderNowInterval = setTimeout(() => {
       Engine.renderNowInterval = null
-      const startTime = performance.now()
+
+      Engine.timer.start()
       Engine.universe(() => {
         Engine.views.forEach((view) => {
           view.render()
         })
       })
-      const endTime = performance.now()
-      Engine.renderTimeMilliseconds = endTime - startTime
-      // console.log(`Render Time: ${endTime - startTime} milliseconds`)
-      // console.log(`FPS: ${Math.round(1000 / (endTime - startTime))}`)
-      // Engine.calculatedFPS = Math.round(1000 / (endTime - startTime))
+      Engine.timer.stop()
+      Engine.timer.track()
+
     }, settings.MSPFRAME)
   }
 
@@ -585,7 +624,8 @@ export abstract class Engine {
       },
       universe: Engine.universe.stats,
       engine: {
-        renderTimeMilliseconds: Engine.renderTimeMilliseconds,
+        renderTimeMilliseconds: Engine.timer.renderTimeMilliseconds,
+        actualFPS: Engine.timer.actualFPS,
       },
     }
   }
@@ -612,6 +652,7 @@ export interface Stats {
   universe: REGL.CommandStats
   engine: {
     renderTimeMilliseconds: number
+    actualFPS: number
   }
 }
 

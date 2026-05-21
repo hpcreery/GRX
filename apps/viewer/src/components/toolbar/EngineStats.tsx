@@ -14,12 +14,12 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
   const [textureCount, setTextureCount] = useState<number>(0)
   const [shaderCount, setShaderCount] = useState<number>(0)
   const [framebufferCount, setFramebufferCount] = useState<number>(0)
-  const [elementsCount, setElementsCount] = useState<number>(0)
+  // const [elementsCount, setElementsCount] = useState<number>(0)
 
   const update = async (): Promise<void> => {
     const stats = await renderer.engine.getStats()
-    setRenderTime(Math.round(stats.engine.renderTimeMilliseconds))
-    setFPS(Math.round(1000 / stats.engine.renderTimeMilliseconds))
+    setRenderTime(Math.round(stats.engine.renderTimeMilliseconds * 1000) / 1000)
+    setFPS(stats.engine.actualFPS)
     setTextureSize(Math.round(stats.regl.totalTextureSize / 1024 / 1024))
     setBufferSize(Math.round(stats.regl.totalBufferSize / 1024 / 1024))
     setRenderBufferSize(Math.round(stats.regl.totalRenderbufferSize / 1024 / 1024))
@@ -27,7 +27,7 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
     setTextureCount(stats.regl.textureCount)
     setShaderCount(stats.regl.shaderCount)
     setFramebufferCount(stats.regl.framebufferCount)
-    setElementsCount(stats.regl.elementsCount)
+    // setElementsCount(stats.regl.elementsCount)
     requestAnimationFrame(update)
   }
 
@@ -39,18 +39,18 @@ export default function EngineStats(_props: EngineStatsProps): JSX.Element {
     caption: "Engine Stats",
     head: ["Name", "Value"],
     body: [
-      ["Theoretical FPS", fps],
-      ["Render Time", `${renderTime}ms`],
-      ["Texture Size*", `${textureSize}MB`],
-      ["Buffer Size*", `${bufferSize}MB`],
-      ["Render Buffer Size*", `${renderBufferSize}MB`],
-      ["Buffer Count*", bufferCount],
-      ["Texture Count*", textureCount],
-      ["Shader Count*", shaderCount],
-      ["Framebuffer Count*", framebufferCount],
-      ["Elements Count*", elementsCount],
+      ["Actual FPS", fps],
+      ["Last Render Time", `${renderTime}ms`],
+      ["Texture Size", `${textureSize}MB`],
+      ["Buffer Size", `${bufferSize}MB`],
+      ["Render Buffer Size", `${renderBufferSize}MB`],
+      ["Buffer Count", bufferCount],
+      ["Texture Count", textureCount],
+      ["Shader Count", shaderCount],
+      ["Framebuffer Count", framebufferCount],
+      // ["Elements Count", elementsCount],
     ],
-    foot: ["*Value is total accumulated, not current."],
+    foot: [],
   }
 
   return <Table data={tableData} captionSide="top" highlightOnHover withColumnBorders />
