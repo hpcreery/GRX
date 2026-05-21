@@ -28,6 +28,10 @@ export default function EngineSettings(props: EngineSettingsProps): JSX.Element 
     key: "engine:USE_HIDPI",
     defaultValue: renderer.canvasSettings.hidpi,
   })
+  const [fps, setFPS] = useLocalStorage<number>({
+    key: "engine:FPS",
+    defaultValue: 60,
+  })
   const [engineSettingsModal, engineSettingsModalHandlers] = props.modalDisclosure
 
   useEffect(() => {
@@ -35,8 +39,9 @@ export default function EngineSettings(props: EngineSettingsProps): JSX.Element 
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
       SHOW_DATUMS: showDatums,
+      FPS: fps,
     })
-  }, [colorBlend, zoomToCursor, showDatums])
+  }, [colorBlend, zoomToCursor, showDatums, fps])
 
   useEffect(() => {
     renderer.canvasSettings.hidpi = useHiDPI
@@ -105,6 +110,16 @@ export default function EngineSettings(props: EngineSettingsProps): JSX.Element 
           onChange={(event): void => {
             setUseHiDPI(event.currentTarget.checked)
           }}
+        />
+      </Flex>
+      <Divider my="sm" />
+      <Flex align="center" style={{ width: "100%" }} justify="space-between">
+        <Text>FPS Throttle</Text>
+        <Select
+          clearable={false}
+          data={['10', '30', '60', '120', '144', '240']}
+          value={ fps.toString() }
+          onChange={(val) => val && setFPS(Number(val)) }
         />
       </Flex>
     </Modal>
