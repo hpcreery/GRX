@@ -11,6 +11,8 @@ import {
   Lexer,
   type ParserMethod,
   type Rule,
+  OrMethodOpts,
+  IOrAlt,
 } from "chevrotain"
 import { vec2 } from "gl-matrix"
 import { getAmbiguousArcCenter } from "./arcMath"
@@ -376,6 +378,14 @@ class GerberParser extends CstParser {
   objectAttributesCommand!: ParserMethod<unknown[], CstNode>
   deleteAttributesCommand!: ParserMethod<unknown[], CstNode>
 
+  // OPTIMIZATION CACHES
+  // biome-ignore lint/suspicious/noExplicitAny: The type of the extended command data block can be any of the possible extended command data block types, so it's not practical to type it more specifically than this.
+  extendedCommandDataBlockCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
+  // biome-ignore lint/suspicious/noExplicitAny: The type of the function code command can be any of the possible function code command types, so it's not practical to type it more specifically than this.
+  functionCodeCommandCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
+  // biome-ignore lint/suspicious/noExplicitAny: The type of the coordinate field can be any of the possible coordinate field types, so it's not practical to type it more specifically than this.
+  coordinateFieldCache = undefined as IOrAlt<any>[] | OrMethodOpts<any> | undefined
+
   constructor() {
     super(multiModeLexerDefinition, {
       recoveryEnabled: true,
@@ -441,7 +451,7 @@ class GerberParser extends CstParser {
      * ```
      */
     this.RULE("extendedCommandDataBlock", () => {
-      this.OR([
+      this.OR(this.extendedCommandDataBlockCache || (this.extendedCommandDataBlockCache = [
         { ALT: (): CstNode => this.SUBRULE(this.formatSpecificationCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.unitsCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.apertureDefinitionCommand) },
@@ -468,13 +478,13 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.apertureAttributesCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.objectAttributesCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.deleteAttributesCommand) },
-      ])
+      ]))
       this.SUBRULE(this.star)
       // this.CONSUME(DefaultTokens.Star)
     })
 
     this.RULE("functionCodeCommand", () => {
-      this.OR([
+      this.OR(this.functionCodeCommandCache || (this.functionCodeCommandCache = [
         { ALT: (): CstNode => this.SUBRULE(this.commentCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.endCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.inlineInterpolateOperationCommand) },
@@ -495,7 +505,7 @@ class GerberParser extends CstParser {
         { ALT: (): CstNode => this.SUBRULE(this.inchModeCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.metricModeCommand) },
         { ALT: (): CstNode => this.SUBRULE(this.optionalStopCommand) },
-      ])
+      ]))
       // this.CONSUME(DefaultTokens.Star)
       this.SUBRULE(this.star)
     })
@@ -825,13 +835,13 @@ class GerberParser extends CstParser {
 
     // <Coordinates> = [X<Number>][Y<Number>][I<Number>][J<Number>]
     this.RULE("coordinateField", () => {
-      this.OR([
+      this.OR(this.coordinateFieldCache || (this.coordinateFieldCache = [
         { ALT: (): CstNode => this.SUBRULE(this.xCoordinate) },
         { ALT: (): CstNode => this.SUBRULE(this.yCoordinate) },
         { ALT: (): CstNode => this.SUBRULE(this.iCoordinate) },
         { ALT: (): CstNode => this.SUBRULE(this.jCoordinate) },
         { ALT: (): CstNode => this.SUBRULE(this.aCoordinate) },
-      ])
+      ]))
     })
 
     this.RULE("xCoordinate", () => {
@@ -2166,12 +2176,15 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 }
 
 export function parse(file: string): { image: Shapes.Shape[]; errors: string[] } {
+  // console.time("Gerber tokenize time")
   const errors: string[] = []
   const lexingResult = GerberLexer.tokenize(file)
   if (lexingResult.errors.length > 0) {
     errors.push(...lexingResult.errors.map((err) => `--> GERBER LEXING MESSAGE: ${err.message}\n - LINE: ${err.line}\n - COLUMN: ${err.column}`))
   }
+  // console.timeEnd("Gerber tokenize time")
 
+  // console.time("Gerber parsing time")
   parser.input = lexingResult.tokens
   const cst = parser.program()
   if (parser.errors.length > 0) {
@@ -2179,7 +2192,9 @@ export function parse(file: string): { image: Shapes.Shape[]; errors: string[] }
       ...parser.errors.map((err) => `--> GERBER PARSE MESSAGE: ${err.message}\n - CAUSE: ${err.cause}\n - TOKEN: ${JSON.stringify(err.token)}`),
     )
   }
+  // console.timeEnd("Gerber parsing time")
 
+  // console.time("Gerber processing time")
   const visitor = new GerberToTreeVisitor()
   if (visitor.errors.length > 0) {
     errors.push(
@@ -2193,6 +2208,8 @@ export function parse(file: string): { image: Shapes.Shape[]; errors: string[] }
     console.warn(`Gerber processing completed with ${errors.length} error(s):\n${errors.join("\n")}`)
   }
   visitor.visit(cst)
+  // console.timeEnd("Gerber processing time")
+  
   return {
     image: visitor.image,
     errors,
