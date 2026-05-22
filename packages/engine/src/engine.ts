@@ -559,7 +559,7 @@ export abstract class Engine {
         "webgl_depth_texture",
         "EXT_frag_depth",
         "EXT_blend_minmax",
-        // "WEBGL_color_buffer_float",
+        "WEBGL_color_buffer_float",
         // "EXT_color_buffer_float",
         // "EXT_color_buffer_half_float",
         // "EXT_disjoint_timer_query",
