@@ -24,8 +24,7 @@ uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
 uniform bool u_SkeletonMode;
-uniform vec3 u_Color;
-uniform float u_Alpha;
+uniform vec4 u_Color;
 uniform float u_Polarity;
 uniform vec2 u_PointerPosition;
 uniform bool u_PointerDown;
@@ -197,8 +196,7 @@ void main() {
   float pixel_size = u_PixelSize * (v.z + 1.0) / (scale);
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  vec3 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
-  float alpha = u_Alpha * max(float(u_OutlineMode || u_SkeletonMode), polarity);
+  vec4 color = u_Color * max(float(u_OutlineMode || u_SkeletonMode), polarity);
 
   vec2 FragCoord = transformLocation(gl_FragCoord.xy);
   if (u_QueryMode) {
@@ -256,5 +254,5 @@ void main() {
   #pragma glslify: import('../modules/Debug.glsl')
   dist = draw(dist, pixel_size);
 
-  gl_FragColor = vec4(color, alpha);
+  gl_FragColor = color;
 }

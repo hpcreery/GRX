@@ -2,7 +2,7 @@ import { ArtworkBufferCollection } from "@src/data/artwork-collections"
 import { DataInterface } from "@src/data/interface"
 import type { Step, StepLayer } from "@src/data/project"
 import type * as Shapes from "@src/data/shape/shape"
-import { mat3, mat4, vec2, vec3, vec4 } from "gl-matrix"
+import { mat3, mat4, vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
 import type { RenderSettings } from "../settings"
 import { gridSettings, origin, settings } from "../settings"
@@ -79,7 +79,7 @@ export interface RenderTransform {
 export interface LayerInfo {
   name: string
   id: string
-  color: vec3
+  color: vec4
   units: Units
   visible: boolean
   transform: Transform
@@ -593,7 +593,7 @@ export class ViewRenderer extends UpdateEventTarget {
     const layerRenderer = new LayerRenderer({
       regl: this.regl,
       dataLayer,
-      color: vec3.fromValues(Math.random(), Math.random(), Math.random()),
+      color: vec4.fromValues(Math.random(), Math.random(), Math.random(), 1.0),
       visible: true,
     })
     this.layers.push(layerRenderer)
@@ -665,7 +665,7 @@ export class ViewRenderer extends UpdateEventTarget {
   /**
    * Get layer color by name
    */
-  public getLayerColor(name: string): vec3 {
+  public getLayerColor(name: string): vec4 {
     const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) throw new Error(`Layer ${name} not found`)
     return layer.color
@@ -674,7 +674,7 @@ export class ViewRenderer extends UpdateEventTarget {
   /**
    * Set layer color by name
    */
-  public setLayerColor(name: string, color: vec3): void {
+  public setLayerColor(name: string, color: vec4): void {
     const layer = this.layers.find((layer) => layer.dataLayer.layer.name === name)
     if (!layer) return
     layer.color = color

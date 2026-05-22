@@ -1,5 +1,5 @@
 import type { Layer, StepLayer } from "@src/data/project"
-import { vec3 } from "gl-matrix"
+import { vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { ShapeRenderer, type ShapeRendererProps } from "./shape-renderer"
 import type { WorldContext } from "./view"
@@ -9,15 +9,14 @@ import type { WorldContext } from "./view"
 export interface LayerProps {
   dataLayer: StepLayer
   visible?: boolean
-  color?: vec3
+  color?: vec4
   alpha?: number
 }
 
 export interface LayerRendererProps extends Omit<ShapeRendererProps, "image">, LayerProps {}
 
 interface LayerUniforms {
-  u_Color: vec3
-  u_Alpha: number
+  u_Color: vec4
   u_ZOffset: number
 }
 
@@ -26,8 +25,7 @@ type LayerAttributes = {}
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public dataLayer: StepLayer
-  public color: vec3 = vec3.fromValues(Math.random(), Math.random(), Math.random())
-  public alpha: number = 1
+  public color: vec4 = vec4.fromValues(Math.random(), Math.random(), Math.random(), 1.0)
 
   private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
 
@@ -45,9 +43,6 @@ export default class LayerRenderer extends ShapeRenderer {
 
     if (props.color !== undefined) {
       this.color = props.color
-    }
-    if (props.alpha !== undefined) {
-      this.alpha = props.alpha
     }
     if (props.visible !== undefined) {
       this.visible = props.visible
@@ -68,8 +63,6 @@ export default class LayerRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: () => this.color,
-        // u_Color: () => settings.COLOR_BLEND == ColorBlend.OPAQUE ? vec3.fromValues(1,1,1) : this.color,
-        u_Alpha: () => this.alpha,
         u_ZOffset: (context) => context.zOffset || 0.0,
       },
     })
@@ -157,8 +150,7 @@ export class SelectionRenderer extends ShapeRenderer {
       //   face: 'back'
       // },
       uniforms: {
-        u_Color: vec3.fromValues(0.5, 0.5, 0.5),
-        u_Alpha: 0.7,
+        u_Color: vec4.fromValues(0.5, 0.5, 0.5, 0.7),
         u_ZOffset: (context) => context.zOffset || 0.0,
       },
     })

@@ -2,7 +2,7 @@ import type { ArtworkBufferCollection } from "@src/data/artwork-collections"
 import type * as Shapes from "@src/data/shape/shape"
 import * as Symbols from "@src/data/shape/symbol/symbol"
 import * as ShapesUtils from "@src/data/shape/utils"
-import { mat3, vec2, type vec3 } from "gl-matrix"
+import { mat3, vec2, vec4, type vec3 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
 import ShapeTransform, { type Transform } from "../transform"
@@ -29,8 +29,7 @@ interface CommonUniforms {
 
 interface QueryUniforms {
   u_QueryMode: boolean
-  u_Color: vec3
-  u_Alpha: number
+  u_Color: vec4
   u_PointerPosition: vec2
   u_ZOffset: number
 }
@@ -41,8 +40,7 @@ interface QueryProps {
 }
 
 interface DatumConfigUniforms {
-  u_Color: vec3
-  u_Alpha: number
+  u_Color: vec4
 }
 
 export interface RendererProps {
@@ -153,8 +151,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext & WorldContext, REGL.DefaultContext>({
       uniforms: {
         u_QueryMode: true,
-        u_Color: [1, 1, 1],
-        u_Alpha: 1,
+        u_Color: [1, 1, 1, 1],
         u_ZOffset: (context) => context.zOffset || 0.0,
         u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
       },
@@ -185,9 +182,8 @@ export class ShapeRenderer extends UpdateEventTarget {
       },
       uniforms: {
         u_Color: () => {
-          return [1 - settings.BACKGROUND_COLOR[2], 1 - settings.BACKGROUND_COLOR[1], 1 - settings.BACKGROUND_COLOR[0]]
+          return [1 - settings.BACKGROUND_COLOR[2], 1 - settings.BACKGROUND_COLOR[1], 1 - settings.BACKGROUND_COLOR[0], 1.0]
         },
-        u_Alpha: () => 1,
       },
     })
 

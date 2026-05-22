@@ -6,8 +6,7 @@ uniform mat4 u_Transform3D;
 uniform float u_ZOffset;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
-uniform vec3 u_Color;
-uniform float u_Alpha;
+uniform vec4 u_Color;
 uniform bool u_Perspective3D;
 
 varying vec2 v_Location;
@@ -38,7 +37,7 @@ void main() {
 
   vec2 movedFragCoord = (FragCoord.xy - v_Location) * rotateCCW(PI / 4.0);
   if ((abs(movedFragCoord.x) <= pixel_size * 0.4 && abs(movedFragCoord.y) <= pixel_size * 10.0) || (abs(movedFragCoord.y) <= pixel_size * 0.4 && abs(movedFragCoord.x) <= pixel_size * 10.0)) {
-    gl_FragColor = vec4(u_Color, u_Alpha);
+    gl_FragColor = u_Color;
     return;
   }
   gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);

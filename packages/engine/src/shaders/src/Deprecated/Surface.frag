@@ -14,7 +14,7 @@ uniform mat3 u_InverseTransform;
 uniform vec2 u_Resolution;
 uniform float u_PixelSize;
 uniform bool u_OutlineMode;
-uniform vec3 u_Color;
+uniform vec4 u_Color;
 uniform float u_Polarity;
 
 // COMMON VARYINGS
@@ -159,8 +159,7 @@ void main() {
   vec2 FragCoord = OffsetPosition;
 
   float polarity = bool(v_Polarity) ^^ bool(u_Polarity) ? 0.0 : 1.0;
-  vec3 color = u_Color * max(float(u_OutlineMode), polarity);
-  float alpha = ALPHA * max(float(u_OutlineMode), polarity);
+  vec4 color = u_Color * max(float(u_OutlineMode), polarity);
 
   float dist = 12340.0;
 
@@ -318,5 +317,5 @@ void main() {
   #pragma glslify: import('../modules/Debug.glsl')
 
   dist = draw(dist);
-  gl_FragColor = vec4(color, alpha);
+  gl_FragColor = color;
 }
