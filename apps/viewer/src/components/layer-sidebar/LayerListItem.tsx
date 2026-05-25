@@ -23,7 +23,7 @@ import {
 import { useGesture } from "@use-gesture/react"
 import type { ReactDOMAttributes } from "@use-gesture/react/dist/declarations/src/types"
 import chroma from "chroma-js"
-import { vec3 } from "gl-matrix"
+import { vec4 } from "gl-matrix"
 import { type ContextMenuContent, type ShowContextMenuFunction, useContextMenu } from "mantine-contextmenu"
 import { type JSX, useContext, useEffect, useState } from "react"
 import HistogramModal from "../feature-histogram/FeatureHistogramModal"
@@ -50,11 +50,11 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
   // const { file, actions } = props
   const { actions, layer } = props
   const [{ width }, api] = useSpring(() => ({ x: 0, y: 0, width: 0 }))
-  const [color, setColor] = useState<vec3>(vec3.fromValues(0.5, 0.5, 0.5))
+  const [color, setColor] = useState<vec4>(vec4.fromValues(0.5, 0.5, 0.5, 1.0))
   const [colorPickerVisible, setColorPickerVisible] = useState<boolean>(false)
   const [layerTransformVisible, setLayerTransformVisible] = useState<boolean>(false)
 
-  async function changeColor(color: vec3): Promise<void> {
+  async function changeColor(color: vec4): Promise<void> {
     const engine = await renderer.engine
     if (!engine) return
     await engine.interface.update_view_layer_color("main", layer, color)
@@ -115,7 +115,7 @@ export default function LayerListItem(props: LayerListItemProps): JSX.Element | 
           value={chroma.gl(color[0], color[1], color[2]).hex()}
           onChangeEnd={(color): void => {
             const colors = chroma(color).gl()
-            changeColor(vec3.fromValues(colors[0], colors[1], colors[2]))
+            changeColor(vec4.fromValues(colors[0], colors[1], colors[2], 1.0))
             setColorPickerVisible(false)
           }}
           swatchesPerRow={7}
@@ -147,8 +147,8 @@ interface DraggableLayerProps {
   showContextMenu: ShowContextMenuFunction
   layer: string
   bind: () => ReactDOMAttributes
-  color: vec3
-  setColor: (color: vec3) => void
+  color: vec4
+  setColor: (color: vec4) => void
   setColorPickerVisible: (show: boolean) => void
   colorPickerVisible: boolean
   width: SpringValue<number>
