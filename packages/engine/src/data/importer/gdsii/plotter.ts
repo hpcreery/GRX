@@ -1,5 +1,7 @@
 import type * as TREE from "@grx/parser-gdsii/gdsii_tree"
 import * as Shapes from "@src/data/shape/shape"
+// import * as Shapes from "@src/data/shape/shape"
+// import * as Symbols from "@src/data/shape/symbol/symbol"
 import { vec2 } from "gl-matrix"
 import messages from "./messages"
 import type { GDSIIHierarchy } from "./types"
@@ -52,6 +54,7 @@ export class Plotter {
 
     const shape = new Shapes.Surface({
       polarity: 1,
+      units: this.scale,
     }).addContour(contour)
 
     this.pushShape(el.LAYER.layer, shape)
@@ -84,6 +87,7 @@ export class Plotter {
       // Polarity. 0 = negative, 1 = positive
       polarity: 1,
       width: width,
+      units: this.scale,
     }).addLines(lines)
 
     this.pushShape(el.LAYER.layer, polyline)
@@ -113,6 +117,7 @@ export class Plotter {
             order: ["translate", "rotate", "mirror", "scale"],
           },
         ],
+        units: this.scale,
       })
       this.pushShape(cell.layer, srShape)
     }
@@ -157,11 +162,8 @@ export class Plotter {
         shapes: [cell.shape],
         break: true,
         repeats: repeats,
+        units: this.scale,
       })
-      // gdsiiHierarchy[cellName].push({
-      //   layer: cell.layer,
-      //   shape: srShape
-      // })
       this.pushShape(cell.layer, srShape)
     }
   }
@@ -171,6 +173,7 @@ export class Plotter {
       x: el.XY[0].x,
       y: el.XY[0].y,
       text: el.STRING.string,
+      units: this.scale,
     })
 
     this.pushShape(el.LAYER.layer, text)

@@ -4,6 +4,7 @@ import * as utils from "./utils"
 
 // GDSII format references:
 // http://boolean.klaasholwerda.nl/interface/bnf/GDSII.html
+// https://boolean.klaasholwerda.nl/interface/bnf/gdsformat.html
 // http://www.artwork.com/gdsii/gdsii/
 // http://www.buchanan1.net/stream_description.html
 
