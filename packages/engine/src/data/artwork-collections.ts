@@ -1,18 +1,19 @@
-import ShapeTransform, { type Transform } from "@src/transform"
+import * as Shapes from "@grx/artwork-format/shape"
+import * as Symbols from "@grx/artwork-format/symbol"
+import type { Transform } from "@grx/artwork-format/types"
 import {
   type AttributesType,
   ContourSegmentTypeIdentifier,
   FeatureTypeIdentifier,
   type FeatureTypeIdentifiers,
   SymbolTypeIdentifier,
-} from "@src/types"
+} from "@grx/artwork-format/types"
+import * as ArtworkUtils from "@grx/artwork-format/utils"
+import ShapeTransform from "@src/transform"
 import { cyrb64, getScaleMat3, UpdateEventTarget } from "@src/utils"
 import earcut from "earcut"
 import { vec3 } from "gl-matrix"
-import * as Shapes from "./shape/shape"
-import * as Symbols from "./shape/symbol/symbol"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
-import * as ShapesUtils from "./shape/utils"
 
 interface BufferCollection<T extends Shapes.Shape> extends UpdateEventTarget {
   create(shape: T): number
@@ -1389,7 +1390,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       throw new Error(`No collection found for shape type: ${shape.type} when creating shape`)
     }
     shape.index = this.artworkMap.length // Assign an index to the shape
-    ShapesUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
+    ArtworkUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
     const collectionIndex = (collection.create as (shape: Shapes.Shape) => number)(shape)
     // const collectionIndex = collection.create(shape)
     this.artworkMap.push({
@@ -1434,7 +1435,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     shape.index = index // Update the index of the shape
     this.attributeMap[index] = shape.attributes || {} // Update attributes
-    ShapesUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
+    ArtworkUtils.convertShapeUnits(shape, "mm") // Ensure shape is in mm
     if (feature.shape !== shape.type) {
       // If the shape type has changed, we need to delete the old shape and create a new one
       this.delete(feature.collectionIndex)

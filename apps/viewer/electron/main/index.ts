@@ -3,7 +3,7 @@ import { electronApp, is, optimizer } from "@electron-toolkit/utils"
 import { app, BrowserWindow, shell } from "electron"
 import icon from "../../resources/icon.png?asset"
 
-app.commandLine.appendSwitch('js-flags', '--max-old-space-size=10240');
+app.commandLine.appendSwitch("js-flags", "--max-old-space-size=10240")
 
 function createWindow(): void {
   // Create the browser window.

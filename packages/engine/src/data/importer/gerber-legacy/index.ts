@@ -1,9 +1,8 @@
-import { parse as parseWithTracespace } from "@hpcreery/tracespace-parser"
+import { parse as parseWithTracespace, plot } from "@grx/importer-gerber-legacy"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
 import type { ImportResultReport } from ".."
-import { plot } from "./plotter/src"
 
 // import * as Comlink from "comlink"
 

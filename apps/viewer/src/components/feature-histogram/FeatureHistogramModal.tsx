@@ -28,10 +28,10 @@ export default function HistogramModal(props: HistogramModal): JSX.Element | nul
 
   return (
     <Modal title={`Histogram for ${props.layerName}`} keepMounted opened={histogramModal} onClose={histogramModalHandlers.close}>
-          <Flex key={'Header'} justify="space-between" align="center" mb="xs">
-            <Text size="lg" >Feature Type</Text>
-            <Text size="lg">Count</Text>
-          </Flex>
+      <Flex key={"Header"} justify="space-between" align="center" mb="xs">
+        <Text size="lg">Feature Type</Text>
+        <Text size="lg">Count</Text>
+      </Flex>
       {Object.entries(histogram).map(([key, value]) => (
         <>
           <Divider key={`${key}-divider`} my="xs" />

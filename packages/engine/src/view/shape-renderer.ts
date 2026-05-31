@@ -1,12 +1,14 @@
+import type * as Shapes from "@grx/artwork-format/shape"
+import * as Symbols from "@grx/artwork-format/symbol"
+import type { Transform } from "@grx/artwork-format/types"
+import { type BoundingBox, FeatureTypeIdentifier } from "@grx/artwork-format/types"
+import * as ArtworkUtils from "@grx/artwork-format/utils"
 import type { ArtworkBufferCollection } from "@src/data/artwork-collections"
-import type * as Shapes from "@src/data/shape/shape"
-import * as Symbols from "@src/data/shape/symbol/symbol"
-import * as ShapesUtils from "@src/data/shape/utils"
-import { mat3, vec2, vec4, type vec3 } from "gl-matrix"
+import { mat3, vec2, type vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
-import ShapeTransform, { type Transform } from "../transform"
-import { type BoundingBox, FeatureTypeIdentifier, type ShapeDistance, SNAP_MODES_MAP } from "../types"
+import ShapeTransform from "../transform"
+import { type ShapeDistance, SNAP_MODES_MAP } from "../types"
 import { UpdateEventTarget } from "../utils"
 import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
 import { ReglRenderers, type TLoadedReglRenderers } from "./gl-commands"
@@ -495,7 +497,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     // }
     for (let i = 0; i < this.artwork.length; i++) {
       const record = this.artwork.read(i)
-      const feature_bb = ShapesUtils.getBoundingBoxOfShape(record)
+      const feature_bb = ArtworkUtils.getBoundingBoxOfShape(record)
       vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
       vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
     }

@@ -117,9 +117,9 @@ export default function EngineSettings(props: EngineSettingsProps): JSX.Element 
         <Text>FPS Throttle</Text>
         <Select
           clearable={false}
-          data={['10', '30', '60', '120', '144', '240']}
-          value={ fps.toString() }
-          onChange={(val) => val && setFPS(Number(val)) }
+          data={["10", "30", "60", "120", "144", "240"]}
+          value={fps.toString()}
+          onChange={(val) => val && setFPS(Number(val))}
         />
       </Flex>
     </Modal>

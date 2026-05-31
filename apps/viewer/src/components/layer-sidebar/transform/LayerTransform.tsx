@@ -2,7 +2,7 @@ import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSe
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { type transform, type types, utils } from "@grx/engine"
+import { type types, utils } from "@grx/engine"
 import { Button, Group, Input, Modal, NumberInput, Paper, Space, Stack, Switch } from "@mantine/core"
 import { EditorConfigProvider } from "@src/contexts/EditorContext"
 import { IconGripHorizontal } from "@tabler/icons-react"
@@ -38,7 +38,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
    */
   const [mirror_y, setMirrorY] = useState<types.Binary>(0)
 
-  const [transformOrder, setTransformOrder] = useState<transform.TransformOrder>(["translate", "rotate", "mirror", "scale"])
+  const [transformOrder, setTransformOrder] = useState<types.TransformOrder>(["translate", "rotate", "mirror", "scale"])
 
   const { units, renderer } = useContext(EditorConfigProvider)
   const [layerName, setLayerName] = useState<string>("")

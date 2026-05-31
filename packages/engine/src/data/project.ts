@@ -1,7 +1,8 @@
 // import * as Comlink from "comlink"
-import type { Transform } from "@src/transform"
+
+import type * as Shapes from "@grx/artwork-format/shape"
+import type { Transform } from "@grx/artwork-format/types"
 import { ArtworkBufferCollection, SurfaceBufferCollection } from "./artwork-collections"
-import type * as Shapes from "./shape/shape"
 
 export const PROJECTS: Map<string, Project> = new Map<string, Project>()
 

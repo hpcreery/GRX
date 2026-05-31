@@ -1,9 +1,9 @@
+import * as Symbols from "@grx/artwork-format/symbol"
+import { type Binary, FeatureTypeIdentifier } from "@grx/artwork-format/types"
 import { type ArtworkBufferCollection, MacroArtworkCollection, SymbolBufferCollection } from "@src/data/artwork-collections"
-import * as Symbols from "@src/data/shape/symbol/symbol"
 import { vec2 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
-import { type Binary, FeatureTypeIdentifier } from "../types"
 import { UpdateEventTarget } from "../utils"
 import type {
   ArcAttachments,

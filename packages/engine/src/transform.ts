@@ -1,34 +1,34 @@
+import type { Binary, Transform, TransformOrder } from "@grx/artwork-format/types"
 import { mat3, vec2 } from "gl-matrix"
-import type { Binary } from "./types"
 
-export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
+// export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
 
-export interface Transform {
-  /**
-   * Translation in x and y, in mm units. The base unit is mm. Unless Transform is a part to a shape with different units ( like step and repeats ) then those units apply.
-   */
-  datum: vec2
-  /**
-   * Rotation in degrees (counterclockwise)
-   */
-  rotation: number
-  /**
-   * Scale factor, 1 = 100% (no scaling)
-   */
-  scale: number
-  /**
-   * Mirror x cooriinate values => x = -x
-   */
-  mirror_x: Binary
-  /**
-   * Mirror y cooriinate values => y = -y
-   */
-  mirror_y: Binary
-  /**
-   * Order of transformations. Default is ["translate", "rotate", "mirror", "scale"]
-   */
-  order?: TransformOrder
-}
+// export interface Transform {
+//   /**
+//    * Translation in x and y, in mm units. The base unit is mm. Unless Transform is a part to a shape with different units ( like step and repeats ) then those units apply.
+//    */
+//   datum: vec2
+//   /**
+//    * Rotation in degrees (counterclockwise)
+//    */
+//   rotation: number
+//   /**
+//    * Scale factor, 1 = 100% (no scaling)
+//    */
+//   scale: number
+//   /**
+//    * Mirror x cooriinate values => x = -x
+//    */
+//   mirror_x: Binary
+//   /**
+//    * Mirror y cooriinate values => y = -y
+//    */
+//   mirror_y: Binary
+//   /**
+//    * Order of transformations. Default is ["translate", "rotate", "mirror", "scale"]
+//    */
+//   order?: TransformOrder
+// }
 
 export default class ShapeTransform implements Transform {
   public datum: vec2 = vec2.create()

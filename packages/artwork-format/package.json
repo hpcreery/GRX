@@ -1,0 +1,19 @@
+{
+  "name": "@grx/artwork-format",
+  "exports": {
+    "./shape": "./src/shape.ts",
+    "./symbol": "./src/symbol.ts",
+    "./types": "./src/types.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@grx/typescript-config": "workspace:*",
+    "@types/node": "^25.9.1"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.4.4"
+  }
+}

@@ -1,8 +1,6 @@
 {
-  // "extends": "@grx/typescript-config/base.json",
   "extends": "@grx/typescript-config/vite.json",
   "compilerOptions": {
-    "lib": ["esnext", "dom", "dom.iterable"],
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
@@ -10,7 +8,7 @@
     "noEmit": false,
     "types": [
       "vite-plugin-glsl/ext",
-      "vite-plugin-arraybuffer/types"
+      "vite-plugin-arraybuffer/types",
     ],
     "paths": {
       "@src/*": [
@@ -19,5 +17,9 @@
     },
   },
   "include": ["src"],
-  "exclude": ["**/node_modules/**/*", "dist"],
+  "exclude": [
+    "**/node_modules/**/*",
+    "dist",
+    "**/*.test.ts"
+  ]
 }

@@ -6,14 +6,14 @@
 // import gdsiiFile from './testdata/GdsIITests_test.gds?url' // broken boundaries, paths with different ends
 // import gdsiiFile from './testdata/GdsIITests_circles.gds?url'
 
-import { recordReader } from "@grx/parser-gdsii/lexer"
-import { parse } from "@grx/parser-gdsii/parser"
+import { convert } from "@grx/importer-gdsii/converter"
+import { recordReader } from "@grx/importer-gdsii/lexer"
+import { parse } from "@grx/importer-gdsii/parser"
 import { registerPlugin } from "@src/data/importer/register"
 // import messages from "./messages"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
 import type { ImportResultReport } from ".."
-import { convert } from "./converter"
 
 const Parameters = z.object({
   step: z.string(),

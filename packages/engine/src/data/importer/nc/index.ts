@@ -1,10 +1,10 @@
 // import * as Comlink from "comlink"
 
+import { NCLexer, NCToShapesVisitor, parser } from "@grx/importer-nc"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
 import type { ImportResultReport } from ".."
-import { NCLexer, NCToShapesVisitor, parser } from "./parser/parser"
 
 const Parameters = z.object({
   step: z.string(),

@@ -1,4 +1,6 @@
-import { data, type engine, PointerEvents, type Renderer, types, utils } from "@grx/engine"
+import type * as shape from "@grx/artwork-format/shape"
+import * as symbol from "@grx/artwork-format/symbol"
+import { type engine, PointerEvents, type Renderer, types, utils } from "@grx/engine"
 
 const { FeatureTypeIdentifier, SymbolTypeIdentifier } = types
 
@@ -154,7 +156,7 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
 
   const layerColor = chroma.gl(color[0], color[1], color[2]).hex()
 
-  function getSymbolInfo(symbol: data.shape.symbol.StandardSymbol): (JSX.Element | null)[] {
+  function getSymbolInfo(symbol: symbol.StandardSymbol): (JSX.Element | null)[] {
     return Object.entries(symbol).map(([key, value], index) => {
       let representedValue = value
       if (key === "sym_num" || key === "symbol" || key === "type") return null
@@ -249,7 +251,7 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
               </Code>
             </Text>
             <Text>
-              Symbol: <Code>{data.shape.symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]}</Code>
+              Symbol: <Code>{symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]}</Code>
             </Text>
             <Text>{getSymbolInfo(selection.shape.symbol)}</Text>
             <Text>
@@ -325,7 +327,7 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
               Symbol:{" "}
               <Code>
                 {selection.shape.symbol.type == SymbolTypeIdentifier.SYMBOL_DEFINITION
-                  ? data.shape.symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]
+                  ? symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]
                   : selection.shape.symbol.id}
               </Code>
             </Text>
@@ -381,7 +383,7 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
               Rotation: <Code>{selection.shape.clockwise === 1 ? "clockwise" : "counter clockwise"}</Code>
             </Text>
             <Text>
-              Symbol: <Code>{data.shape.symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]}</Code>
+              Symbol: <Code>{symbol.STANDARD_SYMBOLS[selection.shape.symbol.symbol]}</Code>
             </Text>
             <Text>{getSymbolInfo(selection.shape.symbol)}</Text>
             <Text>
@@ -409,14 +411,14 @@ function FeatureInfo(props: FeatureInfoProps): JSX.Element {
               Polarity: <Code>{selection.shape.polarity === 1 ? "+" : "-"}</Code>
             </Text>
             <Text>
-              Islands: <Code>{selection.shape.contours.filter((x: data.shape.Contour) => x.poly_type == 1).length}</Code>
+              Islands: <Code>{selection.shape.contours.filter((x: shape.Contour) => x.poly_type == 1).length}</Code>
             </Text>
             <Text>
-              Holes: <Code>{selection.shape.contours.filter((x: data.shape.Contour) => x.poly_type == 0).length}</Code>
+              Holes: <Code>{selection.shape.contours.filter((x: shape.Contour) => x.poly_type == 0).length}</Code>
             </Text>
             <Text>
               Edges:{" "}
-              <Code>{selection.shape.contours.map((ctr: data.shape.Contour) => ctr.segments.length).reduce((p: number, c: number) => p + c, 0)}</Code>
+              <Code>{selection.shape.contours.map((ctr: shape.Contour) => ctr.segments.length).reduce((p: number, c: number) => p + c, 0)}</Code>
             </Text>
             <Text>
               Attributes: <Code>{Object.keys(selection.shape.attributes).length}</Code>

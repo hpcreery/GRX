@@ -1,10 +1,10 @@
+import * as Shapes from "@grx/artwork-format/shape"
+import type { Units } from "@grx/artwork-format/types"
+import { baseUnitsConversionFactor } from "@grx/artwork-format/utils"
 import { ArtworkBufferCollection } from "@src/data/artwork-collections"
-import * as Shapes from "@src/data/shape/shape"
 import { measurementSettings } from "@src/settings"
 import type { vec2 } from "gl-matrix"
 import type REGL from "regl"
-import type { Units } from "../types"
-import { baseUnitsConversionFactor } from "../utils"
 import { type RendererProps, ShapeRenderer } from "./shape-renderer"
 import type { WorldContext } from "./view"
 

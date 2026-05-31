@@ -1,0 +1,34 @@
+{
+  "name": "@grx/importer-gerber",
+  "version": "0.0.1",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:gerber:types": "tsx src/parser/gen_dts_signature.js"
+  },
+  "dependencies": {
+    "@grx/artwork-format": "workspace:*",
+    "chevrotain": "^12.0.0",
+    "gl-matrix": "^3.4.4"
+  },
+  "devDependencies": {
+    "@grx/typescript-config": "workspace:*",
+    "@types/node": "^25.9.1",
+    "vite": "^7.3.2",
+    "vitest": "^4.0.18",
+    "@rollup/plugin-typescript": "^12.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

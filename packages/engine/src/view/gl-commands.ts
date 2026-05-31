@@ -1,4 +1,5 @@
-import * as Shapes from "@src/data/shape/shape"
+import * as Shapes from "@grx/artwork-format/shape"
+import type { Binary } from "@grx/artwork-format/types"
 import { vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { fontInfo as cozetteFontInfo } from "../data/shape/text/cozette/font"
@@ -19,7 +20,6 @@ import PadFrag from "./../shaders/src/Pad.frag"
 import PadVert from "./../shaders/src/Pad.vert"
 import SurfaceFrag from "./../shaders/src/Surface.frag"
 import SurfaceVert from "./../shaders/src/Surface.vert"
-import type { Binary } from "../types"
 import type { WorldContext } from "./view"
 
 const {
@@ -571,7 +571,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
     },
 
     cull: {
-      enable: false,
+      enable: true,
     },
 
     instances: regl.prop<SurfaceAttachments, "length">("length"),
@@ -624,7 +624,6 @@ export function initializeRenderers(regl: REGL.Regl): void {
       return;
     }
     gl_FragColor = color;
-    //gl_FragColor = vec4(v_Index, 0.0, 0.0, 1.0);
   }
 `,
     depth: {
@@ -656,13 +655,7 @@ export function initializeRenderers(regl: REGL.Regl): void {
       uniform sampler2D u_RenderTexture;
       varying vec2 v_UV;
       void main () {
-
         gl_FragColor = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        // vec4 color = texture2D(u_RenderTexture, (v_UV * 0.5) + 0.5);
-        // if (color.a == 0.0) {
-        //   discard;
-        // }
-        // gl_FragColor = color;
       }
     `,
 

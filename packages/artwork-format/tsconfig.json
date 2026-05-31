@@ -1,0 +1,26 @@
+{
+  "extends": "@grx/typescript-config/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "@src/*": [
+        "./src/*"
+      ],
+    },
+  },
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "**/node_modules/**/*",
+    "dist",
+    "**/*.test.ts"
+  ]
+}

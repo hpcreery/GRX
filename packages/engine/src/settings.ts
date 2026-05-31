@@ -1,5 +1,6 @@
+import type { Units } from "@grx/artwork-format/types"
 import type { vec4 } from "gl-matrix"
-import { ColorBlend, SnapMode, type Units } from "./types"
+import { ColorBlend, SnapMode } from "./types"
 
 export interface MeasurementSettings {
   units: Units

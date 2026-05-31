@@ -1,8 +1,8 @@
+import { parse } from "@grx/importer-gerber"
 import { registerPlugin } from "@src/data/importer/register"
 import type { DataInterface } from "@src/data/interface"
 import * as z from "zod"
 import type { ImportResultReport } from ".."
-import { parse } from "./parser/parser"
 
 // import * as Comlink from "comlink"
 

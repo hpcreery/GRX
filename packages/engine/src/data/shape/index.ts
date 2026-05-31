@@ -1,2 +1,2 @@
-export * from "./shape"
-export * as symbol from "./symbol/symbol"
+// export * from "./shape"
+// export * as symbol from "./symbol/symbol"

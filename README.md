@@ -40,7 +40,7 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 - [x] Gerber RS-274X
   - [x] X1
   - [x] X2
-  - [x] X3 ( finally here! )
+  - [x] X3
 - [x] NC
   - [x] XNC ( attributes coming soon! )
   - [ ] IPC-NC-349 ( partial support )
@@ -128,20 +128,23 @@ Project Structure
 
 ```text
 ├── apps
-│   ├── viewer         <-- (main web and desktop app)
+│   ├── viewer          <-- (main web and desktop app)
 │   │   ├── src
 │   │   └── package.json
-│   ├── docs           <-- (documentation website)
+│   ├── docs            <-- (documentation website)
 │   │   ├── src
 │   │   └── package.json
-│   └── homepage       <-- (marketing website)
+│   └── homepage        <-- (marketing website)
 │       ├── src
 │       └── package.json
 ├── packages
-│   ├── engine         <-- (core rendering engine)
+│   ├── artwork-format  <-- (shared shape and symbol definitions)
 │   │   ├── src
 │   │   └── package.json
-│   └── parser-*       <-- (parser packages for different formats)
+│   ├── engine          <-- (core rendering engine)
+│   │   ├── src
+│   │   └── package.json
+│   └── importer-*      <-- (importer packages for different formats)
 │       ├── src
 │       └── package.json
 ├── biome.json

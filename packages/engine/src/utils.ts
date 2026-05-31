@@ -1,51 +1,7 @@
 import { type mat3, type mat4, vec2 } from "gl-matrix"
 import { TypedEventTarget } from "typescript-event-target"
-import type { Units } from "./types"
 
-export type immutable = boolean | number | bigint | string | symbol | null | undefined
-
-export type ptr<T extends immutable> = { value: T }
-
-export function ptr<T extends immutable>(read: () => T, write: (v: T) => void): ptr<T> {
-  return {
-    get value(): T {
-      return read()
-    },
-    set value(v) {
-      write(v)
-    },
-  }
-}
-
-export function malloc<T extends immutable>(value: T): ptr<T> {
-  let i: T = value
-  return ptr(
-    () => i,
-    (v) => {
-      i = v
-    },
-  )
-}
-
-/**
- * Converts various units to millimeters (mm)
- * @param units Units to convert from. Can be 'mm' | 'inch' | 'mil' | 'cm' | or a number representing the scale factor relative to the base unit mm
- * @returns Conversion factor to mm
- */
-export function baseUnitsConversionFactor(units: Units): number {
-  switch (units) {
-    case "mm":
-      return 1
-    case "inch":
-      return 25.4
-    case "cm":
-      return 10
-    case "mil":
-      return 25.4 / 1000
-    default:
-      return units
-  }
-}
+export * from "@grx/artwork-format/utils"
 
 // export const UID = (): string => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 export const UID = (): string => crypto.randomUUID()

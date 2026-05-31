@@ -1,7 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
-onlyBuiltDependencies: 
-  - "electron-winstaller"
-  - "esbuild"
-  # - "phantomjs-prebuilt"
+overrides:
+  "esbuild": "0.26.0"
+allowBuilds:
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+blockExoticSubdeps: false

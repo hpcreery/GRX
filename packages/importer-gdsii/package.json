@@ -1,0 +1,35 @@
+{
+  "name": "@grx/importer-gdsii",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "files": [
+    "dist/**",
+    "dist"
+  ],
+  "exports": {
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@grx/artwork-format": "workspace:*",
+    "gl-matrix": "^3.4.4"
+  },
+  "devDependencies": {
+    "@grx/typescript-config": "workspace:*",
+    "@types/node": "^25.9.1",
+    "vite": "^7.3.2",
+    "vitest": "^4.0.18",
+    "@rollup/plugin-typescript": "^12.3.0"
+  }
+}

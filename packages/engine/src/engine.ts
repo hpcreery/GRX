@@ -1,10 +1,10 @@
+import type { Transform } from "@grx/artwork-format/types"
 import * as Comlink from "comlink"
 import type { mat3, vec2, vec3 } from "gl-matrix"
 import REGL from "regl"
 import { DataInterface } from "./data/interface"
 import type { GridSettings, MeasurementSettings, RenderSettings } from "./settings"
 import { gridSettings, measurementSettings, settings } from "./settings"
-import type { Transform } from "./transform"
 import type { ShapeDistance, ViewBox } from "./types"
 import { initStaticShaderCollections } from "./view/buffer-collections"
 import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
@@ -472,24 +472,24 @@ class RenderTimer {
   public renderTimeMilliseconds: number = 0
   private startTime: number = 0
   private endTime: number = 0
-  
+
   // actual frames per second achieved, updated every second
   public actualFPS = 0
-  private elapsedTime = 0;
-  private frameCount = 0;
-  private lastTime = performance.now();
+  private elapsedTime = 0
+  private frameCount = 0
+  private lastTime = performance.now()
 
   public track(): void {
     const now = performance.now()
     this.frameCount++
-    this.elapsedTime += (now - this.lastTime)
+    this.elapsedTime += now - this.lastTime
     this.lastTime = now
-    if(this.elapsedTime >= 1000) {
-        const fps = this.frameCount;
-        this.frameCount = 0;
-        this.elapsedTime = 0;
-        this.actualFPS = fps
-        // console.log(`FPS: ${fps}`)
+    if (this.elapsedTime >= 1000) {
+      const fps = this.frameCount
+      this.frameCount = 0
+      this.elapsedTime = 0
+      this.actualFPS = fps
+      // console.log(`FPS: ${fps}`)
     }
   }
 
@@ -600,7 +600,6 @@ export abstract class Engine {
       })
       Engine.timer.stop()
       Engine.timer.track()
-
     }, settings.MSPFRAME)
   }
 
