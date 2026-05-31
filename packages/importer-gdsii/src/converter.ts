@@ -9,7 +9,7 @@ import type { LayerHierarchy } from "./types"
 // only unreferenced cells are drawn
 
 export function convert(gdsii: TREE.GDSIIBNF): LayerHierarchy {
-  const scale = gdsii.UNITS.metersPerDatabaseUnit * 1000 // to convert to mm
+  const scale = gdsii.UNITS.metersPerDatabaseUnit * 1000 // to convert to mm/dbu
 
   const plotter = new Plotter(scale)
 

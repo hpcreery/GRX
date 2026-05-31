@@ -875,15 +875,9 @@ export class ViewRenderer extends UpdateEventTarget {
     if (zoom < settings.MIN_ZOOM) zoom = settings.MIN_ZOOM
 
     const position = vec2.create()
-    if (zoomX < zoomY) {
-      // fit to width
-      const centerY = viewHeight / 2 + ((boundingBox.min[1] + boundingBox.max[1]) / 2) * zoom
-      vec2.set(position, boundingBox.min[0] * zoom, centerY)
-    } else {
-      // fit to height
-      const centerX = viewWidth / 2 - ((boundingBox.min[0] + boundingBox.max[0]) / 2) * zoom
-      vec2.set(position, centerX, viewHeight - boundingBox.min[1] * zoom)
-    }
+    const centerX = viewWidth / 2 - ((boundingBox.min[0] + boundingBox.max[0]) / 2) //* zoom
+    const centerY = viewHeight / 2 + ((boundingBox.min[1] + boundingBox.max[1]) / 2) //* zoom
+    vec2.set(position, centerX, centerY)
 
     // validation checks
     if (Number.isNaN(boundingBox.min[0]) || Number.isNaN(boundingBox.min[1]) || Number.isNaN(boundingBox.max[0]) || Number.isNaN(boundingBox.max[1]))
