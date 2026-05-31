@@ -53,9 +53,6 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.6)
-      '@electron/node-gyp':
-        specifier: '*'
-        version: 10.2.0-electron.2
       '@grx/artwork-format':
         specifier: workspace:*
         version: link:../../packages/artwork-format
@@ -835,11 +832,6 @@ packages:
   '@electron/get@2.0.3':
     resolution: {integrity: sha512-Qkzpg2s9GnVV2I2BjRksUi43U5e6+zaQMcjoJy0C+C5oxaKl+fmckGDQFtRpZpZV0NQekuZZ+tGz7EA9TVnQtQ==}
     engines: {node: '>=12'}
-
-  '@electron/node-gyp@10.2.0-electron.2':
-    resolution: {integrity: sha512-OhO6fwqpetMO1vWI3+J8mb3a4s4A405tgKoUCJsgd4nyQDdFh0VvZm+gj/Cc70iRLQoIYUfSaAgYSVwmLsQHig==}
-    engines: {node: '>=12.13.0'}
-    hasBin: true
 
   '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':
     resolution: {gitHosted: true, tarball: https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2}
@@ -4126,22 +4118,6 @@ snapshots:
     optionalDependencies:
       global-agent: 3.0.0
     transitivePeerDependencies:
-      - supports-color
-
-  '@electron/node-gyp@10.2.0-electron.2':
-    dependencies:
-      env-paths: 2.2.1
-      exponential-backoff: 3.1.3
-      glob: 8.1.0
-      graceful-fs: 4.2.11
-      make-fetch-happen: 10.2.1
-      nopt: 6.0.0
-      proc-log: 2.0.1
-      semver: 7.8.1
-      tar: 6.2.1
-      which: 2.0.2
-    transitivePeerDependencies:
-      - bluebird
       - supports-color
 
   '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':

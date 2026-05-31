@@ -24,13 +24,12 @@
     "build": "npm run build:web"
   },
   "dependencies": {
-    "@electron/node-gyp": "*",
     "@dnd-kit/core": "^6.1.0",
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@grx/engine": "workspace:*",
     "@grx/artwork-format": "workspace:*",
+    "@grx/engine": "workspace:*",
     "@mantine/carousel": "^9.0.0-alpha.6",
     "@mantine/code-highlight": "^9.0.0-alpha.6",
     "@mantine/core": "^9.0.0-alpha.6",
