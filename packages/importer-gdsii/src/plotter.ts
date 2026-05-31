@@ -1,5 +1,4 @@
-import type * as TREE from "@grx/parser-gdsii/gdsii_tree"
-import * as Shapes from "@src/data/shape/shape"
+import * as Shapes from "@grx/artwork-format/shape"
 // import * as Shapes from "@src/data/shape/shape"
 // import * as Symbols from "@src/data/shape/symbol/symbol"
 import { vec2 } from "gl-matrix"
