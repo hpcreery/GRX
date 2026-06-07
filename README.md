@@ -30,10 +30,11 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 ### Main Features
 
 - 🚀 GPU-Accelerated
+- 🖥️ High DPI Support with adjustable FPS
 - 🏃 Fast and Responsive
 - 👍 Easy to use
 - 🤏 Touchscreen Friendly
-- 🖥 Cross Platform and Available Everywhere
+- 💻 Cross Platform and Available Everywhere
 
 ### Supported Artwork Formats
 
@@ -60,7 +61,6 @@ GRX is designed to be an easy to use online manufacturing artwork data exchange 
 - [Vite](https://vitejs.dev/)
 - [React](https://reactjs.org/)
 - [Electron](https://electronjs.org/)
-- [Tracespace (forked)](https://github.com/hpcreery/tracespace)
 - [Mantine](https://mantine.dev/)
 - [TurboRepo](https://turbo.build)
 
