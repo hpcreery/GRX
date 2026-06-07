@@ -234,7 +234,7 @@ export class RectangleDonutSymbol extends StandardSymbol {
 
 export class RoundedRectangleDonutSymbol extends StandardSymbol {
   constructor(
-    symbol: Pick<TStandardSymbol, "width" | "height" | "corner_radius" | "corners" | "line_width" | "inner_dia"> &
+    symbol: Pick<TStandardSymbol, "width" | "height" | "corner_radius" | "corners" | "line_width"> &
       Partial<{ id: string; units: Units; attributes: AttributesType }>,
   ) {
     super({ symbol: STANDARD_SYMBOLS_MAP.Rounded_Rectangle_Donut, ...symbol })
