@@ -1,0 +1,13 @@
+{
+  "extends": "@grx/typescript-config/vite.json",
+  "include": ["src/env.d.ts", "src/**/*", "src/**/*.tsx", "src/*.d.ts"],
+  "compilerOptions": {
+    "outDir": "dist/types",
+    "composite": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@src/*": ["./src/*"]
+    },
+    "types": ["vite/client"]
+  }
+}
