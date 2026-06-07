@@ -1,8 +1,8 @@
 import * as Comlink from "comlink"
-import type { DataInterface } from "./data/interface"
+// import type { DataInterface } from "./data/interface"
 import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
-import type { Engine, QuerySelection } from "./engine"
+import type { Engine, EngineInterface, QuerySelection } from "./engine"
 import EngineWorker from "./engine?worker&inline"
 import { PointerMode } from "./types"
 import { scaleDOMRect, UID } from "./utils"
@@ -97,7 +97,7 @@ export class Renderer {
 
   private engineWorker: Worker
   public engine: Comlink.Remote<typeof Engine>
-  public interface: Comlink.Remote<typeof DataInterface>
+  public interface: Comlink.Remote<typeof EngineInterface>
 
   constructor({ container, attributes }: RenderEngineFrontendConfig) {
     if (container == null) {
