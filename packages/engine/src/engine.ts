@@ -593,6 +593,10 @@ export abstract class Engine {
       Engine.renderNowInterval = null
 
       Engine.timer.start()
+      Engine.regl.clear({
+        color: [0, 0, 0, 0],
+        depth: 1,
+      })
       Engine.universe(() => {
         Engine.views.forEach((view) => {
           view.render()
