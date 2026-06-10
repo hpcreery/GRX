@@ -7,6 +7,7 @@ import { IntegrationPage } from "./pages/IntegrationPage"
 import { OverviewPage } from "./pages/OverviewPage"
 import { ShapesPage } from "./pages/ShapesPage"
 import { SymbolsPage } from "./pages/SymbolsPage"
+import icon from "../resources/icons/32x32.png"
 
 type PageKey = "overview" | "symbols" | "shapes" | "integration"
 
@@ -78,15 +79,17 @@ export default function App(): JSX.Element {
   return (
     <AppShell
       padding="md"
-      header={{ height: 60 }}
+      layout="default"
+      header={{ height: 80 }}
       navbar={{ width: 300, breakpoint: "md", collapsed: { mobile: !opened } }}
       aside={{ width: 280, breakpoint: "md", collapsed: { mobile: true, desktop: false } }}
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
+          <Group gap="md" wrap="nowrap" pl="xl">
             <Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" />
-            <Title order={4}>GRX Docs</Title>
+            <img src={icon} alt="GRX Docs" />
+            <Title order={2}>GRX Docs</Title>
           </Group>
 
           <Group gap="md" wrap="nowrap">

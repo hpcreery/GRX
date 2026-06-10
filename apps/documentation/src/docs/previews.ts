@@ -233,8 +233,8 @@ export const symbolPreviews: PreviewSpec[] = [
     id: "null",
     title: "Null",
     description: "Blank flash aperture used when a symbol intentionally renders nothing.",
-    createShape: (values) => new Pad({ symbol: new NullSymbol({ id: "Null" }), resize_factor: getSliderValue(values, "resize_factor", 1) }),
-    variables: { resize_factor: slider("Resize", "resize_factor", 1, 0.1, 4, 0.1) },
+    createShape: () => new Pad({ symbol: new NullSymbol({ id: "Null" }) }),
+    variables: { },
   },
   {
     id: "round",
