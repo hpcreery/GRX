@@ -133,6 +133,22 @@ export function PreviewGallery({ previews, kind }: PreviewGalleryProps): JSX.Ele
                           overflow: "hidden",
                           overscrollBehavior: "contain",
                         }}
+                        onMouseMove={(event) => {
+                          const renderer = rendererRef.current
+                          if (!renderer) return
+
+                          const view = previewRefs.current.get(preview.id)
+                          if (!view) return
+
+                          const rect = view.getBoundingClientRect()
+                          const x = event.clientX - rect.left
+                          const y = rect.height - (event.clientY - rect.top)
+                          renderer.interface.clear_view_measurements(view.id)
+                          renderer.interface.set_engine_settings({ SHOW_DATUMS: true, SNAP_MODE: "OFF" })
+                          renderer.interface.create_view_measurement(view.id, [x, y])
+                          renderer.interface.set_engine_settings({ SHOW_DATUMS: true, SNAP_MODE: "EDGE" })
+                          renderer.interface.finish_view_measurement(view.id, [x, y])
+                        }}
                       />
 
                       <Stack gap="sm" style={{ minWidth: "16rem", maxWidth: "20rem", width: "32%" }}>
