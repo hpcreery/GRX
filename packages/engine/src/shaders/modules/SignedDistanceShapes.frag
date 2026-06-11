@@ -709,7 +709,7 @@ float drawShape(vec2 FragCoord, float SymNum) {
       dist = max(dist, hole);
     }
   } else if (t_Symbol == u_Symbols.Diamond) {
-    dist = diamonDist(FragCoord.xy, vec2(t_Width, t_Height));
+    dist = diamonDist(FragCoord.xy, vec2(t_Width / 2.0, t_Height / 2.0));
     if (t_Inner_Dia != 0.0) {
       float hole = -1.0 * circleDist(FragCoord.xy, t_Inner_Dia / 2.0);
       dist = max(dist, hole);
@@ -775,9 +775,9 @@ float drawShape(vec2 FragCoord, float SymNum) {
   } else if (t_Symbol == u_Symbols.MoireGerber) {
     dist = moireGerberDist(FragCoord.xy, t_Ring_Width, t_Ring_Gap, t_Num_Rings, t_Line_Width, t_Line_Length, t_Angle, t_Outer_Dia);
   } else if (t_Symbol == u_Symbols.Polygon) {
-    dist = regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), t_Outer_Dia / 2.0, int(t_Corners));
+    dist = regularPolygonDist(FragCoord.xy * rotateCCW(radians(t_Angle)), t_Outer_Dia / 2.0, int(t_Corners));
     if (t_Line_Width != 0.0) {
-      float inner = -1.0 * regularPolygonDist(FragCoord.xy * rotateCW(radians(t_Angle)), (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
+      float inner = -1.0 * regularPolygonDist(FragCoord.xy * rotateCCW(radians(t_Angle)), (t_Outer_Dia / 2.0) - t_Line_Width, int(t_Corners));
       dist = max(dist, inner);
     }
     if (t_Inner_Dia != 0.0) {
