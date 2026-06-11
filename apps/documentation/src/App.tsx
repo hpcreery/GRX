@@ -1,6 +1,6 @@
-import { AppShell, Box, Burger, Group, NavLink, ScrollArea, Stack, TableOfContents, Text, Title } from "@mantine/core"
+import { ActionIcon, AppShell, Box, Burger, Group, NavLink, ScrollArea, Stack, TableOfContents, Text, Title } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
-import { IconBook2, IconBrackets, IconComponents, IconForms } from "@tabler/icons-react"
+import { IconBook2, IconBrackets, IconBrandGithub, IconComponents, IconForms } from "@tabler/icons-react"
 import type { JSX } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { IntegrationPage } from "./pages/IntegrationPage"
@@ -8,6 +8,7 @@ import { OverviewPage } from "./pages/OverviewPage"
 import { ShapesPage } from "./pages/ShapesPage"
 import { SymbolsPage } from "./pages/SymbolsPage"
 import icon from "../resources/icons/32x32.png"
+import classes from "./TableOfContents.module.css"
 
 type PageKey = "overview" | "symbols" | "shapes" | "integration"
 
@@ -75,6 +76,7 @@ export default function App(): JSX.Element {
       }}
     />
   ))
+  console.log("classes", classes)
 
   return (
     <AppShell
@@ -85,14 +87,14 @@ export default function App(): JSX.Element {
       aside={{ width: 280, breakpoint: "md", collapsed: { mobile: true, desktop: false } }}
     >
       <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <Group gap="md" wrap="nowrap" pl="xl">
+        <Group h="100%" px="xl" justify="space-between" wrap="nowrap">
+          <Group gap="md" wrap="nowrap" px="xl">
             <Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" />
             <img src={icon} alt="GRX Docs" />
             <Title order={2}>GRX Docs</Title>
           </Group>
 
-          <Group gap="md" wrap="nowrap">
+          <Group gap="md" wrap="nowrap" px="xl">
             {/* <Anchor href="/homepage/" c="dimmed" underline="never" visibleFrom="sm">
               Homepage
             </Anchor>
@@ -104,6 +106,9 @@ export default function App(): JSX.Element {
                 </Group>
               </Anchor>
             </UnstyledButton> */}
+            <ActionIcon variant="transparent" aria-label="GitHub" component="a" href="https://github.com/hpcreery/GRX" target="_blank">
+              <IconBrandGithub size={18} />
+            </ActionIcon>
           </Group>
         </Group>
       </AppShell.Header>
@@ -120,7 +125,7 @@ export default function App(): JSX.Element {
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Aside p="xs" visibleFrom="md">
+      <AppShell.Aside visibleFrom="md">
         <AppShell.Section>
           <Text fw={600} size="sm" px="sm" pt="xs" pb="sm">
             On this page
@@ -128,12 +133,12 @@ export default function App(): JSX.Element {
         </AppShell.Section>
 
         <AppShell.Section component={ScrollArea} grow>
-          <Box px="xs" id="toc-container">
+          <Box id="toc-container">
             <TableOfContents
               reinitializeRef={reinitializeRef}
-              variant="light"
+              variant="none"
               size="sm"
-              radius="sm"
+              radius="0"
               scrollSpyOptions={{
                 selector: "#page-content :is(h1, h2, h3)",
               }}
@@ -143,6 +148,21 @@ export default function App(): JSX.Element {
                 href: `#${data.id}`,
                 children: data.value,
               })}
+              classNames={classes}
+              // style={{
+              //   ":where([data-active])": {
+              //     color: "var(--toc-color)",
+              //   },
+              // }}
+              // styles={{
+              //   control: {
+              //     ":where([data-active])": {
+              //       color: "red",
+              //     },
+              //     // fontWeight: 500,
+              //     // color: "white",
+              //   }
+              // }}
             />
           </Box>
         </AppShell.Section>
