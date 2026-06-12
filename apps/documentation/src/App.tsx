@@ -8,7 +8,9 @@ import { OverviewPage } from "./pages/OverviewPage"
 import { ShapesPage } from "./pages/ShapesPage"
 import { SymbolsPage } from "./pages/SymbolsPage"
 import icon from "../resources/icons/32x32.png"
-import classes from "./TableOfContents.module.css"
+import TableOfContentsClasses from "./styles/TableOfContents.module.css"
+import AppShellClasses from "./styles/AppShell.module.css"
+import NavLinkClasses from "./styles/NavLink.module.css"
 
 type PageKey = "overview" | "symbols" | "shapes" | "integration"
 
@@ -65,6 +67,8 @@ export default function App(): JSX.Element {
 
   const navItems = pages.map((page) => (
     <NavLink
+      classNames={NavLinkClasses}
+      variant="subtle"
       key={page.key}
       active={page.key === activePage}
       label={page.label}
@@ -76,15 +80,15 @@ export default function App(): JSX.Element {
       }}
     />
   ))
-  console.log("classes", classes)
 
   return (
     <AppShell
-      padding="md"
+      padding="xl"
       layout="default"
       header={{ height: 80 }}
       navbar={{ width: 300, breakpoint: "md", collapsed: { mobile: !opened } }}
       aside={{ width: 280, breakpoint: "md", collapsed: { mobile: true, desktop: false } }}
+      classNames={AppShellClasses}
     >
       <AppShell.Header>
         <Group h="100%" px="xl" justify="space-between" wrap="nowrap">
@@ -148,7 +152,7 @@ export default function App(): JSX.Element {
                 href: `#${data.id}`,
                 children: data.value,
               })}
-              classNames={classes}
+              classNames={TableOfContentsClasses}
               // style={{
               //   ":where([data-active])": {
               //     color: "var(--toc-color)",

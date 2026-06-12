@@ -1,10 +1,10 @@
+import "@mantine/core/styles.css"
+import "./App.css"
 import { CodeHighlightAdapterProvider, createShikiAdapter } from "@mantine/code-highlight"
 import { createTheme, MantineProvider, rem } from "@mantine/core"
 import ReactDOM from "react-dom/client"
 import App from "./App"
 
-import "@mantine/core/styles.css"
-import "./App.css"
 
 // Shiki requires async code to load the highlighter
 async function loadShiki() {

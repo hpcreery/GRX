@@ -1,0 +1,17 @@
+.control {
+  margin-left: 1px;
+  transition: color 150ms ease;
+  &[data-active] {
+    color: var(--mantine-primary-color-6);
+    border-left: 1px solid var(--mantine-primary-color-6);
+    /* background: var(--mantine-primary-color-light); */
+    margin-left: 0px;
+    transition: color 150ms ease, background 150ms ease;
+  }
+
+}
+
+.control:hover {
+  color: var(--mantine-primary-color-4);
+  transition: color 150ms ease;
+}
