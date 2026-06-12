@@ -142,6 +142,23 @@ M02*`
     expect(primitiveBlocks[0].parameters?.[1]).toBe("$2")
   })
 
+    it("parses AM with some not allowed characters in name like '/'", () => {
+    const variableExpressionMacroGerber = `%FSLAX34Y34*%
+%MOIN*%
+%AMVARTEST-10_B/C*
+$1=0.5*
+$2=$1x2+0.1*
+1,1,$2,0,0*
+%
+%ADD10VARTEST-10_B/C*%
+D10*
+X0Y0D03*
+M02*`
+
+    const { visitor } = parseAndVisit(variableExpressionMacroGerber)
+    expect(visitor.macroDefinitions["VARTEST-10_B/C"]).toBeDefined()
+  })
+
   it("parses outline and thermal AM primitive families", () => {
     const outlineMacro = parseAndVisit(outlinePrimitiveGerber).visitor.macroDefinitions["OUTLINE"]
     const thermalMacro = parseAndVisit(thermalPrimitiveGerber).visitor.macroDefinitions["THERMAL"]
@@ -327,6 +344,7 @@ G71*
 G90*
 G91*
 %IPNEG*%
+%ICAS*%
 %ASAXBY*%
 %IR0*%
 %MIA1B0*%

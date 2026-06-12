@@ -144,6 +144,9 @@ const DefaultTokens = {
   LN: createToken({ name: "LN", pattern: /LN/i, push_mode: "NameMode" }),
   // SR Step and repeat. Open or closes a step and repeat statement. These constructions are deprecated since revision 2016.01.
   SR: createToken({ name: "SR", pattern: /SR/i }),
+  // Some files contain the strange pseudo command %ICAS*%. One wonders what this is supposed to achieve. Anyhow, it is invalid.
+  ICAS: createToken({ name: "ICAS", pattern: /ICAS/i }),
+
   /** END OF DEPRECATED COMMANDS */
 } as const
 
@@ -162,7 +165,7 @@ const MacroTokens = {
   AddSubOperator: createToken({ name: "AddSubOperator", pattern: /[+-]/ }),
   MulDivOperator: createToken({ name: "MulDivOperator", pattern: /[xX\\/]/ }),
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/ }),
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/ }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][._a-zA-Z0-9-+/]*/ }),
   CommentPrimative: createToken({ name: "CommentPrimative", pattern: /0 /, push_mode: "CommentMode" }),
   // String: createToken({ name: "String", pattern: /[a-zA-Z0-9_+-/!?<>”’(){}.\\|&@# ,;$:=]+/ }),
 } as const
@@ -175,8 +178,7 @@ const NameTokens = {
   // SPEC CORRECT REGEX
   // Name: createToken({ name: "Name", pattern: /[._a-zA-Z$][._a-zA-Z0-9]*/, pop_mode: true }),
   // COMMONLY USED REGEX THAT ALLOWS FOR MORE INVALID NAMES, BUT IT'S FINE BECAUSE WE'LL JUST WARN ABOUT THEM LATER IN THE PROCESSING PIPELINE
-  // Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-._a-zA-Z0-9]*/, pop_mode: true }),
-  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][-+._a-zA-Z0-9]*/, pop_mode: true }),
+  Name: createToken({ name: "Name", pattern: /[._a-zA-Z0-9$][._a-zA-Z0-9-+/]*/, pop_mode: true }),
 }
 
 const AttributeTokens = {
@@ -228,6 +230,7 @@ const DefaultModeTokens = [
   DefaultTokens.D02,
   DefaultTokens.D03,
   DefaultTokens.Dnn,
+  DefaultTokens.ICAS,
   DefaultTokens.IP,
   DefaultTokens.MI,
   DefaultTokens.SF,
@@ -371,6 +374,7 @@ class GerberParser extends CstParser {
   scaleFactorCommand!: ParserMethod<unknown[], CstNode>
   imageNameCommand!: ParserMethod<unknown[], CstNode>
   loadNameCommand!: ParserMethod<unknown[], CstNode>
+  icasCommand!: ParserMethod<unknown[], CstNode>
 
   // ATTRIBUTES
   fileAttributesCommand!: ParserMethod<unknown[], CstNode>
@@ -440,16 +444,6 @@ class GerberParser extends CstParser {
       this.SUBRULE2(this.percent)
     })
 
-    /** `<Data block> = {<Character>}*`
-     *
-     * Example:
-     * ```
-     * G01*
-     * X50000Y3200D01*
-     * 1,1,$1,$2,$3*
-     * $4=$1x0.75*
-     * ```
-     */
     this.RULE("extendedCommandDataBlock", () => {
       this.OR(
         this.extendedCommandDataBlockCache ||
@@ -475,6 +469,7 @@ class GerberParser extends CstParser {
             { ALT: (): CstNode => this.SUBRULE(this.scaleFactorCommand) },
             { ALT: (): CstNode => this.SUBRULE(this.imageNameCommand) },
             { ALT: (): CstNode => this.SUBRULE(this.loadNameCommand) },
+            { ALT: (): CstNode => this.SUBRULE(this.icasCommand) },
             // ATTRIBUTE COMMANDS
             { ALT: (): CstNode => this.SUBRULE(this.fileAttributesCommand) },
             { ALT: (): CstNode => this.SUBRULE(this.apertureAttributesCommand) },
@@ -486,6 +481,16 @@ class GerberParser extends CstParser {
       // this.CONSUME(DefaultTokens.Star)
     })
 
+    /** `<Data block> = {<Character>}*`
+     *
+     * Example:
+     * ```
+     * G01*
+     * X50000Y3200D01*
+     * 1,1,$1,$2,$3*
+     * $4=$1x0.75*
+     * ```
+     */
     this.RULE("functionCodeCommand", () => {
       this.OR(
         this.functionCodeCommandCache ||
@@ -1051,6 +1056,11 @@ class GerberParser extends CstParser {
       this.CONSUME(NameTokens.Name)
     })
 
+    // Some files contain the strange pseudo command %ICAS*%. One wonders what this is supposed to achieve. Anyhow, it is invalid.
+    this.RULE("icasCommand", () => {
+      this.CONSUME(DefaultTokens.ICAS)
+    })
+
     /** END DEPRECATED COMMANDS */
 
     this.performSelfAnalysis()
@@ -1161,7 +1171,7 @@ export class GerberToTreeVisitor extends BaseCstVisitor {
   }
 
   extendedCommand(ctx: cst.ExtendedCommandCstChildren): void {
-    ctx.extendedCommandDataBlock.map(this.visit, this)
+    ctx.extendedCommandDataBlock && ctx.extendedCommandDataBlock.map(this.visit, this)
   }
 
   functionCodeCommand(ctx: cst.FunctionCodeCommandCstChildren): void {
@@ -1254,7 +1264,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 2) {
+      if (values.length >= 3) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1275,7 +1285,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 2) {
+      if (values.length >= 3) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1298,7 +1308,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 2) {
+      if (values.length >= 4) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1693,6 +1703,11 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
       return
     }
 
+    // check if the name matches the spec correct name of /[._a-zA-Z$][._a-zA-Z0-9]*/
+    if (!/^[._a-zA-Z$][._a-zA-Z0-9]*$/.test(name)) {
+      this.errors.push({ message: `Warning. Macro name '${name}' does not match the specification for macro names. Macro names should match the regex /[._a-zA-Z$][._a-zA-Z0-9]*/. Macro will still be processed as normal.`, location: ctx.Name[0] })
+    }
+
     this.currentMacroBlocks = []
     const macroBlockNodes = ctx.macroBlock ?? []
     macroBlockNodes.map((node) => this.visit(node))
@@ -1879,10 +1894,26 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
   imageNameCommand(_ctx: cst.ImageNameCommandCstChildren): void {
     // This command is deprecated and has no effect, so we can safely ignore it.
+    // this.errors.push({
+    //   message: "Image name command is deprecated and has no effect. It can be safely ignored.",
+    //   location: _ctx.IN[0],
+    // })
   }
 
   loadNameCommand(_ctx: cst.LoadNameCommandCstChildren): void {
     // This command is deprecated and has no effect, so we can safely ignore it.
+    // this.errors.push({
+    //   message: "Load name command is deprecated and has no effect. It can be safely ignored.",
+    //   location: _ctx.LN[0],
+    // })
+  }
+
+  icasCommand(_ctx: cst.IcasCommandCstChildren): void {
+    // This command is deprecated and has no effect, so we can safely ignore it.
+    this.errors.push({
+      message: "ICAS command is deprecated and has no effect. It can be safely ignored.",
+      location: _ctx.ICAS[0],
+    })
   }
 
   // ATTRIBUTES
@@ -2210,6 +2241,7 @@ export function parse(file: string): GerberParseResult {
 
   // console.time("Gerber processing time")
   const visitor = new GerberToTreeVisitor()
+  visitor.visit(cst)
   if (visitor.errors.length > 0) {
     errors.push(
       ...visitor.errors.map(
@@ -2221,7 +2253,6 @@ export function parse(file: string): GerberParseResult {
   if (errors.length > 0) {
     console.warn(`Gerber processing completed with ${errors.length} error(s):\n${errors.join("\n")}`)
   }
-  visitor.visit(cst)
   // console.timeEnd("Gerber processing time")
 
   return {

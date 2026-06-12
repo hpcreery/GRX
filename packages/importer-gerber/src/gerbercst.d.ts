@@ -56,6 +56,7 @@ export type ExtendedCommandDataBlockCstChildren = {
   scaleFactorCommand?: ScaleFactorCommandCstNode[]
   imageNameCommand?: ImageNameCommandCstNode[]
   loadNameCommand?: LoadNameCommandCstNode[]
+  icasCommand?: IcasCommandCstNode[]
   fileAttributesCommand?: FileAttributesCommandCstNode[]
   apertureAttributesCommand?: ApertureAttributesCommandCstNode[]
   objectAttributesCommand?: ObjectAttributesCommandCstNode[]
@@ -746,6 +747,15 @@ export type LoadNameCommandCstChildren = {
   Name: IToken[]
 }
 
+export interface IcasCommandCstNode extends CstNode {
+  name: "icasCommand"
+  children: IcasCommandCstChildren
+}
+
+export type IcasCommandCstChildren = {
+  ICAS: IToken[]
+}
+
 export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   program(children: ProgramCstChildren, param?: IN): OUT
   command(children: CommandCstChildren, param?: IN): OUT
@@ -816,4 +826,5 @@ export interface ICstNodeVisitor<IN, OUT> extends ICstVisitor<IN, OUT> {
   scaleFactorCommand(children: ScaleFactorCommandCstChildren, param?: IN): OUT
   imageNameCommand(children: ImageNameCommandCstChildren, param?: IN): OUT
   loadNameCommand(children: LoadNameCommandCstChildren, param?: IN): OUT
+  icasCommand(children: IcasCommandCstChildren, param?: IN): OUT
 }

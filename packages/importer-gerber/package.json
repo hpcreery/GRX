@@ -14,7 +14,7 @@
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:gerber:types": "tsx src/parser/gen_dts_signature.js"
+    "build:types": "tsx src/gen_dts_signature.js"
   },
   "dependencies": {
     "@grx/artwork-format": "workspace:*",
