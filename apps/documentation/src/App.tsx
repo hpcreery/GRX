@@ -1,6 +1,6 @@
-import { ActionIcon, AppShell, Box, Burger, Group, NavLink, ScrollArea, Stack, TableOfContents, Text, Title } from "@mantine/core"
+import { ActionIcon, AppShell, Autocomplete, Box, Burger, Group, NavLink, ScrollArea, Stack, TableOfContents, Text, Title } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
-import { IconBook2, IconBrackets, IconBrandGithub, IconComponents, IconForms } from "@tabler/icons-react"
+import { IconBook2, IconBrackets, IconBrandGithub, IconComponents, IconForms, IconSearch } from "@tabler/icons-react"
 import type { JSX } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { IntegrationPage } from "./pages/IntegrationPage"
@@ -11,6 +11,7 @@ import icon from "../resources/icons/32x32.png"
 import TableOfContentsClasses from "./styles/TableOfContents.module.css"
 import AppShellClasses from "./styles/AppShell.module.css"
 import NavLinkClasses from "./styles/NavLink.module.css"
+import classes from "./styles/HeaderSearch.module.css"
 
 type PageKey = "overview" | "symbols" | "shapes" | "integration"
 
@@ -53,6 +54,13 @@ const pages: PageConfig[] = [
   },
 ]
 
+const headerLinks = [
+  { link: "/viewer", label: "Viewer" },
+  { link: "/developer", label: "Developer" },
+  { link: "/about", label: "About" },
+  // { link: "/community", label: "Community" },
+]
+
 export default function App(): JSX.Element {
   const [opened, { toggle, close }] = useDisclosure(false)
   const [activePage, setActivePage] = useState<PageKey>("overview")
@@ -81,6 +89,12 @@ export default function App(): JSX.Element {
     />
   ))
 
+  const items = headerLinks.map((link) => (
+    <a key={link.label} href={link.link} className={classes.link} onClick={(event) => event.preventDefault()}>
+      {link.label}
+    </a>
+  ))
+
   return (
     <AppShell
       padding="xl"
@@ -96,20 +110,19 @@ export default function App(): JSX.Element {
             <Burger opened={opened} onClick={toggle} hiddenFrom="md" size="sm" />
             <img src={icon} alt="GRX Docs" />
             <Title order={2}>GRX Docs</Title>
+            <Group ml={10} gap={5} className={classes.links} visibleFrom="sm">
+              {items}
+            </Group>
           </Group>
 
           <Group gap="md" wrap="nowrap" px="xl">
-            {/* <Anchor href="/homepage/" c="dimmed" underline="never" visibleFrom="sm">
-              Homepage
-            </Anchor>
-            <UnstyledButton>
-              <Anchor href="/homepage/" underline="never">
-                <Group gap={6} wrap="nowrap">
-                  <IconHome2 size={14} />
-                  <Text size="sm">Back to GRX</Text>
-                </Group>
-              </Anchor>
-            </UnstyledButton> */}
+            <Autocomplete
+              className={classes.search}
+              placeholder="Search"
+              leftSection={<IconSearch size={16} stroke={1.5} />}
+              data={["complete me"]}
+              visibleFrom="xs"
+            />
             <ActionIcon variant="transparent" aria-label="GitHub" component="a" href="https://github.com/hpcreery/GRX" target="_blank">
               <IconBrandGithub size={18} />
             </ActionIcon>

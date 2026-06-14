@@ -16,6 +16,7 @@
     "@mantine/core": "^9.0.0-alpha.6",
     "@mantine/hooks": "^9.3.0",
     "@tabler/icons-react": "^3.44.0",
+    "@tanstack/react-router": "^1.170.15",
     "clsx": "^2.1.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@grx/typescript-config": "workspace:*",
+    "@tanstack/router-plugin": "^1.168.18",
     "@types/react": "^19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
