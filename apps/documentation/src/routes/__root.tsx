@@ -118,11 +118,10 @@ export default function App(): JSX.Element {
     return unsubscribe
   }, [router])
 
-  // const navItems = pages.map((page) => (
   const pageItems = headerLinks
-    .filter((link) => pathname.startsWith(link.to))
-    .flatMap((link) =>
-      link.pages.map((page) => (
+    .filter((link) => opened || pathname.startsWith(link.to))
+    .map((link) => {
+      const children = link.pages.map((page) => (
         <NavLink
           classNames={NavLinkClasses}
           variant="subtle"
@@ -136,8 +135,21 @@ export default function App(): JSX.Element {
             close()
           }}
         />
-      )),
-    )
+      ))
+      return opened ? <NavLink
+        defaultOpened={true}
+        classNames={NavLinkClasses}
+        variant="subtle"
+        key={link.to}
+        active={pathname.startsWith(link.to)}
+        label={link.label}
+        description=""
+        leftSection={link.pages[0].icon}
+      >
+      {children}
+      </NavLink> : children
+    })
+  
 
   const headerItems = headerLinks.map((link) => (
     <Button key={link.label} variant={pathname.includes(link.to) ? "light" : "subtle"} onClick={() => navigate({ to: link.to })}>
