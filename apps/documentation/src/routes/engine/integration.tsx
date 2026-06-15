@@ -1,7 +1,12 @@
 import { CodeHighlight } from "@mantine/code-highlight"
 import { Card, Stack, Tabs, Text, Title } from "@mantine/core"
+import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"
-import { frameworkSnippets } from "../docs/previews"
+import { frameworkSnippets } from "../../docs/previews"
+
+export const Route = createFileRoute("/engine/integration")({
+  component: IntegrationPage,
+})
 
 export function IntegrationPage(): JSX.Element {
   return (

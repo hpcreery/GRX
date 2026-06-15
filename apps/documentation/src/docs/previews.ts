@@ -234,7 +234,7 @@ export const symbolPreviews: PreviewSpec[] = [
     title: "Null",
     description: "Blank flash aperture used when a symbol intentionally renders nothing.",
     createShape: () => new Pad({ symbol: new NullSymbol({ id: "Null" }) }),
-    variables: { },
+    variables: {},
   },
   {
     id: "round",

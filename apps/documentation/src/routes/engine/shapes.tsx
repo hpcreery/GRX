@@ -1,7 +1,12 @@
 import { Stack, Text, Title } from "@mantine/core"
+import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"
-import { PreviewGallery } from "../components/PreviewGallery"
-import { shapePreviews } from "../docs/previews"
+import { PreviewGallery } from "../../components/PreviewGallery"
+import { shapePreviews } from "../../docs/previews"
+
+export const Route = createFileRoute("/engine/shapes")({
+  component: ShapesPage,
+})
 
 export function ShapesPage(): JSX.Element {
   return (

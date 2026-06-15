@@ -1,10 +1,10 @@
 import "@mantine/core/styles.css"
-import "./App.css"
+import "./styles/main.css"
 import { CodeHighlightAdapterProvider, createShikiAdapter } from "@mantine/code-highlight"
 import { createTheme, MantineProvider, rem } from "@mantine/core"
+import { createRouter, RouterProvider } from "@tanstack/react-router"
 import ReactDOM from "react-dom/client"
-import App from "./App"
-
+import { routeTree } from "./routeTree.gen"
 
 // Shiki requires async code to load the highlighter
 async function loadShiki() {
@@ -48,11 +48,21 @@ const theme = createTheme({
   },
 })
 
+const router = createRouter({
+  routeTree,
+})
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: typeof router
+  }
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(
   <MantineProvider defaultColorScheme="dark" theme={theme}>
     <CodeHighlightAdapterProvider adapter={shikiAdapter}>
-      <App />
+      <RouterProvider router={router} />
     </CodeHighlightAdapterProvider>
   </MantineProvider>,
 )

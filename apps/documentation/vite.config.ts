@@ -1,7 +1,7 @@
 import { resolve } from "node:path"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { tanstackRouter } from '@tanstack/router-plugin/vite'
 
 export default defineConfig({
   base: "./",
@@ -17,9 +17,12 @@ export default defineConfig({
   build: {
     outDir: resolve("dist/"),
   },
-  plugins: [    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
+  plugins: [
+    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
     tanstackRouter({
-      target: 'react',
+      target: "react",
       autoCodeSplitting: true,
-    }),react()],
+    }),
+    react(),
+  ],
 })

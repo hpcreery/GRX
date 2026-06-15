@@ -6,9 +6,10 @@
     border-left: 1px solid var(--mantine-primary-color-6);
     /* background: var(--mantine-primary-color-light); */
     margin-left: 0px;
-    transition: color 150ms ease, background 150ms ease;
+    transition:
+      color 150ms ease,
+      background 150ms ease;
   }
-
 }
 
 .control:hover {

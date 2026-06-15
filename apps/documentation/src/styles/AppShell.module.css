@@ -1,4 +1,3 @@
-
 .header {
   backdrop-filter: blur(30px);
   background-color: color-mix(in srgb, var(--mantine-color-default) 80%, transparent);

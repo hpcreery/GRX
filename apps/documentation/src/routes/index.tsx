@@ -1,13 +1,18 @@
 import { Badge, Box, Button, Card, Group, List, SimpleGrid, Stack, Text, Title } from "@mantine/core"
 import { IconArrowRight, IconBook2, IconCode, IconDeviceLaptop, IconForms, IconSparkles } from "@tabler/icons-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import type { JSX } from "react"
+
+export const Route = createFileRoute("/")({
+  component: OverviewPage,
+})
 
 export function OverviewPage(): JSX.Element {
   return (
     <Stack id="page-content" gap="xl">
       <Stack gap="md">
         <Badge variant="light" size="lg" radius="xl" w="fit-content">
-          User guide + developer guide
+          User guide + Engine Documentation
         </Badge>
         <Title id="overview" order={1} style={{ fontSize: "clamp(2.4rem, 6vw, 4.5rem)", lineHeight: "0.95", letterSpacing: "-0.06em" }}>
           GRX Documentation
@@ -19,7 +24,7 @@ export function OverviewPage(): JSX.Element {
           <Button component="a" href="/homepage/" rightSection={<IconArrowRight size={16} />}>
             Open homepage
           </Button>
-          <Button component="a" href="#developer-surface" variant="light" leftSection={<IconForms size={16} />}>
+          <Button component={Link} to="/developer/integration" variant="light" leftSection={<IconForms size={16} />}>
             Jump to developer guide
           </Button>
         </Group>
