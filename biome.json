@@ -19,7 +19,8 @@
       "!!**/tsconfig.json",
       "!!**/tsconfig.*.json",
       "!!**/*.frag",
-      "!!**/*.vert"
+      "!!**/*.vert",
+      "!!**/routeTree.gen.ts"
     ]
   },
   "formatter": {

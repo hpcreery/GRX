@@ -131,7 +131,7 @@ Project Structure
 │   ├── viewer          <-- (main web and desktop app)
 │   │   ├── src
 │   │   └── package.json
-│   ├── docs            <-- (documentation website)
+│   ├── documentation   <-- (documentation website)
 │   │   ├── src
 │   │   └── package.json
 │   └── homepage        <-- (marketing website)
