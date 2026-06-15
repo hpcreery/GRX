@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Card, List, Stack, Text, Title } from "@mantine/core"
+import { Box, Button, Card, List, Stack, Text, Title } from "@mantine/core"
 import { IconBrandGithub, IconDownload, IconTerminal } from "@tabler/icons-react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"

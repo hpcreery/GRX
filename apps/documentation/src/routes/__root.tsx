@@ -12,9 +12,10 @@ import {
   TableOfContents,
   Text,
   Title,
+  useMantineColorScheme,
 } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
-import { IconBook2, IconBrackets, IconBrandGithub, IconComponents, IconForms, IconSearch, IconDownload } from "@tabler/icons-react"
+import { IconBook2, IconBrackets, IconBrandGithub, IconComponents, IconForms, IconSearch, IconDownload, IconMoon, IconSun } from "@tabler/icons-react"
 import { createRootRoute, Link, Outlet, useNavigate, useRouter, useRouterState } from "@tanstack/react-router"
 import type { JSX } from "react"
 import { useEffect, useRef } from "react"
@@ -103,6 +104,7 @@ const headerLinks: HeaderLink[] = [
 
 export default function App(): JSX.Element {
   const [opened, { toggle, close }] = useDisclosure(false)
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const reinitializeRef = useRef<() => void>(() => {})
@@ -173,6 +175,14 @@ export default function App(): JSX.Element {
               data={["complete me"]}
               visibleFrom="xs"
             />
+            <ActionIcon
+              variant="transparent"
+              aria-label="Toggle color scheme"
+              onClick={() => toggleColorScheme()}
+              title={colorScheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
+            </ActionIcon>
             <ActionIcon variant="transparent" aria-label="GitHub" component="a" href="https://github.com/hpcreery/GRX" target="_blank">
               <IconBrandGithub size={18} />
             </ActionIcon>

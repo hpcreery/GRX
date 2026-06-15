@@ -1,4 +1,4 @@
-import { Badge, Stack, Title } from "@mantine/core"
+import { Stack, Title } from "@mantine/core"
 import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"
 
