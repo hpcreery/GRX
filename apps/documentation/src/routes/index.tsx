@@ -1,6 +1,8 @@
 import { Badge, Box, Button, Card, Group, List, SimpleGrid, Stack, Text, Title } from "@mantine/core"
 import { IconArrowRight, IconBook2, IconCode, IconDeviceLaptop, IconForms, IconSparkles } from "@tabler/icons-react"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { Route as EngineRoute } from "./engine"
+import { Route as ViewerRoute } from "./viewer"
 import type { JSX } from "react"
 
 export const Route = createFileRoute("/")({
@@ -21,11 +23,11 @@ export function OverviewPage(): JSX.Element {
           Installation, usage, and integration patterns for the viewer and engine with production-ready examples.
         </Text>
         <Group>
-          <Button component="a" href="/homepage/" rightSection={<IconArrowRight size={16} />}>
-            Open homepage
+          <Button component="a" href={EngineRoute.to} rightSection={<IconArrowRight size={16} />}>
+            Explore engine docs
           </Button>
-          <Button component={Link} to="/developer/integration" variant="light" leftSection={<IconForms size={16} />}>
-            Jump to developer guide
+          <Button component="a" href={ViewerRoute.to} variant="light" rightSection={<IconArrowRight size={16} />}>
+            Explore viewer docs
           </Button>
         </Group>
       </Stack>

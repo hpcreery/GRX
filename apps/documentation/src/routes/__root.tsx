@@ -24,12 +24,14 @@ import AppShellClasses from "../styles/AppShell.module.css"
 import classes from "../styles/HeaderSearch.module.css"
 import NavLinkClasses from "../styles/Navlink.module.css"
 import TableOfContentsClasses from "../styles/TableOfContents.module.css"
-import { Route as ViwerRoute } from "./viewer"
+import { Route as ViewerRoute } from "./viewer"
 import { Route as EngineRoute } from "./engine"
 import { Route as EngineShapesRoute } from "./engine/shapes"
 import { Route as EngineSymbolsRoute } from "./engine/symbols"
 import { Route as EngineIntegrationRoute } from "./engine/integration"
 import { Route as ViewerInstallRoute } from "./viewer/install"
+import { Route as SystemRequirementsRoute } from "./viewer/requirements"
+
 
 export const Route = createRootRoute({
   component: App,
@@ -37,63 +39,70 @@ export const Route = createRootRoute({
 
 type PageConfig = {
   key: string
-  to: string
+  to: () => string
   label: string
   description: string
   icon: JSX.Element
 }
 
 type HeaderLink = {
-  to: string
+  to: () => string
   label: string
   pages: PageConfig[]
 }
 
 const headerLinks: HeaderLink[] = [
-  { to: "/viewer", label: "Viewer", pages: [
+  { to: () => ViewerRoute.to, label: "Viewer", pages: [
     {
       key: "viewer-overview",
-      to: ViwerRoute.to,
+      to: () => ViewerRoute.to,
       label: "Overview",
       description: "",
       icon: <IconBook2 size={16} />,
     },
     {
       key: "viewer-install",
-      to: ViewerInstallRoute.to,
+      to: () => ViewerInstallRoute.to,
       label: "Installation",
       description: "How to install and use the viewer",
       icon: <IconDownload size={16} />,
     },
+    {
+      key: "viewer-requirements",
+      to: () => SystemRequirementsRoute.to,
+      label: "System Requirements",
+      description: "Minimum system requirements for the viewer",
+      icon: <IconBrandGithub size={16} />,
+    },
   ] },
   {
-    to: "/engine",
+    to: () => EngineRoute.to,
     label: "Engine",
     pages: [
       {
         key: "developer-overview",
-        to: EngineRoute.to,
+        to: () => EngineRoute.to,
         label: "Overview",
         description: "",
         icon: <IconBook2 size={16} />,
       },
       {
         key: "symbols",
-        to: EngineSymbolsRoute.to,
+        to: () => EngineSymbolsRoute.to,
         label: "Symbols",
         description: "Symbol Apertures",
         icon: <IconComponents size={16} />,
       },
       {
         key: "shapes",
-        to: EngineShapesRoute.to,
+        to: () => EngineShapesRoute.to,
         label: "Shapes",
         description: "Primitive and Composite shapes",
         icon: <IconForms size={16} />,
       },
       {
         key: "integration",
-        to: EngineIntegrationRoute.to,
+        to: () => EngineIntegrationRoute.to,
         label: "Integration",
         description: "Developer Implementation Guide",
         icon: <IconBrackets size={16} />,
@@ -101,6 +110,8 @@ const headerLinks: HeaderLink[] = [
     ],
   },
 ]
+
+console.log("headerLinks", headerLinks)
 
 export default function App(): JSX.Element {
   const [opened, { toggle, close }] = useDisclosure(false)
@@ -112,26 +123,25 @@ export default function App(): JSX.Element {
 
   useEffect(() => {
     const unsubscribe = router.subscribe("onRendered", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" })
       reinitializeRef.current()
     })
     return unsubscribe
   }, [router])
 
   const pageItems = headerLinks
-    .filter((link) => opened || pathname.startsWith(link.to))
+    .filter((link) => opened || pathname.startsWith(link.to()))
     .map((link) => {
       const children = link.pages.map((page) => (
         <NavLink
           classNames={NavLinkClasses}
           variant="subtle"
           key={page.key}
-          active={pathname === page.to}
+          active={pathname === page.to()}
           label={page.label}
           description={page.description}
           leftSection={page.icon}
           onClick={() => {
-            navigate({ to: page.to })
+            navigate({ to: page.to() })
             close()
           }}
         />
@@ -140,8 +150,8 @@ export default function App(): JSX.Element {
         defaultOpened={true}
         classNames={NavLinkClasses}
         variant="subtle"
-        key={link.to}
-        active={pathname.startsWith(link.to)}
+        key={link.to()}
+        active={pathname.startsWith(link.to())}
         label={link.label}
         description=""
         leftSection={link.pages[0].icon}
@@ -152,7 +162,7 @@ export default function App(): JSX.Element {
   
 
   const headerItems = headerLinks.map((link) => (
-    <Button key={link.label} variant={pathname.includes(link.to) ? "light" : "subtle"} onClick={() => navigate({ to: link.to })}>
+    <Button key={link.label} variant={pathname.includes(link.to()) ? "light" : "subtle"} onClick={() => navigate({ to: link.to() })}>
       {link.label}
     </Button>
   ))

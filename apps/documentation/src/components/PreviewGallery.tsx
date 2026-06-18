@@ -108,7 +108,7 @@ export function PreviewGallery({ previews, kind }: PreviewGalleryProps): JSX.Ele
                   <Badge variant="light">{kind}</Badge>
                 </Group>
 
-                <Tabs defaultValue="view" variant="pills" keepMounted>
+                <Tabs defaultValue="view" variant="pills" keepMounted radius="md">
                   <Tabs.List>
                     <Tabs.Tab value="view">View</Tabs.Tab>
                     <Tabs.Tab value="code">Code</Tabs.Tab>
@@ -116,7 +116,10 @@ export function PreviewGallery({ previews, kind }: PreviewGalleryProps): JSX.Ele
 
                   <Tabs.Panel value="view" pt="md">
                     <Group align="flex-start" wrap="nowrap" gap="md">
-                      <div
+                      <Card
+                        withBorder
+                        radius="md"
+                        p={0}
                         ref={(node) => {
                           if (node) {
                             previewRefs.current.set(preview.id, node)
@@ -128,8 +131,8 @@ export function PreviewGallery({ previews, kind }: PreviewGalleryProps): JSX.Ele
                           position: "relative",
                           minHeight: "20rem",
                           width: "100%",
-                          borderRadius: "0.5rem",
-                          border: "1px solid color-mix(in srgb, var(--mantine-color-default-border) 60%, transparent)",
+                          // borderRadius: "0.5rem",
+                          // border: "1px solid color-mix(in srgb, var(--mantine-color-default-border) 60%, transparent)",
                           overflow: "hidden",
                           overscrollBehavior: "contain",
                         }}
@@ -236,7 +239,7 @@ export function PreviewGallery({ previews, kind }: PreviewGalleryProps): JSX.Ele
                   </Tabs.Panel>
 
                   <Tabs.Panel value="code" pt="md">
-                    <CodeHighlight code={codeSnippet} language="ts" radius="md" />
+                    <CodeHighlight code={codeSnippet} language="ts" radius="md" withBorder/>
                   </Tabs.Panel>
                 </Tabs>
               </Stack>

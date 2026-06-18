@@ -1,5 +1,6 @@
 import "@mantine/core/styles.css"
 import "./styles/main.css"
+import '@mantine/code-highlight/styles.css';
 import { CodeHighlightAdapterProvider, createShikiAdapter } from "@mantine/code-highlight"
 import { createTheme, MantineProvider, rem } from "@mantine/core"
 import { createRouter, RouterProvider } from "@tanstack/react-router"
@@ -10,7 +11,7 @@ import { routeTree } from "./routeTree.gen"
 async function loadShiki() {
   const { createHighlighter } = await import("shiki")
   const shiki = await createHighlighter({
-    langs: ["tsx", "ts", "json", "vue", "svelte"],
+    langs: ["tsx", "ts", "json", "vue", "svelte", "shell", "bash"],
     // You can load supported themes here
     themes: [],
   })

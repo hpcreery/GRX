@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ViewerIndexRouteImport } from './routes/viewer/index'
 import { Route as EngineIndexRouteImport } from './routes/engine/index'
+import { Route as ViewerRequirementsRouteImport } from './routes/viewer/requirements'
 import { Route as ViewerInstallRouteImport } from './routes/viewer/install'
 import { Route as EngineSymbolsRouteImport } from './routes/engine/symbols'
 import { Route as EngineShapesRouteImport } from './routes/engine/shapes'
@@ -30,6 +31,11 @@ const ViewerIndexRoute = ViewerIndexRouteImport.update({
 const EngineIndexRoute = EngineIndexRouteImport.update({
   id: '/engine/',
   path: '/engine/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ViewerRequirementsRoute = ViewerRequirementsRouteImport.update({
+  id: '/viewer/requirements',
+  path: '/viewer/requirements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ViewerInstallRoute = ViewerInstallRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/engine/shapes': typeof EngineShapesRoute
   '/engine/symbols': typeof EngineSymbolsRoute
   '/viewer/install': typeof ViewerInstallRoute
+  '/viewer/requirements': typeof ViewerRequirementsRoute
   '/engine/': typeof EngineIndexRoute
   '/viewer/': typeof ViewerIndexRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/engine/shapes': typeof EngineShapesRoute
   '/engine/symbols': typeof EngineSymbolsRoute
   '/viewer/install': typeof ViewerInstallRoute
+  '/viewer/requirements': typeof ViewerRequirementsRoute
   '/engine': typeof EngineIndexRoute
   '/viewer': typeof ViewerIndexRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/engine/shapes': typeof EngineShapesRoute
   '/engine/symbols': typeof EngineSymbolsRoute
   '/viewer/install': typeof ViewerInstallRoute
+  '/viewer/requirements': typeof ViewerRequirementsRoute
   '/engine/': typeof EngineIndexRoute
   '/viewer/': typeof ViewerIndexRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/engine/shapes'
     | '/engine/symbols'
     | '/viewer/install'
+    | '/viewer/requirements'
     | '/engine/'
     | '/viewer/'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/engine/shapes'
     | '/engine/symbols'
     | '/viewer/install'
+    | '/viewer/requirements'
     | '/engine'
     | '/viewer'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/engine/shapes'
     | '/engine/symbols'
     | '/viewer/install'
+    | '/viewer/requirements'
     | '/engine/'
     | '/viewer/'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   EngineShapesRoute: typeof EngineShapesRoute
   EngineSymbolsRoute: typeof EngineSymbolsRoute
   ViewerInstallRoute: typeof ViewerInstallRoute
+  ViewerRequirementsRoute: typeof ViewerRequirementsRoute
   EngineIndexRoute: typeof EngineIndexRoute
   ViewerIndexRoute: typeof ViewerIndexRoute
 }
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/engine'
       fullPath: '/engine/'
       preLoaderRoute: typeof EngineIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/viewer/requirements': {
+      id: '/viewer/requirements'
+      path: '/viewer/requirements'
+      fullPath: '/viewer/requirements'
+      preLoaderRoute: typeof ViewerRequirementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/viewer/install': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   EngineShapesRoute: EngineShapesRoute,
   EngineSymbolsRoute: EngineSymbolsRoute,
   ViewerInstallRoute: ViewerInstallRoute,
+  ViewerRequirementsRoute: ViewerRequirementsRoute,
   EngineIndexRoute: EngineIndexRoute,
   ViewerIndexRoute: ViewerIndexRoute,
 }

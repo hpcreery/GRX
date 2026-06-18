@@ -19,7 +19,7 @@ export function IntegrationPage(): JSX.Element {
       </Text>
 
       <Card withBorder radius="lg" p="lg">
-        <Tabs defaultValue="react" variant="pills" keepMounted={false}>
+        <Tabs defaultValue="react" variant="pills" radius="sm" keepMounted={false}>
           <Tabs.List>
             <Tabs.Tab value="react">React</Tabs.Tab>
             <Tabs.Tab value="svelte">Svelte</Tabs.Tab>
