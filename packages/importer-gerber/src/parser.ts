@@ -1705,7 +1705,10 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
     // check if the name matches the spec correct name of /[._a-zA-Z$][._a-zA-Z0-9]*/
     if (!/^[._a-zA-Z$][._a-zA-Z0-9]*$/.test(name)) {
-      this.errors.push({ message: `Warning. Macro name '${name}' does not match the specification for macro names. Macro names should match the regex /[._a-zA-Z$][._a-zA-Z0-9]*/. Macro will still be processed as normal.`, location: ctx.Name[0] })
+      this.errors.push({
+        message: `Warning. Macro name '${name}' does not match the specification for macro names. Macro names should match the regex /[._a-zA-Z$][._a-zA-Z0-9]*/. Macro will still be processed as normal.`,
+        location: ctx.Name[0],
+      })
     }
 
     this.currentMacroBlocks = []

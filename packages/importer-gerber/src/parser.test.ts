@@ -142,7 +142,7 @@ M02*`
     expect(primitiveBlocks[0].parameters?.[1]).toBe("$2")
   })
 
-    it("parses AM with some not allowed characters in name like '/'", () => {
+  it("parses AM with some not allowed characters in name like '/'", () => {
     const variableExpressionMacroGerber = `%FSLAX34Y34*%
 %MOIN*%
 %AMVARTEST-10_B/C*

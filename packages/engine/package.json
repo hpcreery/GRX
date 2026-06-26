@@ -63,8 +63,5 @@
     "vite-plugin-comlink": "^5.3.0",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
     "vite-plugin-glsl": "^1.5.4"
-  },
-  "overrides": {
-    "esbuild": "0.26.0"
   }
 }
