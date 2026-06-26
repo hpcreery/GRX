@@ -178,11 +178,11 @@ const symbolConstructorNames: Record<string, string> = {
 }
 
 const shapeCodeExamples: Record<string, string> = {
-  "primitive-pad": `const shape = new Pad({\n  symbol: new RoundSymbol({ outer_dia: 18, inner_dia: 0 }),\n})`,
+  "primitive-pad": `const shape = new Pad({\n  x: 0,\n  y: 0,\n  mirror_x: 0,\n  mirror_y: 0,\n  polarity: 1,\n  rotation: 0,\n  resize_factor: 1,\n  symbol: new RoundSymbol({ outer_dia: 18, inner_dia: 0 }),\n})`,
   "primitive-line": `const shape = new Line({\n  xs: -12, ys: 0, xe: 12, ye: 0,\n  symbol: new RectangleSymbol({ width: 4, height: 16, inner_dia: 0 }),\n})`,
   "primitive-arc": `const shape = new Arc({\n  xs: -10, ys: 0, xe: 10, ye: 0, xc: 0, yc: 0,\n  symbol: new RoundSymbol({ outer_dia: 18, inner_dia: 0 }),\n})`,
   surface: `const shape = new Surface({\n  contours: [\n    new Contour({ xs: -14, ys: -10 }).addSegments([\n      new Contour_Line_Segment({ x: 14, y: -10 }),\n      new Contour_Arc_Segment({ x: 14, y: 10, xc: 16, yc: 0, clockwise: 0 }),\n      new Contour_Line_Segment({ x: -14, y: 10 }),\n      new Contour_Line_Segment({ x: -14, y: -10 }),\n    ]),\n  ],\n})`,
-  polyline: `const shape = new PolyLine({\n  xs: -14, ys: -14, width: 3,\n  lines: [{ x: 10, y: -14 }, { x: 14, y: 8 }, { x: -4, y: 14 }, { x: -14, y: -2 }],\n})`,
+  polyline: `const shape = new PolyLine({\n  xs: -14, ys: -14, width: 3, pathtype: "round", cornertype: "round",\n  lines: [{ x: 10, y: -14 }, { x: 14, y: 8 }, { x: -4, y: 14 }, { x: -14, y: -2 }],\n})`,
   "step-repeat": `const shape = new StepAndRepeat({\n  shapes: [\n    new Pad({ symbol: new RoundSymbol({ outer_dia: 10, inner_dia: 0 }) }),\n    new PolyLine({ xs: -5, ys: -5, width: 2, lines: [{ x: 5, y: -5 }, { x: 5, y: 5 }] }),\n  ],\n  repeats: [\n    { datum: [22, 0], rotation: 0, scale: 1, mirror_x: 0, mirror_y: 0 },\n    { datum: [0, 22], rotation: 0, scale: 1, mirror_x: 0, mirror_y: 0 },\n  ],\n})`,
   "datum-point": `const shape = new DatumPoint({\n  x: 0, y: 0,\n  symbol: new RoundSymbol({ outer_dia: 12, inner_dia: 0 }),\n})`,
   "datum-text": `const shape = new DatumText({\n  x: 0, y: 0, text: "DATUM",\n})`,
@@ -224,8 +224,7 @@ export function buildShapeCode(preview: PreviewSpec, controls: Record<string, Co
     return `${imports}\n\n${body}`
   }
 
-  const controlValuesBlock = controlEntries.map((entry) => `  ${entry.key}: ${formatControlValue(controls[entry.key] ?? entry.value)},`).join("\n")
-  return `${imports}\n\nconst controlValues = {\n${controlValuesBlock}\n}\n\n${body}`
+  return `${imports}\n\n${body}`
 }
 
 export const symbolPreviews: PreviewSpec[] = [

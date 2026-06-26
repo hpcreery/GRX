@@ -1,4 +1,4 @@
-import { Box, Button, Card, List, Stack, Text, Title } from "@mantine/core"
+import { Box, Button, Card, Divider, List, Stack, Text, Title } from "@mantine/core"
 import { IconBrandGithub, IconDownload, IconTerminal } from "@tabler/icons-react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"
@@ -17,7 +17,7 @@ function RouteComponent() {
       <Text c="dimmed" size="sm">
         Install GRX using the latest desktop release or run it locally from source.
       </Text>
-
+      <Divider my="md" />
       <Title id="web-system-requirements" order={2} mb="xs">
         Browser Requirements
       </Title>
@@ -25,6 +25,7 @@ function RouteComponent() {
         For the best experience, use the latest version of a modern web browser. GRX relies on WebGL 2.0 for rendering, so ensure your browser
         supports this technology.
       </Text>
+      <Divider my="md" />asdf
       <Title id="minimum-system-requirements" order={2} mb="xs">
         Minimum System Requirements
       </Title>

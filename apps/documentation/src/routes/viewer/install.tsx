@@ -2,7 +2,6 @@ import { Box, Button, Card, Code, Divider, List, Stack, Text, Title } from "@man
 import { IconBrandGithub, IconDownload, IconTerminal } from "@tabler/icons-react"
 import { createFileRoute } from "@tanstack/react-router"
 import type { JSX } from "react"
-import CodeCard from "../../components/Code"
 import { CodeHighlight, CodeHighlightControl } from "@mantine/code-highlight"
 
 export const Route = createFileRoute("/viewer/install")({

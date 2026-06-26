@@ -1,5 +1,5 @@
-import { Badge, Box, Button, Card, Group, List, SimpleGrid, Stack, Text, Title } from "@mantine/core"
-import { IconArrowRight, IconBook2, IconCode, IconDeviceLaptop, IconForms, IconSparkles } from "@tabler/icons-react"
+import { Badge, Button, Group, Stack, Text, Title } from "@mantine/core"
+import { IconArrowRight } from "@tabler/icons-react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Route as EngineRoute } from "./engine"
 import { Route as ViewerRoute } from "./viewer"
@@ -32,57 +32,6 @@ export function OverviewPage(): JSX.Element {
         </Group>
       </Stack>
 
-      <Card withBorder radius="lg" p="lg">
-        <Group gap="sm" mb="sm">
-          <IconBook2 size={18} />
-          <Text fw={600}>What this doc set covers</Text>
-        </Group>
-        <List spacing="xs" size="sm">
-          <List.Item>Install and run GRX locally.</List.Item>
-          <List.Item>Navigate and inspect artwork in the viewer.</List.Item>
-          <List.Item>Understand engine concepts: project, step, layer, shape.</List.Item>
-          <List.Item>Integrate engine rendering into React, Svelte, and Vue.</List.Item>
-        </List>
-      </Card>
-
-      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="md">
-        <Card id="installation" withBorder radius="lg" p="lg">
-          <Group gap="sm" align="center">
-            <IconDeviceLaptop size={18} />
-            <Text fw={600}>Installation</Text>
-          </Group>
-          <Text c="dimmed" size="sm" mt="sm">
-            Install dependencies and run the workspace with pnpm.
-          </Text>
-          <Box component="pre" mt="md" style={{ margin: 0 }}>{`pnpm install\npnpm dev\npnpm build`}</Box>
-        </Card>
-
-        <Card id="using-the-viewer" withBorder radius="lg" p="lg">
-          <Group gap="sm" align="center">
-            <IconSparkles size={18} />
-            <Text fw={600}>Using the viewer</Text>
-          </Group>
-          <Text c="dimmed" size="sm" mt="sm">
-            Load artwork, inspect layers, and navigate geometry with engine-backed views.
-          </Text>
-          <Box component="pre" mt="md" style={{ margin: 0 }}>{`1. Open GRX\n2. Import artwork\n3. Toggle layers/units\n4. Inspect geometry`}</Box>
-        </Card>
-
-        <Card id="developer-surface" withBorder radius="lg" p="lg">
-          <Group gap="sm" align="center">
-            <IconCode size={18} />
-            <Text fw={600}>Developer surface</Text>
-          </Group>
-          <Text c="dimmed" size="sm" mt="sm">
-            {"Engine flow maps to Renderer -> project -> step -> layer -> shape."}
-          </Text>
-          <Box
-            component="pre"
-            mt="md"
-            style={{ margin: 0 }}
-          >{`Renderer -> project -> step -> layer -> shape\n\nEach managed view points at one step.`}</Box>
-        </Card>
-      </SimpleGrid>
     </Stack>
   )
 }
