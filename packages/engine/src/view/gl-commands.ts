@@ -570,9 +570,6 @@ export function initializeRenderers(regl: REGL.Regl): void {
       ],
     },
 
-    cull: {
-      enable: true,
-    },
 
     instances: regl.prop<SurfaceAttachments, "length">("length"),
     count: 3,
