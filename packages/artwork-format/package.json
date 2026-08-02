@@ -1,10 +1,22 @@
 {
   "name": "@grx/artwork-format",
   "exports": {
-    "./shape": "./src/shape.ts",
-    "./symbol": "./src/symbol.ts",
-    "./types": "./src/types.ts",
-    "./utils": "./src/utils.ts"
+    "./shape": {
+      "default": "./dist/src/shape.js",
+      "types": "./dist/src/shape.d.ts"
+    },
+    "./symbol": {
+      "default": "./dist/src/symbol.js",
+      "types": "./dist/src/symbol.d.ts"
+    },
+    "./types": {
+      "default": "./dist/src/types.js",
+      "types": "./dist/src/types.d.ts"
+    },
+    "./utils": {
+      "default": "./dist/src/utils.js",
+      "types": "./dist/src/utils.d.ts"
+    }
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

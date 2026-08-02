@@ -2,7 +2,7 @@
 // 	Vector4
 // } from 'three';
 
-import * as NURBSUtils from "../curves/NURBSUtils.js"
+import * as NURBSUtils from "./NURBSUtils"
 import { Vector4 } from "../vec"
 
 /**
