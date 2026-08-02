@@ -1,8 +1,8 @@
 import { types } from "@grx/engine"
 import { Kbd, SegmentedControl } from "@mantine/core"
 import { useHotkeys, useLocalStorage } from "@mantine/hooks"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { actions } from "@src/contexts/Spotlight"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
+import { actions } from "@grx/viewer/contexts/Spotlight"
 import { IconPointerPin } from "@tabler/icons-react"
 import { type JSX, useContext, useEffect } from "react"
 

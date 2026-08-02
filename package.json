@@ -17,6 +17,9 @@
     "typecheck": "turbo run typecheck",
     "changelog": "git-cliff --config cliff.toml --latest"
   },
+  "dependencies": {
+    "typescript": "^7.0.2"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.5",
     "@commitlint/cli": "^20.4.2",
@@ -25,11 +28,11 @@
     "git-cliff": "^2.12.0",
     "husky": "^9.1.7",
     "npm-check-updates": "^22.1.1",
-    "turbo": "2.9.9",
-    "typescript": "6.0.3"
+    "turbo": "2.9.9"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "deno": ">=2.9.0"
   },
   "packageManager": "pnpm@11.4.0+sha512.f0febc7e37552ab485494a914241b338e0b3580b93d54ce31f00933015880863129038a1b4ae4e414a0ee63ac35bf21197e990172c4a68256450b5636310968f",
   "workspaces": [

@@ -4,7 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from "@dnd-kit/utilities"
 import { type types, utils } from "@grx/engine"
 import { Button, Group, Input, Modal, NumberInput, Paper, Space, Stack, Switch } from "@mantine/core"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import { IconGripHorizontal } from "@tabler/icons-react"
 import { vec2 } from "gl-matrix"
 import { type JSX, useContext, useEffect, useState } from "react"

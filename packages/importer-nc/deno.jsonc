@@ -1,0 +1,33 @@
+{
+  "name": "@grx/importer-nc",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "deno.ns", "node", "esnext"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "test:watch": "deno test --watch --allow-read --allow-net --allow-env",
+    "build:types": "deno run -A npm:tsx src/parser/gen_dts_signature.js",
+    "check": "deno check"
+  },
+  "exclude": ["dist/", "**/node_modules/**/*"],
+  "imports": {
+    "@mantine/core": "npm:@mantine/core",
+    "@rollup/plugin-typescript": "npm:@rollup/plugin-typescript@^12.3.0",
+    "@types/node": "npm:@types/node@^25.9.1",
+    "chevrotain": "npm:chevrotain@^12.0.0",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "react": "npm:react",
+    "tsx": "npm:tsx",
+    "typescript": "npm:typescript@^6.0.3",
+    "vite": "npm:vite@^7.3.2",
+    "vite-plugin-arraybuffer": "npm:vite-plugin-arraybuffer@^0.1.1",
+    "vitest": "npm:vitest@^4.0.18"
+  }
+}

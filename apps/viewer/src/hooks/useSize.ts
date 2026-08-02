@@ -13,6 +13,7 @@ export default function useSize<T extends HTMLElement>(target: React.MutableRefO
     setSize({ width, height })
   }, [target])
 
+  // @ts-ignore asdf
   useResizeObserver(target, (entry) => {
     const { inlineSize: width, blockSize: height } = entry.contentBoxSize[0]
     setSize({ width, height })

@@ -1,5 +1,5 @@
-import { type CstNode, CstParser, createToken, generateCstDts, type IToken, Lexer, type ParserMethod, type Rule } from "chevrotain"
-import standardFont from "./standard?raw"
+import { createToken, type CstNode, CstParser, generateCstDts, type IToken, Lexer, type ParserMethod, type Rule } from "chevrotain"
+import standardFont from "./standard" with { type: "text" }
 
 const SHXTokens = {
   WhiteSpace: createToken({ name: "WhiteSpace", pattern: /\s+/, group: Lexer.SKIPPED }),

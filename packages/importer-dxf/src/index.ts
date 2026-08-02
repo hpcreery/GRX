@@ -2,6 +2,7 @@ import DxfParser from "dxf-parser"
 import * as converter from "./converter"
 
 export function parseDXF(dxfString: string): converter.Layers {
+  // @ts-ignore unknown type DxfParser
   const parser = new DxfParser()
   let dxf
   try {

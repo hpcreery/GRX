@@ -12,7 +12,7 @@ export const SIMPLE_TOOL = "simpleTool"
 export const MACRO_TOOL = "macroTool"
 
 import * as Constants from "@hpcreery/tracespace-parser"
-import { plotShapes } from "."
+import { plotShapes } from "./index"
 import type { PlotOptions } from "./options"
 
 export interface SimpleTool {

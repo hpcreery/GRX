@@ -1,6 +1,6 @@
 import * as Symbols from "@grx/artwork-format/symbol"
 import { type Binary, FeatureTypeIdentifier } from "@grx/artwork-format/types"
-import { type ArtworkBufferCollection, MacroArtworkCollection, SymbolBufferCollection } from "@src/data/artwork-collections"
+import { type ArtworkBufferCollection, MacroArtworkCollection, SymbolBufferCollection } from "../data/artwork-collections"
 import { vec2 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
@@ -46,7 +46,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
   public shaderAttachment: TShaderAttachment
   public stepAndRepeats: StepAndRepeatRenderer[] = []
 
-  private updateTimer: NodeJS.Timeout | null = null
+  private updateTimer: ReturnType<typeof setTimeout> | null = null
   private updateDelay = settings.MSPFRAME // milliseconds
 
   constructor(props: { regl: REGL.Regl; artwork: ArtworkBufferCollection }) {
@@ -348,11 +348,11 @@ export abstract class SymbolShaderCollection {
   }
 
   private static _update(): void {
-    if (SymbolBufferCollection.length == 0) return
-    const data = new Float32Array(SymbolBufferCollection.buffer).slice(0, SYMBOL_PARAMETERS.length * SymbolBufferCollection.length)
+    if (SymbolBufferCollection.len == 0) return
+    const data = new Float32Array(SymbolBufferCollection.buffer).slice(0, SYMBOL_PARAMETERS.length * SymbolBufferCollection.len)
     SymbolShaderCollection.texture({
       width: SYMBOL_PARAMETERS.length,
-      height: SymbolBufferCollection.length,
+      height: SymbolBufferCollection.len,
       type: "float",
       format: "luminance",
       data,
@@ -367,7 +367,7 @@ export abstract class SymbolShaderCollection {
 export abstract class MacroShaderCollection {
   public static regl: REGL.Regl
   public static macros: Map<string, MacroRenderer> = new Map<string, MacroRenderer>()
-  private static updateTimer: NodeJS.Timeout | null = null
+  private static updateTimer: ReturnType<typeof setTimeout> | null = null
   private static updateDelay = settings.MSPFRAME // milliseconds
 
   public static update(): void {

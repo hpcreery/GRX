@@ -1,8 +1,8 @@
 import type * as Shapes from "@grx/artwork-format/shape"
 import type { BoundingBox, Units } from "@grx/artwork-format/types"
-import { ArtworkBufferCollection } from "@src/data/artwork-collections"
-import { DataInterface } from "@src/data/interface"
-import type { Step, StepLayer } from "@src/data/project"
+import { ArtworkBufferCollection } from "../data/artwork-collections"
+import { DataInterface } from "../data/interface"
+import type { Step, StepLayer } from "../data/project"
 import { mat3, mat4, vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
 import type { RenderSettings } from "../settings"
@@ -880,11 +880,15 @@ export class ViewRenderer extends UpdateEventTarget {
     vec2.set(position, centerX, centerY)
 
     // validation checks
-    if (Number.isNaN(boundingBox.min[0]) || Number.isNaN(boundingBox.min[1]) || Number.isNaN(boundingBox.max[0]) || Number.isNaN(boundingBox.max[1]))
+    if (
+      Number.isNaN(boundingBox.min[0]) || Number.isNaN(boundingBox.min[1]) || Number.isNaN(boundingBox.max[0]) || Number.isNaN(boundingBox.max[1])
+    ) {
       return
+    }
     if (boundingBox.min[0] > boundingBox.max[0] || boundingBox.min[1] > boundingBox.max[1]) return
-    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity)
+    if (boundingBox.min[0] === Infinity || boundingBox.min[1] === Infinity || boundingBox.max[0] === -Infinity || boundingBox.max[1] === -Infinity) {
       return
+    }
 
     this.updateTransform({ zoom, position })
     this.announceUpdate()
@@ -984,21 +988,22 @@ export class ViewRenderer extends UpdateEventTarget {
             this.drawCollections.overlayBlendFunc(() =>
               this.drawCollections.renderTextureToScreen({
                 renderTexture: layer.framebuffer,
-              }),
+              })
             )
           } else if (settings.COLOR_BLEND == ColorBlend.CONTRAST) {
             this.drawCollections.contrastBlendFunc(() =>
               this.drawCollections.renderTextureToScreen({
                 renderTexture: layer.framebuffer,
-              }),
+              })
             )
-          }
-          // TODO: add more blend modes here
+          } // TODO: add more blend modes here
           else {
-            this.drawCollections.opaqueBlendFunc({ color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) }, () =>
-              this.drawCollections.renderTextureToScreen({
-                renderTexture: layer.framebuffer,
-              }),
+            this.drawCollections.opaqueBlendFunc(
+              { color: vec4.fromValues(layer.color[0], layer.color[1], layer.color[2], 1) },
+              () =>
+                this.drawCollections.renderTextureToScreen({
+                  renderTexture: layer.framebuffer,
+                }),
             )
           }
         })
@@ -1143,7 +1148,7 @@ class UtilitiesRenderer extends BaseFrameBufferRenderer {
     })
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public override render(context: REGL.DefaultContext & WorldContext): void {
     super.render(context, () => {
       this.renderGrid(() => {
         if (origin.enabled) this.drawCollections.renderOrigin()

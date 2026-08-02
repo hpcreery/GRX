@@ -1,0 +1,81 @@
+{
+  "name": "@grx/engine",
+  "version": "0.0.2",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "dom.asynciterable",
+      "deno.ns",
+      "es2024",
+      "deno.worker",
+      "webworker",
+      "webworker.asynciterable",
+      "webworker.importscripts",
+      "webworker.iterable"
+    ],
+    "rootDirs": [
+      "./src"
+    ],
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "types": [
+      "npm:vite/client",
+      "npm:vite-plugin-glsl/ext",
+      "npm:vite-plugin-arraybuffer/types"
+    ]
+  },
+  "tasks": {
+    "dev": "deno run -A npm:vite dev --config vite.config.ts",
+    "build": "deno run -A vite build --config vite.config.ts",
+    "build:shaders": "deno run -A src/shaders/build.js",
+    "build:shaders:watch": "deno run -A src/shaders/watch.js",
+    "typecheck": "deno check --watch src/",
+    "test:vitest": "deno run -A npm:vitest run",
+    "transpile": "deno transpile src/**/* --outdir dist",
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "check": "deno check"
+  },
+  "exclude": [
+    "dist/",
+    "**/data/shape/text/odb/standard"
+  ],
+  "imports": {
+    "@deno/vite-plugin": "npm:@deno/vite-plugin@^2.0.2",
+    "@mantine/core": "npm:@mantine/core@^9.0.1",
+    "@mantine/hooks": "npm:@mantine/hooks@^9.0.1",
+    "@types/earcut": "npm:@types/earcut@^3.0.0",
+    "@types/react": "npm:@types/react@^19.2.14",
+    "@types/react-dom": "npm:@types/react-dom@19.2.3",
+    "@typescript/typescript6": "npm:@typescript/typescript6@^6.0.2",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.2.0",
+    "chevrotain": "npm:chevrotain@^12.0.0",
+    "chokidar": "npm:chokidar@^5.0.0",
+    "comlink": "npm:comlink@^4.4.2",
+    "earcut": "npm:earcut@^3.0.2",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "glslify": "npm:glslify@^7.1.1",
+    "glslify-import": "npm:glslify-import@^3.1.0",
+    "ndarray": "npm:ndarray@^1.0.19",
+    "react": "npm:react@^19.2.4",
+    "react-dom": "npm:react-dom@^19.2.4",
+    "regl": "npm:regl@^2.1.1",
+    "rollup-plugin-glslify": "npm:rollup-plugin-glslify@^1.3.1",
+    "typescript": "npm:typescript@^7.0.2",
+    "typescript-event-target": "npm:typescript-event-target@^1.1.1",
+    "unplugin-dts": "npm:unplugin-dts@^1.0.3",
+    "vite": "npm:vite@^7.3.2",
+    "vite-plugin-arraybuffer": "npm:vite-plugin-arraybuffer@^0.1.1",
+    "vite-plugin-comlink": "npm:vite-plugin-comlink@^5.3.0",
+    "vite-plugin-cross-origin-isolation": "npm:vite-plugin-cross-origin-isolation@^0.1.6",
+    "vite-plugin-glsl": "npm:vite-plugin-glsl@^1.5.4",
+    "vitest": "npm:vitest@^4.0.18",
+    "webgl-utils": "npm:webgl-utils@^1.0.1",
+    "zod": "npm:zod@^4.1.12"
+  }
+}

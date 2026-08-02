@@ -1,0 +1,30 @@
+{
+  "name": "@grx/importer-gerber",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/parser.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "deno.ns", "node", "esnext"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "build:types": "deno run -A npm:tsx src/gen_dts_signature.js",
+    "check": "deno check"
+  },
+  "exclude": ["dist/"],
+  "imports": {
+    "@rollup/plugin-typescript": "npm:@rollup/plugin-typescript@^12.3.0",
+    "@std/expect": "jsr:@std/expect@^1.0.17",
+    "@types/node": "npm:@types/node@^25.9.1",
+    "chevrotain": "npm:chevrotain@^12.0.0",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "tsx": "npm:tsx",
+    "typescript": "npm:typescript@^6.0.3",
+    "vite": "npm:vite@^7.3.2",
+    "vitest": "npm:vitest@^4.0.18"
+  }
+}

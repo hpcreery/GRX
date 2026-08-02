@@ -10,12 +10,13 @@ export const actions = new Proxy(actionsBase, {
   get(target, prop): SpotlightActionData | ((...t: SpotlightActionData[]) => number) {
     if (prop === "push") {
       return (...args): number => {
-        if (target.find((item) => item.id === args[0].id)) {
-          target = target.filter((item) => item.id !== args[0].id)
+        const existingIndex = target.findIndex((item) => item.id === args[0].id)
+        if (existingIndex !== -1) {
+          target.splice(existingIndex, 1)
         }
-        return target[prop](...args)
+        return target.push(...args)
       }
     }
-    return target[prop]
+    return Reflect.get(target, prop)
   },
 })

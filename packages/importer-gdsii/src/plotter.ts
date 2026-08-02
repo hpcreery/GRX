@@ -1,6 +1,6 @@
 import * as Shapes from "@grx/artwork-format/shape"
-// import * as Shapes from "@src/data/shape/shape"
-// import * as Symbols from "@src/data/shape/symbol/symbol"
+// import * as Shapes from "@grx/importer-gdsii/data/shape/shape"
+// import * as Symbols from "@grx/importer-gdsii/data/shape/symbol/symbol"
 import { vec2 } from "gl-matrix"
 import type * as TREE from "./gdsii_tree"
 import messages from "./messages"

@@ -1,0 +1,26 @@
+{
+  "name": "@grx/importer-gdsii",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": {
+    "./parser": "./src/parser.ts",
+    "./converter": "./src/converter.ts",
+    "./lexer": "./src/lexer.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "deno.ns", "node", "esnext"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "check": "deno check"
+  },
+  "exclude": ["dist/"],
+  "imports": {
+    "@types/node": "npm:@types/node@^26.1.1",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "typescript": "npm:typescript@^6.0.3",
+    "vitest": "npm:vitest"
+  }
+}

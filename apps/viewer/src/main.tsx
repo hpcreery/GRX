@@ -73,6 +73,7 @@ function Main(): JSX.Element | null {
     // fontSmoothing: false,
     components: {
       Modal: {
+        // @ts-ignore any
         styles: (_theme) => ({
           header: {
             minHeight: rem(1),

@@ -1,19 +1,78 @@
-// biome-ignore-all lint: this file is an external dependency
-// import * as MathUtils from './MathUtils.js';
-// import { Quaternion } from './Quaternion.js';
+export type Vector3Like = {
+  x: number
+  y: number
+  z: number
+}
 
-class Vector3 {
+export type Matrix3Like = {
+  elements: ArrayLike<number>
+}
+
+export type Matrix4Like = {
+  elements: ArrayLike<number>
+}
+
+export type QuaternionLike = {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+export type CameraLike = {
+  matrixWorldInverse: Matrix4Like
+  projectionMatrix: Matrix4Like
+  projectionMatrixInverse: Matrix4Like
+  matrixWorld: Matrix4Like
+}
+
+export type SphericalLike = {
+  radius: number
+  phi: number
+  theta: number
+}
+
+export type CylindricalLike = {
+  radius: number
+  theta: number
+  y: number
+}
+
+export type EulerLike = {
+  _x: number
+  _y: number
+  _z: number
+}
+
+export type ColorLike = {
+  r: number
+  g: number
+  b: number
+}
+
+export type BufferAttribute3Like = {
+  getX: (index: number) => number
+  getY: (index: number) => number
+  getZ: (index: number) => number
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+export class Vector3 {
+  public x: number
+  public y: number
+  public z: number
+  public readonly isVector3: true = true
+
   constructor(x = 0, y = 0, z = 0) {
-    Vector3.prototype.isVector3 = true
-
     this.x = x
     this.y = y
     this.z = z
   }
 
-  set(x, y, z) {
-    if (z === undefined) z = this.z // sprite.scale.set(x,y)
-
+  set(x: number, y: number, z: number = this.z): this {
     this.x = x
     this.y = y
     this.z = z
@@ -21,7 +80,7 @@ class Vector3 {
     return this
   }
 
-  setScalar(scalar) {
+  setScalar(scalar: number): this {
     this.x = scalar
     this.y = scalar
     this.z = scalar
@@ -29,25 +88,25 @@ class Vector3 {
     return this
   }
 
-  setX(x) {
+  setX(x: number): this {
     this.x = x
 
     return this
   }
 
-  setY(y) {
+  setY(y: number): this {
     this.y = y
 
     return this
   }
 
-  setZ(z) {
+  setZ(z: number): this {
     this.z = z
 
     return this
   }
 
-  setComponent(index, value) {
+  setComponent(index: number, value: number): this {
     switch (index) {
       case 0:
         this.x = value
@@ -65,7 +124,7 @@ class Vector3 {
     return this
   }
 
-  getComponent(index) {
+  getComponent(index: number): number {
     switch (index) {
       case 0:
         return this.x
@@ -78,11 +137,11 @@ class Vector3 {
     }
   }
 
-  clone() {
-    return new this.constructor(this.x, this.y, this.z)
+  clone(): Vector3 {
+    return new Vector3(this.x, this.y, this.z)
   }
 
-  copy(v) {
+  copy(v: Vector3Like): this {
     this.x = v.x
     this.y = v.y
     this.z = v.z
@@ -90,7 +149,7 @@ class Vector3 {
     return this
   }
 
-  add(v) {
+  add(v: Vector3Like): this {
     this.x += v.x
     this.y += v.y
     this.z += v.z
@@ -98,7 +157,7 @@ class Vector3 {
     return this
   }
 
-  addScalar(s) {
+  addScalar(s: number): this {
     this.x += s
     this.y += s
     this.z += s
@@ -106,7 +165,7 @@ class Vector3 {
     return this
   }
 
-  addVectors(a, b) {
+  addVectors(a: Vector3Like, b: Vector3Like): this {
     this.x = a.x + b.x
     this.y = a.y + b.y
     this.z = a.z + b.z
@@ -114,7 +173,7 @@ class Vector3 {
     return this
   }
 
-  addScaledVector(v, s) {
+  addScaledVector(v: Vector3Like, s: number): this {
     this.x += v.x * s
     this.y += v.y * s
     this.z += v.z * s
@@ -122,7 +181,7 @@ class Vector3 {
     return this
   }
 
-  sub(v) {
+  sub(v: Vector3Like): this {
     this.x -= v.x
     this.y -= v.y
     this.z -= v.z
@@ -130,7 +189,7 @@ class Vector3 {
     return this
   }
 
-  subScalar(s) {
+  subScalar(s: number): this {
     this.x -= s
     this.y -= s
     this.z -= s
@@ -138,7 +197,7 @@ class Vector3 {
     return this
   }
 
-  subVectors(a, b) {
+  subVectors(a: Vector3Like, b: Vector3Like): this {
     this.x = a.x - b.x
     this.y = a.y - b.y
     this.z = a.z - b.z
@@ -146,7 +205,7 @@ class Vector3 {
     return this
   }
 
-  multiply(v) {
+  multiply(v: Vector3Like): this {
     this.x *= v.x
     this.y *= v.y
     this.z *= v.z
@@ -154,7 +213,7 @@ class Vector3 {
     return this
   }
 
-  multiplyScalar(scalar) {
+  multiplyScalar(scalar: number): this {
     this.x *= scalar
     this.y *= scalar
     this.z *= scalar
@@ -162,7 +221,7 @@ class Vector3 {
     return this
   }
 
-  multiplyVectors(a, b) {
+  multiplyVectors(a: Vector3Like, b: Vector3Like): this {
     this.x = a.x * b.x
     this.y = a.y * b.y
     this.z = a.z * b.z
@@ -170,22 +229,10 @@ class Vector3 {
     return this
   }
 
-  // applyEuler( euler ) {
-
-  // 	return this.applyQuaternion( _quaternion.setFromEuler( euler ) );
-
-  // }
-
-  // applyAxisAngle( axis, angle ) {
-
-  // 	return this.applyQuaternion( _quaternion.setFromAxisAngle( axis, angle ) );
-
-  // }
-
-  applyMatrix3(m) {
-    const x = this.x,
-      y = this.y,
-      z = this.z
+  applyMatrix3(m: Matrix3Like): this {
+    const x = this.x
+    const y = this.y
+    const z = this.z
     const e = m.elements
 
     this.x = e[0] * x + e[3] * y + e[6] * z
@@ -195,14 +242,14 @@ class Vector3 {
     return this
   }
 
-  applyNormalMatrix(m) {
+  applyNormalMatrix(m: Matrix3Like): this {
     return this.applyMatrix3(m).normalize()
   }
 
-  applyMatrix4(m) {
-    const x = this.x,
-      y = this.y,
-      z = this.z
+  applyMatrix4(m: Matrix4Like): this {
+    const x = this.x
+    const y = this.y
+    const z = this.z
     const e = m.elements
 
     const w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15])
@@ -214,23 +261,19 @@ class Vector3 {
     return this
   }
 
-  applyQuaternion(q) {
-    // quaternion q is assumed to have unit length
+  applyQuaternion(q: QuaternionLike): this {
+    const vx = this.x
+    const vy = this.y
+    const vz = this.z
+    const qx = q.x
+    const qy = q.y
+    const qz = q.z
+    const qw = q.w
 
-    const vx = this.x,
-      vy = this.y,
-      vz = this.z
-    const qx = q.x,
-      qy = q.y,
-      qz = q.z,
-      qw = q.w
-
-    // t = 2 * cross( q.xyz, v );
     const tx = 2 * (qy * vz - qz * vy)
     const ty = 2 * (qz * vx - qx * vz)
     const tz = 2 * (qx * vy - qy * vx)
 
-    // v + q.w * t + cross( q.xyz, t );
     this.x = vx + qw * tx + qy * tz - qz * ty
     this.y = vy + qw * ty + qz * tx - qx * tz
     this.z = vz + qw * tz + qx * ty - qy * tx
@@ -238,21 +281,18 @@ class Vector3 {
     return this
   }
 
-  project(camera) {
+  project(camera: CameraLike): this {
     return this.applyMatrix4(camera.matrixWorldInverse).applyMatrix4(camera.projectionMatrix)
   }
 
-  unproject(camera) {
+  unproject(camera: CameraLike): this {
     return this.applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld)
   }
 
-  transformDirection(m) {
-    // input: THREE.Matrix4 affine matrix
-    // vector interpreted as a direction
-
-    const x = this.x,
-      y = this.y,
-      z = this.z
+  transformDirection(m: Matrix4Like): this {
+    const x = this.x
+    const y = this.y
+    const z = this.z
     const e = m.elements
 
     this.x = e[0] * x + e[4] * y + e[8] * z
@@ -262,7 +302,7 @@ class Vector3 {
     return this.normalize()
   }
 
-  divide(v) {
+  divide(v: Vector3Like): this {
     this.x /= v.x
     this.y /= v.y
     this.z /= v.z
@@ -270,11 +310,11 @@ class Vector3 {
     return this
   }
 
-  divideScalar(scalar) {
+  divideScalar(scalar: number): this {
     return this.multiplyScalar(1 / scalar)
   }
 
-  min(v) {
+  min(v: Vector3Like): this {
     this.x = Math.min(this.x, v.x)
     this.y = Math.min(this.y, v.y)
     this.z = Math.min(this.z, v.z)
@@ -282,7 +322,7 @@ class Vector3 {
     return this
   }
 
-  max(v) {
+  max(v: Vector3Like): this {
     this.x = Math.max(this.x, v.x)
     this.y = Math.max(this.y, v.y)
     this.z = Math.max(this.z, v.z)
@@ -290,31 +330,29 @@ class Vector3 {
     return this
   }
 
-  clamp(min, max) {
-    // assumes min < max, componentwise
-
-    this.x = Math.max(min.x, Math.min(max.x, this.x))
-    this.y = Math.max(min.y, Math.min(max.y, this.y))
-    this.z = Math.max(min.z, Math.min(max.z, this.z))
+  clamp(min: Vector3Like, max: Vector3Like): this {
+    this.x = clamp(this.x, min.x, max.x)
+    this.y = clamp(this.y, min.y, max.y)
+    this.z = clamp(this.z, min.z, max.z)
 
     return this
   }
 
-  clampScalar(minVal, maxVal) {
-    this.x = Math.max(minVal, Math.min(maxVal, this.x))
-    this.y = Math.max(minVal, Math.min(maxVal, this.y))
-    this.z = Math.max(minVal, Math.min(maxVal, this.z))
+  clampScalar(minVal: number, maxVal: number): this {
+    this.x = clamp(this.x, minVal, maxVal)
+    this.y = clamp(this.y, minVal, maxVal)
+    this.z = clamp(this.z, minVal, maxVal)
 
     return this
   }
 
-  clampLength(min, max) {
-    const length = this.length()
+  clampLength(min: number, max: number): this {
+    const len = this.length()
 
-    return this.divideScalar(length || 1).multiplyScalar(Math.max(min, Math.min(max, length)))
+    return this.divideScalar(len || 1).multiplyScalar(clamp(len, min, max))
   }
 
-  floor() {
+  floor(): this {
     this.x = Math.floor(this.x)
     this.y = Math.floor(this.y)
     this.z = Math.floor(this.z)
@@ -322,7 +360,7 @@ class Vector3 {
     return this
   }
 
-  ceil() {
+  ceil(): this {
     this.x = Math.ceil(this.x)
     this.y = Math.ceil(this.y)
     this.z = Math.ceil(this.z)
@@ -330,7 +368,7 @@ class Vector3 {
     return this
   }
 
-  round() {
+  round(): this {
     this.x = Math.round(this.x)
     this.y = Math.round(this.y)
     this.z = Math.round(this.z)
@@ -338,7 +376,7 @@ class Vector3 {
     return this
   }
 
-  roundToZero() {
+  roundToZero(): this {
     this.x = Math.trunc(this.x)
     this.y = Math.trunc(this.y)
     this.z = Math.trunc(this.z)
@@ -346,7 +384,7 @@ class Vector3 {
     return this
   }
 
-  negate() {
+  negate(): this {
     this.x = -this.x
     this.y = -this.y
     this.z = -this.z
@@ -354,33 +392,31 @@ class Vector3 {
     return this
   }
 
-  dot(v) {
+  dot(v: Vector3Like): number {
     return this.x * v.x + this.y * v.y + this.z * v.z
   }
 
-  // TODO lengthSquared?
-
-  lengthSq() {
+  lengthSq(): number {
     return this.x * this.x + this.y * this.y + this.z * this.z
   }
 
-  length() {
-    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
+  length(): number {
+    return Math.sqrt(this.lengthSq())
   }
 
-  manhattanLength() {
+  manhattanLength(): number {
     return Math.abs(this.x) + Math.abs(this.y) + Math.abs(this.z)
   }
 
-  normalize() {
+  normalize(): this {
     return this.divideScalar(this.length() || 1)
   }
 
-  setLength(length) {
+  setLength(length: number): this {
     return this.normalize().multiplyScalar(length)
   }
 
-  lerp(v, alpha) {
+  lerp(v: Vector3Like, alpha: number): this {
     this.x += (v.x - this.x) * alpha
     this.y += (v.y - this.y) * alpha
     this.z += (v.z - this.z) * alpha
@@ -388,7 +424,7 @@ class Vector3 {
     return this
   }
 
-  lerpVectors(v1, v2, alpha) {
+  lerpVectors(v1: Vector3Like, v2: Vector3Like, alpha: number): this {
     this.x = v1.x + (v2.x - v1.x) * alpha
     this.y = v1.y + (v2.y - v1.y) * alpha
     this.z = v1.z + (v2.z - v1.z) * alpha
@@ -396,17 +432,17 @@ class Vector3 {
     return this
   }
 
-  cross(v) {
+  cross(v: Vector3Like): this {
     return this.crossVectors(this, v)
   }
 
-  crossVectors(a, b) {
-    const ax = a.x,
-      ay = a.y,
-      az = a.z
-    const bx = b.x,
-      by = b.y,
-      bz = b.z
+  crossVectors(a: Vector3Like, b: Vector3Like): this {
+    const ax = a.x
+    const ay = a.y
+    const az = a.z
+    const bx = b.x
+    const by = b.y
+    const bz = b.z
 
     this.x = ay * bz - az * by
     this.y = az * bx - ax * bz
@@ -415,7 +451,7 @@ class Vector3 {
     return this
   }
 
-  projectOnVector(v) {
+  projectOnVector(v: Vector3): this {
     const denominator = v.lengthSq()
 
     if (denominator === 0) return this.set(0, 0, 0)
@@ -425,54 +461,37 @@ class Vector3 {
     return this.copy(v).multiplyScalar(scalar)
   }
 
-  projectOnPlane(planeNormal) {
+  projectOnPlane(planeNormal: Vector3): this {
     _vector.copy(this).projectOnVector(planeNormal)
 
     return this.sub(_vector)
   }
 
-  reflect(normal) {
-    // reflect incident vector off plane orthogonal to normal
-    // normal is assumed to have unit length
-
+  reflect(normal: Vector3): this {
     return this.sub(_vector.copy(normal).multiplyScalar(2 * this.dot(normal)))
   }
 
-  // angleTo( v ) {
-
-  // 	const denominator = Math.sqrt( this.lengthSq() * v.lengthSq() );
-
-  // 	if ( denominator === 0 ) return Math.PI / 2;
-
-  // 	const theta = this.dot( v ) / denominator;
-
-  // 	// clamp, to handle numerical problems
-
-  // 	return Math.acos( MathUtils.clamp( theta, - 1, 1 ) );
-
-  // }
-
-  distanceTo(v) {
+  distanceTo(v: Vector3Like): number {
     return Math.sqrt(this.distanceToSquared(v))
   }
 
-  distanceToSquared(v) {
-    const dx = this.x - v.x,
-      dy = this.y - v.y,
-      dz = this.z - v.z
+  distanceToSquared(v: Vector3Like): number {
+    const dx = this.x - v.x
+    const dy = this.y - v.y
+    const dz = this.z - v.z
 
     return dx * dx + dy * dy + dz * dz
   }
 
-  manhattanDistanceTo(v) {
+  manhattanDistanceTo(v: Vector3Like): number {
     return Math.abs(this.x - v.x) + Math.abs(this.y - v.y) + Math.abs(this.z - v.z)
   }
 
-  setFromSpherical(s) {
+  setFromSpherical(s: SphericalLike): this {
     return this.setFromSphericalCoords(s.radius, s.phi, s.theta)
   }
 
-  setFromSphericalCoords(radius, phi, theta) {
+  setFromSphericalCoords(radius: number, phi: number, theta: number): this {
     const sinPhiRadius = Math.sin(phi) * radius
 
     this.x = sinPhiRadius * Math.sin(theta)
@@ -482,11 +501,11 @@ class Vector3 {
     return this
   }
 
-  setFromCylindrical(c) {
+  setFromCylindrical(c: CylindricalLike): this {
     return this.setFromCylindricalCoords(c.radius, c.theta, c.y)
   }
 
-  setFromCylindricalCoords(radius, theta, y) {
+  setFromCylindricalCoords(radius: number, theta: number, y: number): this {
     this.x = radius * Math.sin(theta)
     this.y = y
     this.z = radius * Math.cos(theta)
@@ -494,7 +513,7 @@ class Vector3 {
     return this
   }
 
-  setFromMatrixPosition(m) {
+  setFromMatrixPosition(m: Matrix4Like): this {
     const e = m.elements
 
     this.x = e[12]
@@ -504,7 +523,7 @@ class Vector3 {
     return this
   }
 
-  setFromMatrixScale(m) {
+  setFromMatrixScale(m: Matrix4Like): this {
     const sx = this.setFromMatrixColumn(m, 0).length()
     const sy = this.setFromMatrixColumn(m, 1).length()
     const sz = this.setFromMatrixColumn(m, 2).length()
@@ -516,15 +535,15 @@ class Vector3 {
     return this
   }
 
-  setFromMatrixColumn(m, index) {
+  setFromMatrixColumn(m: Matrix4Like, index: number): this {
     return this.fromArray(m.elements, index * 4)
   }
 
-  setFromMatrix3Column(m, index) {
+  setFromMatrix3Column(m: Matrix3Like, index: number): this {
     return this.fromArray(m.elements, index * 3)
   }
 
-  setFromEuler(e) {
+  setFromEuler(e: EulerLike): this {
     this.x = e._x
     this.y = e._y
     this.z = e._z
@@ -532,7 +551,7 @@ class Vector3 {
     return this
   }
 
-  setFromColor(c) {
+  setFromColor(c: ColorLike): this {
     this.x = c.r
     this.y = c.g
     this.z = c.b
@@ -540,11 +559,11 @@ class Vector3 {
     return this
   }
 
-  equals(v) {
+  equals(v: Vector3Like): boolean {
     return v.x === this.x && v.y === this.y && v.z === this.z
   }
 
-  fromArray(array, offset = 0) {
+  fromArray(array: ArrayLike<number>, offset = 0): this {
     this.x = array[offset]
     this.y = array[offset + 1]
     this.z = array[offset + 2]
@@ -552,7 +571,7 @@ class Vector3 {
     return this
   }
 
-  toArray(array = [], offset = 0) {
+  toArray(array: number[] = [], offset = 0): number[] {
     array[offset] = this.x
     array[offset + 1] = this.y
     array[offset + 2] = this.z
@@ -560,7 +579,7 @@ class Vector3 {
     return array
   }
 
-  fromBufferAttribute(attribute, index) {
+  fromBufferAttribute(attribute: BufferAttribute3Like, index: number): this {
     this.x = attribute.getX(index)
     this.y = attribute.getY(index)
     this.z = attribute.getZ(index)
@@ -568,7 +587,7 @@ class Vector3 {
     return this
   }
 
-  random() {
+  random(): this {
     this.x = Math.random()
     this.y = Math.random()
     this.z = Math.random()
@@ -576,9 +595,7 @@ class Vector3 {
     return this
   }
 
-  randomDirection() {
-    // https://mathworld.wolfram.com/SpherePointPicking.html
-
+  randomDirection(): this {
     const theta = Math.random() * Math.PI * 2
     const u = Math.random() * 2 - 1
     const c = Math.sqrt(1 - u * u)
@@ -590,7 +607,7 @@ class Vector3 {
     return this
   }
 
-  *[Symbol.iterator]() {
+  *[Symbol.iterator](): IterableIterator<number> {
     yield this.x
     yield this.y
     yield this.z
@@ -598,7 +615,3 @@ class Vector3 {
 }
 
 const _vector = new Vector3()
-
-// const _quaternion = new Quaternion();
-
-export { Vector3 }

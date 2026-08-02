@@ -3,7 +3,7 @@ export function buf2hex(buffer: ArrayBuffer): string {
   return [...new Uint8Array(buffer)].map((x) => x.toString(16).padStart(2, "0")).join("")
 }
 
-// biome-ignore lint: allow any here
+// deno-lint-ignore no-explicit-any
 export function isEmpty(obj: Record<any, any>): boolean {
   return Object.keys(obj).length === 0
 }

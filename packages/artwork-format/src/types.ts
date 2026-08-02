@@ -51,7 +51,7 @@ export function toMap<T extends string>(arr: readonly T[]): { [key in T]: number
   return Object.fromEntries(arr.map((key, i) => [key, i])) as { [key in T]: number }
 }
 
-// biome-ignore lint: allow any here
+// deno-lint-ignore no-explicit-any
 export function toValues<T extends string>(map: { [key in T]: any }): T[] {
   return Object.keys(map) as T[]
 }

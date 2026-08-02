@@ -1,7 +1,7 @@
 import { ColorPicker, Divider, Flex, Group, Modal, Radio, Switch, Text, useMantineColorScheme, useMantineTheme } from "@mantine/core"
 import type { UseDisclosureReturnValue } from "@mantine/hooks"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { ThemeConfigProvider } from "@src/contexts/ThemeContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
+import { ThemeConfigProvider } from "@grx/viewer/contexts/ThemeContext"
 import chroma from "chroma-js"
 import React, { type JSX } from "react"
 

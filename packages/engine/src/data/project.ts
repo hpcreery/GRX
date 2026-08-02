@@ -161,8 +161,7 @@ export class StepLayer {
       profile: this.profile.toJSON(),
     }
   }
-}
-// export const TEST = {
+} // export const TEST = {
 // }
 // export abstract class TEST {
 //   public static A = '1'
@@ -173,7 +172,7 @@ export class StepLayer {
 // }
 // Comlink.expose(TEST);
 
-;("THIS SECTION IS USED WHEN SHARED WORKER IS ENABLED, BUT NOT USED IN THE CURRENT IMPLEMENTATION")
+"THIS SECTION IS USED WHEN SHARED WORKER IS ENABLED, BUT NOT USED IN THE CURRENT IMPLEMENTATION"
 // console.log('crossOriginIsolated:', crossOriginIsolated);
 /**
  * When a connection is made into this shared worker, expose `obj`

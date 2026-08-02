@@ -1,6 +1,6 @@
 import { type PointerEvent, PointerEvents, utils } from "@grx/engine"
 import { Group, Text, Tooltip } from "@mantine/core"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import React, { type JSX } from "react"
 
 type MousePositionProps = {}

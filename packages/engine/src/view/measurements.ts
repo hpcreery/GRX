@@ -1,8 +1,8 @@
 import * as Shapes from "@grx/artwork-format/shape"
 import type { Units } from "@grx/artwork-format/types"
 import { baseUnitsConversionFactor } from "@grx/artwork-format/utils"
-import { ArtworkBufferCollection } from "@src/data/artwork-collections"
-import { measurementSettings } from "@src/settings"
+import { ArtworkBufferCollection } from "../data/artwork-collections"
+import { measurementSettings } from "@grx/engine/settings"
 import type { vec2 } from "gl-matrix"
 import type REGL from "regl"
 import { type RendererProps, ShapeRenderer } from "./shape-renderer"
@@ -33,7 +33,11 @@ export class SimpleMeasurement extends ShapeRenderer {
       const y = Math.abs(y1 - y2) / baseUnitsConversionFactor(this.units)
       this.artwork.create(
         new Shapes.DatumText({
-          text: `↙${parseFloat(length.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))}${typeof this.units == "string" ? this.units : ""}\n(ΔX:${parseFloat(x.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))} ΔY:${parseFloat(y.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))})`,
+          text: `↙${parseFloat(length.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))}${
+            typeof this.units == "string" ? this.units : ""
+          }\n(ΔX:${parseFloat(x.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))} ΔY:${
+            parseFloat(y.toFixed(["cm", "inch"].includes(this.units.toString()) ? 4 : 2))
+          })`,
           x: (x1 + x2) / 2,
           y: (y1 + y2) / 2,
           attributes: {
@@ -119,7 +123,7 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public override render(context: REGL.DefaultContext & WorldContext): void {
     if (this.units != measurementSettings.units) {
       this.units = measurementSettings.units
       this.refresh()

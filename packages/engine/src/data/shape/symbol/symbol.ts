@@ -1,5 +1,5 @@
-// import { type AttributesType, type ISymbolRecord, SymbolTypeIdentifier, toMap, type Units } from "@src/types"
-// import { malloc } from "@src/utils"
+// import { type AttributesType, type ISymbolRecord, SymbolTypeIdentifier, toMap, type Units } from "@grx/engine/types"
+// import { malloc } from "@grx/engine/utils"
 // import type { Shape } from "../shape"
 
 // export const STANDARD_SYMBOLS = [

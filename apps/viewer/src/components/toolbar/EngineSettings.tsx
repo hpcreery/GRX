@@ -1,8 +1,8 @@
 import { types } from "@grx/engine"
 import { Divider, Flex, Kbd, Modal, Select, Switch, Text } from "@mantine/core"
 import { type UseDisclosureReturnValue, useHotkeys, useLocalStorage } from "@mantine/hooks"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
-import { actions } from "@src/contexts/Spotlight"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
+import { actions } from "@grx/viewer/contexts/Spotlight"
 import { IconHexagonPlus, IconZoom, IconZoomScan } from "@tabler/icons-react"
 import { type JSX, useContext, useEffect } from "react"
 

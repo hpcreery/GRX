@@ -1,5 +1,5 @@
 // import { Flex, Textarea } from "@mantine/core"
-// import type { Shape } from "@src/data/shape/shape"
+// import type { Shape } from "@grx/importer-nc/data/shape/shape"
 // import type { CstNode } from "chevrotain"
 // import React, { type JSX } from "react"
 // import { NCLexer, NCToShapesVisitor, parser } from "./parser/parser"

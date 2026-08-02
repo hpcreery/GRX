@@ -7,9 +7,7 @@ import {
   // Curve,
   Vector3,
   Vector4,
-  // @ts-expect-error no types available for dxf-parser --- IGNORE ---
-} from "../vec"
-// @ts-expect-error no types available for dxf-parser --- IGNORE ---
+} from "../vec/index.ts"
 import * as NURBSUtils from "./NURBSUtils.js"
 
 /**
@@ -29,16 +27,11 @@ export class NURBSCurve {
   public endKnot: number
 
   constructor(
-    // @ts-expect-error unknown type for
-    degree,
-    // @ts-expect-error unknown type for
-    knots /* array of reals */,
-    // @ts-expect-error unknown type for
-    controlPoints /* array of Vector(2|3|4) */,
-    // @ts-expect-error unknown type for
-    startKnot? /* index in knots */,
-    // @ts-expect-error unknown type for
-    endKnot? /* index in knots */,
+    degree: number,
+    knots: number[] /* array of reals */,
+    controlPoints: Vector4[] /* array of Vector(2|3|4) */,
+    startKnot?: number /* index in knots */,
+    endKnot?: number /* index in knots */,
   ) {
     // super();
 
@@ -57,7 +50,7 @@ export class NURBSCurve {
     }
   }
 
-  getPoint(t: Vector3, optionalTarget: Vector3 = new Vector3()): Vector3 {
+  getPoint(t: number, optionalTarget: Vector3 = new Vector3()): Vector3 {
     const point = optionalTarget
 
     const u = this.knots[this.startKnot] + t * (this.knots[this.endKnot] - this.knots[this.startKnot]) // linear mapping t->u
@@ -85,7 +78,7 @@ export class NURBSCurve {
     return points
   }
 
-  getTangent(t: Vector3, optionalTarget: Vector3 = new Vector3()): Vector3 {
+  getTangent(t: number, optionalTarget: Vector3 = new Vector3()): Vector3 {
     const tangent = optionalTarget
 
     const u = this.knots[0] + t * (this.knots[this.knots.length - 1] - this.knots[0])

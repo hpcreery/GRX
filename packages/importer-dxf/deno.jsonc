@@ -1,0 +1,27 @@
+{
+  "name": "@grx/importer-dxf",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "dom.asynciterable", "deno.ns"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+  },
+  "tasks": {
+    "pack": "deno pack",
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "check": "deno check"
+  },
+  "exclude": ["dist/"],
+  "imports": {
+    "@std/expect": "jsr:@std/expect@^1.0.17",
+    "@types/node": "npm:@types/node@^25.9.1",
+    "dxf-parser": "npm:dxf-parser@^1.1.2",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "three": "npm:three",
+    "typescript": "npm:typescript@^6.0.3"
+  }
+}

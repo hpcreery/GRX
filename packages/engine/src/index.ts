@@ -3,6 +3,8 @@ import * as Comlink from "comlink"
 import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
 import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import type { Engine, EngineInterface, QuerySelection } from "./engine"
+
+// @deno-types="npm:vite/client"
 import EngineWorker from "./engine?worker&inline"
 import { PointerMode } from "./types"
 import { scaleDOMRect, UID } from "./utils"
@@ -73,7 +75,7 @@ export class Renderer {
       hidpi: false,
 
       get dpr(): number {
-        return this.hidpi ? window.devicePixelRatio : 1
+        return this.hidpi ? globalThis.devicePixelRatio : 1
       },
     },
     {
@@ -110,6 +112,11 @@ export class Renderer {
     const offscreenCanvasGL = this.canvasGL.transferControlToOffscreen()
 
     this.engineWorker = new EngineWorker()
+    // this.engineWorker = new Worker(
+    //   // import.meta.resolve("./engine.js"),
+    //   new URL("./engine.ts", import.meta.url),
+    //   { type: "module" },
+    // );
     this.engine = Comlink.wrap<typeof Engine>(this.engineWorker)
     this.engine
       .init(Comlink.transfer(offscreenCanvasGL, [offscreenCanvasGL]), {
@@ -127,7 +134,10 @@ export class Renderer {
     this.pollViews()
   }
 
-  public addManagedView(view: HTMLElement, attributes: { project: string; step: string }): string {
+  public addManagedView(
+    view: HTMLElement,
+    attributes: { project: string; step: string },
+  ): string {
     const { project, step } = attributes
     let id = UID()
     if (view.id == null || view.id === "") {
@@ -136,7 +146,12 @@ export class Renderer {
       id = view.id
     }
     this.managedViews.push(view)
-    this.engine.interface.create_view(id, project, step, view.getBoundingClientRect())
+    this.engine.interface.create_view(
+      id,
+      project,
+      step,
+      view.getBoundingClientRect(),
+    )
     this.addControls(view)
     return id
   }
@@ -191,14 +206,22 @@ export class Renderer {
     this.canvasGL.style.width = `${String(width)}px`
     this.canvasGL.style.height = `${String(height)}px`
     // Only update engine bounding box and DPR - engine will resize offscreen canvas
-    this.engine.interface.update_engine_bounding_box(scaleDOMRect(this.CONTAINER.getBoundingClientRect(), this.canvasSettings.dpr))
+    this.engine.interface.update_engine_bounding_box(
+      scaleDOMRect(
+        this.CONTAINER.getBoundingClientRect(),
+        this.canvasSettings.dpr,
+      ),
+    )
 
     this.managedViews.forEach((node) => {
-      this.engine.interface.update_view_box_from_dom_rect(node.id, scaleDOMRect(node.getBoundingClientRect(), this.canvasSettings.dpr))
+      this.engine.interface.update_view_box_from_dom_rect(
+        node.id,
+        scaleDOMRect(node.getBoundingClientRect(), this.canvasSettings.dpr),
+      )
     })
   }
 
-  public async pollViews(): Promise<void> {
+  public pollViews(): void {
     this.resize()
     requestAnimationFrame(() => this.pollViews())
   }
@@ -208,7 +231,10 @@ export class Renderer {
       throw new Error("Element must have a 'id' attribute")
     }
     const engine = this.engine
-    const sendPointerEvent = async (mouse: MouseEvent, event_type: (typeof PointerEvents)[keyof typeof PointerEvents]): Promise<void> => {
+    const sendPointerEvent = async (
+      mouse: MouseEvent,
+      event_type: (typeof PointerEvents)[keyof typeof PointerEvents],
+    ): Promise<void> => {
       const [x, y] = await getMouseWorldCoordinates(mouse)
       this.pointer.dispatchEvent(
         new CustomEvent<PointerCoordinates>(event_type, {
@@ -224,8 +250,14 @@ export class Renderer {
      */
     const getMouseCanvasCoordinates = (e: MouseEvent): [number, number] => {
       // Get the mouse position relative to the canvas
-      const { x, y, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
-      return [e.clientX * this.canvasSettings.dpr - x, height - (e.clientY * this.canvasSettings.dpr - y)]
+      const { x, y, height } = scaleDOMRect(
+        element.getBoundingClientRect(),
+        this.canvasSettings.dpr,
+      )
+      return [
+        e.clientX * this.canvasSettings.dpr - x,
+        height - (e.clientY * this.canvasSettings.dpr - y),
+      ]
     }
 
     /**
@@ -234,8 +266,14 @@ export class Renderer {
      * @param e MouseEvent
      * @returns [x, y] world coordinates
      */
-    const getMouseWorldCoordinates = async (e: MouseEvent): Promise<[number, number]> => {
-      return this.engine.interface.read_world_position_from_canvas_position(element.id, ...getMouseCanvasCoordinates(e), 0)
+    const getMouseWorldCoordinates = (
+      e: MouseEvent,
+    ): Promise<[number, number]> => {
+      return this.engine.interface.read_world_position_from_canvas_position(
+        element.id,
+        ...getMouseCanvasCoordinates(e),
+        0,
+      )
     }
 
     const removePointerCache = (ev: globalThis.PointerEvent): void => {
@@ -244,12 +282,18 @@ export class Renderer {
       this.pointerCache.splice(index, 1)
     }
 
-    await engine.interface.update_view_box_from_dom_rect(element.id, scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr))
+    await engine.interface.update_view_box_from_dom_rect(
+      element.id,
+      scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr),
+    )
 
     element.style.cursor = "grab"
 
     element.onwheel = async (e): Promise<void> => {
-      const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
+      const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(
+        element.getBoundingClientRect(),
+        this.canvasSettings.dpr,
+      )
       const settings = await engine.interface.read_engine_settings()
 
       const moveScale = this.canvasSettings.dpr
@@ -258,9 +302,19 @@ export class Renderer {
       const mouseScrollY = e.deltaY * moveScale
 
       if (settings.ZOOM_TO_CURSOR) {
-        engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, mouseScrollY)
+        engine.interface.zoom_at_point(
+          element.id,
+          mouseX - offsetX,
+          mouseY - offsetY,
+          mouseScrollY,
+        )
       } else {
-        engine.interface.zoom_at_point(element.id, width / 2, height / 2, mouseScrollY)
+        engine.interface.zoom_at_point(
+          element.id,
+          width / 2,
+          height / 2,
+          mouseScrollY,
+        )
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -273,7 +327,10 @@ export class Renderer {
         await engine.interface.view_pointer_grab(element.id)
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
-        const features = await engine.interface.read_view_select(element.id, [xcanvas, ycanvas])
+        const features = await engine.interface.read_view_select(element.id, [
+          xcanvas,
+          ycanvas,
+        ])
         console.log("Selected features:", features)
         this.pointer.dispatchEvent(
           new CustomEvent<QuerySelection[]>(PointerEvents.POINTER_SELECT, {
@@ -284,11 +341,18 @@ export class Renderer {
       } else if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
-        const currentMeasurement = await engine.interface.read_view_current_measurement(element.id)
+        const currentMeasurement = await engine.interface
+          .read_view_current_measurement(element.id)
         if (currentMeasurement != null) {
-          engine.interface.finish_view_measurement(element.id, [xcanvas, ycanvas])
+          engine.interface.finish_view_measurement(element.id, [
+            xcanvas,
+            ycanvas,
+          ])
         } else {
-          engine.interface.create_view_measurement(element.id, [xcanvas, ycanvas])
+          engine.interface.create_view_measurement(element.id, [
+            xcanvas,
+            ycanvas,
+          ])
         }
       }
     }
@@ -314,7 +378,7 @@ export class Renderer {
       }
       removePointerCache(e)
     }
-    element.onpointerenter = async (e): Promise<void> => {
+    element.onpointerenter = (e): void => {
       sendPointerEvent(e, PointerEvents.POINTER_HOVER)
     }
     element.onpointermove = async (e): Promise<void> => {
@@ -331,7 +395,10 @@ export class Renderer {
       if (this.pointerSettings.mode === PointerMode.MEASURE) {
         element.style.cursor = "crosshair"
         const [xcanvas, ycanvas] = getMouseCanvasCoordinates(e)
-        engine.interface.update_view_measurement(element.id, [xcanvas, ycanvas])
+        engine.interface.update_view_measurement(element.id, [
+          xcanvas,
+          ycanvas,
+        ])
       }
 
       if (!(await engine.interface.read_pointer_grab(element.id))) {
@@ -344,25 +411,53 @@ export class Renderer {
         if (this.pointerCache.length >= 2) {
           const p1 = this.pointerCache[0]
           const p2 = this.pointerCache[1]
-          const startDistance = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY)
+          const startDistance = Math.hypot(
+            p1.clientX - p2.clientX,
+            p1.clientY - p2.clientY,
+          )
           const endDistance = Math.hypot(
             p1.clientX + p1.movementX - (p2.clientX + p2.movementX),
             p1.clientY + p1.movementY - (p2.clientY + p2.movementY),
           )
           const zoomFactor = ((startDistance - endDistance) / this.pointerCache.length) * moveScale
           const settings = await engine.interface.read_engine_settings()
-          const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(element.getBoundingClientRect(), this.canvasSettings.dpr)
+          const { x: offsetX, y: offsetY, width, height } = scaleDOMRect(
+            element.getBoundingClientRect(),
+            this.canvasSettings.dpr,
+          )
           if (settings.ZOOM_TO_CURSOR) {
-            engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, zoomFactor)
+            engine.interface.zoom_at_point(
+              element.id,
+              mouseX - offsetX,
+              mouseY - offsetY,
+              zoomFactor,
+            )
           } else {
-            engine.interface.zoom_at_point(element.id, width / 2, height / 2, zoomFactor)
+            engine.interface.zoom_at_point(
+              element.id,
+              width / 2,
+              height / 2,
+              zoomFactor,
+            )
           }
-          engine.interface.view_move(element.id, mouseMovementX / this.pointerCache.length, mouseMovementY / this.pointerCache.length)
+          engine.interface.view_move(
+            element.id,
+            mouseMovementX / this.pointerCache.length,
+            mouseMovementY / this.pointerCache.length,
+          )
         } else {
           if (e.buttons == 4) {
-            await engine.interface.view_rotate(element.id, mouseMovementY, mouseMovementX)
+            await engine.interface.view_rotate(
+              element.id,
+              mouseMovementY,
+              mouseMovementX,
+            )
           } else {
-            await engine.interface.view_move(element.id, mouseMovementX, mouseMovementY)
+            await engine.interface.view_move(
+              element.id,
+              mouseMovementX,
+              mouseMovementY,
+            )
           }
         }
       }
@@ -421,9 +516,17 @@ export class Renderer {
         context.fillText(char, cozetteFontInfo.characterLocation[char].x * scale, cozetteFontInfo.characterLocation[char].y * scale)
       }
 
-      const imageData = context.getImageData(0, 0, cozetteFontInfo.textureSize[0] * scale, cozetteFontInfo.textureSize[1] * scale)
+      const imageData = context.getImageData(
+        0,
+        0,
+        cozetteFontInfo.textureSize[0] * scale,
+        cozetteFontInfo.textureSize[1] * scale,
+      )
       console.log("Font data sent to engine", imageData)
-      this.engine.initializeFontRenderer(imageData.data, this.canvasSettings.dpr)
+      this.engine.initializeFontRenderer(
+        imageData.data,
+        this.canvasSettings.dpr,
+      )
 
       // download font image sample
       // const canvasUrl = canvas.toDataURL("image/png", 1);
@@ -451,7 +554,7 @@ export class Renderer {
   //   return this.engine.getStats()
   // }
 
-  public async destroy(): Promise<void> {
+  public destroy(): void {
     this.engine.destroy()
     this.engine[Comlink.releaseProxy]()
     this.engineWorker.terminate()

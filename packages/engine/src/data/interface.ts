@@ -2,9 +2,9 @@ import type * as Shapes from "@grx/artwork-format/shape"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
 import type { ArtworkBufferCollection } from "./artwork-collections"
-import type { ImportPluginSignature, ImportResultReport, importFormatName } from "./importer"
+import type { importFormatName, ImportPluginSignature, ImportResultReport } from "./importer"
 import importFormats from "./importer"
-import { Layer, PROJECTS, Project, Step, StepLayer } from "./project"
+import { Layer, Project, PROJECTS, Step, StepLayer } from "./project"
 
 enum ErrorCode {
   UNKNOWN = 1,

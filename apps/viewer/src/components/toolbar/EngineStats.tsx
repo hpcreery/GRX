@@ -1,5 +1,5 @@
 import { Table, type TableData } from "@mantine/core"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import { type JSX, useContext, useEffect, useState } from "react"
 
 type EngineStatsProps = {}

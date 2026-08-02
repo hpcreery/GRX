@@ -1,0 +1,38 @@
+{
+  "workspace": ["packages/*", "apps/*"],
+  "unstable": ["sloppy-imports", "tsgo"],
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-sloppy-imports"]
+    }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 150,
+    "newLineKind": "lf",
+    "indentWidth": 2,
+    "semiColons": false,
+    "singleQuote": false,
+    "proseWrap": "preserve",
+    "bracePosition": "sameLine",
+    "trailingCommas": "onlyMultiLine"
+  },
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "types": ["npm:vite/client"]
+  },
+  "exclude": ["dist/", "vendor/", "**/*.generated.ts"],
+  "imports": {
+    "@grx/viewer/": "./apps/viewer/src/",
+    "@grx/engine/": "./packages/engine/src/",
+    "@grx/artwork-format/": "./packages/artwork-format/src/",
+    "@grx/importer-gerber/": "./packages/importer-gerber/src/",
+    "@grx/importer-gerber-legacy/": "./packages/importer-gerber-legacy/src/",
+    "@grx/importer-gdsii/": "./packages/importer-gdsii/src/",
+    "@grx/importer-dxf/": "./packages/importer-dxf/src/",
+    "@grx/importer-nc/": "./packages/importer-nc/src/"
+    // "@grx/typescript-config/": "./packages/typescript-config/"
+    // "@grx/": "./packages/"
+  }
+}

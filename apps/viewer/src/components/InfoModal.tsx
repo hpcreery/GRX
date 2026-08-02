@@ -1,6 +1,6 @@
 import { Accordion, ActionIcon, Anchor, Kbd, Modal, Paper, Space, Table, type TableData, Text, Title } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
-import { actions } from "@src/contexts/Spotlight"
+import { actions } from "@grx/viewer/contexts/Spotlight"
 import { IconUserQuestion } from "@tabler/icons-react"
 import type { JSX } from "react"
 import EngineStats from "./toolbar/EngineStats"

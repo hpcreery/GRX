@@ -1,7 +1,7 @@
 import { settings, utils } from "@grx/engine"
 import { Button, ColorPicker, Divider, Flex, Group, Modal, NumberInput, SegmentedControl, Space, Switch, Text } from "@mantine/core"
 import { type UseDisclosureReturnValue, useLocalStorage } from "@mantine/hooks"
-import { actions } from "@src/contexts/Spotlight"
+import { actions } from "@grx/viewer/contexts/Spotlight"
 import { IconGrid4x4 } from "@tabler/icons-react"
 import chroma from "chroma-js"
 import { vec4 } from "gl-matrix"

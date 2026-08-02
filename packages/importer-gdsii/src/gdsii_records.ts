@@ -23,7 +23,7 @@ export type RecordDefinition = {
   name: string
   dataType: DataType
   description: string
-  // biome-ignore lint: allow any here
+  // deno-lint-ignore no-explicit-any
   parse?: (state: ParserState, data: any) => void
 }
 

@@ -1,4 +1,4 @@
-// import type { Transform } from "@src/transform"
+// import type { Transform } from "@grx/engine/transform"
 // import {
 //   type AttributesType,
 //   type Binary,
@@ -9,7 +9,7 @@
 //   SurfaceContourTypeIdentifier,
 //   toMap,
 //   type Units,
-// } from "@src/types"
+// } from "@grx/engine/types"
 // import * as Symbols from "./symbol/symbol"
 
 // export const PAD_RECORD_PARAMETERS = ["index", "x", "y", "sym_num", "resize_factor", "polarity", "rotation", "mirror_x", "mirror_y"] as const

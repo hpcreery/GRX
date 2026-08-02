@@ -1,5 +1,5 @@
-// import { type BoundingBox, SymbolTypeIdentifier, type Units } from "@src/types"
-// import { baseUnitsConversionFactor } from "@src/utils"
+// import { type BoundingBox, SymbolTypeIdentifier, type Units } from "@grx/engine/types"
+// import { baseUnitsConversionFactor } from "@grx/engine/utils"
 // import { vec2 } from "gl-matrix"
 // import { convertShapeUnits, getBoundingBoxOfShape } from "../utils"
 // import type { MacroSymbol, StandardSymbol, Symbols } from "./symbol"

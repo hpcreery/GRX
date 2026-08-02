@@ -524,7 +524,7 @@ export abstract class Engine {
 
   public static timer: RenderTimer = new RenderTimer()
 
-  private static renderNowInterval: NodeJS.Timeout | null = null
+  private static renderNowInterval: ReturnType<typeof setTimeout> | null = null
 
   // public loadingFrame: LoadingAnimation
   // public measurements: SimpleMeasurement

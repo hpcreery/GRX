@@ -1,8 +1,8 @@
 import { parseDXF } from "@grx/importer-dxf"
-import { registerPlugin } from "@src/data/importer/register"
-import type { DataInterface } from "@src/data/interface"
+import { registerPlugin } from "@grx/engine/data/importer/register"
+import type { DataInterface } from "@grx/engine/data/interface"
 import * as z from "zod"
-import type { ImportResultReport } from ".."
+import type { ImportResultReport } from "../index"
 
 // import file from './testdata/noentities.dxf?url'
 

@@ -4,23 +4,25 @@ import { vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { fontInfo as cozetteFontInfo } from "../data/shape/text/cozette/font"
 import { type GridSettings, type OriginRenderProps, settings } from "../settings"
-import ArcFrag from "./../shaders/src/Arc.frag"
-import ArcVert from "./../shaders/src/Arc.vert"
-import DatumFrag from "./../shaders/src/Datum.frag"
-import DatumVert from "./../shaders/src/Datum.vert"
-// import LoadingFrag from "./../shaders/src/Loading/Winding.frag"
-import FullScreenQuad from "./../shaders/src/FullScreenQuad.vert"
-import GlyphtextFrag from "./../shaders/src/GlyphText.frag"
-import GlyphtextVert from "./../shaders/src/GlyphText.vert"
-import GridFrag from "./../shaders/src/Grid.frag"
-import LineFrag from "./../shaders/src/Line.frag"
-import LineVert from "./../shaders/src/Line.vert"
-import OriginFrag from "./../shaders/src/Origin.frag"
-import PadFrag from "./../shaders/src/Pad.frag"
-import PadVert from "./../shaders/src/Pad.vert"
-import SurfaceFrag from "./../shaders/src/Surface.frag"
-import SurfaceVert from "./../shaders/src/Surface.vert"
+import ArcFrag from "../shaders/src/Arc.frag" with { type: "text" }
+import ArcVert from "../shaders/src/Arc.vert" with { type: "text" }
+import DatumFrag from "../shaders/src/Datum.frag" with { type: "text" }
+import DatumVert from "../shaders/src/Datum.vert" with { type: "text" }
+// import LoadingFrag from "../shaders/src/Loading/Winding.frag" with { type: "text" }
+import FullScreenQuad from "../shaders/src/FullScreenQuad.vert" with { type: "text" }
+import GlyphtextFrag from "../shaders/src/GlyphText.frag" with { type: "text" }
+import GlyphtextVert from "../shaders/src/GlyphText.vert" with { type: "text" }
+import GridFrag from "../shaders/src/Grid.frag" with { type: "text" }
+import LineFrag from "../shaders/src/Line.frag" with { type: "text" }
+import LineVert from "../shaders/src/Line.vert" with { type: "text" }
+import OriginFrag from "../shaders/src/Origin.frag" with { type: "text" }
+import PadFrag from "../shaders/src/Pad.frag" with { type: "text" }
+import PadVert from "../shaders/src/Pad.vert" with { type: "text" }
+import SurfaceFrag from "../shaders/src/Surface.frag" with { type: "text" }
+import SurfaceVert from "../shaders/src/Surface.vert" with { type: "text" }
 import type { WorldContext } from "./view"
+
+console.log("Shader", ArcFrag)
 
 const {
   LINE_RECORD_PARAMETERS,

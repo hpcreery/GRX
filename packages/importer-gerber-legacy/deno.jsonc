@@ -1,0 +1,34 @@
+{
+  "name": "@grx/importer-gerber-legacy",
+  "version": "0.0.1",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "deno.ns", "node", "esnext"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+  },
+  "tasks": {
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "test:watch": "deno test --watch --allow-read --allow-net --allow-env",
+    "check": "deno check"
+  },
+  "exclude": ["dist/", "**/node_modules/**/*"],
+  "imports": {
+    "@hpcreery/tracespace-parser": "npm:@hpcreery/tracespace-parser@^5.0.4",
+    "@hpcreery/tracespace-plotter": "npm:@hpcreery/tracespace-plotter@^5.0.3",
+    "@hpcreery/tracespace-renderer": "npm:@hpcreery/tracespace-renderer@^5.0.3",
+    "@rollup/plugin-typescript": "npm:@rollup/plugin-typescript@^12.3.0",
+    "@tracespace/parser": "npm:@tracespace/parser@^5.0.0-next.0",
+    "@tracespace/plotter": "npm:@tracespace/plotter@^5.0.0-alpha.0",
+    "@types/node": "npm:@types/node@^25.9.1",
+    "@types/unist": "npm:@types/unist@^3.0.3",
+    "gl-matrix": "npm:gl-matrix@3.4.4",
+    "typescript": "npm:typescript@^6.0.3",
+    "unist": "npm:unist@^0.0.1",
+    "vite": "npm:vite@^7.3.2",
+    "vitest": "npm:vitest@^4.0.18"
+  }
+}

@@ -3,7 +3,7 @@
 // } from 'three';
 
 import * as NURBSUtils from "../curves/NURBSUtils.js"
-import { Vector4 } from "../vec"
+import { Vector4 } from "../vec/index.ts"
 
 /**
  * NURBS surface object

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import { parseNC } from "./index"
 import { NCLexer, type NCParser, NCToShapesVisitor, parser } from "./parser"
 
-vi.mock("@src/data/importer/register", () => ({
+vi.mock("@grx/importer-nc/data/importer/register", () => ({
   registerPlugin: () => {
     // no-op for unit tests
   },

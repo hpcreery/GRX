@@ -4,8 +4,8 @@ import type { PointerSettings } from "@grx/engine"
 import { types } from "@grx/engine"
 import { ActionIcon, Card, Group, Kbd, Popover, Tooltip, useMantineTheme } from "@mantine/core"
 import { useDisclosure, useHotkeys } from "@mantine/hooks"
-import { EditorConfigProvider, menuItems } from "@src/contexts/EditorContext"
-import { actions } from "@src/contexts/Spotlight"
+import { EditorConfigProvider, menuItems } from "@grx/viewer/contexts/EditorContext"
+import { actions } from "@grx/viewer/contexts/Spotlight"
 import {
   IconAdjustments,
   IconArrowsMove,

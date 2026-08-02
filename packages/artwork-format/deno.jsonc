@@ -1,0 +1,28 @@
+{
+  "name": "@grx/artwork-format",
+  "license": "MIT",
+  "exports": {
+    "./shape": "./dist/src/shape.js",
+    "./symbol": "./dist/src/symbol.js",
+    "./types": "./dist/src/types.js",
+    "./utils": "./dist/src/utils.js"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "deno.ns", "esnext"],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true
+    // "paths": {
+    //   "@grx/artwork-format/*": ["./src/*"]
+    // }
+  },
+  "tasks": {
+    "check": "deno check",
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "build": "deno transpile src/**/* --outdir dist --source-map separate --declaration"
+  },
+  "exclude": ["dist/", "**/node_modules/**/*", "**/*.test.ts"],
+  "imports": {
+    "@types/node": "npm:@types/node@^25.9.1",
+    "gl-matrix": "npm:gl-matrix@^3.4.4"
+  }
+}

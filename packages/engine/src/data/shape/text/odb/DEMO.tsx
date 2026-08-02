@@ -1,5 +1,5 @@
 // import { Flex, Textarea } from "@mantine/core"
-// import type { Shape } from "@src/data/shape/shape"
+// import type { Shape } from "@grx/engine/data/shape/shape"
 // import React, { type JSX } from "react"
 // import { parser, SHXLexer, SHXToShapesVisitor } from "./parser"
 

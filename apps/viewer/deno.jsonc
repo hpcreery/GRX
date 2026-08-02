@@ -1,0 +1,129 @@
+{
+  "name": "@grx/viewer",
+  "version": "4.4.0",
+  "description": "GPU-Accelerated Web Based EDA Manufacturing Artwork Viewer",
+  "main": "./out/electron/main/index.js",
+  "author": "Hunter Creery",
+  "homepage": "https://grx.electronicloud.app",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+    // ".": "./dist/index.js"
+  },
+  "types": "./dist/index.d.ts",
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "dom.asynciterable",
+      "deno.ns",
+      "es2024",
+      "deno.worker",
+      "webworker",
+      "webworker.asynciterable",
+      "webworker.importscripts",
+      "webworker.iterable"
+    ],
+    "rootDirs": ["./src"],
+    "skipLibCheck": true,
+    // "paths": {
+    //   "@grx/viewer/*": ["./src/*"]
+    // },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
+  "tasks": {
+    "typecheck": "deno run -A npm:typescript/bin/tsc --noEmit -p tsconfig.web.json --composite false --watch",
+    "start": "deno run -A npm:vite preview",
+    "test:vitest": "deno run -A npm:vitest",
+    "coverage": "deno run -A npm:vitest run --coverage",
+    "dev:web": "deno run -A vite",
+    "dev:desktop": "",
+    "build:web": "deno run -A vite build",
+    "build:electron": "deno run -A npm:electron-vite build",
+    "build:icons": "deno run -A npm:electron-icon-builder --input=resources/icon.png --output=resources --flatten",
+    "build:win": "",
+    "build:mac": "",
+    "build:linux": "",
+    "build:desktop": "",
+    "dev": "deno task dev:web",
+    "build": "deno task build:web",
+    "transpile": "deno transpile src/**/* --outdir dist",
+    "test": "deno test --allow-read --allow-net --allow-env",
+    "check": "deno check"
+  },
+  "exclude": ["dist/"],
+  "imports": {
+    "@deno/vite-plugin": "npm:@deno/vite-plugin@^2.0.2",
+    "@dnd-kit/core": "npm:@dnd-kit/core@^6.1.0",
+    "@dnd-kit/modifiers": "npm:@dnd-kit/modifiers@^9.0.0",
+    "@dnd-kit/sortable": "npm:@dnd-kit/sortable@^10.0.0",
+    "@dnd-kit/utilities": "npm:@dnd-kit/utilities@^3.2.2",
+    "@electron-toolkit/preload": "npm:@electron-toolkit/preload",
+    "@electron-toolkit/utils": "npm:@electron-toolkit/utils",
+    "@electron/notarize": "npm:@electron/notarize",
+    "@mantine/carousel": "npm:@mantine/carousel@^9.0.0-alpha.6",
+    "@mantine/code-highlight": "npm:@mantine/code-highlight@^9.0.0-alpha.6",
+    "@mantine/core": "npm:@mantine/core@^9.0.0-alpha.6",
+    "@mantine/dropzone": "npm:@mantine/dropzone@^9.0.0-alpha.6",
+    "@mantine/form": "npm:@mantine/form@^9.0.0-alpha.6",
+    "@mantine/hooks": "npm:@mantine/hooks@^9.0.0-alpha.6",
+    "@mantine/modals": "npm:@mantine/modals@^9.0.0-alpha.6",
+    "@mantine/notifications": "npm:@mantine/notifications@^9.0.0-alpha.6",
+    "@mantine/nprogress": "npm:@mantine/nprogress@^9.0.0-alpha.6",
+    "@mantine/spotlight": "npm:@mantine/spotlight@^9.0.0-alpha.6",
+    "@mantine/store": "npm:@mantine/store@^9.0.0-alpha.6",
+    "@react-hook/resize-observer": "npm:@react-hook/resize-observer@^2.0.2",
+    "@react-spring/web": "npm:@react-spring/web@^10.0.3",
+    "@tabler/icons-react": "npm:@tabler/icons-react@^3.44.0",
+    "@testing-library/jest-dom": "npm:@testing-library/jest-dom@^6.9.1",
+    "@testing-library/react": "npm:@testing-library/react@^16.3.2",
+    "@testing-library/user-event": "npm:@testing-library/user-event@^14.6.1",
+    "@types/chroma-js": "npm:@types/chroma-js@^3.1.2",
+    "@types/earcut": "npm:@types/earcut@^3.0.0",
+    "@types/ndarray": "npm:@types/ndarray@^1.0.14",
+    "@types/react": "npm:@types/react@^19.2.14",
+    "@types/react-color": "npm:@types/react-color@^3.0.13",
+    "@types/react-dom": "npm:@types/react-dom@19.2.3",
+    "@use-gesture/react": "npm:@use-gesture/react@^10.3.1",
+    "@vitejs/plugin-react": "npm:@vitejs/plugin-react@^5.2.0",
+    "chroma-js": "npm:chroma-js@^3.1.1",
+    "concurrently": "npm:concurrently@^9.2.1",
+    "comlink": "npm:comlink@^4.4.2",
+    "dmg-license": "npm:dmg-license@^1.0.11",
+    "electron": "npm:electron",
+    "electron-vite": "npm:electron-vite",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "mantine-contextmenu": "npm:mantine-contextmenu@^7.12.2",
+    "re-resizable": "npm:re-resizable@^6.10.1",
+    "react": "npm:react@^19.2.6",
+    "react-dom": "npm:react-dom@^19.2.6",
+    "tsx": "npm:tsx@^4.21.0",
+    "typescript": "npm:typescript@^6.0.3",
+    "typescript-event-target": "npm:typescript-event-target@^1.1.2",
+    "vite": "npm:vite@^7.3.3",
+    "vite-plugin-comlink": "npm:vite-plugin-comlink@^5.3.0",
+    "vitest": "npm:vitest@^4.1.5",
+    "web-vitals": "npm:web-vitals@^5.2.0"
+  },
+  "desktop": {
+    "app": {
+      "name": "GRX Viewer",
+      "icons": {
+        "macos": "./resources/icons/icon.icns",
+        "windows": "./resources/icons/icon.ico",
+        "linux": "./resources/icon.png"
+      }
+    },
+    "backend": "webview",
+    "output": {
+      "macos": "./dist-desktop/GRX.app",
+      "windows": "./dist-desktop/GRX.exe",
+      "linux": "./dist-desktop/GRX"
+    },
+    "release": {
+      "baseUrl": "https://releases.example.com/my-app"
+    }
+  }
+}

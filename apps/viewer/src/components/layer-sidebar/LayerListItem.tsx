@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { Button, ColorPicker, Input, Popover, Tooltip, useMantineColorScheme, useMantineTheme } from "@mantine/core"
 import { useDisclosure } from "@mantine/hooks"
 import { animated, type SpringValue, useSpring } from "@react-spring/web"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import {
   IconChartHistogram,
   IconCheck,

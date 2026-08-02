@@ -9,11 +9,11 @@
 import { convert } from "@grx/importer-gdsii/converter"
 import { recordReader } from "@grx/importer-gdsii/lexer"
 import { parse } from "@grx/importer-gdsii/parser"
-import { registerPlugin } from "@src/data/importer/register"
+import { registerPlugin } from "@grx/engine/data/importer/register"
 // import messages from "./messages"
-import type { DataInterface } from "@src/data/interface"
+import type { DataInterface } from "@grx/engine/data/interface"
 import * as z from "zod"
-import type { ImportResultReport } from ".."
+import type { ImportResultReport } from "../index"
 
 const Parameters = z.object({
   step: z.string(),

@@ -1,32 +1,63 @@
-// biome-ignore-all lint: this file is an external dependency
+export type Vector4Like = {
+  x: number
+  y: number
+  z: number
+  w: number
+}
 
-class Vector4 {
+export type Matrix4Like = {
+  elements: ArrayLike<number>
+}
+
+export type QuaternionLike = {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+
+export type BufferAttribute4Like = {
+  getX: (index: number) => number
+  getY: (index: number) => number
+  getZ: (index: number) => number
+  getW: (index: number) => number
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+export class Vector4 {
+  public x: number
+  public y: number
+  public z: number
+  public w: number
+  public readonly isVector4: true = true
+
   constructor(x = 0, y = 0, z = 0, w = 1) {
-    Vector4.prototype.isVector4 = true
-
     this.x = x
     this.y = y
     this.z = z
     this.w = w
   }
 
-  get width() {
+  get width(): number {
     return this.z
   }
 
-  set width(value) {
+  set width(value: number) {
     this.z = value
   }
 
-  get height() {
+  get height(): number {
     return this.w
   }
 
-  set height(value) {
+  set height(value: number) {
     this.w = value
   }
 
-  set(x, y, z, w) {
+  set(x: number, y: number, z: number, w: number): this {
     this.x = x
     this.y = y
     this.z = z
@@ -35,7 +66,7 @@ class Vector4 {
     return this
   }
 
-  setScalar(scalar) {
+  setScalar(scalar: number): this {
     this.x = scalar
     this.y = scalar
     this.z = scalar
@@ -44,31 +75,27 @@ class Vector4 {
     return this
   }
 
-  setX(x) {
+  setX(x: number): this {
     this.x = x
-
     return this
   }
 
-  setY(y) {
+  setY(y: number): this {
     this.y = y
-
     return this
   }
 
-  setZ(z) {
+  setZ(z: number): this {
     this.z = z
-
     return this
   }
 
-  setW(w) {
+  setW(w: number): this {
     this.w = w
-
     return this
   }
 
-  setComponent(index, value) {
+  setComponent(index: number, value: number): this {
     switch (index) {
       case 0:
         this.x = value
@@ -89,7 +116,7 @@ class Vector4 {
     return this
   }
 
-  getComponent(index) {
+  getComponent(index: number): number {
     switch (index) {
       case 0:
         return this.x
@@ -104,11 +131,11 @@ class Vector4 {
     }
   }
 
-  clone() {
-    return new this.constructor(this.x, this.y, this.z, this.w)
+  clone(): Vector4 {
+    return new Vector4(this.x, this.y, this.z, this.w)
   }
 
-  copy(v) {
+  copy(v: Partial<Vector4Like> & Pick<Vector4Like, "x" | "y" | "z">): this {
     this.x = v.x
     this.y = v.y
     this.z = v.z
@@ -117,7 +144,7 @@ class Vector4 {
     return this
   }
 
-  add(v) {
+  add(v: Vector4Like): this {
     this.x += v.x
     this.y += v.y
     this.z += v.z
@@ -126,7 +153,7 @@ class Vector4 {
     return this
   }
 
-  addScalar(s) {
+  addScalar(s: number): this {
     this.x += s
     this.y += s
     this.z += s
@@ -135,7 +162,7 @@ class Vector4 {
     return this
   }
 
-  addVectors(a, b) {
+  addVectors(a: Vector4Like, b: Vector4Like): this {
     this.x = a.x + b.x
     this.y = a.y + b.y
     this.z = a.z + b.z
@@ -144,7 +171,7 @@ class Vector4 {
     return this
   }
 
-  addScaledVector(v, s) {
+  addScaledVector(v: Vector4Like, s: number): this {
     this.x += v.x * s
     this.y += v.y * s
     this.z += v.z * s
@@ -153,7 +180,7 @@ class Vector4 {
     return this
   }
 
-  sub(v) {
+  sub(v: Vector4Like): this {
     this.x -= v.x
     this.y -= v.y
     this.z -= v.z
@@ -162,7 +189,7 @@ class Vector4 {
     return this
   }
 
-  subScalar(s) {
+  subScalar(s: number): this {
     this.x -= s
     this.y -= s
     this.z -= s
@@ -171,7 +198,7 @@ class Vector4 {
     return this
   }
 
-  subVectors(a, b) {
+  subVectors(a: Vector4Like, b: Vector4Like): this {
     this.x = a.x - b.x
     this.y = a.y - b.y
     this.z = a.z - b.z
@@ -180,7 +207,7 @@ class Vector4 {
     return this
   }
 
-  multiply(v) {
+  multiply(v: Vector4Like): this {
     this.x *= v.x
     this.y *= v.y
     this.z *= v.z
@@ -189,7 +216,7 @@ class Vector4 {
     return this
   }
 
-  multiplyScalar(scalar) {
+  multiplyScalar(scalar: number): this {
     this.x *= scalar
     this.y *= scalar
     this.z *= scalar
@@ -198,11 +225,11 @@ class Vector4 {
     return this
   }
 
-  applyMatrix4(m) {
-    const x = this.x,
-      y = this.y,
-      z = this.z,
-      w = this.w
+  applyMatrix4(m: Matrix4Like): this {
+    const x = this.x
+    const y = this.y
+    const z = this.z
+    const w = this.w
     const e = m.elements
 
     this.x = e[0] * x + e[4] * y + e[8] * z + e[12] * w
@@ -213,15 +240,11 @@ class Vector4 {
     return this
   }
 
-  divideScalar(scalar) {
+  divideScalar(scalar: number): this {
     return this.multiplyScalar(1 / scalar)
   }
 
-  setAxisAngleFromQuaternion(q) {
-    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/index.htm
-
-    // q is assumed to be normalized
-
+  setAxisAngleFromQuaternion(q: QuaternionLike): this {
     this.w = 2 * Math.acos(q.w)
 
     const s = Math.sqrt(1 - q.w * q.w)
@@ -239,44 +262,34 @@ class Vector4 {
     return this
   }
 
-  setAxisAngleFromRotationMatrix(m) {
-    // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToAngle/index.htm
-
-    // assumes the upper 3x3 of m is a pure rotation matrix (i.e, unscaled)
-
-    let angle, x, y, z // variables for result
-    const epsilon = 0.01, // margin to allow for rounding errors
-      epsilon2 = 0.1, // margin to distinguish between 0 and 180 degrees
-      te = m.elements,
-      m11 = te[0],
-      m12 = te[4],
-      m13 = te[8],
-      m21 = te[1],
-      m22 = te[5],
-      m23 = te[9],
-      m31 = te[2],
-      m32 = te[6],
-      m33 = te[10]
+  setAxisAngleFromRotationMatrix(m: Matrix4Like): this {
+    let angle = 0
+    let x = 0
+    let y = 0
+    let z = 0
+    const epsilon = 0.01
+    const epsilon2 = 0.1
+    const te = m.elements
+    const m11 = te[0]
+    const m12 = te[4]
+    const m13 = te[8]
+    const m21 = te[1]
+    const m22 = te[5]
+    const m23 = te[9]
+    const m31 = te[2]
+    const m32 = te[6]
+    const m33 = te[10]
 
     if (Math.abs(m12 - m21) < epsilon && Math.abs(m13 - m31) < epsilon && Math.abs(m23 - m32) < epsilon) {
-      // singularity found
-      // first check for identity matrix which must have +1 for all terms
-      // in leading diagonal and zero in other terms
-
       if (
         Math.abs(m12 + m21) < epsilon2 &&
         Math.abs(m13 + m31) < epsilon2 &&
         Math.abs(m23 + m32) < epsilon2 &&
         Math.abs(m11 + m22 + m33 - 3) < epsilon2
       ) {
-        // this singularity is identity matrix so angle = 0
-
         this.set(1, 0, 0, 0)
-
-        return this // zero angle, arbitrary axis
+        return this
       }
-
-      // otherwise this singularity is angle = 180
 
       angle = Math.PI
 
@@ -288,8 +301,6 @@ class Vector4 {
       const yz = (m23 + m32) / 4
 
       if (xx > yy && xx > zz) {
-        // m11 is the largest diagonal term
-
         if (xx < epsilon) {
           x = 0
           y = 0.707106781
@@ -300,8 +311,6 @@ class Vector4 {
           z = xz / x
         }
       } else if (yy > zz) {
-        // m22 is the largest diagonal term
-
         if (yy < epsilon) {
           x = 0.707106781
           y = 0
@@ -311,33 +320,23 @@ class Vector4 {
           x = xy / y
           z = yz / y
         }
+      } else if (zz < epsilon) {
+        x = 0.707106781
+        y = 0.707106781
+        z = 0
       } else {
-        // m33 is the largest diagonal term so base result on this
-
-        if (zz < epsilon) {
-          x = 0.707106781
-          y = 0.707106781
-          z = 0
-        } else {
-          z = Math.sqrt(zz)
-          x = xz / z
-          y = yz / z
-        }
+        z = Math.sqrt(zz)
+        x = xz / z
+        y = yz / z
       }
 
       this.set(x, y, z, angle)
-
-      return this // return 180 deg rotation
+      return this
     }
 
-    // as we have reached here there are no singularities so we can handle normally
-
-    let s = Math.sqrt((m32 - m23) * (m32 - m23) + (m13 - m31) * (m13 - m31) + (m21 - m12) * (m21 - m12)) // used to normalize
+    let s = Math.sqrt((m32 - m23) * (m32 - m23) + (m13 - m31) * (m13 - m31) + (m21 - m12) * (m21 - m12))
 
     if (Math.abs(s) < 0.001) s = 1
-
-    // prevent divide by zero, should not happen if matrix is orthogonal and should be
-    // caught by singularity test above, but I've left it in just in case
 
     this.x = (m32 - m23) / s
     this.y = (m13 - m31) / s
@@ -347,7 +346,7 @@ class Vector4 {
     return this
   }
 
-  setFromMatrixPosition(m) {
+  setFromMatrixPosition(m: Matrix4Like): this {
     const e = m.elements
 
     this.x = e[12]
@@ -358,7 +357,7 @@ class Vector4 {
     return this
   }
 
-  min(v) {
+  min(v: Vector4Like): this {
     this.x = Math.min(this.x, v.x)
     this.y = Math.min(this.y, v.y)
     this.z = Math.min(this.z, v.z)
@@ -367,7 +366,7 @@ class Vector4 {
     return this
   }
 
-  max(v) {
+  max(v: Vector4Like): this {
     this.x = Math.max(this.x, v.x)
     this.y = Math.max(this.y, v.y)
     this.z = Math.max(this.z, v.z)
@@ -376,33 +375,31 @@ class Vector4 {
     return this
   }
 
-  clamp(min, max) {
-    // assumes min < max, componentwise
-
-    this.x = Math.max(min.x, Math.min(max.x, this.x))
-    this.y = Math.max(min.y, Math.min(max.y, this.y))
-    this.z = Math.max(min.z, Math.min(max.z, this.z))
-    this.w = Math.max(min.w, Math.min(max.w, this.w))
+  clamp(min: Vector4Like, max: Vector4Like): this {
+    this.x = clamp(this.x, min.x, max.x)
+    this.y = clamp(this.y, min.y, max.y)
+    this.z = clamp(this.z, min.z, max.z)
+    this.w = clamp(this.w, min.w, max.w)
 
     return this
   }
 
-  clampScalar(minVal, maxVal) {
-    this.x = Math.max(minVal, Math.min(maxVal, this.x))
-    this.y = Math.max(minVal, Math.min(maxVal, this.y))
-    this.z = Math.max(minVal, Math.min(maxVal, this.z))
-    this.w = Math.max(minVal, Math.min(maxVal, this.w))
+  clampScalar(minVal: number, maxVal: number): this {
+    this.x = clamp(this.x, minVal, maxVal)
+    this.y = clamp(this.y, minVal, maxVal)
+    this.z = clamp(this.z, minVal, maxVal)
+    this.w = clamp(this.w, minVal, maxVal)
 
     return this
   }
 
-  clampLength(min, max) {
-    const length = this.length()
+  clampLength(min: number, max: number): this {
+    const len = this.length()
 
-    return this.divideScalar(length || 1).multiplyScalar(Math.max(min, Math.min(max, length)))
+    return this.divideScalar(len || 1).multiplyScalar(clamp(len, min, max))
   }
 
-  floor() {
+  floor(): this {
     this.x = Math.floor(this.x)
     this.y = Math.floor(this.y)
     this.z = Math.floor(this.z)
@@ -411,7 +408,7 @@ class Vector4 {
     return this
   }
 
-  ceil() {
+  ceil(): this {
     this.x = Math.ceil(this.x)
     this.y = Math.ceil(this.y)
     this.z = Math.ceil(this.z)
@@ -420,7 +417,7 @@ class Vector4 {
     return this
   }
 
-  round() {
+  round(): this {
     this.x = Math.round(this.x)
     this.y = Math.round(this.y)
     this.z = Math.round(this.z)
@@ -429,7 +426,7 @@ class Vector4 {
     return this
   }
 
-  roundToZero() {
+  roundToZero(): this {
     this.x = Math.trunc(this.x)
     this.y = Math.trunc(this.y)
     this.z = Math.trunc(this.z)
@@ -438,7 +435,7 @@ class Vector4 {
     return this
   }
 
-  negate() {
+  negate(): this {
     this.x = -this.x
     this.y = -this.y
     this.z = -this.z
@@ -447,31 +444,31 @@ class Vector4 {
     return this
   }
 
-  dot(v) {
+  dot(v: Vector4Like): number {
     return this.x * v.x + this.y * v.y + this.z * v.z + this.w * v.w
   }
 
-  lengthSq() {
+  lengthSq(): number {
     return this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w
   }
 
-  length() {
-    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z + this.w * this.w)
+  length(): number {
+    return Math.sqrt(this.lengthSq())
   }
 
-  manhattanLength() {
+  manhattanLength(): number {
     return Math.abs(this.x) + Math.abs(this.y) + Math.abs(this.z) + Math.abs(this.w)
   }
 
-  normalize() {
+  normalize(): this {
     return this.divideScalar(this.length() || 1)
   }
 
-  setLength(length) {
+  setLength(length: number): this {
     return this.normalize().multiplyScalar(length)
   }
 
-  lerp(v, alpha) {
+  lerp(v: Vector4Like, alpha: number): this {
     this.x += (v.x - this.x) * alpha
     this.y += (v.y - this.y) * alpha
     this.z += (v.z - this.z) * alpha
@@ -480,7 +477,7 @@ class Vector4 {
     return this
   }
 
-  lerpVectors(v1, v2, alpha) {
+  lerpVectors(v1: Vector4Like, v2: Vector4Like, alpha: number): this {
     this.x = v1.x + (v2.x - v1.x) * alpha
     this.y = v1.y + (v2.y - v1.y) * alpha
     this.z = v1.z + (v2.z - v1.z) * alpha
@@ -489,11 +486,11 @@ class Vector4 {
     return this
   }
 
-  equals(v) {
+  equals(v: Vector4Like): boolean {
     return v.x === this.x && v.y === this.y && v.z === this.z && v.w === this.w
   }
 
-  fromArray(array, offset = 0) {
+  fromArray(array: ArrayLike<number>, offset = 0): this {
     this.x = array[offset]
     this.y = array[offset + 1]
     this.z = array[offset + 2]
@@ -502,7 +499,7 @@ class Vector4 {
     return this
   }
 
-  toArray(array = [], offset = 0) {
+  toArray(array: number[] = [], offset = 0): number[] {
     array[offset] = this.x
     array[offset + 1] = this.y
     array[offset + 2] = this.z
@@ -511,7 +508,7 @@ class Vector4 {
     return array
   }
 
-  fromBufferAttribute(attribute, index) {
+  fromBufferAttribute(attribute: BufferAttribute4Like, index: number): this {
     this.x = attribute.getX(index)
     this.y = attribute.getY(index)
     this.z = attribute.getZ(index)
@@ -520,7 +517,7 @@ class Vector4 {
     return this
   }
 
-  random() {
+  random(): this {
     this.x = Math.random()
     this.y = Math.random()
     this.z = Math.random()
@@ -529,12 +526,10 @@ class Vector4 {
     return this
   }
 
-  *[Symbol.iterator]() {
+  *[Symbol.iterator](): IterableIterator<number> {
     yield this.x
     yield this.y
     yield this.z
     yield this.w
   }
 }
-
-export { Vector4 }

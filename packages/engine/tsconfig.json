@@ -8,13 +8,13 @@
     "noEmit": false,
     "types": [
       "vite-plugin-glsl/ext",
-      "vite-plugin-arraybuffer/types",
+      "vite-plugin-arraybuffer/types"
     ],
     "paths": {
-      "@src/*": [
+      "@grx/engine/*": [
         "./src/*"
-      ],
-    },
+      ]
+    }
   },
   "include": ["src"],
   "exclude": [

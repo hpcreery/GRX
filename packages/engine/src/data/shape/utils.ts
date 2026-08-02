@@ -1,5 +1,5 @@
-// import { type BoundingBox, ContourSegmentTypeIdentifier, FeatureTypeIdentifier, type Units } from "@src/types"
-// import { baseUnitsConversionFactor } from "@src/utils"
+// import { type BoundingBox, ContourSegmentTypeIdentifier, FeatureTypeIdentifier, type Units } from "@grx/engine/types"
+// import { baseUnitsConversionFactor } from "@grx/engine/utils"
 // import { vec2 } from "gl-matrix"
 // import type { Contour_Arc_Segment, Contour_Line_Segment, Shape } from "./shape"
 // import * as SymbolUtils from "./symbol/utils"

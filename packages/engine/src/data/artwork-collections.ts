@@ -9,8 +9,8 @@ import {
   SymbolTypeIdentifier,
 } from "@grx/artwork-format/types"
 import * as ArtworkUtils from "@grx/artwork-format/utils"
-import ShapeTransform from "@src/transform"
-import { cyrb64, getScaleMat3, UpdateEventTarget } from "@src/utils"
+import ShapeTransform from "../transform"
+import { cyrb64, getScaleMat3, UpdateEventTarget } from "../utils"
 import earcut from "earcut"
 import { vec3 } from "gl-matrix"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
@@ -31,7 +31,7 @@ export abstract class SymbolBufferCollection {
    * Buffer storing all symbol's parameters in a sorted flat Float32Array
    */
   public static buffer: ArrayBuffer = new ArrayBuffer(Symbols.SYMBOL_PARAMETERS.length * Float32Array.BYTES_PER_ELEMENT * 1) // 1 symbol
-  public static length: number = 1
+  public static len: number = 1
   public static events: UpdateEventTarget = new UpdateEventTarget()
   private static map: Map<string, number> = new Map<string, number>()
   private static attributeMap: AttributesType[] = []
@@ -45,17 +45,19 @@ export abstract class SymbolBufferCollection {
   static create(symbol: Symbols.StandardSymbol): number {
     let view = new Float32Array(SymbolBufferCollection.buffer)
     const precision = 10 ** 8 // 8 decimal places
-    const symbolKey = `${Symbols.SYMBOL_PARAMETERS.map((key) => {
-      return Math.round(symbol[key] * precision) / precision
-    }).join("_")}_${JSON.stringify(symbol.attributes)}`
+    const symbolKey = `${
+      Symbols.SYMBOL_PARAMETERS.map((key) => {
+        return Math.round(symbol[key] * precision) / precision
+      }).join("_")
+    }_${JSON.stringify(symbol.attributes)}`
     if (SymbolBufferCollection.map.has(symbolKey)) {
       const existingIndex = SymbolBufferCollection.map.get(symbolKey)!
       symbol.sym_num.value = existingIndex
       return existingIndex
     }
-    SymbolBufferCollection.map.set(symbolKey, SymbolBufferCollection.length)
+    SymbolBufferCollection.map.set(symbolKey, SymbolBufferCollection.len)
     // console.log("Creating new symbol:", symbolKey, "at index", this.length)
-    const index = SymbolBufferCollection.length
+    const index = SymbolBufferCollection.len
     // if the buffer isn't large enough, we need to expand it
     if (view.length < (index + 1) * Symbols.SYMBOL_PARAMETERS.length) {
       // double the size of the buffer and add additional room for the parameters
@@ -69,7 +71,7 @@ export abstract class SymbolBufferCollection {
     )
     symbol.sym_num.value = index
     SymbolBufferCollection.attributeMap[index] = symbol.attributes
-    SymbolBufferCollection.length += 1
+    SymbolBufferCollection.len += 1
     SymbolBufferCollection.events.dispatchTypedEvent("update", new Event("update"))
     return index
   }
@@ -95,7 +97,7 @@ export abstract class SymbolBufferCollection {
 
   static toJSON(): Symbols.TStandardSymbol[] {
     const symbols: Symbols.TStandardSymbol[] = []
-    for (let i = 0; i < SymbolBufferCollection.length; i++) {
+    for (let i = 0; i < SymbolBufferCollection.len; i++) {
       symbols.push(SymbolBufferCollection.read(i))
     }
     return symbols
@@ -106,10 +108,8 @@ export abstract class SymbolBufferCollection {
   }
 }
 
-class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | Shapes.DatumLine>
-  extends UpdateEventTarget
-  implements BufferCollection<T>
-{
+class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | Shapes.DatumLine> extends UpdateEventTarget
+  implements BufferCollection<T> {
   /**
    * Buffer storing all shapes' parameters in a sorted flat Float32Array
    */
@@ -1608,8 +1608,7 @@ export const test = (): void => {
 /**
  * break step and repeat is only partially implemented. it will currently only break surface and polyline shapes
  */
-// @ts-expect-error not using but will in future
-// biome-ignore lint: unuesed now, but will be used in future when implementing breaking of nested step and repeats
+// deno-lint-ignore no-unused-vars
 function breakStepRepeat(stepRepeat: Shapes.StepAndRepeat, inputTransform: ShapeTransform): Shapes.Shape[] | undefined {
   const newImage: Shapes.Shape[] = []
   for (const repeat of stepRepeat.repeats) {

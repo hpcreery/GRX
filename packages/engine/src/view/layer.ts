@@ -1,4 +1,4 @@
-import type { Layer, StepLayer } from "@src/data/project"
+import type { Layer, StepLayer } from "@grx/engine/data/project"
 import { vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { ShapeRenderer, type ShapeRendererProps } from "./shape-renderer"
@@ -95,7 +95,7 @@ export default class LayerRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public override render(context: REGL.DefaultContext & WorldContext): void {
     if (!this.needsRender(context)) return
 
     this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
@@ -111,7 +111,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  public destroy(): void {
+  public override destroy(): void {
     this.framebuffer.destroy()
     super.destroy()
   }
@@ -176,7 +176,7 @@ export class SelectionRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public override render(context: REGL.DefaultContext & WorldContext): void {
     if (!this.needsRender(context)) return
     // if (settings.ENABLE_3D) return
 
@@ -193,7 +193,7 @@ export class SelectionRenderer extends ShapeRenderer {
     })
   }
 
-  public destroy(): void {
+  public override destroy(): void {
     this.framebuffer.destroy()
     super.destroy()
   }

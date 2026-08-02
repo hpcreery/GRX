@@ -3,7 +3,7 @@ import * as Symbols from "@grx/artwork-format/symbol"
 import type { Transform } from "@grx/artwork-format/types"
 import { type BoundingBox, FeatureTypeIdentifier } from "@grx/artwork-format/types"
 import * as ArtworkUtils from "@grx/artwork-format/utils"
-import type { ArtworkBufferCollection } from "@src/data/artwork-collections"
+import type { ArtworkBufferCollection } from "@grx/engine/data/artwork-collections"
 import { mat3, vec2, type vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
@@ -403,19 +403,23 @@ export class ShapeRenderer extends UpdateEventTarget {
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.datumLines)
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.datumArcs)
       // draw datum text function is not always ready immediatly as it requires a font to be loaded
-      if (typeof this.drawCollections.drawDatumText === "function")
+      if (typeof this.drawCollections.drawDatumText === "function") {
         this.drawCollections.drawDatumText(this.shapeShaderAttachments.shaderAttachment.datumTexts)
+      }
       this.drawCollections.drawDatums(this.shapeShaderAttachments.shaderAttachment.datumPoints)
     })
   }
 
   private drawPrimitives(_context: REGL.DefaultContext & WorldContext): void {
-    if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0)
+    if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0) {
       this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.pads)
-    if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0) {
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.arcs)
-    if (this.shapeShaderAttachments.shaderAttachment.lines.length != 0)
+    }
+    if (this.shapeShaderAttachments.shaderAttachment.lines.length != 0) {
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.lines)
+    }
   }
 
   private drawMacros(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
@@ -440,8 +444,9 @@ export class ShapeRenderer extends UpdateEventTarget {
   }
 
   private drawSufaces(_context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
-    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles.length != 0)
+    if (this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles.length != 0) {
       this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles)
+    }
     return this
   }
 
@@ -565,7 +570,7 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.mirror_y = pad.mirror_y
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public override render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     if (this.flatten === false) {
       super.render(context)
       return
@@ -593,7 +598,7 @@ export class MacroRenderer extends ShapeRenderer {
     })
   }
 
-  public destroy(): void {
+  public override destroy(): void {
     this.framebuffer.destroy()
     super.destroy()
   }
@@ -618,7 +623,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     this.transform.index = index
   }
 
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): ShapeDistance[] {
+  public override queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): ShapeDistance[] {
     const features: ShapeDistance[] = []
     this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
@@ -630,7 +635,7 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     return features
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public override render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
     this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
       context.qtyFeaturesRef = this.repeats.length

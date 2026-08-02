@@ -2,7 +2,7 @@
 // 	Vector3,
 // 	Vector4
 // } from 'three';
-import { Vector3, Vector4 } from "../vec"
+import { Vector3, Vector4 } from "../vec/index.ts"
 
 /**
  * NURBS utils

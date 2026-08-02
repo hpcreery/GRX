@@ -5,7 +5,7 @@ import { type engine, PointerEvents, type Renderer, types, utils } from "@grx/en
 const { FeatureTypeIdentifier, SymbolTypeIdentifier } = types
 
 import { ActionIcon, Affix, Badge, Card, Code, Divider, ScrollArea, Text, ThemeIcon, Transition, useMantineTheme } from "@mantine/core"
-import { EditorConfigProvider, menuItems } from "@src/contexts/EditorContext"
+import { EditorConfigProvider, menuItems } from "@grx/viewer/contexts/EditorContext"
 import {
   IconArrowUpBar,
   IconCircle,

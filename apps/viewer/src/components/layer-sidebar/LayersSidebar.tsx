@@ -22,7 +22,7 @@ import {
 import { Dropzone, type FileWithPath } from "@mantine/dropzone"
 import { useDisclosure, useLocalStorage } from "@mantine/hooks"
 import { notifications } from "@mantine/notifications"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import { IconAlertTriangle, IconClearAll, IconContrast, IconContrastOff, IconFileVector, IconFileX } from "@tabler/icons-react"
 import * as Comlink from "comlink"
 import { useContextMenu } from "mantine-contextmenu"
@@ -55,8 +55,8 @@ export default function LayerSidebar(_props: SidebarProps): JSX.Element | null {
 
     const extension = file.name.split(".").pop()?.toLowerCase()
     if (!extension) return defaultFormat
-    for (const plugin in data.importPlugins.importFormats) {
-      if (data.importPlugins.importFormats[plugin].matchFile(extension)) return plugin
+    for (const [key, value] of Object.entries(data.importPlugins.importFormats)) {
+      if (value.matchFile(extension)) return key
     }
     return defaultFormat
   }

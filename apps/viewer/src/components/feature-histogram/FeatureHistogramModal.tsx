@@ -1,6 +1,6 @@
 import { Divider, Flex, Modal, Text } from "@mantine/core"
 import type { UseDisclosureReturnValue } from "@mantine/hooks"
-import { EditorConfigProvider } from "@src/contexts/EditorContext"
+import { EditorConfigProvider } from "@grx/viewer/contexts/EditorContext"
 import { type JSX, useContext, useEffect, useState } from "react"
 
 type HistogramModal = {
