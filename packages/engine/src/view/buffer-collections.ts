@@ -162,7 +162,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
       this.shaderAttachment.surfaces.withoutHoles.vertices({
         width,
         height,
-        type: "float32",
+        type: "float",
         channels: 1,
         wrap: "clamp",
         mag: "nearest",
@@ -202,7 +202,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
         vertices: this.regl.texture({
           width,
           height,
-          type: "float32",
+          type: "float",
           channels: 1,
           wrap: "clamp",
           mag: "nearest",
@@ -354,7 +354,7 @@ export abstract class SymbolShaderCollection {
       width: SYMBOL_PARAMETERS.length,
       height: SymbolBufferCollection.length,
       type: "float",
-      format: "luminance",
+      channels: 1,
       data,
     })
   }

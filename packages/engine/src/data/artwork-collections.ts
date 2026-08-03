@@ -578,7 +578,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
     width: number
     height: number
   } {
-    const maxTextureSize = 16384 // This is the maximum texture size for most GPUs, could be queried from WebGL if needed
+    const maxTextureSize = 8192 // This is the maximum texture size for most GPUs, could be queried from WebGL if needed
     // const view = new Float32Array(inputBuffer)
     if (length > maxTextureSize ** 2) {
       throw new Error("Cannot fit data into size")
