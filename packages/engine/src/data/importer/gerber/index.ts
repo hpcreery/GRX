@@ -21,7 +21,11 @@ export async function plugin(buffer: ArrayBuffer, parameters: object, api: typeo
   console.timeEnd("Gerber parsing")
 
   await api.create_layer(params.project, params.layer)
-  await api.update_step_layer_artwork(params.project, params.step, params.layer, image)
+  // await api.update_step_layer_artwork(params.project, params.step, params.layer, image)
+  const step = 10000
+  for (let y = 0; y < image.length; y += step) {
+    await api.update_step_layer_artwork(params.project, params.step, params.layer, image.slice(y, y + step))
+  }
   return {
     errors,
   }
