@@ -51,6 +51,7 @@
     "@types/earcut": "^3.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "19.2.3",
+    "@typescript/typescript6": "^6.0.2",
     "@vitejs/plugin-react": "^5.2.0",
     "chokidar": "^5.0.0",
     "glslify": "^7.1.1",
