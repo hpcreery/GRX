@@ -556,7 +556,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
         }
         const radius = Math.sqrt((segment.x - segment.xc) ** 2 + (segment.y - segment.yc) ** 2)
         const segments: number[] = []
-        const steps = Math.ceil(50 * (Math.abs(angle) / (Math.PI * 2)))
+        const steps = Math.ceil(100 * (Math.abs(angle) / (Math.PI * 2)))
         for (let i = 1; i <= steps; i++) {
           const a = -angle * (i / steps) + start_angle
           segments.push(segment.xc + Math.cos(a) * radius, segment.yc + Math.sin(a) * radius)
