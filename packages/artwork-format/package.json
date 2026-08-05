@@ -2,24 +2,25 @@
   "name": "@grx/artwork-format",
   "exports": {
     "./shape": {
-      "default": "./dist/src/shape.js",
-      "types": "./dist/src/shape.d.ts"
+      "default": "./dist/shape.js",
+      "types": "./dist/shape.d.ts"
     },
     "./symbol": {
-      "default": "./dist/src/symbol.js",
-      "types": "./dist/src/symbol.d.ts"
+      "default": "./dist/symbol.js",
+      "types": "./dist/symbol.d.ts"
     },
     "./types": {
-      "default": "./dist/src/types.js",
-      "types": "./dist/src/types.d.ts"
+      "default": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     },
     "./utils": {
-      "default": "./dist/src/utils.js",
-      "types": "./dist/src/utils.d.ts"
+      "default": "./dist/utils.js",
+      "types": "./dist/utils.d.ts"
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
   },
   "devDependencies": {
     "@grx/typescript-config": "workspace:*",
