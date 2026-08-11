@@ -3,8 +3,9 @@ import glslify from "rollup-plugin-glslify"
 import { defineConfig, type PluginOption } from "vite"
 import arraybuffer from "vite-plugin-arraybuffer"
 // import { comlink } from "vite-plugin-comlink"
-import pkg from "./package.json"
+import pkg from "./package.json" with { type: "json" }
 import dts from "unplugin-dts/vite"
+// import { analyzer } from "vite-bundle-analyzer"
 
 export default defineConfig({
   base: "./",
@@ -12,25 +13,27 @@ export default defineConfig({
   build: {
     target: "esnext",
     emptyOutDir: true,
-    minify: false,
-    sourcemap: false,
+    // minify: "esbuild",
+    // sourcemap: true,
     lib: {
       entry: "./src/index.ts",
       name: pkg.name,
       formats: ["es"],
     },
-    rollupOptions: {
+    rolldownOptions: {
       input: "./src/index.ts",
       // Make sure to externalize deps that shouldn't be bundled
       external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
       output: {
-        preserveModules: true,
+        sourcemap: true,
+        minify: true,
+        preserveModules: false,
         preserveModulesRoot: "src",
         entryFileNames: ({ name: fileName }) => {
           return `${fileName}.js`
         },
       },
-    },
+    }
   },
   resolve: {
     alias: {
@@ -49,11 +52,11 @@ export default defineConfig({
       // @ts-expect-error - glslify options are not typed
       transform: ["glslify-import"],
     }),
+    // analyzer(),
   ],
   worker: {
     format: "es",
-    rollupOptions: {
-      // Workers must bundle all deps — they run as blob URLs where bare imports can't resolve
+    rolldownOptions: {
       external: [],
     },
     plugins: () => [
@@ -64,6 +67,7 @@ export default defineConfig({
         // @ts-expect-error - glslify options are not typed
         transform: ["glslify-import"],
       }) as PluginOption,
+      // analyzer(),
     ],
   },
 })

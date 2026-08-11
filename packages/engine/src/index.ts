@@ -1,6 +1,7 @@
 import * as Comlink from "comlink"
 // import type { DataInterface } from "./data/interface"
-import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
+// import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?url"
+import cozetteFont from "./data/shape/text/cozette/CozetteVector.ttf?arraybuffer"
 import { fontInfo as cozetteFontInfo } from "./data/shape/text/cozette/font"
 import type { Engine, EngineInterface, QuerySelection } from "./engine"
 import EngineWorker from "./engine?worker&inline"
@@ -400,7 +401,9 @@ export class Renderer {
   }
 
   private sendFontData(): void {
-    const f = new FontFace("cozette", `url(${cozetteFont})`)
+    const f = new FontFace("cozette", cozetteFont)
+    // or setup as url
+    // const f = new FontFace("cozette", `url(${cozetteFont})`)
     f.load().then((font) => {
       const scale = this.canvasSettings.dpr
       document.fonts.add(font)

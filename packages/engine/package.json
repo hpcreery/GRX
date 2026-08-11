@@ -14,9 +14,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./data/shape/text/cozette/CozetteVector.ttf?url.js": {
-      "default": "./dist/data/shape/text/cozette/CozetteVector.ttf?url.js"
     }
   },
   "files": [
@@ -29,40 +26,41 @@
     "@grx/importer-gerber": "workspace:*",
     "@grx/importer-gerber-legacy": "workspace:*",
     "@grx/importer-nc": "workspace:*",
-    "chevrotain": "^12.0.0",
+    "chevrotain": "^13.2.0",
     "comlink": "^4.4.2",
-    "earcut": "^3.0.2",
+    "earcut": "^3.2.3",
     "gl-matrix": "^3.4.4",
     "ndarray": "^1.0.19",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react-dom": "^19.2.8",
     "regl": "^2.1.1",
-    "typescript-event-target": "^1.1.1",
+    "typescript-event-target": "^1.1.2",
     "webgl-utils": "^1.0.1",
-    "zod": "^4.1.12"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@grx/typescript-config": "workspace:*",
-    "@mantine/core": "^9.0.1",
-    "@mantine/hooks": "^9.0.1",
+    "@mantine/core": "^9.5.1",
+    "@mantine/hooks": "^9.5.1",
     "@types/earcut": "^3.0.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "19.2.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "19.2.4",
     "@typescript/typescript6": "^6.0.2",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.5",
     "chokidar": "^5.0.0",
     "glslify": "^7.1.1",
     "glslify-import": "^3.1.0",
     "rollup-plugin-glslify": "^1.3.1",
     "unplugin-dts": "^1.0.3",
-    "vite": "^7.3.2",
-    "vite-plugin-arraybuffer": "^0.1.1",
+    "vite": "^8.2.1",
+    "vite-bundle-analyzer": "^1.3.9",
+    "vite-plugin-arraybuffer": "^0.1.4",
     "vite-plugin-comlink": "^5.3.0",
     "vite-plugin-cross-origin-isolation": "^0.1.6",
-    "vite-plugin-glsl": "^1.5.4",
-    "vitest": "^4.0.18"
+    "vite-plugin-glsl": "^1.6.1",
+    "vitest": "^4.1.10"
   }
 }
