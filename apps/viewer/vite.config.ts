@@ -1,7 +1,6 @@
 import { resolve } from "node:path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import { comlink } from "vite-plugin-comlink"
 
 export default defineConfig({
   base: "./",
@@ -18,9 +17,9 @@ export default defineConfig({
   build: {
     outDir: resolve("dist/"),
   },
-  plugins: [react(), comlink()],
+  plugins: [react()],
   worker: {
     format: "es",
-    plugins: () => [comlink()],
+    plugins: () => [],
   },
 })
