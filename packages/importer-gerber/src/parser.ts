@@ -7,10 +7,8 @@ import {
   CstParser,
   createToken,
   generateCstDts,
-  type IOrAlt,
   type IToken,
   Lexer,
-  type OrMethodOpts,
   type ParserMethod,
   type Rule,
 } from "chevrotain"
@@ -383,12 +381,9 @@ class GerberParser extends CstParser {
   deleteAttributesCommand!: ParserMethod<unknown[], CstNode>
 
   // OPTIMIZATION CACHES
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the extended command data block can be any of the possible extended command data block types, so it's not practical to type it more specifically than this.
-  extendedCommandDataBlockCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the function code command can be any of the possible function code command types, so it's not practical to type it more specifically than this.
-  functionCodeCommandCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the coordinate field can be any of the possible coordinate field types, so it's not practical to type it more specifically than this.
-  coordinateFieldCache = undefined as IOrAlt<any>[] | OrMethodOpts<any> | undefined
+  extendedCommandDataBlockCache: { ALT: () => CstNode }[] | undefined = undefined
+  functionCodeCommandCache: { ALT: () => CstNode }[] | undefined = undefined
+  coordinateFieldCache: { ALT: () => CstNode }[] | undefined = undefined
 
   constructor() {
     super(multiModeLexerDefinition, {

@@ -9,6 +9,7 @@
     "prepare": "husky",
     "dev": "turbo watch dev",
     "dev:desktop": "turbo watch dev:desktop",
+    "test": "turbo run test",
     "build": "turbo run build",
     "build:desktop": "turbo run build:desktop",
     "lint": "biome lint --write",
