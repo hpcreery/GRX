@@ -1,11 +1,13 @@
 import { resolve } from "node:path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import packageJson from "../../package.json" with { type: "json" }
 
 export default defineConfig({
   base: "./",
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    // __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __APP_VERSION__: JSON.stringify(packageJson.version),
   },
   resolve: {
     alias: {
