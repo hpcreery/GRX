@@ -67,6 +67,7 @@
     "@types/chroma-js": "^3.1.2",
     "@types/earcut": "^3.0.0",
     "@types/ndarray": "^1.0.14",
+    "@types/node": "^26.2.0",
     "@types/react-color": "^3.0.13",
     "@types/react-dom": "19.2.4",
     "@vitejs/plugin-react": "^6.1.0",

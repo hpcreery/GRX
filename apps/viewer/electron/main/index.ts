@@ -1,7 +1,7 @@
-import { join } from "node:path"
-import { electronApp, is, optimizer } from "@electron-toolkit/utils"
+// import { join } from "node:path"
+import { electronApp, optimizer } from "@electron-toolkit/utils"
 import { app, BrowserWindow, shell } from "electron"
-import icon from "../../resources/icon.png?asset"
+import icon from "../../resources/icon.png"
 
 app.commandLine.appendSwitch("js-flags", "--max-old-space-size=10240")
 
