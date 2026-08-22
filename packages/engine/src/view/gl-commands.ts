@@ -570,7 +570,6 @@ export function initializeRenderers(regl: REGL.Regl): void {
       ],
     },
 
-
     instances: regl.prop<SurfaceAttachments, "length">("length"),
     count: 3,
     // primitive: 'line loop'

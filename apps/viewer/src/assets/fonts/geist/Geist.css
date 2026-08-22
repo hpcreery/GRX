@@ -1,9 +1,9 @@
 @font-face {
-  font-family: 'GeistMono-Regular';
-  src: url('./GeistMono-Regular.woff2') format('woff2');
+  font-family: "GeistMono-Regular";
+  src: url("./GeistMono-Regular.woff2") format("woff2");
 }
 
 @font-face {
-  font-family: 'GeistMono-Bold';
-  src: url('./GeistMono-Bold.woff2') format('woff2');
+  font-family: "GeistMono-Bold";
+  src: url("./GeistMono-Bold.woff2") format("woff2");
 }

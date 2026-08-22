@@ -2,8 +2,8 @@
 // 	Vector4
 // } from 'three';
 
-import * as NURBSUtils from "./NURBSUtils"
 import { Vector4 } from "../vec"
+import * as NURBSUtils from "./NURBSUtils"
 
 /**
  * NURBS surface object

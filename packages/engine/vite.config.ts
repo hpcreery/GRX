@@ -1,10 +1,10 @@
 import { resolve } from "node:path"
 import glslify from "rollup-plugin-glslify"
+import dts from "unplugin-dts/vite"
 import { defineConfig, type PluginOption } from "vite"
 import arraybuffer from "vite-plugin-arraybuffer"
 // import { comlink } from "vite-plugin-comlink"
 import pkg from "./package.json" with { type: "json" }
-import dts from "unplugin-dts/vite"
 // import { analyzer } from "vite-bundle-analyzer"
 
 export default defineConfig({
@@ -33,7 +33,7 @@ export default defineConfig({
           return `${fileName}.js`
         },
       },
-    }
+    },
   },
   resolve: {
     alias: {
@@ -46,7 +46,7 @@ export default defineConfig({
       // insertTypesEntry: true,
       tsconfigPath: "tsconfig.json",
     }) as PluginOption,
-    arraybuffer(),
+    arraybuffer() as PluginOption,
     glslify({
       compress: false,
       // @ts-expect-error - glslify options are not typed
@@ -61,7 +61,7 @@ export default defineConfig({
     },
     plugins: () => [
       // comlink(),
-      arraybuffer(),
+      arraybuffer() as PluginOption,
       glslify({
         compress: false,
         // @ts-expect-error - glslify options are not typed

@@ -1,8 +1,8 @@
 import { resolve } from "node:path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
-import packageJson from "../../package.json" with { type: "json" }
 import electron from "vite-plugin-electron/simple"
+import packageJson from "../../package.json" with { type: "json" }
 
 export default defineConfig(({ command, mode }) => {
   return {
@@ -23,18 +23,20 @@ export default defineConfig(({ command, mode }) => {
     },
     plugins: [
       react(),
-      mode === "desktop" ? electron({
-        main: {
-          // Shortcut of `build.lib.entry`
-          entry: "electron/main/index.ts",
-        },
-        preload: {
-          // Shortcut of `build.rolldownOptions.input` (`build.rollupOptions.input` on Vite < 8)
-          input: "electron/preload/index.ts",
-        },
-        // Optional: Use Node.js API in the Renderer process
-        // renderer: {},
-      }) : undefined,
+      mode === "desktop"
+        ? electron({
+            main: {
+              // Shortcut of `build.lib.entry`
+              entry: "electron/main/index.ts",
+            },
+            preload: {
+              // Shortcut of `build.rolldownOptions.input` (`build.rollupOptions.input` on Vite < 8)
+              input: "electron/preload/index.ts",
+            },
+            // Optional: Use Node.js API in the Renderer process
+            // renderer: {},
+          })
+        : undefined,
     ],
     worker: {
       format: "es",
