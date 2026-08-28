@@ -339,6 +339,17 @@ export class ViewRenderer extends UpdateEventTarget {
     this.transform.timestamp = new Date()
   }
 
+  // /**
+  //  * Set viewport position
+  //  * @param x x position in pixels
+  //  * @param y y position in pixels
+  //  * @returns void
+  //  */
+  // public setViewportPosition(x: number, y: number): void {
+  //   this.transform.position = [x, y]
+  //   this.announceUpdate()
+  // }
+
   /**
    * Rotate viewport
    * @param x x rotation in degrees
@@ -354,6 +365,18 @@ export class ViewRenderer extends UpdateEventTarget {
     this.announceUpdate()
     this.transform.timestamp = new Date()
   }
+
+  // /**
+  //  * Set viewport rotation
+  //  * @param x x rotation in degrees
+  //  * @param y y rotation in degrees
+  //  * @returns void
+  //  */
+  // public setViewportRotation(x: number, y: number): void {
+  //   if (!settings.ENABLE_3D) return
+  //   this.transform.rotation = [x, y]
+  //   this.announceUpdate()
+  // }
 
   /**
    * Grab viewport for dragging

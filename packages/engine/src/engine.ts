@@ -9,17 +9,7 @@ import type { ShapeDistance, ViewBox } from "./types"
 import { initStaticShaderCollections } from "./view/buffer-collections"
 import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
 import { ViewRenderer } from "./view/view"
-
-export interface RenderTransform {
-  zoom: number
-  position: vec2
-  velocity: vec2
-  timestamp: Date
-  dragging: boolean
-  matrix: mat3
-  matrixInverse: mat3
-  update: () => void
-}
+import type { RenderTransform } from "./view/view"
 
 export interface Pointer {
   x: number

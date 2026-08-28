@@ -360,7 +360,13 @@ export class Renderer {
           }
           engine.interface.view_move(element.id, mouseMovementX / this.pointerCache.length, mouseMovementY / this.pointerCache.length)
         } else {
+          // if middle mouse button is pressed, rotate the view instead of moving it
           if (e.buttons == 4) {
+            const engineSettings = await engine.interface.read_engine_settings()
+            if (!engineSettings.ENABLE_3D) {
+              await engine.interface.set_engine_settings({ ENABLE_3D: true })
+              await engine.interface.update_view_transform(element.id, { rotation: [0, 0] })
+            }
             await engine.interface.view_rotate(element.id, mouseMovementY, mouseMovementX)
           } else {
             await engine.interface.view_move(element.id, mouseMovementX, mouseMovementY)

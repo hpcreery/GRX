@@ -45,7 +45,7 @@ export const settings: RenderSettings = {
   ZOOM_TO_CURSOR: true,
   SHOW_DATUMS: false,
   ENABLE_3D: false,
-  PERSPECTIVE_3D: false,
+  PERSPECTIVE_3D: true,
 }
 
 // GRID SETTINGS
