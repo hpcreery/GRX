@@ -26,9 +26,10 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"a
 
-import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
+// import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
+import gtl from "@grx/importer-gerber/testdata/boards/arduino-uno/arduino-uno.gko?arraybuffer"
 // import gto from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
-import cmp from "../data/importer/gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
+import cmp from "@grx/importer-gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
 
 const N_PADS = 0
 const N_LINES = 0
