@@ -95,6 +95,7 @@ export class Renderer {
 
   public pointer: EventTarget = new EventTarget()
   private pointerCache: globalThis.PointerEvent[] = []
+  private previousPointerEvent: { event: globalThis.PointerEvent; time: number } | null = null
 
   private engineWorker: Worker
   public engine: Comlink.Remote<typeof Engine>
@@ -272,6 +273,12 @@ export class Renderer {
       if (this.pointerSettings.mode === PointerMode.MOVE) {
         element.style.cursor = "grabbing"
         await engine.interface.view_pointer_grab(element.id)
+        if (e.buttons == 4) {
+          if (this.previousPointerEvent && this.previousPointerEvent.event.buttons === 4 && this.previousPointerEvent.time + 200 > Date.now()) {
+            await engine.interface.set_engine_settings({ ENABLE_3D: false })
+            await engine.interface.update_view_transform(element.id, { rotation: [0, 0] })
+          }
+        }
       } else if (this.pointerSettings.mode === PointerMode.SELECT) {
         element.style.cursor = "wait"
         const features = await engine.interface.read_view_select(element.id, [xcanvas, ycanvas])
@@ -292,6 +299,7 @@ export class Renderer {
           engine.interface.create_view_measurement(element.id, [xcanvas, ycanvas])
         }
       }
+      this.previousPointerEvent = { event: e, time: Date.now() }
     }
     element.onpointerup = async (e): Promise<void> => {
       sendPointerEvent(e, PointerEvents.POINTER_UP)
@@ -373,6 +381,9 @@ export class Renderer {
           }
         }
       }
+    }
+    element.ondblclick = async (_e): Promise<void> => {
+      await engine.interface.update_view_zoom_fit_artwork(element.id)
     }
     element.onkeydown = async (e): Promise<void> => {
       // if (e.key === 'Escape') {
