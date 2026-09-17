@@ -891,16 +891,17 @@ export class ViewRenderer extends UpdateEventTarget {
     const viewWidth = this.viewBox.width
     const viewHeight = this.viewBox.height
 
+    // calc zoom
     const zoomX = viewWidth / layerWidth
     const zoomY = viewHeight / layerHeight
     let zoom = Math.min(zoomX, zoomY) * 1.0 // add some padding
     if (zoom > settings.MAX_ZOOM) zoom = settings.MAX_ZOOM
     if (zoom < settings.MIN_ZOOM) zoom = settings.MIN_ZOOM
 
-    const position = vec2.create()
-    const centerX = viewWidth / 2 - (boundingBox.min[0] + boundingBox.max[0]) / 2 //* zoom
-    const centerY = viewHeight / 2 + (boundingBox.min[1] + boundingBox.max[1]) / 2 //* zoom
-    vec2.set(position, centerX, centerY)
+    // calc position: world-space bbox center must map to the viewport center once scaled by zoom
+    const centerX = (boundingBox.min[0] + boundingBox.max[0]) / 2
+    const centerY = (boundingBox.min[1] + boundingBox.max[1]) / 2
+    const position = vec2.fromValues(viewWidth / 2 - centerX * zoom, viewHeight / 2 + centerY * zoom)
 
     // validation checks
     if (Number.isNaN(boundingBox.min[0]) || Number.isNaN(boundingBox.min[1]) || Number.isNaN(boundingBox.max[0]) || Number.isNaN(boundingBox.max[1]))
