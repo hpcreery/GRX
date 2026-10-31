@@ -1,6 +1,6 @@
 import * as Shapes from "@grx/artwork-format/shape"
 import * as Symbols from "@grx/artwork-format/symbol"
-import type { Transform } from "@grx/artwork-format/types"
+import type { TShapeTransform } from "@grx/artwork-format/types"
 import {
   type AttributesType,
   ContourSegmentTypeIdentifier,
@@ -9,8 +9,8 @@ import {
   SymbolTypeIdentifier,
 } from "@grx/artwork-format/types"
 import * as ArtworkUtils from "@grx/artwork-format/utils"
-import ShapeTransform from "@src/transform"
 import { cyrb64, getScaleMat3, UpdateEventTarget } from "@src/utils"
+import ShapeTransform from "@src/view/shape-transform"
 import earcut from "earcut"
 import { vec3 } from "gl-matrix"
 import { fontInfo as cozetteFontInfo } from "./shape/text/cozette/font"
@@ -70,7 +70,7 @@ export abstract class SymbolBufferCollection {
     symbol.sym_num.value = index
     SymbolBufferCollection.attributeMap[index] = symbol.attributes
     SymbolBufferCollection.length += 1
-    SymbolBufferCollection.events.dispatchTypedEvent("update", new Event("update"))
+    SymbolBufferCollection.events.announceUpdate()
     return index
   }
 
@@ -147,7 +147,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
     const shapeData = this.properties.map((key) => shape[key] as number)
     this.view.set(shapeData, index * this.properties.length)
     this.length += 1
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return index // Return the index of the newly created shape
   }
 
@@ -213,7 +213,7 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
     for (let i = 0; i < this.properties.length; i++) {
       this.view[index * this.properties.length + i] = shapeData[i]
     }
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   delete(index: number): void {
@@ -226,14 +226,14 @@ class PrimitiveBufferCollection<T extends Shapes.Primitive | Shapes.DatumArc | S
       this.view[index * this.properties.length + i] = NaN
     }
     this.macros[index] = undefined
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   clear(): void {
     this.view.fill(0)
     this.length = 0
     this.macros = []
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   private isGetter(obj: Shapes.Primitive | Shapes.DatumArc | Shapes.DatumLine, prop: string): boolean {
@@ -459,7 +459,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
     this.bufferOffset = totalTrianglesCount
     this.textureOffset = verticesOffset
 
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   clear(): void {
@@ -482,7 +482,7 @@ export class SurfaceBufferCollection extends UpdateEventTarget implements Buffer
     this.textureOffset = 0
     this.bufferMap = []
     this.surfaces = []
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   create(shape: Shapes.Surface): number {
@@ -710,7 +710,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     }
     this.length += 1
     this.updateEdges(index)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return index
   }
 
@@ -755,7 +755,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
       mapping.collection.update(mapping.index, shape)
     }
     this.updateEdges(index)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   delete(index: number): void {
@@ -770,7 +770,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     this.surfacesMap[index] = undefined
     this.length -= 1
     this.updateEdges(index)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   clear(): void {
@@ -781,7 +781,7 @@ export class SurfacesBufferCollection extends UpdateEventTarget implements Buffe
     this.length = 0
     this.edgeLineBufferCollection.clear()
     this.edgeArcBufferCollection.clear()
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   private hasHoles(shape: Shapes.Surface): boolean {
@@ -887,7 +887,7 @@ class DatumTextBufferCollection extends UpdateEventTarget implements BufferColle
     }
     this.bufferOffset += positions.length
 
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   create(shape: Shapes.DatumText): number {
@@ -939,7 +939,7 @@ class DatumTextBufferCollection extends UpdateEventTarget implements BufferColle
     this.bufferOffset = 0
     this.bufferMap = []
     this.datumTexts = []
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 }
 
@@ -967,7 +967,7 @@ class DatumPointBufferCollection extends UpdateEventTarget implements BufferColl
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
     this.length += 1
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return index // Return the index of the newly created point
   }
 
@@ -987,7 +987,7 @@ class DatumPointBufferCollection extends UpdateEventTarget implements BufferColl
     }
     this.positionView[index * 2] = shape.x
     this.positionView[index * 2 + 1] = shape.y
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   delete(index: number): void {
@@ -997,20 +997,20 @@ class DatumPointBufferCollection extends UpdateEventTarget implements BufferColl
     // Set the position to NaN to mark as deleted
     this.positionView[index * 2] = NaN
     this.positionView[index * 2 + 1] = NaN
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   clear(): void {
     this.positionView.fill(0)
     this.length = 0
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 }
 
 export class StepAndRepeatCollection extends UpdateEventTarget implements BufferCollection<Shapes.StepAndRepeat> {
   stepAndRepeats: ({
-    repeats: Transform[]
-    artwork: ArtworkBufferCollection
+    repeats: TShapeTransform[]
+    artwork: ShapesBufferCollection
     index: number
   } | null)[] = []
   length: number = 0
@@ -1018,11 +1018,11 @@ export class StepAndRepeatCollection extends UpdateEventTarget implements Buffer
   create(shape: Shapes.StepAndRepeat): number {
     const index = this.stepAndRepeats.push({
       repeats: shape.repeats,
-      artwork: new ArtworkBufferCollection(shape.shapes),
+      artwork: new ShapesBufferCollection(shape.shapes),
       index: shape.index,
     })
     this.length = this.stepAndRepeats.length
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return index - 1 // Return the index of the newly created step and repeat
   }
   read(index: number): Shapes.StepAndRepeat {
@@ -1049,10 +1049,10 @@ export class StepAndRepeatCollection extends UpdateEventTarget implements Buffer
     }
     this.stepAndRepeats[index] = {
       repeats: shape.repeats,
-      artwork: new ArtworkBufferCollection(shape.shapes),
+      artwork: new ShapesBufferCollection(shape.shapes),
       index: shape.index,
     }
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
   delete(index: number): void {
     if (index < 0 || index >= this.stepAndRepeats.length) {
@@ -1063,12 +1063,12 @@ export class StepAndRepeatCollection extends UpdateEventTarget implements Buffer
       throw new Error(`No step and repeat found at index: ${index} when deleting step and repeat`)
     }
     this.stepAndRepeats[index] = null // Mark as deleted
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
   clear(): void {
     this.stepAndRepeats = []
     this.length = 0
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 }
 
@@ -1288,7 +1288,7 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
     // this.lineBufferCollection.create = originalLineCreate
     this.primitivesMap[index] = { padIndex: padIndices, lineIndex: lineIndices }
     this.length = this.polyLines.length
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   create(shape: Shapes.PolyLine): number {
@@ -1335,7 +1335,7 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
     this.primitivesMap = []
     this.padBufferCollection.clear()
     this.lineBufferCollection.clear()
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 }
 
@@ -1348,7 +1348,7 @@ class PolyLineBufferCollection extends UpdateEventTarget implements BufferCollec
 //   >
 // }
 
-export class ArtworkBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Shape> {
+export class ShapesBufferCollection extends UpdateEventTarget implements BufferCollection<Shapes.Shape> {
   public shapes = {
     [FeatureTypeIdentifier.PAD]: new PrimitiveBufferCollection<Shapes.Pad>([...Shapes.PAD_RECORD_PARAMETERS], FeatureTypeIdentifier.PAD),
     [FeatureTypeIdentifier.LINE]: new PrimitiveBufferCollection<Shapes.Line>([...Shapes.LINE_RECORD_PARAMETERS], FeatureTypeIdentifier.LINE),
@@ -1398,13 +1398,13 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       collectionIndex,
     })
     this.attributeMap.push(shape.attributes || {}) // Store attributes
-    // this.dispatchTypedEvent("update", new Event("update"))
+    // this.announceUpdate()
     return shape.index // return the index of the artwork
   }
 
   create(shape: Shapes.Shape): number {
     const index = this.createWithoutUpdate(shape)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return index
   }
 
@@ -1447,7 +1447,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     }
     // @ts-expect-error // TS is confused, but we know this is safe
     collection.update(feature.collectionIndex, shape)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   delete(index: number): void {
@@ -1462,7 +1462,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     this.artworkMap[index] = null // mark as deleted
     this.attributeMap[index] = {} // Remove attributes
     collection.delete(feature.collectionIndex)
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   toJSON(): Shapes.Shape[] {
@@ -1480,7 +1480,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
     artwork.forEach((shape) => {
       this.createWithoutUpdate(shape)
     })
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   clear(): void {
@@ -1505,7 +1505,7 @@ export class ArtworkBufferCollection extends UpdateEventTarget implements Buffer
       // Add other collections as needed
     }
     this.attributeMap = []
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
   }
 
   /**
@@ -1552,7 +1552,7 @@ export abstract class MacroArtworkCollection {
     }
     const macro = new MacroArtworkBufferCollection(shapes, flatten, attributes)
     MacroArtworkCollection.macros.set(symbol.id, macro)
-    MacroArtworkCollection.events.dispatchTypedEvent("update", new Event("update"))
+    MacroArtworkCollection.events.announceUpdate()
     return macro
   }
 
@@ -1572,7 +1572,7 @@ export abstract class MacroArtworkCollection {
     }
     const macro = new MacroArtworkBufferCollection(shapes, flatten, attributes)
     MacroArtworkCollection.macros.set(id, macro)
-    MacroArtworkCollection.events.dispatchTypedEvent("update", new Event("update"))
+    MacroArtworkCollection.events.announceUpdate()
   }
 
   static delete(id: string): void {
@@ -1580,7 +1580,7 @@ export abstract class MacroArtworkCollection {
       throw new Error(`No macro found with key: ${id} when deleting macro`)
     }
     MacroArtworkCollection.macros.delete(id)
-    MacroArtworkCollection.events.dispatchTypedEvent("update", new Event("update"))
+    MacroArtworkCollection.events.announceUpdate()
   }
 
   static onUpdate(listener: (event: Event) => void): void {
@@ -1588,7 +1588,7 @@ export abstract class MacroArtworkCollection {
   }
 }
 
-export class MacroArtworkBufferCollection extends ArtworkBufferCollection {
+export class MacroArtworkBufferCollection extends ShapesBufferCollection {
   // This class can extend the ArtworkBufferCollection to add macro-specific functionality
   // For example, you could add methods to handle macro-specific shapes or attributes
   // Currently, it inherits all functionality from ArtworkBufferCollection

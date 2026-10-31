@@ -12,9 +12,9 @@ export * as constants from "./constants"
 export * as data from "./data"
 export * as engine from "./engine"
 export * as settings from "./settings"
-export * as transform from "./transform"
 export * as types from "./types"
 export * as utils from "./utils"
+export * as transform from "./view/shape-transform"
 
 export interface RenderEngineFrontendConfig {
   container?: HTMLElement
@@ -59,7 +59,7 @@ export class Renderer {
             if (value === PointerMode.MEASURE) {
               viewElement.style.cursor = "crosshair"
               // this.settings.SHOW_DATUMS = true
-              this.engine.interface.set_engine_settings({ SHOW_DATUMS: true })
+              this.engine.interface.update_engine_settings({ SHOW_DATUMS: true })
             }
           })
         }
@@ -138,7 +138,7 @@ export class Renderer {
       id = view.id
     }
     this.managedViews.push(view)
-    this.engine.interface.create_view(id, project, step, view.getBoundingClientRect())
+    this.engine.interface.create_view(id, project, step, scaleDOMRect(view.getBoundingClientRect(), this.canvasSettings.dpr))
     this.addControls(view)
     return id
   }
@@ -260,9 +260,9 @@ export class Renderer {
       const mouseScrollY = e.deltaY * moveScale
 
       if (settings.ZOOM_TO_CURSOR) {
-        engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, mouseScrollY)
+        engine.interface.zoom_at_point(element.id, mouseX - offsetX, mouseY - offsetY, -mouseScrollY)
       } else {
-        engine.interface.zoom_at_point(element.id, width / 2, height / 2, mouseScrollY)
+        engine.interface.zoom_at_point(element.id, width / 2, height / 2, -mouseScrollY)
       }
     }
     element.onpointerdown = async (e): Promise<void> => {
@@ -275,7 +275,7 @@ export class Renderer {
         await engine.interface.view_pointer_grab(element.id)
         if (e.buttons == 4) {
           if (this.previousPointerEvent && this.previousPointerEvent.event.buttons === 4 && this.previousPointerEvent.time + 200 > Date.now()) {
-            await engine.interface.set_engine_settings({ ENABLE_3D: false })
+            await engine.interface.update_view_settings(element.id, { ENABLE_3D: false })
             await engine.interface.update_view_transform(element.id, { rotation: [0, 0] })
           }
         }
@@ -370,9 +370,9 @@ export class Renderer {
         } else {
           // if middle mouse button is pressed, rotate the view instead of moving it
           if (e.buttons == 4) {
-            const engineSettings = await engine.interface.read_engine_settings()
+            const engineSettings = await engine.interface.read_view_settings(element.id)
             if (!engineSettings.ENABLE_3D) {
-              await engine.interface.set_engine_settings({ ENABLE_3D: true })
+              await engine.interface.update_view_settings(element.id, { ENABLE_3D: true })
               await engine.interface.update_view_transform(element.id, { rotation: [0, 0] })
             }
             await engine.interface.view_rotate(element.id, mouseMovementY, mouseMovementX)
@@ -465,6 +465,20 @@ export class Renderer {
     createEl.download = "grx-screenshot.png"
     createEl.click()
     createEl.remove()
+  }
+
+  public async test(viewId: string, layerName: string): Promise<void> {
+    console.log("Test method called")
+    const imageData = await this.engine.interface.read_view_layer_contours(viewId, layerName)
+    console.log("Image data from test method", imageData)
+    const canvas = document.createElement("canvas")
+    canvas.width = imageData.width
+    canvas.height = imageData.height
+    const context = canvas.getContext("2d")
+    if (context) {
+      context.putImageData(imageData, 0, 0)
+      document.body.appendChild(canvas)
+    }
   }
 
   // public async getStats(): Promise<Stats> {

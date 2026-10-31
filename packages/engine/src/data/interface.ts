@@ -1,7 +1,7 @@
 import type * as Shapes from "@grx/artwork-format/shape"
 import * as Comlink from "comlink"
 import { TypedEventTarget } from "typescript-event-target"
-import type { ArtworkBufferCollection } from "./artwork-collections"
+import type { ShapesBufferCollection } from "./artwork-collections"
 import type { ImportPluginSignature, ImportResultReport, importFormatName } from "./importer"
 import importFormats from "./importer"
 import { Layer, PROJECTS, Project, Step, StepLayer } from "./project"
@@ -398,7 +398,7 @@ export abstract class DataInterface {
    * @param layer_name Name of the layer whose artwork collection is to be retrieved.
    * @returns A reference to the ArtworkBufferCollection of the specified layer.
    */
-  static _read_step_layer_artwork_collection_ref(project_name: string, step_name: string, layer_name: string): ArtworkBufferCollection {
+  static _read_step_layer_artwork_collection_ref(project_name: string, step_name: string, layer_name: string): ShapesBufferCollection {
     const layer = DataInterface.read_step_layer_info(project_name, step_name, layer_name)
     return layer.artwork
   }

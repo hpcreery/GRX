@@ -1,21 +1,29 @@
 import * as Shapes from "@grx/artwork-format/shape"
 import type { Units } from "@grx/artwork-format/types"
 import { baseUnitsConversionFactor } from "@grx/artwork-format/utils"
-import { ArtworkBufferCollection } from "@src/data/artwork-collections"
+import { ShapesBufferCollection } from "@src/data/artwork-collections"
 import { measurementSettings } from "@src/settings"
 import type { vec2 } from "gl-matrix"
 import type REGL from "regl"
 import { type RendererProps, ShapeRenderer } from "./shape-renderer"
-import type { WorldContext } from "./view"
 
 export class SimpleMeasurement extends ShapeRenderer {
   public measurements: { point1: vec2; point2: vec2 }[] = []
   public currentMeasurement: { point1: vec2; point2: vec2 } | null = null
   public framebuffer: REGL.Framebuffer2D
   public units: Units = measurementSettings.units
+  public drawFrameBuffer: REGL.DrawCommand<REGL.DefaultContext>
   constructor(props: RendererProps) {
-    super({ ...props, image: new ArtworkBufferCollection() })
+    super({ ...props, image: new ShapesBufferCollection() })
     this.framebuffer = this.regl.framebuffer()
+    this.drawFrameBuffer = this.regl({
+      context: {
+        preRender: (context) => {
+          this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+        },
+      },
+      framebuffer: this.framebuffer,
+    })
   }
 
   /**
@@ -119,19 +127,18 @@ export class SimpleMeasurement extends ShapeRenderer {
     this.refresh()
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
+  public render(): void {
     if (this.units != measurementSettings.units) {
       this.units = measurementSettings.units
       this.refresh()
     }
-    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
       color: [0, 0, 0, 0],
       depth: 1,
     })
-    this.framebuffer.use(() => {
-      super.render(context)
+    this.drawFrameBuffer(() => {
+      super.render()
     })
   }
 }

@@ -60,7 +60,7 @@ export default function App(): JSX.Element | null {
       const color = chroma(colors.colorScheme == "dark" ? theme.colors.dark[9] : theme.colors.gray[1])
         .alpha(0)
         .gl()
-      renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: color })
+      renderer.engine.interface.update_engine_settings({ BACKGROUND_COLOR: color })
     }
   }
 

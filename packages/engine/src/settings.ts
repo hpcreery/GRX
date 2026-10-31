@@ -14,17 +14,11 @@ export const measurementSettings: MeasurementSettings = {
 export interface RenderSettings {
   FPS: number
   MSPFRAME: number
-  OUTLINE_MODE: boolean
-  SKELETON_MODE: boolean
   SNAP_MODE: SnapMode
   COLOR_BLEND: ColorBlend
   BACKGROUND_COLOR: vec4
-  MAX_ZOOM: number
-  MIN_ZOOM: number
   ZOOM_TO_CURSOR: boolean
   SHOW_DATUMS: boolean
-  ENABLE_3D: boolean
-  PERSPECTIVE_3D: boolean
 }
 
 export const settings: RenderSettings = {
@@ -35,17 +29,30 @@ export const settings: RenderSettings = {
   set FPS(value: number) {
     this.MSPFRAME = 1000 / value
   },
-  OUTLINE_MODE: false,
-  SKELETON_MODE: false,
   SNAP_MODE: SnapMode.OFF,
   COLOR_BLEND: ColorBlend.CONTRAST,
   BACKGROUND_COLOR: [0, 0, 0, 0],
-  MAX_ZOOM: 10000,
-  MIN_ZOOM: 0.0001,
   ZOOM_TO_CURSOR: true,
   SHOW_DATUMS: false,
+}
+
+// VIEW SETTINGS
+export interface ViewSettings {
+  MAX_ZOOM: number
+  MIN_ZOOM: number
+  ENABLE_3D: boolean
+  PERSPECTIVE_3D: boolean
+  OUTLINE_MODE: boolean
+  SKELETON_MODE: boolean
+}
+
+export const defaultViewSettings: ViewSettings = {
+  MAX_ZOOM: 10000,
+  MIN_ZOOM: 0.0001,
   ENABLE_3D: false,
   PERSPECTIVE_3D: true,
+  OUTLINE_MODE: false,
+  SKELETON_MODE: false,
 }
 
 // GRID SETTINGS

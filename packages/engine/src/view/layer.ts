@@ -1,10 +1,10 @@
 import type { Layer, StepLayer } from "@src/data/project"
-import { vec4 } from "gl-matrix"
+import type { ShapeDistance } from "@src/types"
+import { type vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
+// import init, { initSync, VectorDoc, vectorize_bytes, vectorize_rgba } from "../contours-vtracer/pkg/vtracer_wasm.js"
 import { ShapeRenderer, type ShapeRendererProps } from "./shape-renderer"
-import type { WorldContext } from "./view"
-// import { settings } from '../settings'
-// import { ColorBlend } from '../types'
+import type { DrawWorldContext } from "./view"
 
 export interface LayerProps {
   dataLayer: StepLayer
@@ -22,12 +22,19 @@ interface LayerUniforms {
 
 type LayerAttributes = {}
 
+interface LayerContext {
+  preRender: undefined
+  zOffset?: number
+  needsRedraw?: boolean
+}
+
 export default class LayerRenderer extends ShapeRenderer {
   public visible = true
   public dataLayer: StepLayer
   public color: vec4 = vec4.fromValues(Math.random(), Math.random(), Math.random(), 1.0)
 
-  private layerConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  private drawLayer: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext & LayerContext>
+  private drawZOffset: REGL.DrawCommand
 
   public framebuffer: REGL.Framebuffer2D
 
@@ -50,7 +57,14 @@ export default class LayerRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.layerConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
+    this.drawLayer = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, LayerContext, REGL.DefaultContext & DrawWorldContext>({
+      context: {
+        needsRedraw: (context) => this.needsRender(context),
+        preRender: (context) => {
+          this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+        },
+      },
+      framebuffer: this.framebuffer,
       depth: {
         enable: true,
         mask: true,
@@ -63,7 +77,13 @@ export default class LayerRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: () => this.color,
-        u_ZOffset: (context) => context.zOffset || 0.0,
+        u_ZOffset: () => this.getZOffset(),
+      },
+    })
+
+    this.drawZOffset = this.regl({
+      uniforms: {
+        u_ZOffset: () => this.getZOffset(),
       },
     })
 
@@ -72,7 +92,7 @@ export default class LayerRenderer extends ShapeRenderer {
     })
   }
 
-  private needsRender(context: REGL.DefaultContext & WorldContext): boolean {
+  private needsRender(context: REGL.DefaultContext & DrawWorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
     const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy["tick"]
@@ -95,20 +115,52 @@ export default class LayerRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
-    if (!this.needsRender(context)) return
-
-    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.regl.clear({
-      framebuffer: this.framebuffer,
-      color: [0, 0, 0, 0],
-      depth: 0,
-    })
-    this.framebuffer.use(() => {
-      this.layerConfig(() => {
-        super.render(context)
+  /**
+   * Renders the layer. Note, this will only render if the layer needs to be updated based on context and transform changes.
+   * Rendered content will be written to the layer's framebuffer.
+   */
+  public render(): void {
+    this.drawLayer((context) => {
+      if (!context.needsRedraw) return
+      this.regl.clear({
+        framebuffer: this.framebuffer,
+        color: [0, 0, 0, 0],
+        depth: 0,
       })
+      super.render()
     })
+  }
+
+  public getZOffset(): number {
+    return this.dataLayer.step.matrix.getZOffsetForLayer(this.dataLayer.layer)
+  }
+
+  /**
+   * Queries the distance from the pointer to all shapes in the renderer
+   * @param pointer the pointer in gl screen/view coordinates
+   * @param context the regl context
+   * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance. Returned distances are in world coordinates.
+   */
+  public queryDistance(pointer: vec2): ShapeDistance[] {
+    let result: ShapeDistance[] = []
+    this.drawZOffset(() => {
+      result = super.queryDistance(pointer)
+    })
+    return result
+  }
+
+  public async capture(width: number, height: number): Promise<ImageData> {
+    const pixels = this.regl.read<Uint8Array<ArrayBuffer>>({ framebuffer: this.framebuffer, width, height })
+    console.log("pixels", pixels)
+    const clamped = new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.length)
+    const image = new ImageData(clamped, width, height)
+    console.log("image", image)
+    // this.regl._gl.putImageData(image, 0, 0)
+    return image
+    // await init()
+    // const string = vectorize_rgba(pixels, width, height, { mode: "polygon", hierarchical: "cutout", cluster: "color-cluster", filterSpeckle: 1 })
+    // console.log("string", string)
+    // })
   }
 
   public destroy(): void {
@@ -121,8 +173,13 @@ interface SelectionRendererProps extends ShapeRendererProps {
   sourceLayer: Layer
 }
 
+interface SelectionRendererContext {
+  needsRedraw?: boolean
+  preRender: undefined
+}
+
 export class SelectionRenderer extends ShapeRenderer {
-  private selectionConfig: REGL.DrawCommand<REGL.DefaultContext & WorldContext>
+  private drawSelection: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext & SelectionRendererContext>
 
   public framebuffer: REGL.Framebuffer2D
 
@@ -138,7 +195,20 @@ export class SelectionRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer()
 
-    this.selectionConfig = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, WorldContext>({
+    this.drawSelection = this.regl<
+      LayerUniforms,
+      LayerAttributes,
+      Record<string, never>,
+      SelectionRendererContext,
+      REGL.DefaultContext & DrawWorldContext
+    >({
+      context: {
+        needsRedraw: (context) => this.needsRender(context),
+        preRender: (context) => {
+          this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+        },
+      },
+      framebuffer: this.framebuffer,
       depth: {
         enable: true,
         mask: true,
@@ -151,7 +221,7 @@ export class SelectionRenderer extends ShapeRenderer {
       // },
       uniforms: {
         u_Color: vec4.fromValues(0.5, 0.5, 0.5, 0.7),
-        u_ZOffset: (context) => context.zOffset || 0.0,
+        u_ZOffset: () => this.sourceLayer.matrix.getZOffsetForLayer(this.sourceLayer),
       },
     })
 
@@ -160,7 +230,7 @@ export class SelectionRenderer extends ShapeRenderer {
     })
   }
 
-  private needsRender(context: REGL.DefaultContext & WorldContext): boolean {
+  private needsRender(context: REGL.DefaultContext & DrawWorldContext): boolean {
     const contextCopy = JSON.parse(JSON.stringify(context))
     const transformCopy = JSON.parse(JSON.stringify(this.transform))
     delete contextCopy["tick"]
@@ -176,20 +246,15 @@ export class SelectionRenderer extends ShapeRenderer {
     return true
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
-    if (!this.needsRender(context)) return
-    // if (settings.ENABLE_3D) return
-
-    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-    this.regl.clear({
-      framebuffer: this.framebuffer,
-      color: [0, 0, 0, 0],
-      depth: 0,
-    })
-    this.framebuffer.use(() => {
-      this.selectionConfig(() => {
-        super.render(context)
+  public render(): void {
+    this.drawSelection((context) => {
+      if (!context.needsRedraw) return
+      this.regl.clear({
+        framebuffer: this.framebuffer,
+        color: [0, 0, 0, 0],
+        depth: 0,
       })
+      super.render()
     })
   }
 
@@ -198,3 +263,86 @@ export class SelectionRenderer extends ShapeRenderer {
     super.destroy()
   }
 }
+
+// export interface RasterizerProps extends ShapeRendererProps {}
+// interface RasterizerContext extends Record<string, never> {}
+
+// export class Contourizer extends ShapeRenderer {
+//   private drawContour: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext>
+
+//   public framebuffer: REGL.Framebuffer2D
+
+//   constructor(props: RasterizerProps) {
+//     super(props)
+
+//     this.framebuffer = this.regl.framebuffer()
+
+//     this.drawContour = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, RasterizerContext, REGL.DefaultContext & DrawWorldContext>({
+//       context: {
+//         // preRender: (context) => {
+//         //   this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+//         // },
+//       },
+//       viewport: {
+//         x: 0,
+//         y: 0,
+//         width: 1,
+//         height: 1,
+//       },
+//       scissor: {
+//         enable: false,
+//       },
+//       framebuffer: this.framebuffer,
+//       depth: {
+//         enable: true,
+//         mask: true,
+//         func: "greater",
+//         range: [0, 1],
+//       },
+//       // cull: {
+//       //   enable: true,
+//       //   face: 'back'
+//       // },
+//       uniforms: {
+//         u_Color: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+//         u_ZOffset: 0,
+//       },
+//     })
+//   }
+
+//   /**
+//    * Renders the layer. Note, this will only render if the layer needs to be updated based on context and transform changes.
+//    * Rendered content will be written to the layer's framebuffer.
+//    *
+//    */
+//   public render(): void {
+//     this.drawContour(() => {
+//       this.regl.clear({
+//         framebuffer: this.framebuffer,
+//         color: [0, 0, 0, 0],
+//         depth: 0,
+//       })
+//       super.render()
+//     })
+//   }
+
+//   public capture(width: number, height: number): void {
+//     const pixels = this.regl.read<Uint8Array<ArrayBuffer>>({ framebuffer: this.framebuffer, width, height })
+//     console.log("pixels", pixels)
+//     const clamped = new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.length)
+//     const image = new ImageData(clamped, width, height)
+//     console.log("image", image)
+//     init().then(() => {
+//       const string = vectorize_rgba(pixels, width, height, { mode: "polygon", hierarchical: "cutout", cluster: "color-cluster", filterSpeckle: 1 })
+//       console.log("string", string)
+//       return string
+//     })
+//   }
+
+//   // public
+
+//   public destroy(): void {
+//     this.framebuffer.destroy()
+//     super.destroy()
+//   }
+// }

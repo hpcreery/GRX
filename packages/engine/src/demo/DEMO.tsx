@@ -2,7 +2,7 @@ import React, { type JSX, useMemo } from "react"
 import "./demo.css"
 import * as Shapes from "@grx/artwork-format/shape"
 import * as Symbols from "@grx/artwork-format/symbol"
-import { Box, Button, SegmentedControl, Switch } from "@mantine/core"
+import { Box, Button, Flex, SegmentedControl, Switch } from "@mantine/core"
 import { type PointerEvent, PointerEvents, Renderer } from ".."
 import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP } from "../types"
 
@@ -26,10 +26,10 @@ import { POINTER_MODES, type POINTER_MODES_MAP, SNAP_MODES, type SNAP_MODES_MAP 
 // import gtl_in from "@lib/gerber/testdata/boards/clockblock/clockblock-B_Cu.gbr?arraybuffer"
 // import gtl_mm from "@lib/gerber/testdata/boards/mini_linux_board_mm/Gerber_TopLayer.GTL?arraybuffer"a
 
-// import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
-import gtl from "@grx/importer-gerber/testdata/boards/arduino-uno/arduino-uno.gko?arraybuffer"
 // import gto from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopSilkLayer.GTO?arraybuffer"
 import cmp from "@grx/importer-gerber/testdata/boards/arduino-uno/arduino-uno.cmp?arraybuffer"
+// import gtl from "../data/importer/gerber/testdata/boards/Arduino_UNO/Gerber_TopLayer.GTL?arraybuffer"
+import gtl from "@grx/importer-gerber/testdata/boards/arduino-uno/arduino-uno.gko?arraybuffer"
 
 const N_PADS = 0
 const N_LINES = 0
@@ -1194,13 +1194,14 @@ function DemoApp(): JSX.Element {
   const box1Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
   const box2Ref = React.useRef<HTMLDivElement>(document.createElement("div"))
   const [renderer, setRenderer] = React.useState<Renderer>()
-  const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
-  const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
+  // const [outlineMode, setOutlineMode] = React.useState<boolean>(false)
+  // const [skeletonMode, setSkeletonMode] = React.useState<boolean>(false)
   const [zoomToCursor, setZoomToCursor] = React.useState<boolean>(false)
-  const [enable3d, setEnable3d] = React.useState<boolean>(false)
-  const [perspective3D, setPerspective3D] = React.useState<boolean>(false)
+  // const [enable3d, setEnable3d] = React.useState<boolean>(false)
+  // const [perspective3D, setPerspective3D] = React.useState<boolean>(false)
   const [_showDatums, setShowDatums] = React.useState<boolean>(true)
   const [layers, setLayers] = React.useState<string[]>([])
+  // const [contourOutput, setContourOutput] = React.useState<string>()
 
   const project = "DEMO"
   const step1 = "box1"
@@ -1219,11 +1220,11 @@ function DemoApp(): JSX.Element {
     const settings = render.engine.interface.read_engine_settings()
     render.canvasSettings.hidpi = true
     settings.then((setting) => {
-      setOutlineMode(setting.OUTLINE_MODE)
-      setSkeletonMode(setting.SKELETON_MODE)
+      // setOutlineMode(setting.OUTLINE_MODE)
+      // setSkeletonMode(setting.SKELETON_MODE)
       setZoomToCursor(setting.ZOOM_TO_CURSOR)
       setShowDatums(setting.SHOW_DATUMS)
-      setEnable3d(setting.ENABLE_3D)
+      // setEnable3d(setting.ENABLE_3D)
     })
     const DataInterface = render.interface
 
@@ -1261,7 +1262,7 @@ function DemoApp(): JSX.Element {
 
     // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, MAMA_STEP_AND_REPEAT)
     DataInterface.create_layer(project, "surfaces")
-    // DataInterface.create_step_layer_artwork(project, step1, "surfaces", SURFACE_RECORDS_ARRAY)
+    DataInterface.create_step_layer_artwork(project, step1, "surfaces", SURFACE_RECORDS_ARRAY)
     // DataInterface.update_step_layer_artwork(project, step1, layer_cmp, POLYLINE_RECORDS_ARRAY)
 
     render.addManagedView(box2Ref.current, {
@@ -1722,7 +1723,67 @@ function DemoApp(): JSX.Element {
             height: "600px",
             position: "relative",
           }}
-        />
+        >
+          <Flex gap="xs" justify="flex-start" align="flex-start" direction="column" wrap="wrap">
+            <Button
+              onClick={async (): Promise<void> => {
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+                layers.map((l) =>
+                  renderer!.engine.interface.update_view_layer_color("box2", l, [Math.random(), Math.random(), Math.random(), Math.random()]),
+                )
+              }}
+            >
+              Randomize Colors
+            </Button>
+            <Button
+              onClick={async (): Promise<void> => {
+                renderer!.engine.interface.update_view_zoom_fit_artwork("box2")
+              }}
+            >
+              Zoom Fit
+            </Button>
+            <Button onClick={async (): Promise<void> => renderer!.engine.interface.update_view_transform("box2", { position: [0, 0], zoom: 16 })}>
+              (0,0)
+            </Button>
+            Outline Mode
+            <Switch
+              // checked={outlineMode}
+              onChange={async (e): Promise<void> => {
+                renderer!.engine.interface.update_view_settings("box2", { OUTLINE_MODE: e.target.checked })
+                // setOutlineMode(e.target.checked)
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            Skeleton Mode
+            <Switch
+              // checked={skeletonMode}
+              onChange={async (e): Promise<void> => {
+                renderer!.engine.interface.update_view_settings("box2", { SKELETON_MODE: e.target.checked })
+                // setSkeletonMode(e.target.checked)
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            3D View
+            <Switch
+              // checked={enable3d}
+              onChange={(e): void => {
+                renderer!.engine.interface.update_view_settings("box2", { ENABLE_3D: e.target.checked })
+                // setEnable3d(e.target.checked)
+              }}
+            />
+            3D Perspective
+            <Switch
+              // checked={perspective3D}
+              onChange={(e): void => {
+                renderer!.engine.interface.update_view_settings("box2", { PERSPECTIVE_3D: e.target.checked })
+                // setPerspective3D(e.target.checked)
+              }}
+            />
+          </Flex>
+        </div>
       </div>
       <div
         id="window1"
@@ -1757,7 +1818,67 @@ function DemoApp(): JSX.Element {
             pointerEvents: "all",
             position: "relative",
           }}
-        />
+        >
+          <Flex gap="xs" justify="flex-start" align="flex-start" direction="column" wrap="wrap">
+            <Button
+              onClick={async (): Promise<void> => {
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+                layers.map((l) =>
+                  renderer!.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random(), Math.random()]),
+                )
+              }}
+            >
+              Randomize Colors
+            </Button>
+            <Button
+              onClick={async (): Promise<void> => {
+                renderer!.engine.interface.update_view_zoom_fit_artwork("box1")
+              }}
+            >
+              Zoom Fit
+            </Button>
+            <Button onClick={async (): Promise<void> => renderer!.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
+              (0,0)
+            </Button>
+            Outline Mode
+            <Switch
+              // checked={outlineMode}
+              onChange={async (e): Promise<void> => {
+                renderer!.engine.interface.update_view_settings("box1", { OUTLINE_MODE: e.target.checked })
+                // setOutlineMode(e.target.checked)
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            Skeleton Mode
+            <Switch
+              // checked={skeletonMode}
+              onChange={async (e): Promise<void> => {
+                renderer!.engine.interface.update_view_settings("box1", { SKELETON_MODE: e.target.checked })
+                // setSkeletonMode(e.target.checked)
+                const layers = await renderer!.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            />
+            3D View
+            <Switch
+              // checked={enable3d}
+              onChange={(e): void => {
+                renderer!.engine.interface.update_view_settings("box1", { ENABLE_3D: e.target.checked })
+                // setEnable3d(e.target.checked)
+              }}
+            />
+            3D Perspective
+            <Switch
+              // checked={perspective3D}
+              onChange={(e): void => {
+                renderer!.engine.interface.update_view_settings("box1", { PERSPECTIVE_3D: e.target.checked })
+                // setPerspective3D(e.target.checked)
+              }}
+            />
+          </Flex>
+        </div>
       </div>
       {renderer ? (
         <>
@@ -1775,59 +1896,61 @@ function DemoApp(): JSX.Element {
             }}
           >
             {/* <StatsWidget /> */}
-            <Button
+            {/* <Button
               onClick={async (): Promise<void> => {
                 const layers = await renderer.interface.read_layers_list(project)
                 setLayers(layers)
-                layers.map((l) => renderer.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random()]))
+                layers.map((l) =>
+                  renderer.engine.interface.update_view_layer_color("box1", l, [Math.random(), Math.random(), Math.random(), Math.random()]),
+                )
               }}
             >
               Randomize Colors
-            </Button>
-            <Button
+            </Button> */}
+            {/* <Button
               onClick={async (): Promise<void> => {
                 renderer.engine.interface.update_view_zoom_fit_artwork("box1")
               }}
             >
               Zoom Fit
-            </Button>
-            <Button onClick={async (): Promise<void> => renderer.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
+            </Button> */}
+            {/* <Button onClick={async (): Promise<void> => renderer.engine.interface.update_view_transform("box1", { position: [0, 0], zoom: 16 })}>
               (0,0)
-            </Button>
+            </Button> */}
             <br />
-            Outline Mode
+            {/* Outline Mode
             <Switch
               checked={outlineMode}
               onChange={async (e): Promise<void> => {
-                renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: e.target.checked })
+                renderer.engine.interface.update_view_settings("box1", { OUTLINE_MODE: e.target.checked })
                 setOutlineMode(e.target.checked)
                 const layers = await renderer.interface.read_layers_list(project)
                 setLayers(layers)
               }}
-            />
-            Skeleton Mode
-            <Switch
-              checked={skeletonMode}
-              onChange={async (e): Promise<void> => {
-                renderer.engine.interface.set_engine_settings({ SKELETON_MODE: e.target.checked })
-                setSkeletonMode(e.target.checked)
-                const layers = await renderer.interface.read_layers_list(project)
-                setLayers(layers)
-              }}
-            />
+            /> */}
             Zoom To Cursor
             <Switch
               checked={zoomToCursor}
               onChange={(e): void => {
-                renderer.engine.interface.set_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
+                renderer.engine.interface.update_engine_settings({ ZOOM_TO_CURSOR: e.target.checked })
                 setZoomToCursor(e.target.checked)
               }}
             />
+            {/* Skeleton Mode
+              <Switch
+                checked={skeletonMode}
+                onChange={async (e): Promise<void> => {
+                  renderer.engine.interface.update_view_settings("box1", { SKELETON_MODE: e.target.checked })
+                  setSkeletonMode(e.target.checked)
+                  const layers = await renderer.interface.read_layers_list(project)
+                  setLayers(layers)
+                }}
+              />
             3D View
             <Switch
               checked={enable3d}
               onChange={(e): void => {
-                renderer.engine.interface.set_engine_settings({ ENABLE_3D: e.target.checked })
+                renderer.engine.interface.update_view_settings("box1", { ENABLE_3D: e.target.checked })
                 setEnable3d(e.target.checked)
               }}
             />
@@ -1835,10 +1958,10 @@ function DemoApp(): JSX.Element {
             <Switch
               checked={perspective3D}
               onChange={(e): void => {
-                renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: e.target.checked })
+                renderer.engine.interface.update_view_settings("box1", { PERSPECTIVE_3D: e.target.checked })
                 setPerspective3D(e.target.checked)
               }}
-            />
+            /> */}
             Mouse Mode
             <SegmentedControl
               data={[...POINTER_MODES]}
@@ -1848,9 +1971,42 @@ function DemoApp(): JSX.Element {
             <SegmentedControl
               data={[...SNAP_MODES]}
               onChange={(mode) => {
-                renderer.engine.interface.set_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
+                renderer.engine.interface.update_engine_settings({ SNAP_MODE: mode as keyof typeof SNAP_MODES_MAP })
               }}
             />
+            <Button
+              onClick={async (): Promise<void> => {
+                const layers = await renderer.interface.read_layers_list(project)
+                setLayers(layers)
+              }}
+            >
+              Refresh Layers
+            </Button>
+            <Button
+              onClick={async (): Promise<void> => {
+                try {
+                  await renderer.test("box1", "asdf")
+                  const result = await renderer.engine.interface.read_view_layer_contours(
+                    "box1",
+                    "asdf",
+                    // { x: -3, y: -3, width: 6, height: 10 },
+                    // 1024,
+                    // 1024,
+                  )
+                  const output = result
+                  console.log("Contourized asdf layer:", result)
+                  // setContourOutput(output)
+                  renderer.engine.interface.create_layer(project, "asdf_contours")
+                  // renderer.engine.interface.update_step_layer_artwork(project, step1, "asdf_contours", result)
+                } catch (error) {
+                  const message = error instanceof Error ? error.message : String(error)
+                  console.error("Contourization failed:", error)
+                  // setContourOutput(`Contourization failed: ${message}`)
+                }
+              }}
+            >
+              Contourize asdf Layer
+            </Button>
             {layers.map((layer, i) => {
               return (
                 <div key={i}>

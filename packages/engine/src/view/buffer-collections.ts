@@ -1,6 +1,6 @@
 import * as Symbols from "@grx/artwork-format/symbol"
 import { type Binary, FeatureTypeIdentifier } from "@grx/artwork-format/types"
-import { type ArtworkBufferCollection, MacroArtworkCollection, SymbolBufferCollection } from "@src/data/artwork-collections"
+import { MacroArtworkCollection, type ShapesBufferCollection, SymbolBufferCollection } from "@src/data/artwork-collections"
 import { vec2 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
@@ -41,7 +41,7 @@ const { SYMBOL_PARAMETERS } = Symbols
 export class ShapesShaderCollection extends UpdateEventTarget {
   private regl: REGL.Regl
 
-  public artworkBufferCollection: ArtworkBufferCollection
+  public artworkBufferCollection: ShapesBufferCollection
 
   public shaderAttachment: TShaderAttachment
   public stepAndRepeats: StepAndRepeatRenderer[] = []
@@ -49,7 +49,7 @@ export class ShapesShaderCollection extends UpdateEventTarget {
   private updateTimer: NodeJS.Timeout | null = null
   private updateDelay = settings.MSPFRAME // milliseconds
 
-  constructor(props: { regl: REGL.Regl; artwork: ArtworkBufferCollection }) {
+  constructor(props: { regl: REGL.Regl; artwork: ShapesBufferCollection }) {
     super()
     const { regl, artwork } = props
     this.regl = regl
@@ -247,10 +247,10 @@ export class ShapesShaderCollection extends UpdateEventTarget {
       })
       this.stepAndRepeats.push(stepRepeatRenerer)
       stepRepeatRenerer.shapeShaderAttachments.onUpdate(() => {
-        this.dispatchTypedEvent("update", new Event("update"))
+        this.announceUpdate()
       })
     })
-    this.dispatchTypedEvent("update", new Event("update"))
+    this.announceUpdate()
     return this
   }
 

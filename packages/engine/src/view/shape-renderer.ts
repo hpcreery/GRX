@@ -1,18 +1,18 @@
 import type * as Shapes from "@grx/artwork-format/shape"
 import * as Symbols from "@grx/artwork-format/symbol"
-import type { Transform } from "@grx/artwork-format/types"
+import type { TShapeTransform } from "@grx/artwork-format/types"
 import { type BoundingBox, FeatureTypeIdentifier } from "@grx/artwork-format/types"
 import * as ArtworkUtils from "@grx/artwork-format/utils"
-import type { ArtworkBufferCollection } from "@src/data/artwork-collections"
-import { mat3, vec2, type vec4 } from "gl-matrix"
+import type { ShapesBufferCollection } from "@src/data/artwork-collections"
+import { type mat3, vec2, type vec4 } from "gl-matrix"
 import type REGL from "regl"
 import { settings } from "../settings"
-import ShapeTransform from "../transform"
 import { type ShapeDistance, SNAP_MODES_MAP } from "../types"
 import { UpdateEventTarget } from "../utils"
 import { MacroShaderCollection, ShapesShaderCollection, SymbolShaderCollection } from "./buffer-collections"
 import { ReglRenderers, type TLoadedReglRenderers } from "./gl-commands"
-import type { WorldContext } from "./view"
+import ShapeTransform from "./shape-transform"
+import type { DrawWorldContext } from "./view"
 
 const { SYMBOL_PARAMETERS_MAP, STANDARD_SYMBOLS_MAP } = Symbols
 
@@ -21,7 +21,6 @@ type CommonAttributes = {}
 interface CommonUniforms {
   u_Transform: mat3
   u_InverseTransform: mat3
-  u_ZOffset: number
   u_QtyFeatures: number
   u_IndexOffset: number
   u_Polarity: number
@@ -29,20 +28,24 @@ interface CommonUniforms {
   u_SymbolsTextureDimensions: vec2
 }
 
-interface QueryUniforms {
+interface DrawQueryUniforms {
   u_QueryMode: boolean
   u_Color: vec4
   u_PointerPosition: vec2
-  u_ZOffset: number
 }
-type QueryAttributes = {}
 
-interface QueryProps {
+type DrawQueryAttributes = {}
+
+interface DrawQueryProps {
   pointer: vec2
 }
 
-interface DatumConfigUniforms {
+interface DrawDatumUniforms {
   u_Color: vec4
+}
+
+interface DrawSurfaceBufferContext {
+  preRender: undefined
 }
 
 export interface RendererProps {
@@ -50,8 +53,8 @@ export interface RendererProps {
 }
 
 export interface ShapeProps {
-  image: ArtworkBufferCollection
-  transform?: Partial<ShapeTransform>
+  image: ShapesBufferCollection
+  transform?: Partial<TShapeTransform>
 }
 
 export interface ShapeRendererProps extends RendererProps, ShapeProps {}
@@ -66,9 +69,11 @@ export interface ShapeRendererEvents {
   update: Event
 }
 
+type DistanceQueryDirection = "center" | "right" | "left" | "up" | "down"
+
 export class ShapeRenderer extends UpdateEventTarget {
   public regl: REGL.Regl
-  public artwork: ArtworkBufferCollection
+  public artwork: ShapesBufferCollection
 
   public shapeShaderAttachments: ShapesShaderCollection
 
@@ -76,21 +81,24 @@ export class ShapeRenderer extends UpdateEventTarget {
     return this.artwork.length
   }
 
-  protected artworkConfig: REGL.DrawCommand<REGL.DefaultContext>
-  protected queryConfig: REGL.DrawCommand<REGL.DefaultContext>
-  protected datumConfig: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawArtwork: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext & Partial<ShapeRendererCommonContext>>
+  protected drawQuery: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawDatum: REGL.DrawCommand<REGL.DefaultContext>
+  protected drawSurfaceFrameBuffer: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext & Partial<ShapeRendererCommonContext>>
   protected drawCollections: TLoadedReglRenderers
 
-  public surfaceFrameBuffer: REGL.Framebuffer2D
-  public queryFrameBuffer: REGL.Framebuffer2D
+  private surfaceFrameBuffer: REGL.Framebuffer2D
+  private queryFrameBuffer: REGL.Framebuffer2D
 
-  public transform: ShapeTransform = new ShapeTransform()
+  public transform = new ShapeTransform()
 
-  public distanceQueryRaw: Float32Array = new Float32Array(0)
-  public distanceRightQueryRaw: Float32Array = new Float32Array(0)
-  public distanceLeftQueryRaw: Float32Array = new Float32Array(0)
-  public distanceUpQueryRaw: Float32Array = new Float32Array(0)
-  public distanceDownQueryRaw: Float32Array = new Float32Array(0)
+  public distanceQuery: Record<DistanceQueryDirection, Float32Array> = {
+    center: new Float32Array(0),
+    right: new Float32Array(0),
+    left: new Float32Array(0),
+    up: new Float32Array(0),
+    down: new Float32Array(0),
+  }
 
   constructor(props: ShapeRendererProps) {
     super()
@@ -107,14 +115,14 @@ export class ShapeRenderer extends UpdateEventTarget {
       artwork: this.artwork,
     })
 
-    this.shapeShaderAttachments.onUpdate(() => this.dispatchTypedEvent("update", new Event("update")))
+    this.shapeShaderAttachments.onUpdate(() => this.announceUpdate())
 
-    this.artworkConfig = this.regl<
+    this.drawArtwork = this.regl<
       CommonUniforms,
       CommonAttributes,
       Record<string, never>,
       ShapeRendererCommonContext,
-      REGL.DefaultContext & WorldContext
+      REGL.DefaultContext & DrawWorldContext
     >({
       depth: {
         enable: true,
@@ -127,14 +135,16 @@ export class ShapeRenderer extends UpdateEventTarget {
         face: "back",
       },
       context: {
-        transformMatrix: () => this.transform.matrix,
+        transformMatrix: (context) => {
+          this.transform.update(context.transformMatrix)
+          return this.transform.matrix
+        },
         prevQtyFeaturesRef: (context: REGL.DefaultContext & Partial<ShapeRendererCommonContext>) => context.qtyFeaturesRef ?? 1,
         qtyFeaturesRef: (context: REGL.DefaultContext & Partial<ShapeRendererCommonContext>) => this.qtyFeatures * (context.qtyFeaturesRef ?? 1),
       },
       uniforms: {
-        u_ZOffset: (context) => context.zOffset || 0.0,
         u_Transform: () => this.transform.matrix,
-        u_InverseTransform: () => this.transform.inverseMatrix,
+        u_InverseTransform: () => this.transform.matrixInverse,
         u_SymbolsTexture: () => SymbolShaderCollection.texture,
         u_SymbolsTextureDimensions: () => [SymbolShaderCollection.texture.width, SymbolShaderCollection.texture.height],
         u_IndexOffset: (context: REGL.DefaultContext & Partial<ShapeRendererCommonContext>) => {
@@ -150,16 +160,27 @@ export class ShapeRenderer extends UpdateEventTarget {
       },
     })
 
-    this.queryConfig = this.regl<QueryUniforms, QueryAttributes, QueryProps, ShapeRendererCommonContext & WorldContext, REGL.DefaultContext>({
+    this.queryFrameBuffer = this.regl.framebuffer({
+      depth: true,
+      colorType: "float",
+    })
+
+    this.drawQuery = this.regl<
+      DrawQueryUniforms,
+      DrawQueryAttributes,
+      DrawQueryProps,
+      ShapeRendererCommonContext & DrawWorldContext,
+      REGL.DefaultContext
+    >({
       uniforms: {
         u_QueryMode: true,
         u_Color: [1, 1, 1, 1],
-        u_ZOffset: (context) => context.zOffset || 0.0,
-        u_PointerPosition: this.regl.prop<QueryProps, "pointer">("pointer"),
+        u_PointerPosition: this.regl.prop<DrawQueryProps, "pointer">("pointer"),
       },
+      framebuffer: this.queryFrameBuffer,
     })
 
-    this.datumConfig = this.regl<DatumConfigUniforms, Record<string, never>, Record<string, never>>({
+    this.drawDatum = this.regl<DrawDatumUniforms, Record<string, never>, Record<string, never>>({
       depth: {
         enable: false,
         mask: true,
@@ -191,43 +212,26 @@ export class ShapeRenderer extends UpdateEventTarget {
 
     this.drawCollections = ReglRenderers as TLoadedReglRenderers
 
-    this.queryFrameBuffer = this.regl.framebuffer({
-      depth: true,
-      colorType: "float",
-    })
     this.surfaceFrameBuffer = this.regl.framebuffer({
       depth: true,
       colorType: "float",
     })
+
+    this.drawSurfaceFrameBuffer = this.regl<
+      {},
+      {},
+      {},
+      DrawSurfaceBufferContext,
+      REGL.DefaultContext & DrawWorldContext & Partial<ShapeRendererCommonContext>
+    >({
+      context: {
+        preRender: (context) => {
+          this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+        },
+      },
+      framebuffer: this.surfaceFrameBuffer,
+    })
   }
-
-  // /**
-  //  * Converts the pointer applying the current transform
-  //  * Does not mutate the original pointer, returns a new pointer
-  //  * @param pointer vec2 - the pointer to transform
-  //  * @returns vec2 - the transformed pointer
-  //  */
-  // protected transformPointer(pointer: vec2): vec2 {
-  //   const pointerTransform = new ShapeTransform()
-  //   Object.assign(pointerTransform, this.transform)
-  //   pointerTransform.update(mat3.create())
-  //   const newPointer = vec2.transformMat3(vec2.create(), pointer, pointerTransform.inverseMatrix)
-  //   return newPointer
-  // }
-
-  // /**
-  //  * Converts the point applying the current transform
-  //  * Mutates the original direction
-  //  * @param point vec2 - the point to transform
-  //  * @returns vec2 - the transformed point
-  //  */
-  // protected transformPoint(point: vec2): vec2 {
-  //   const directionTransform = new ShapeTransform()
-  //   Object.assign(directionTransform, this.transform)
-  //   directionTransform.update(mat3.create())
-  //   vec2.transformMat3(point, point, directionTransform.matrix)
-  //   return point
-  // }
 
   /**
    * Queries the distance from the pointer to all shapes in the renderer
@@ -235,77 +239,65 @@ export class ShapeRenderer extends UpdateEventTarget {
    * @param context the regl context
    * @returns an array of ShapeDistance objects, one for each shape in the renderer that is within the query distance. Returned distances are in world coordinates.
    */
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext): ShapeDistance[] {
-    if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
-      console.error("Too many features to query")
-      // TODO! for too many features, make multiple render passes in order to query all features
-      return []
-    }
+  public queryDistance(pointer: vec2): ShapeDistance[] {
     if (this.qtyFeatures === 0) return []
-
-    const origMatrix = mat3.clone(context.transformMatrix)
-    this.transform.update(context.transformMatrix)
-    // const transformedPointer = this.transformPointer(pointer)
-    // const transformedPointer = pointer
-    context.transformMatrix = this.transform.matrix
-    this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
-    const width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
-    const height = Math.ceil(this.qtyFeatures / context.viewportWidth)
-
-    const bufferLength = width * height * Float32Array.BYTES_PER_ELEMENT
-    if (this.distanceQueryRaw.length != bufferLength) {
-      this.distanceQueryRaw = new Float32Array(bufferLength)
-      this.distanceLeftQueryRaw = new Float32Array(bufferLength)
-      this.distanceRightQueryRaw = new Float32Array(bufferLength)
-      this.distanceUpQueryRaw = new Float32Array(bufferLength)
-      this.distanceDownQueryRaw = new Float32Array(bufferLength)
-    }
-
-    const renderDistance = (pointer: vec2, store: Float32Array): void => {
+    const renderDistance = (pointer: vec2, direction: DistanceQueryDirection): void => {
       this.regl.clear({
         framebuffer: this.queryFrameBuffer,
         // in the color buffer, the first value is the distance, the next two are the direction, the last is to indicate there is a measurement at all. (0 = empty)
         color: [0, 0, 0, 0],
         depth: 0,
       })
-      this.queryFrameBuffer.use(() => {
-        this.artworkConfig(() => {
-          this.queryConfig({ pointer }, () => {
-            this.drawPrimitives(context)
-            this.drawSufaces(context)
-            this.drawSurfaceWithHoles(context)
-            this.drawDatums(context)
-            this.drawPolyLines(context)
-          })
+      let width: number = 0
+      let height: number = 0
+      this.drawArtwork((context) => {
+        if (this.qtyFeatures > context.viewportWidth * context.viewportHeight) {
+          console.error("Too many features to query")
+          // TODO! for too many features, make multiple render passes in order to query all features
+          return undefined
+        }
+        this.queryFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
+        width = this.qtyFeatures < context.viewportWidth ? this.qtyFeatures % context.viewportWidth : context.viewportWidth
+        height = Math.ceil(this.qtyFeatures / context.viewportWidth)
+        const bufferLength = width * height * Float32Array.BYTES_PER_ELEMENT
+        this.distanceQuery[direction] = new Float32Array(bufferLength)
+
+        this.drawQuery({ pointer }, () => {
+          this.drawPrimitives()
+          this.drawSufaces()
+          this.drawSurfaceWithHoles()
+          this.drawDatums()
+          this.drawPolyLines()
         })
       })
+
       this.regl.read<Float32Array>({
         framebuffer: this.queryFrameBuffer,
         x: 0,
         y: 0,
-        width: width,
-        height: height,
-        data: store,
+        width,
+        height,
+        data: this.distanceQuery[direction],
       })
     }
 
-    renderDistance(pointer, this.distanceQueryRaw)
+    renderDistance(pointer, "center")
     const epsilons = 0.1
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), this.distanceRightQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), this.distanceLeftQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), this.distanceUpQueryRaw)
-    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), this.distanceDownQueryRaw)
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(epsilons, 0)), "right")
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(-epsilons, 0)), "left")
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, epsilons)), "up")
+    renderDistance(vec2.add(vec2.create(), pointer, vec2.fromValues(0, -epsilons)), "down")
 
-    const distData = this.distanceQueryRaw
+    const distData = this.distanceQuery["center"]
     const distances: ShapeDistance[] = []
     for (let i = 0; i < distData.length; i += 4) {
       // the last value is to indicate there is a measurement at all. (0 = empty)
       if (distData[i + 3] == 0) continue
-      const distance = distData[i] * this.transform.scale // convert distance from screen to world coordinates
+      const distance = distData[i] * this.transform.scale
 
       const direction = vec2.fromValues(
-        this.distanceRightQueryRaw[i] - this.distanceLeftQueryRaw[i],
-        this.distanceUpQueryRaw[i] - this.distanceDownQueryRaw[i],
+        this.distanceQuery["right"][i] - this.distanceQuery["left"][i],
+        this.distanceQuery["up"][i] - this.distanceQuery["down"][i],
       )
       // *** QUERYING THE DIRECTION FROM THE SHADER IS CURRENTLY DISABLED BECAUSE IT PUTS MORE LOAD ON THE GPU AND ESPECIALLY THE SHADER COMPILER DUE TO UNROLLING, BUT IT IS MORE ACCURATE THAN THE FINITE DIFFERENCE APPROXIMATION ***
       // direction[0] = distData[i + 1] // use the direction encoded in the green and blue channels of the texture, as it is more accurate than the finite difference approximation
@@ -315,7 +307,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       // sanity check for if the distances of the four directions are the same
       let validDistance = true
       if (
-        [this.distanceDownQueryRaw[i], this.distanceUpQueryRaw[i], this.distanceLeftQueryRaw[i], this.distanceRightQueryRaw[i]].every(
+        [this.distanceQuery["down"][i], this.distanceQuery["up"][i], this.distanceQuery["left"][i], this.distanceQuery["right"][i]].every(
           (d, _i, arr) => d === arr[0],
         )
       ) {
@@ -339,7 +331,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       }
       macroRenderer.updateTransformFromPad(macro)
       macroRenderer.transform.index = 0
-      const macroFeatures = macroRenderer.queryDistance(pointer, context)
+      const macroFeatures = macroRenderer.queryDistance(pointer)
       if (macroFeatures.length > 0) {
         const closest = macroFeatures.reduce((prev, current) => {
           if (prev.distance == undefined) return current
@@ -356,7 +348,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     })
 
     this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
-      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer, context)
+      const stepAndRepeatFeatures = stepAndRepeat.queryDistance(pointer)
       if (stepAndRepeatFeatures.length > 0) {
         const closest = stepAndRepeatFeatures.reduce((prev, current) => {
           if (prev.distance == undefined) return current
@@ -371,34 +363,28 @@ export class ShapeRenderer extends UpdateEventTarget {
         })
       }
     })
-    context.transformMatrix = origMatrix
-    // console.log("query distance", distances)
     return distances
   }
 
-  public render(context: REGL.DefaultContext & WorldContext): void {
-    const origMatrix = mat3.clone(context.transformMatrix)
-    this.transform.update(context.transformMatrix)
-    context.transformMatrix = this.transform.matrix
-    this.artworkConfig(() => {
-      this.drawPrimitives(context)
+  public render(): void {
+    this.drawArtwork((context) => {
+      this.drawPrimitives()
       // we do not have to render surfaces in outline mode, as they are rendered as outlines (lines and arcs)
-      if (!settings.OUTLINE_MODE && !settings.SKELETON_MODE) {
-        this.drawSufaces(context)
-        this.drawSurfaceWithHoles(context)
+      if (!context.viewSettings.OUTLINE_MODE && !context.viewSettings.SKELETON_MODE) {
+        this.drawSufaces()
+        this.drawSurfaceWithHoles()
       }
-      this.drawSurfaceEdges(context)
-      this.drawMacros(context)
-      this.drawStepAndRepeats(context)
-      this.drawDatums(context)
-      this.drawPolyLines(context)
+      this.drawSurfaceEdges()
+      this.drawMacros()
+      this.drawStepAndRepeats()
+      this.drawDatums()
+      this.drawPolyLines()
     })
-    context.transformMatrix = origMatrix
   }
 
-  private drawDatums(_context: REGL.DefaultContext & WorldContext): void {
+  private drawDatums(): void {
     if (settings.SHOW_DATUMS === false) return
-    this.datumConfig(() => {
+    this.drawDatum(() => {
       // this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.datumPoints)
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.datumLines)
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.datumArcs)
@@ -409,7 +395,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     })
   }
 
-  private drawPrimitives(_context: REGL.DefaultContext & WorldContext): void {
+  private drawPrimitives(): void {
     if (this.shapeShaderAttachments.shaderAttachment.pads.length != 0)
       this.drawCollections.drawPads(this.shapeShaderAttachments.shaderAttachment.pads)
     if (this.shapeShaderAttachments.shaderAttachment.arcs.length != 0)
@@ -418,7 +404,7 @@ export class ShapeRenderer extends UpdateEventTarget {
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.lines)
   }
 
-  private drawMacros(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawMacros(): this {
     this.artwork.shapes[FeatureTypeIdentifier.PAD].macros.forEach((macro) => {
       if (macro === undefined) return
       const macroRenderer = MacroShaderCollection.macros.get(macro.symbol.id)
@@ -427,34 +413,33 @@ export class ShapeRenderer extends UpdateEventTarget {
         return
       }
       macroRenderer.updateTransformFromPad(macro)
-      macroRenderer.render(context)
+      macroRenderer.render()
     })
     return this
   }
 
-  private drawStepAndRepeats(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawStepAndRepeats(): this {
     this.shapeShaderAttachments.stepAndRepeats.forEach((stepAndRepeat) => {
-      stepAndRepeat.render(context)
+      stepAndRepeat.render()
     })
     return this
   }
 
-  private drawSufaces(_context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawSufaces(): this {
     if (this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles.length != 0)
       this.drawCollections.drawSurfaces(this.shapeShaderAttachments.shaderAttachment.surfaces.withoutHoles)
     return this
   }
 
-  private drawSurfaceWithHoles(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): this {
+  private drawSurfaceWithHoles(): this {
     if (this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.length === 0) return this
-    this.surfaceFrameBuffer.resize(context.viewportWidth, context.viewportHeight)
     this.shapeShaderAttachments.shaderAttachment.surfaces.withHoles.forEach((attachment) => {
       this.regl.clear({
         framebuffer: this.surfaceFrameBuffer,
         color: [0, 0, 0, 1],
         depth: 0,
       })
-      this.surfaceFrameBuffer.use(() => {
+      this.drawSurfaceFrameBuffer(() => {
         this.drawCollections.drawSurfaces(attachment)
       })
       this.drawCollections.drawGroupedShapes({
@@ -467,7 +452,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     return this
   }
 
-  private drawSurfaceEdges(_context: REGL.DefaultContext & WorldContext): void {
+  private drawSurfaceEdges(): void {
     if (this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs.length != 0) {
       this.drawCollections.drawArcs(this.shapeShaderAttachments.shaderAttachment.surfaces.edgeArcs)
     }
@@ -476,7 +461,7 @@ export class ShapeRenderer extends UpdateEventTarget {
     }
   }
 
-  private drawPolyLines(_context: REGL.DefaultContext & WorldContext): void {
+  private drawPolyLines(): void {
     if (this.shapeShaderAttachments.shaderAttachment.polylines.lines.length != 0) {
       this.drawCollections.drawLines(this.shapeShaderAttachments.shaderAttachment.polylines.lines)
     }
@@ -490,11 +475,6 @@ export class ShapeRenderer extends UpdateEventTarget {
       min: vec2.fromValues(Infinity, Infinity),
       max: vec2.fromValues(-Infinity, -Infinity),
     }
-    // for (const record of this.image) {
-    //   const feature_bb = Shapes.getBoundingBoxOfShape(record)
-    //   vec2.min(contextBoundingBox.min, contextBoundingBox.min, feature_bb.min)
-    //   vec2.max(contextBoundingBox.max, contextBoundingBox.max, feature_bb.max)
-    // }
     for (let i = 0; i < this.artwork.length; i++) {
       const record = this.artwork.read(i)
       const feature_bb = ArtworkUtils.getBoundingBoxOfShape(record)
@@ -538,9 +518,15 @@ interface MacroRendererProps extends Omit<ShapeRendererProps, "transform"> {
 // !IDEA render macro to a texture first, then render that texture as a quad. Only re-render the macro texture when the transform changes zoom. Switch back to hard render when macro is larger than viewport.
 // !IDEA optimize render by manually performing culling and disabling render outside viewport
 
+interface DrawMacroContext {
+  // polarity: number
+  preRender: undefined
+}
+
 export class MacroRenderer extends ShapeRenderer {
   public framebuffer: REGL.Framebuffer2D
   public flatten: boolean
+  private drawMacro: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext>
   constructor(props: MacroRendererProps) {
     super(props)
 
@@ -548,6 +534,22 @@ export class MacroRenderer extends ShapeRenderer {
 
     this.framebuffer = this.regl.framebuffer({
       depth: true,
+    })
+
+    this.drawMacro = this.regl<
+      Record<string, never>,
+      Record<string, never>,
+      Record<string, never>,
+      DrawMacroContext,
+      REGL.DefaultContext & DrawWorldContext
+    >({
+      context: {
+        // polarity: 1,
+        preRender: (context) => {
+          this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+        },
+      },
+      framebuffer: this.framebuffer,
     })
   }
 
@@ -565,12 +567,11 @@ export class MacroRenderer extends ShapeRenderer {
     this.transform.mirror_y = pad.mirror_y
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public render(): void {
     if (this.flatten === false) {
-      super.render(context)
+      super.render()
       return
     }
-    this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
     this.regl.clear({
       framebuffer: this.framebuffer,
       color: [0, 0, 0, 0],
@@ -579,11 +580,11 @@ export class MacroRenderer extends ShapeRenderer {
     })
     const tempPol = this.transform.polarity
     this.transform.polarity = 1
-    this.framebuffer.use(() => {
-      super.render(context)
+    this.drawMacro(() => {
+      super.render()
     })
     this.transform.polarity = tempPol
-    this.artworkConfig(() => {
+    this.drawArtwork((context) => {
       this.drawCollections.drawGroupedShapes({
         renderTexture: this.framebuffer,
         index: this.transform.index,
@@ -601,13 +602,14 @@ export class MacroRenderer extends ShapeRenderer {
 
 interface StepAndRepeatRendererProps {
   regl: REGL.Regl
-  image: ArtworkBufferCollection
-  repeats: Transform[]
+  image: ShapesBufferCollection
+  repeats: TShapeTransform[]
   index: number
 }
 
 export class StepAndRepeatRenderer extends ShapeRenderer {
-  public repeats: Transform[]
+  public repeats: TShapeTransform[]
+  public drawReassignQtyFeaturesRef: REGL.DrawCommand<REGL.DefaultContext>
   constructor(props: StepAndRepeatRendererProps) {
     const { regl, image, repeats, index } = props
     super({
@@ -616,26 +618,33 @@ export class StepAndRepeatRenderer extends ShapeRenderer {
     })
     this.repeats = repeats
     this.transform.index = index
+    this.drawReassignQtyFeaturesRef = regl({
+      uniforms: {
+        qtyFeaturesRef: () => this.repeats.length,
+      },
+    })
   }
 
-  public queryDistance(pointer: vec2, context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): ShapeDistance[] {
+  public queryDistance(pointer: vec2): ShapeDistance[] {
     const features: ShapeDistance[] = []
     this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
-      const nestedFeatures = super.queryDistance(pointer, context)
-      features.push(...nestedFeatures)
+      this.drawReassignQtyFeaturesRef(() => {
+        const nestedFeatures = super.queryDistance(pointer)
+        features.push(...nestedFeatures)
+      })
     })
     return features
   }
 
-  public render(context: REGL.DefaultContext & WorldContext & Partial<ShapeRendererCommonContext>): void {
+  public render(): void {
     this.repeats.forEach((repeat) => {
       Object.assign(this.transform, repeat)
-      context.qtyFeaturesRef = this.repeats.length
       this.transform.index = 0
-      super.render(context)
+      this.drawReassignQtyFeaturesRef(() => {
+        super.render()
+      })
     })
   }
 }

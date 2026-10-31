@@ -1,15 +1,16 @@
-import type { Transform } from "@grx/artwork-format/types"
+import type { TShapeTransform } from "@grx/artwork-format/types"
+// import { type Bounds, type VectorizeResult, vectorizeMask } from "@grx/contours"
 import * as Comlink from "comlink"
 import type { mat3, vec2, vec3 } from "gl-matrix"
 import REGL from "regl"
 import { DataInterface } from "./data/interface"
-import type { GridSettings, MeasurementSettings, RenderSettings } from "./settings"
+import type { GridSettings, MeasurementSettings, RenderSettings, ViewSettings } from "./settings"
 import { gridSettings, measurementSettings, settings } from "./settings"
 import type { ShapeDistance, ViewBox } from "./types"
 import { initStaticShaderCollections } from "./view/buffer-collections"
 import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
 import { ViewRenderer } from "./view/view"
-import type { RenderTransform } from "./view/view"
+import type { TViewTransform, ViewTransform } from "./view/view-transform"
 
 export interface Pointer {
   x: number
@@ -43,7 +44,7 @@ export abstract class EngineInterface extends DataInterface {
    * Update engine rendering settings
    * @param newSettings Partial render settings to update
    */
-  public static set_engine_settings(newSettings: Partial<RenderSettings>): void {
+  public static update_engine_settings(newSettings: Partial<RenderSettings>): void {
     Object.assign(settings, newSettings)
     Engine.render()
   }
@@ -133,6 +134,16 @@ export abstract class EngineInterface extends DataInterface {
     Engine.render()
   }
 
+  public static update_view_settings(viewId: string, settings: Partial<ViewSettings>): void {
+    const view = EngineInterface._get_view(viewId)
+    view.updateSettings(settings)
+  }
+
+  public static read_view_settings(viewId: string): ViewSettings {
+    const view = EngineInterface._get_view(viewId)
+    return view.settings
+  }
+
   /**
    * Update engine bounding box
    * @param box Bounding Box (DOMRect)
@@ -163,14 +174,19 @@ export abstract class EngineInterface extends DataInterface {
    * Update view box for a view from a DOMRect
    * @param viewId update view's viewbox
    */
-  public static update_view_box_from_dom_rect(viewId: string, viewBox: ViewBox): void {
+  public static update_view_box_from_dom_rect(viewId: string, DOMRect: DOMRect): void {
     // Convert DOM coordinates to canvas coordinates
-    // viewBox.y = Engine.boundingBox.height - viewBox.bottom + Engine.boundingBox.y
-    viewBox.y = Engine.boundingBox.height - (viewBox.y + viewBox.height) + Engine.boundingBox.y
-    viewBox.x = viewBox.x - Engine.boundingBox.x
+    const viewBox: ViewBox = {
+      x: DOMRect.x - Engine.boundingBox.x,
+      y: Engine.boundingBox.height - (DOMRect.y + DOMRect.height) + Engine.boundingBox.y,
+      width: DOMRect.width,
+      height: DOMRect.height,
+    }
+    // viewBox.y = Engine.boundingBox.height - (viewBox.y + viewBox.height) + Engine.boundingBox.y
+    // viewBox.x = viewBox.x - Engine.boundingBox.x
 
     const view = EngineInterface._get_view(viewId)
-    view.updateViewBox(viewBox)
+    view.transform.setTransform({ viewBox })
   }
 
   /**
@@ -180,15 +196,7 @@ export abstract class EngineInterface extends DataInterface {
    */
   public static update_view_box(viewId: string, viewBox: ViewBox): void {
     const view = EngineInterface._get_view(viewId)
-    view.updateViewBox(viewBox)
-  }
-
-  /**
-   * Perform a toss on the view to continue momentum scrolling
-   * @param view Toss View with momentum
-   */
-  public static view_toss(viewId: string): void {
-    EngineInterface._get_view(viewId).toss()
+    view.transform.setTransform({ viewBox })
   }
 
   /**
@@ -198,7 +206,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param y Y movement in pixels
    */
   public static view_move(viewId: string, x: number, y: number): void {
-    EngineInterface._get_view(viewId).moveViewport(x, y)
+    EngineInterface._get_view(viewId).transform.moveViewport(x, y)
   }
 
   /**
@@ -208,7 +216,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param y Y rotation degrees
    */
   public static view_rotate(viewId: string, x: number, y: number): void {
-    EngineInterface._get_view(viewId).rotateViewport(x, y)
+    EngineInterface._get_view(viewId).transform.rotateViewport(x, y)
   }
 
   /**
@@ -216,7 +224,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param viewId View ID
    */
   public static view_pointer_grab(viewId: string): void {
-    EngineInterface._get_view(viewId).grabViewport()
+    EngineInterface._get_view(viewId).transform.grabViewport()
   }
 
   /**
@@ -224,18 +232,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param viewId View ID
    */
   public static view_pointer_release(viewId: string): void {
-    EngineInterface._get_view(viewId).releaseViewport()
-  }
-
-  /**
-   * Zoom view
-   * @param viewId View ID
-   * @param x X position in view pixel coordinates
-   * @param y Y Position in view pixel coordinates
-   * @param s Scale factor
-   */
-  public static zoom(viewId: string, x: number, y: number, s: number): void {
-    EngineInterface._get_view(viewId).zoom(x, y, s)
+    EngineInterface._get_view(viewId).transform.releaseViewport()
   }
 
   /**
@@ -244,18 +241,18 @@ export abstract class EngineInterface extends DataInterface {
    * @returns Dragging State boolean
    */
   public static read_pointer_grab(viewId: string): boolean {
-    return EngineInterface._get_view(viewId).isDragging()
+    return EngineInterface._get_view(viewId).transform.dragging
   }
 
   /**
-   * Zoom at point
+   * Zoom view at point
    * @param viewId View ID
    * @param x X position in view pixel coordinates
    * @param y Y position in view pixel coordinates
-   * @param s Scale factor
+   * @param s Increase in zoom level. + to zoom in, - to zoom out. typically corresponds to mouse wheel delta
    */
   public static zoom_at_point(viewId: string, x: number, y: number, s: number): void {
-    EngineInterface._get_view(viewId).zoomAtPoint(x, y, s)
+    EngineInterface._get_view(viewId).transform.zoomAboutPoint(x, y, s)
   }
 
   /**
@@ -274,17 +271,17 @@ export abstract class EngineInterface extends DataInterface {
    * @param viewId View ID
    * @returns Render Transform
    */
-  public static read_view_transform(viewId: string): Partial<RenderTransform> {
-    return EngineInterface._get_view(viewId).getTransform()
+  public static read_view_transform(viewId: string): Partial<TViewTransform> {
+    return EngineInterface._get_view(viewId).transform.getTransform()
   }
 
   /**
    * Update view transform
    * @param viewId View ID
-   * @param transform Render Transform
+   * @param transform View Transform
    */
-  public static update_view_transform(viewId: string, transform: Partial<RenderTransform>): void {
-    EngineInterface._get_view(viewId).updateTransform(transform)
+  public static update_view_transform(viewId: string, transform: Partial<TViewTransform>): void {
+    EngineInterface._get_view(viewId).transform.setTransform(transform)
   }
 
   /**
@@ -333,7 +330,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param layer Layer Name
    * @returns Transform
    */
-  public static read_view_layer_transform(viewId: string, layer: string): Transform {
+  public static read_view_layer_transform(viewId: string, layer: string): TShapeTransform {
     return EngineInterface._get_view(viewId).getLayerTransform(layer)
   }
 
@@ -343,8 +340,47 @@ export abstract class EngineInterface extends DataInterface {
    * @param layer Layer Name
    * @param transform Partial Transform
    */
-  public static update_view_layer_transform(viewId: string, layer: string, transform: Partial<Transform>): void {
+  public static update_view_layer_transform(viewId: string, layer: string, transform: Partial<TShapeTransform>): void {
     EngineInterface._get_view(viewId).setLayerTransform(layer, transform)
+  }
+
+  /**
+   * Render one layer at a caller-controlled size and contourize its fill mask.
+   *
+   * @param viewId View containing the layer
+   * @param layerName Layer name
+   * @param bounds World-space capture bounds
+   * @param width Capture width in pixels
+   * @param height Capture height in pixels
+   * @param turdsize Minimum pixel component size retained by Potrace
+   * @returns A flat array of single-contour artwork-format surfaces
+   */
+  public static async read_view_layer_contours(
+    viewId: string,
+    layerName: string,
+    // bounds: Bounds,
+    // width: number,
+    // height: number,
+    // turdsize?: number,
+  ): Promise<ImageData> {
+    const view = EngineInterface._get_view(viewId)
+    const layer = view.layers.find((candidate) => candidate.dataLayer.layer.name === layerName)
+    if (!layer) throw new Error(`Layer ${layerName} not found`)
+    // const layerBounds = layer.getBoundingBox()
+    // const bounds = {
+    //   x: layerBounds.min[0],
+    //   y: layerBounds.min[1],
+    //   width: layerBounds.max[0] - layerBounds.min[0],
+    //   height: layerBounds.max[1] - layerBounds.min[1],
+    // }
+    // console.log(bounds)
+    // const renderer = new ShapesToContourRenderer({ regl: Engine.regl, artwork: layer.artwork, bounds, width: 1024, height: 1024 })
+    // try {
+    //   return renderer.capture()
+    // } finally {
+    //   renderer.destroy()
+    // }\
+    return layer.capture(view.transform.viewBox.width, view.transform.viewBox.height)
   }
 
   // /**
@@ -374,7 +410,7 @@ export abstract class EngineInterface extends DataInterface {
    * @returns Snap Point vec2
    */
   public static read_view_snap_point(viewId: string, pointer: vec2): vec2 {
-    return EngineInterface._get_view(viewId).snap(pointer)
+    return EngineInterface._get_view(viewId).snapPointerToClosestVisibleShape(pointer)
   }
 
   /**
@@ -400,7 +436,7 @@ export abstract class EngineInterface extends DataInterface {
    * @param viewId View ID
    */
   public static update_view_zoom_fit_artwork(viewId: string): void {
-    EngineInterface._get_view(viewId).zoomFit()
+    EngineInterface._get_view(viewId).zoomToFitLayers()
   }
 
   /**
@@ -566,7 +602,11 @@ export abstract class Engine {
       depth: 0,
     })
 
-    Engine.universe = Engine.regl({})
+    Engine.universe = Engine.regl({
+      context: {
+        settings,
+      },
+    })
 
     Engine.render()
     // Engine.renderTimeTracker()

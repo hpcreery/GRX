@@ -1,5 +1,5 @@
 import * as Symbols from "./symbol"
-import type { Transform } from "./types"
+import type { TShapeTransform } from "./types"
 import {
   type AttributesType,
   type Binary,
@@ -431,7 +431,7 @@ export class StepAndRepeat implements IPlotRecord {
   /**
    * transforms to apply to the shapes, each record will copy the shapes and apply the transforms
    */
-  public repeats: Transform[] = []
+  public repeats: TShapeTransform[] = []
   /**
    * break the step and repeat ( default false, enable for better performance )
    */
