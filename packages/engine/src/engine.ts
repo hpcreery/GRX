@@ -10,7 +10,7 @@ import type { ShapeDistance, ViewBox } from "./types"
 import { initStaticShaderCollections } from "./view/buffer-collections"
 import { initializeFontRenderer, initializeRenderers } from "./view/gl-commands"
 import { ViewRenderer } from "./view/view"
-import type { TViewTransform, ViewTransform } from "./view/view-transform"
+import type { TViewTransform } from "./view/view-transform"
 
 export interface Pointer {
   x: number
@@ -358,10 +358,6 @@ export abstract class EngineInterface extends DataInterface {
   public static async read_view_layer_contours(
     viewId: string,
     layerName: string,
-    // bounds: Bounds,
-    // width: number,
-    // height: number,
-    // turdsize?: number,
   ): Promise<ImageData> {
     const view = EngineInterface._get_view(viewId)
     const layer = view.layers.find((candidate) => candidate.dataLayer.layer.name === layerName)

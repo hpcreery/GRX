@@ -2,7 +2,7 @@ import type { Layer, StepLayer } from "@src/data/project"
 import type { ShapeDistance } from "@src/types"
 import { type vec2, vec4 } from "gl-matrix"
 import type REGL from "regl"
-// import init, { initSync, VectorDoc, vectorize_bytes, vectorize_rgba } from "../contours-vtracer/pkg/vtracer_wasm.js"
+import init, { initSync, VectorDoc, vectorize_bytes, vectorize_rgba } from "../contours-vtracer/pkg/vtracer_wasm.js"
 import { ShapeRenderer, type ShapeRendererProps } from "./shape-renderer"
 import type { DrawWorldContext } from "./view"
 
@@ -264,85 +264,85 @@ export class SelectionRenderer extends ShapeRenderer {
   }
 }
 
-// export interface RasterizerProps extends ShapeRendererProps {}
-// interface RasterizerContext extends Record<string, never> {}
+export interface RasterizerProps extends ShapeRendererProps {}
+interface RasterizerContext extends Record<string, never> {}
 
-// export class Contourizer extends ShapeRenderer {
-//   private drawContour: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext>
+export class Contourizer extends ShapeRenderer {
+  private drawContour: REGL.DrawCommand<REGL.DefaultContext & DrawWorldContext>
 
-//   public framebuffer: REGL.Framebuffer2D
+  public framebuffer: REGL.Framebuffer2D
 
-//   constructor(props: RasterizerProps) {
-//     super(props)
+  constructor(props: RasterizerProps) {
+    super(props)
 
-//     this.framebuffer = this.regl.framebuffer()
+    this.framebuffer = this.regl.framebuffer()
 
-//     this.drawContour = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, RasterizerContext, REGL.DefaultContext & DrawWorldContext>({
-//       context: {
-//         // preRender: (context) => {
-//         //   this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
-//         // },
-//       },
-//       viewport: {
-//         x: 0,
-//         y: 0,
-//         width: 1,
-//         height: 1,
-//       },
-//       scissor: {
-//         enable: false,
-//       },
-//       framebuffer: this.framebuffer,
-//       depth: {
-//         enable: true,
-//         mask: true,
-//         func: "greater",
-//         range: [0, 1],
-//       },
-//       // cull: {
-//       //   enable: true,
-//       //   face: 'back'
-//       // },
-//       uniforms: {
-//         u_Color: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
-//         u_ZOffset: 0,
-//       },
-//     })
-//   }
+    this.drawContour = this.regl<LayerUniforms, LayerAttributes, Record<string, never>, RasterizerContext, REGL.DefaultContext & DrawWorldContext>({
+      context: {
+        // preRender: (context) => {
+        //   this.framebuffer.resize(context.viewportWidth, context.viewportHeight)
+        // },
+      },
+      viewport: {
+        x: 0,
+        y: 0,
+        width: 1,
+        height: 1,
+      },
+      scissor: {
+        enable: false,
+      },
+      framebuffer: this.framebuffer,
+      depth: {
+        enable: true,
+        mask: true,
+        func: "greater",
+        range: [0, 1],
+      },
+      // cull: {
+      //   enable: true,
+      //   face: 'back'
+      // },
+      uniforms: {
+        u_Color: vec4.fromValues(1.0, 1.0, 1.0, 1.0),
+        u_ZOffset: 0,
+      },
+    })
+  }
 
-//   /**
-//    * Renders the layer. Note, this will only render if the layer needs to be updated based on context and transform changes.
-//    * Rendered content will be written to the layer's framebuffer.
-//    *
-//    */
-//   public render(): void {
-//     this.drawContour(() => {
-//       this.regl.clear({
-//         framebuffer: this.framebuffer,
-//         color: [0, 0, 0, 0],
-//         depth: 0,
-//       })
-//       super.render()
-//     })
-//   }
+  /**
+   * Renders the layer. Note, this will only render if the layer needs to be updated based on context and transform changes.
+   * Rendered content will be written to the layer's framebuffer.
+   *
+   */
+  public render(): void {
+    this.drawContour(() => {
+      this.regl.clear({
+        framebuffer: this.framebuffer,
+        color: [0, 0, 0, 0],
+        depth: 0,
+      })
+      super.render()
+    })
+  }
 
-//   public capture(width: number, height: number): void {
-//     const pixels = this.regl.read<Uint8Array<ArrayBuffer>>({ framebuffer: this.framebuffer, width, height })
-//     console.log("pixels", pixels)
-//     const clamped = new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.length)
-//     const image = new ImageData(clamped, width, height)
-//     console.log("image", image)
-//     init().then(() => {
-//       const string = vectorize_rgba(pixels, width, height, { mode: "polygon", hierarchical: "cutout", cluster: "color-cluster", filterSpeckle: 1 })
-//       console.log("string", string)
-//       return string
-//     })
-//   }
+  public capture(width: number, height: number): void {
+    const pixels = this.regl.read<Uint8Array<ArrayBuffer>>({ framebuffer: this.framebuffer, width, height })
+    console.log("pixels", pixels)
+    const clamped = new Uint8ClampedArray(pixels.buffer, pixels.byteOffset, pixels.length)
+    const image = new ImageData(clamped, width, height)
+    console.log("image", image)
+    init().then(() => {
+      const string = vectorize_rgba(pixels, width, height, { mode: "polygon", hierarchical: "cutout", cluster: "color-cluster", filterSpeckle: 1 })
+      console.log("string", string)
+      return string
+    })
+  }
 
-//   // public
+  // public
 
-//   public destroy(): void {
-//     this.framebuffer.destroy()
-//     super.destroy()
-//   }
-// }
+  public destroy(): void {
+    this.framebuffer.destroy()
+    super.destroy()
+  }
+}

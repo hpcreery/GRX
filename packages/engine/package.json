@@ -21,6 +21,7 @@
   ],
   "dependencies": {
     "@grx/artwork-format": "workspace:*",
+    "@grx/contours": "workspace:*",
     "@grx/importer-dxf": "workspace:*",
     "@grx/importer-gdsii": "workspace:*",
     "@grx/importer-gerber": "workspace:*",
