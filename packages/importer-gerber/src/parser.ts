@@ -7,10 +7,8 @@ import {
   CstParser,
   createToken,
   generateCstDts,
-  type IOrAlt,
   type IToken,
   Lexer,
-  type OrMethodOpts,
   type ParserMethod,
   type Rule,
 } from "chevrotain"
@@ -383,12 +381,9 @@ class GerberParser extends CstParser {
   deleteAttributesCommand!: ParserMethod<unknown[], CstNode>
 
   // OPTIMIZATION CACHES
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the extended command data block can be any of the possible extended command data block types, so it's not practical to type it more specifically than this.
-  extendedCommandDataBlockCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the function code command can be any of the possible function code command types, so it's not practical to type it more specifically than this.
-  functionCodeCommandCache: IOrAlt<any>[] | OrMethodOpts<any> | undefined = undefined
-  // biome-ignore lint/suspicious/noExplicitAny: The type of the coordinate field can be any of the possible coordinate field types, so it's not practical to type it more specifically than this.
-  coordinateFieldCache = undefined as IOrAlt<any>[] | OrMethodOpts<any> | undefined
+  extendedCommandDataBlockCache: { ALT: () => CstNode }[] | undefined = undefined
+  functionCodeCommandCache: { ALT: () => CstNode }[] | undefined = undefined
+  coordinateFieldCache: { ALT: () => CstNode }[] | undefined = undefined
 
   constructor() {
     super(multiModeLexerDefinition, {
@@ -1243,7 +1238,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 2) {
+      if (values.length > 2) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1264,7 +1259,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 3) {
+      if (values.length > 3) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1285,7 +1280,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 3) {
+      if (values.length > 3) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1308,7 +1303,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
         units: this.state.units,
         attributes: { ...this.apertureAttributes },
       })
-      if (values.length >= 4) {
+      if (values.length > 4) {
         this.errors.push({
           message: `Rectangular holes in standard shapes are not supported by the render engine (yet), so the hole diameter parameter will be treated as a circular hole. If you need rectangular holes, you can use a custom macro shape instead. "Rectangular holes in standard apertures are deprecated since revision 2015.06" - Gerber specification.`,
           location: ctx.modifiersSet?.[0].location,
@@ -1542,16 +1537,23 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
     if (tool.type === SymbolTypeIdentifier.MACRO_DEFINITION) {
       this.errors.push({
         message:
-          "Detected Line or Arc Stroke operation performed with aperture macro. Cannot Plot macro tools in interpolation commands. 'Draws are straight-line segments stroked with a circle' & 'Arcs are circular segments stroked with a circle.' - Gerber specification.",
+          "Detected Line or Arc Stroke operation performed with aperture macro. Cannot Plot macro tools in interpolation commands. 'Draws are straight-line segments, stroked with the current aperture, which must be a solid circular one.' & 'Arcs are circular segments, stroked with the current aperture, which must be a solid circular one.' - Gerber specification.",
         location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
       })
       return
     }
 
     if (!this.arcDirection) {
-      if (tool.symbol !== Symbols.STANDARD_SYMBOLS_MAP.Round) {
+      if (tool.symbol === Symbols.STANDARD_SYMBOLS_MAP.Square || tool.symbol === Symbols.STANDARD_SYMBOLS_MAP.Rectangle) {
+        if (this.location.startPoint.x != this.location.endPoint.x && this.location.startPoint.y != this.location.endPoint.y) {
+          this.errors.push({
+            message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Non-Orthogonal Straight Line Segments. 'Draws are straight-line segments, stroked with the current aperture, which must be a solid circular one.' - Invalid Drawing Operation. Results may be unpredictable.`,
+            location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
+          })
+        }
+      } else if (tool.symbol !== Symbols.STANDARD_SYMBOLS_MAP.Round) {
         this.errors.push({
-          message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Straight Line Segments. 'Draws are straight-line segments stroked with a circle.' - Continue with caution.`,
+          message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Straight Line Segments. 'Draws are straight-line segments, stroked with the current aperture, which must be a solid circular one.' - Invalid Drawing Operation. Results may be unpredictable.`,
           location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
         })
       }
@@ -1572,7 +1574,7 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
     if (tool.symbol !== Symbols.STANDARD_SYMBOLS_MAP.Round) {
       this.errors.push({
-        message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Arcs. 'Arcs are circular segments stroked with a circle.' - Continue with caution.`,
+        message: `Found '${Symbols.STANDARD_SYMBOLS[tool.symbol]}' instead of 'Round' when drawing Arcs. 'Arcs are circular segments, stroked with the current aperture, which must be a solid circular one.' - Continue with caution.`,
         location: ctx.operationCode?.[0].location ?? ctx.coordinateData?.[0].location,
       })
     }
@@ -1705,7 +1707,10 @@ contours, often resulting in scrap. Avoid incremental notation like the plague."
 
     // check if the name matches the spec correct name of /[._a-zA-Z$][._a-zA-Z0-9]*/
     if (!/^[._a-zA-Z$][._a-zA-Z0-9]*$/.test(name)) {
-      this.errors.push({ message: `Warning. Macro name '${name}' does not match the specification for macro names. Macro names should match the regex /[._a-zA-Z$][._a-zA-Z0-9]*/. Macro will still be processed as normal.`, location: ctx.Name[0] })
+      this.errors.push({
+        message: `Warning. Macro name '${name}' does not match the specification for macro names. Macro names should match the regex /[._a-zA-Z$][._a-zA-Z0-9]*/. Macro will still be processed as normal.`,
+        location: ctx.Name[0],
+      })
     }
 
     this.currentMacroBlocks = []

@@ -1,0 +1,31 @@
+{
+  "name": "@grx/contours",
+  "version": "0.0.1",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./dist/index.mjs"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@grx/artwork-format": "workspace:*",
+    "esm-potrace-wasm": "^0.5.1"
+  },
+  "devDependencies": {
+    "@grx/typescript-config": "workspace:*",
+    "@types/node": "^26.2.0",
+    "tsdown": "^0.22.14",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

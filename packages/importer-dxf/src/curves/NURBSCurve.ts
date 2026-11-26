@@ -7,10 +7,8 @@ import {
   // Curve,
   Vector3,
   Vector4,
-  // @ts-expect-error no types available for dxf-parser --- IGNORE ---
 } from "../vec"
-// @ts-expect-error no types available for dxf-parser --- IGNORE ---
-import * as NURBSUtils from "./NURBSUtils.js"
+import * as NURBSUtils from "./NURBSUtils"
 
 /**
  * NURBS curve object
@@ -57,7 +55,7 @@ export class NURBSCurve {
     }
   }
 
-  getPoint(t: Vector3, optionalTarget: Vector3 = new Vector3()): Vector3 {
+  getPoint(t: number, optionalTarget: Vector3 = new Vector3()): Vector3 {
     const point = optionalTarget
 
     const u = this.knots[this.startKnot] + t * (this.knots[this.endKnot] - this.knots[this.startKnot]) // linear mapping t->u
@@ -85,7 +83,7 @@ export class NURBSCurve {
     return points
   }
 
-  getTangent(t: Vector3, optionalTarget: Vector3 = new Vector3()): Vector3 {
+  getTangent(t: number, optionalTarget: Vector3 = new Vector3()): Vector3 {
     const tangent = optionalTarget
 
     const u = this.knots[0] + t * (this.knots[this.knots.length - 1] - this.knots[0])

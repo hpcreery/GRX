@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
+    "allowJs": true,
     "noEmit": false,
     "types": [
       "node",

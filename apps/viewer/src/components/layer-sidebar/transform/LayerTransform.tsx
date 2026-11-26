@@ -38,7 +38,7 @@ export default function LayerTransform(props: LayerTransformProps): JSX.Element 
    */
   const [mirror_y, setMirrorY] = useState<types.Binary>(0)
 
-  const [transformOrder, setTransformOrder] = useState<types.TransformOrder>(["translate", "rotate", "mirror", "scale"])
+  const [transformOrder, setTransformOrder] = useState<types.TShapeTransformOrder>(["translate", "rotate", "mirror", "scale"])
 
   const { units, renderer } = useContext(EditorConfigProvider)
   const [layerName, setLayerName] = useState<string>("")

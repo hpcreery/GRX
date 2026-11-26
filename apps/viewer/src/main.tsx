@@ -16,6 +16,7 @@ import "@mantine/notifications/styles.css"
 import "@mantine/spotlight/styles.css"
 import "@mantine/code-highlight/styles.css"
 import type { JSX } from "react"
+import "./assets/fonts/geist/Geist.css"
 
 function Main(): JSX.Element | null {
   // BufferCollection.test()
@@ -37,10 +38,10 @@ function Main(): JSX.Element | null {
       dark: ["#C2C2C2", "#A7A7A7", "#919191", "#5E5E5E", "#393939", "#2D2D2D", "#101010", "#0f0f0f", "#090909", "#000000"],
     },
     other: {},
-    fontFamily: "'IBM Plex Mono', monospace",
-    fontFamilyMonospace: "'IBM Plex Mono', monospace",
+    fontFamily: "'GeistMono-Regular', monospace",
+    fontFamilyMonospace: "'GeistMono-Regular', monospace",
     headings: {
-      fontFamily: "'IBM Plex Mono', monospace",
+      fontFamily: "'GeistMono-Bold', monospace",
       // sizes: {
       //   h1: { fontSize: rem(10), lineHeight: '1.0'  },
       //   h2: { fontSize: rem(11), lineHeight: '1.2'  },

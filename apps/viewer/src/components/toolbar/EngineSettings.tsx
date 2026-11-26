@@ -35,7 +35,7 @@ export default function EngineSettings(props: EngineSettingsProps): JSX.Element 
   const [engineSettingsModal, engineSettingsModalHandlers] = props.modalDisclosure
 
   useEffect(() => {
-    renderer.engine.interface.set_engine_settings({
+    renderer.engine.interface.update_engine_settings({
       COLOR_BLEND: colorBlend,
       ZOOM_TO_CURSOR: zoomToCursor,
       SHOW_DATUMS: showDatums,

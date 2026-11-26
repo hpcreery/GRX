@@ -43,10 +43,10 @@ export default function GeneralSettingsModal(props: SettingsModalProps): JSX.Ele
           onChange={(event): void => {
             if (event.currentTarget.checked) {
               colors.setColorScheme("dark")
-              renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
+              renderer.engine.interface.update_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
             } else {
               colors.setColorScheme("light")
-              renderer.engine.interface.set_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
+              renderer.engine.interface.update_engine_settings({ BACKGROUND_COLOR: chroma(theme.colors.dark[8]).alpha(0).gl() })
             }
           }}
         />

@@ -10,15 +10,15 @@ const ViewModes = ["Off", "3D Orthographic", "3D Perspective"] as const
 type ViewMode = (typeof ViewModes)[number]
 
 export default function ThreeDSettings(_props: ThreeDSettingsProps): JSX.Element | null {
-  const { renderer } = useContext(EditorConfigProvider)
+  const { renderer, project } = useContext(EditorConfigProvider)
   const [mode, setMode] = useLocalStorage<ViewMode>({
     key: "engine:3D_MODE",
     defaultValue: "Off",
   })
 
   async function getModes(): Promise<void> {
-    const mode = await renderer.engine.interface.read_engine_settings().then((settings) => settings.ENABLE_3D)
-    const pMode = await renderer.engine.interface.read_engine_settings().then((settings) => settings.PERSPECTIVE_3D)
+    const mode = await renderer.engine.interface.read_view_settings(project.stepName).then((settings) => settings.ENABLE_3D)
+    const pMode = await renderer.engine.interface.read_view_settings(project.stepName).then((settings) => settings.PERSPECTIVE_3D)
     if (!mode) {
       setMode("Off")
     } else {
@@ -37,8 +37,7 @@ export default function ThreeDSettings(_props: ThreeDSettingsProps): JSX.Element
   useEffect(() => {
     const enable3D = mode !== "Off"
     const perspective3D = mode === "3D Perspective"
-    renderer.engine.interface.set_engine_settings({ ENABLE_3D: enable3D })
-    renderer.engine.interface.set_engine_settings({ PERSPECTIVE_3D: perspective3D })
+    renderer.engine.interface.update_view_settings(project.stepName, { ENABLE_3D: enable3D, PERSPECTIVE_3D: perspective3D })
   }, [mode])
 
   // const cycleMode = (): ViewMode => {

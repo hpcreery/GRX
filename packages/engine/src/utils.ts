@@ -1,4 +1,4 @@
-import { type mat3, type mat4, vec2 } from "gl-matrix"
+import { mat3, mat4, vec2 } from "gl-matrix"
 import { TypedEventTarget } from "typescript-event-target"
 
 export * from "@grx/artwork-format/utils"
@@ -60,6 +60,10 @@ export class UpdateEventTarget extends TypedEventTarget<UpdateEventsMap> {
 
   public onUpdate(callback: (ev: Event) => void): void {
     this.addEventListener("update", callback, { signal: this.controller.signal })
+  }
+
+  public announceUpdate(): void {
+    this.dispatchTypedEvent("update", new Event("update"))
   }
 
   public unSubscribe(): void {
@@ -200,4 +204,139 @@ export abstract class mat4Extended {
 
 export function scaleDOMRect(rect: DOMRect, scale: number): DOMRect {
   return new DOMRect(rect.x * scale, rect.y * scale, rect.width * scale, rect.height * scale)
+}
+
+/**
+ *
+ * @param cx normalized device coordinate x (-1 to 1)
+ * @param cy normalized device coordinate y (-1 to 1)
+ * @param matrix 2D transformation matrix
+ * @returns world coordinates [x, y]
+ */
+export function ndcToWorld2D(cx: number, cy: number, matrix: mat3): [number, number] {
+  const out = vec2.create()
+  const matrixInverse = mat3.create()
+  const inverseResult = mat3.invert(matrixInverse, matrix)
+  if (!inverseResult) {
+    throw new Error("Matrix inversion failed")
+  }
+  vec2.transformMat3(out, vec2.fromValues(cx, cy), matrixInverse)
+  return [out[0], out[1]]
+}
+
+/**
+ * Get world coordinates from NDC coordinates
+ * @param nx normalized device coordinate x (-1 to 1)
+ * @param ny normalized device coordinate y (-1 to 1)
+ * @param z z coord used as u_ZOffset (layer z offset)
+ * @param transform2d 2D transformation matrix
+ * @param transform3d 3D transformation matrix
+ * @param perspective whether to use perspective projection
+ * @returns world coordinates [x, y]
+ */
+export function ndcToWorld3D(nx: number, ny: number, z: number, transform2d: mat3, transform3d: mat4, perspective: boolean = true): [number, number] {
+  // If transform3D is identity, behave like the shader's early return
+  if (mat4.equals(transform3d, mat4.create())) {
+    return ndcToWorld2D(nx, ny, transform2d)
+    // return [nx, ny]
+  }
+
+  // Extract columns (gl-matrix stores mat4 in column-major)
+  const m = transform3d
+  const c0x = m[0],
+    c0y = m[1],
+    c0z = m[2]
+  const c1x = m[4],
+    c1y = m[5],
+    c1z = m[6]
+  const c2x = m[8],
+    c2y = m[9],
+    c2z = m[10]
+  const c3x = m[12],
+    c3y = m[13],
+    c3z = m[14]
+
+  // Non-perspective (orthographic) branch - matches Transform3D.frag
+  if (!perspective) {
+    const bx = c2x * z + c3x
+    const by = c2y * z + c3y
+
+    const a_x1 = c0x,
+      a_x2 = c1x
+    const a_y1 = c0y,
+      a_y2 = c1y
+
+    const m00 = a_x1,
+      m01 = a_x2
+    const m10 = a_y1,
+      m11 = a_y2
+
+    const r0 = nx - bx
+    const r1 = ny - by
+
+    const det = m00 * m11 - m01 * m10
+    if (Math.abs(det) < 1e-8) {
+      return ndcToWorld2D(nx, ny, transform2d)
+    }
+
+    const cx = (r0 * m11 - m01 * r1) / det
+    const cy = (m00 * r1 - r0 * m10) / det
+
+    return ndcToWorld2D(cx, cy, transform2d)
+  }
+
+  // Perspective branch - matches Transform3D.frag's analytic inverse
+  // using perspective correction factor f = 1.0 (same as shader default)
+  const f = 1.0
+
+  const bx = c2x * z + c3x
+  const by = c2y * z + c3y
+  const bz = c2z * z + c3z
+
+  const a_x1 = c0x,
+    a_x2 = c1x
+  const a_y1 = c0y,
+    a_y2 = c1y
+  const a_z1 = c0z,
+    a_z2 = c1z
+
+  const m00 = a_x1 - nx * f * a_z1
+  const m01 = a_x2 - nx * f * a_z2
+  const m10 = a_y1 - ny * f * a_z1
+  const m11 = a_y2 - ny * f * a_z2
+
+  const r0 = nx * (1.0 + f * bz) - bx
+  const r1 = ny * (1.0 + f * bz) - by
+
+  const det = m00 * m11 - m01 * m10
+  if (Math.abs(det) < 1e-8) {
+    return ndcToWorld2D(nx, ny, transform2d)
+  }
+
+  const cx = (r0 * m11 - m01 * r1) / det
+  const cy = (m00 * r1 - r0 * m10) / det
+
+  // Reconstruct tvec and reprojection check like shader would do.
+  const tvecX = cx
+  const tvecY = cy
+  const tvecZ = z
+
+  // reprojection: apply forward transform (u_Transform3D * vec4(cx,cy,z,1))
+  const reprojX = c0x * tvecX + c1x * tvecY + c2x * tvecZ + c3x
+  const reprojY = c0y * tvecX + c1y * tvecY + c2y * tvecZ + c3y
+  const reprojW = c0z * tvecX + c1z * tvecY + c2z * tvecZ + c3z // corresponds to reproj.w in shader
+
+  const denom = 1.0 + reprojW
+  if (denom <= 1e-6) {
+    return ndcToWorld2D(nx, ny, transform2d)
+  }
+
+  const ndcReprojX = reprojX / denom
+  const ndcReprojY = reprojY / denom
+  // tight tolerance similar to shader
+  if (Math.hypot(ndcReprojX - nx, ndcReprojY - ny) > 1e-3) {
+    return ndcToWorld2D(nx, ny, transform2d)
+  }
+
+  return ndcToWorld2D(tvecX, tvecY, transform2d)
 }

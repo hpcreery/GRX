@@ -18,7 +18,7 @@ export default function SnapSettings(_props: SnapSettingsProps): JSX.Element | n
   })
 
   useEffect(() => {
-    renderer.engine.interface.set_engine_settings({ SNAP_MODE: snapMode })
+    renderer.engine.interface.update_engine_settings({ SNAP_MODE: snapMode })
   }, [snapMode])
 
   useEffect(() => {

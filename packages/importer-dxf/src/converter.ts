@@ -4,7 +4,6 @@ import * as Shapes from "@grx/artwork-format/shape"
 import type * as DxfParser from "dxf-parser"
 import { vec2, vec3 } from "gl-matrix"
 import { NURBSCurve } from "./curves/NURBSCurve"
-// @ts-expect-error no types available for dxf-parser --- IGNORE ---
 import { Vector4 } from "./vec"
 
 export type Layers = {

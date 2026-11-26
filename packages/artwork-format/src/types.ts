@@ -72,9 +72,9 @@ export type BoundingBox = {
   max: vec2
 }
 
-export type TransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
+export type TShapeTransformOrder = ("scale" | "rotate" | "translate" | "mirror")[]
 
-export interface Transform {
+export interface TShapeTransform {
   /**
    * Translation in x and y, in mm units. The base unit is mm. Unless Transform is a part to a shape with different units ( like step and repeats ) then those units apply.
    */
@@ -98,5 +98,5 @@ export interface Transform {
   /**
    * Order of transformations. Default is ["translate", "rotate", "mirror", "scale"]
    */
-  order?: TransformOrder
+  order?: TShapeTransformOrder
 }

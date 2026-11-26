@@ -4,6 +4,6 @@
   "compilerOptions": {
     "composite": true,
     "outDir": "dist/types",
-    "types": ["electron-vite/node"]
+    "types": ["vite/client", "node"]
   }
 }

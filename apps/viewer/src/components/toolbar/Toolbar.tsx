@@ -35,7 +35,7 @@ const { PointerMode } = types
 type ToolbarProps = {}
 
 export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
-  const { units, renderer } = React.useContext(EditorConfigProvider)
+  const { units, renderer, project } = React.useContext(EditorConfigProvider)
   const [generalSettingsModal, generalSettingsModalHandlers] = useDisclosure(false)
   const [gridSettingsModal, gridSettingsModalHandlers] = useDisclosure(false)
   const [engineSettingsModal, engineSettingsModalHandlers] = useDisclosure(false)
@@ -46,9 +46,9 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
   const theme = useMantineTheme()
 
   async function getModes(): Promise<void> {
-    const settings = await renderer.engine.interface.read_engine_settings()
-    setOutlineMode(settings.OUTLINE_MODE)
-    setSkeletonMode(settings.SKELETON_MODE)
+    const viewSettings = await renderer.engine.interface.read_view_settings(project.stepName)
+    setOutlineMode(viewSettings.OUTLINE_MODE)
+    setSkeletonMode(viewSettings.SKELETON_MODE)
   }
 
   React.useEffect(() => {
@@ -69,7 +69,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Outline Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: false })
+        renderer.engine.interface.update_view_settings(project.stepName, { OUTLINE_MODE: false })
         setOutlineMode(false)
       },
       leftSection: <IconCube />,
@@ -80,7 +80,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Outline Mode",
       description: "Show outline of all features",
       onClick: () => {
-        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: true })
+        renderer.engine.interface.update_view_settings(project.stepName, { OUTLINE_MODE: true })
         setOutlineMode(true)
       },
       leftSection: <IconCube3dSphere />,
@@ -91,7 +91,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Disable Skeleton Mode",
       description: "Default fill mode",
       onClick: () => {
-        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: false })
+        renderer.engine.interface.update_view_settings(project.stepName, { SKELETON_MODE: false })
         setSkeletonMode(false)
       },
       leftSection: <IconBoneOff />,
@@ -102,7 +102,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
       label: "Enable Skeleton Mode",
       description: "Show skeleton of all lines and arcs, outline of the rest of feature types",
       onClick: () => {
-        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: true })
+        renderer.engine.interface.update_view_settings(project.stepName, { SKELETON_MODE: true })
         setSkeletonMode(true)
       },
       leftSection: <IconBone />,
@@ -202,16 +202,16 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
     [
       "o",
       async (): Promise<void> => {
-        const currentSettings = await renderer.engine.interface.read_engine_settings()
-        renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: !currentSettings.OUTLINE_MODE })
+        const currentSettings = await renderer.engine.interface.read_view_settings(project.stepName)
+        renderer.engine.interface.update_view_settings(project.stepName, { OUTLINE_MODE: !currentSettings.OUTLINE_MODE })
         setOutlineMode(!currentSettings.OUTLINE_MODE)
       },
     ],
     [
       "p",
       async (): Promise<void> => {
-        const currentSettings = await renderer.engine.interface.read_engine_settings()
-        renderer.engine.interface.set_engine_settings({ SKELETON_MODE: !currentSettings.SKELETON_MODE })
+        const currentSettings = await renderer.engine.interface.read_view_settings(project.stepName)
+        renderer.engine.interface.update_view_settings(project.stepName, { SKELETON_MODE: !currentSettings.SKELETON_MODE })
         setSkeletonMode(!currentSettings.SKELETON_MODE)
       },
     ],
@@ -355,7 +355,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderer.engine.interface.set_engine_settings({ OUTLINE_MODE: !outlineMode })
+                  renderer.engine.interface.update_view_settings(project.stepName, { OUTLINE_MODE: !outlineMode })
                   setOutlineMode(!outlineMode)
                 }}
               >
@@ -369,7 +369,7 @@ export default function Toolbar(_props: ToolbarProps): JSX.Element | null {
                 radius="sm"
                 variant="default"
                 onClick={async (): Promise<void> => {
-                  renderer.engine.interface.set_engine_settings({ SKELETON_MODE: !skeletonMode })
+                  renderer.engine.interface.update_view_settings(project.stepName, { SKELETON_MODE: !skeletonMode })
                   setSkeletonMode(!skeletonMode)
                 }}
               >

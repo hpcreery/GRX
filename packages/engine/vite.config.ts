@@ -1,10 +1,11 @@
 import { resolve } from "node:path"
-import typescript from "@rollup/plugin-typescript"
 import glslify from "rollup-plugin-glslify"
+import dts from "unplugin-dts/vite"
 import { defineConfig, type PluginOption } from "vite"
 import arraybuffer from "vite-plugin-arraybuffer"
 // import { comlink } from "vite-plugin-comlink"
-import pkg from "./package.json"
+import pkg from "./package.json" with { type: "json" }
+// import { analyzer } from "vite-bundle-analyzer"
 
 export default defineConfig({
   base: "./",
@@ -12,19 +13,21 @@ export default defineConfig({
   build: {
     target: "esnext",
     emptyOutDir: true,
-    minify: false,
-    sourcemap: false,
+    // minify: "esbuild",
+    // sourcemap: true,
     lib: {
       entry: "./src/index.ts",
       name: pkg.name,
       formats: ["es"],
     },
-    rollupOptions: {
+    rolldownOptions: {
       input: "./src/index.ts",
       // Make sure to externalize deps that shouldn't be bundled
       external: [...Object.keys(pkg.dependencies || {}), ...Object.keys(pkg.peerDependencies || {})],
       output: {
-        preserveModules: true,
+        sourcemap: true,
+        minify: true,
+        preserveModules: false,
         preserveModulesRoot: "src",
         entryFileNames: ({ name: fileName }) => {
           return `${fileName}.js`
@@ -39,31 +42,32 @@ export default defineConfig({
   },
   plugins: [
     // comlink(),
-    typescript({
-      tsconfig: resolve("tsconfig.json"),
-    }),
-    arraybuffer(),
+    dts({
+      // insertTypesEntry: true,
+      tsconfigPath: "tsconfig.json",
+    }) as PluginOption,
+    arraybuffer() as PluginOption,
     glslify({
       compress: false,
       // @ts-expect-error - glslify options are not typed
       transform: ["glslify-import"],
-    }) as PluginOption,
+    }),
+    // analyzer(),
   ],
   worker: {
     format: "es",
-    rollupOptions: {
-      // Workers must bundle all deps — they run as blob URLs where bare imports can't resolve
+    rolldownOptions: {
       external: [],
     },
     plugins: () => [
       // comlink(),
-      // typescript(),
-      arraybuffer(),
+      arraybuffer() as PluginOption,
       glslify({
         compress: false,
         // @ts-expect-error - glslify options are not typed
         transform: ["glslify-import"],
       }) as PluginOption,
+      // analyzer(),
     ],
   },
 })

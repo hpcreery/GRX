@@ -1,8 +1,8 @@
 // import * as Comlink from "comlink"
 
 import type * as Shapes from "@grx/artwork-format/shape"
-import type { Transform } from "@grx/artwork-format/types"
-import { ArtworkBufferCollection, SurfaceBufferCollection } from "./artwork-collections"
+import type { TShapeTransform } from "@grx/artwork-format/types"
+import { ShapesBufferCollection, SurfaceBufferCollection } from "./artwork-collections"
 
 export const PROJECTS: Map<string, Project> = new Map<string, Project>()
 
@@ -93,13 +93,13 @@ export class Layer {
 }
 
 export interface StepAndRepeatJSON {
-  repeats: Transform[]
+  repeats: TShapeTransform[]
   step: string
 }
 
 // maybe convert this to a class?
 export interface StepAndRepeat {
-  repeats: Transform[]
+  repeats: TShapeTransform[]
   step: Step
 }
 
@@ -147,7 +147,7 @@ export interface StepLayerJSON {
 export class StepLayer {
   public readonly layer: Layer
   public readonly step: Step
-  public readonly artwork: ArtworkBufferCollection = new ArtworkBufferCollection()
+  public readonly artwork: ShapesBufferCollection = new ShapesBufferCollection()
   public readonly profile: SurfaceBufferCollection = new SurfaceBufferCollection()
   constructor(step: Step, row: Layer) {
     this.step = step
